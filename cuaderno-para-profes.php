@@ -59,67 +59,27 @@ function cpp_cargar_assets() {
 // Acción para manejar la descarga de Excel (exportación)
 add_action('wp_ajax_cpp_download_excel', 'cpp_trigger_excel_download_handler');
 function cpp_trigger_excel_download_handler() {
-    if (!isset($_REQUEST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_REQUEST['nonce'])), 'cpp_frontend_nonce')) { wp_die('Error de seguridad (nonce inválido).'); }
-    if (!is_user_logged_in()) { wp_die('Acceso denegado. Debes iniciar sesión.'); }
+    // 1. Verificar el nonce para seguridad. El nombre 'clase_ppppghjtu...' debe coincidir con el que usas en tu JavaScript.
+    check_ajax_referer('clase_ppppghjtu...', 'nonce');
 
-    $user_id = get_current_user_id();
-    $download_type = isset($_REQUEST['download_type']) ? sanitize_text_field($_REQUEST['download_type']) : 'single_class';
-    $clase_id_para_exportar = null;
-    $filename = 'exportacion_cuaderno.xlsx'; 
+    // 2. Recoger y limpiar todos los datos que vienen del navegador.
+    $id_curso = isset($_POST['id_curso']) ? intval($_POST['id_curso']) : 0;
+    $id_clase = isset($_POST['id_clase']) ? intval($_POST['id_clase']) : 0;
+    $id_evaluacion = isset($_POST['id_evaluacion']) ? intval($_POST['id_evaluacion']) : 0;
+    $type = isset($_POST['type']) ? sanitize_text_field($_POST['type']) : '';
+    $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
 
-    if ($download_type === 'single_class') {
-        if (!isset($_REQUEST['clase_id'])) { wp_die('Error: No se especificó el ID de la clase para la descarga.'); }
-        $clase_id_para_exportar = intval($_REQUEST['clase_id']);
-        if (empty($clase_id_para_exportar)) { wp_die('Error: ID de clase no válido.'); }
-        $clase_info = cpp_obtener_clase_completa_por_id($clase_id_para_exportar, $user_id);
-        if ($clase_info && !empty($clase_info['nombre'])) {
-            $filename = sanitize_file_name('clase_' . $clase_info['nombre'] . '.xlsx');
-        } else {
-            $filename = sanitize_file_name('clase_' . $clase_id_para_exportar . '.xlsx');
-        }
-    } elseif ($download_type === 'all_classes') {
-        $filename = sanitize_file_name('cuaderno_completo_profesor.xlsx');
-    }  
-    
-    cpp_generate_excel_for_download($user_id, $clase_id_para_exportar, $download_type, $filename);
-}
-
-// ACCIONES AJAX PARA IMPORTACIÓN DE ALUMNOS
-add_action('wp_ajax_cpp_download_student_template', 'cpp_handle_student_template_download');
-add_action('wp_ajax_cpp_upload_student_excel', 'cpp_handle_student_excel_upload');
-add_action('wp_ajax_cpp_import_students_from_file', 'cpp_handle_process_students_import');
-
-
-// --- INICIO: SCRIPT DE MIGRACIÓN DE DATOS ---
-add_action('plugins_loaded', 'cpp_check_for_updates');
-function cpp_check_for_updates() {
-    $stored_version = get_option('cpp_plugin_version', '1.0.0');
-
-    if (version_compare($stored_version, CPP_VERSION, '<')) {
-        
-        if (version_compare($stored_version, '1.2.0', '<')) {
-            cpp_migrate_add_default_evaluations();
-        }
-        
-        if (version_compare($stored_version, '1.3.0', '<')) {
-            cpp_migrate_categories_to_evaluations_v1_3();
-        }
-
-        if (version_compare($stored_version, '1.4.0', '<')) {
-            cpp_migrate_restructure_categories_v1_4();
-        }
-
-        if (version_compare($stored_version, '1.5.0', '<')) {
-            cpp_migrate_add_calculation_method_v1_5();
-        }
-
-        // --- NUEVA MIGRACIÓN PARA LA VERSIÓN 1.5.1 ---
-        if (version_compare($stored_version, '1.5.1', '<')) {
-            cpp_migrate_unify_default_category_v1_5_1();
-        }
-
-        update_option('cpp_plugin_version', CPP_VERSION);
+    // 3. Comprobar que tenemos los IDs necesarios antes de continuar.
+    if (empty($id_curso) || empty($id_clase) || empty($id_evaluacion)) {
+        // Si falta algún dato importante, detenemos la ejecución.
+        wp_die('Faltan datos para generar el informe.');
     }
+
+    // 4. Llamar a la función principal del exportador con todos los datos correctos.
+    cpp_generate_excel_for_download($id_curso, $id_clase, $id_evaluacion, $type, $nonce);
+
+    // Es importante terminar la ejecución en las llamadas AJAX.
+    wp_die();
 }
 
 function cpp_migrate_add_default_evaluations() {
