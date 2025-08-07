@@ -1,4 +1,5 @@
 <?php
+
 /*
 Plugin Name: Cuaderno para Profesores
 Description: Gestión de clases y alumnos completamente desde el frontend.

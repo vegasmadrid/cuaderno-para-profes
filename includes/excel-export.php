@@ -43,7 +43,7 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
         if (!$clase_actual_info) {
             wp_die('Clase no encontrada o no tienes permiso sobre ella.');
         }
-        cpp_populate_sheet_with_class_data($spreadsheet->getActiveSheet(), $clase_actual_info, $user_id);
+        cpp_populate_sheet_with_class_data($sheet, $clase_info, $user_id, $id_curso, $id_evaluacion);
         $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_actual_info['nombre']), 0, 31);
         $spreadsheet->getActiveSheet()->setTitle($sheet_name ?: 'Clase');
         // El filename ya viene como parámetro, generado en el manejador de la acción.
@@ -94,7 +94,9 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
  * Función auxiliar para rellenar una hoja de Excel con los datos de una clase.
  * (Esta función es usada por cpp_generate_excel_for_download)
  */
-function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $evaluacion_id) {
+
+function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $id_curso, $id_evaluacion) {
+
     $clase_id = $clase_info_array['id'];
     $nombre_clase = $clase_info_array['nombre'];
     $base_nota_final_clase = isset($clase_info_array['base_nota_final']) ? floatval($clase_info_array['base_nota_final']) : 100.00;
