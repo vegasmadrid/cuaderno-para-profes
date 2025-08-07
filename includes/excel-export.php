@@ -25,7 +25,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
  * Función principal para generar y descargar el archivo Excel CON DATOS DEL CUADERNO.
  * Esta función es llamada por la acción cpp_trigger_excel_download_handler en el archivo principal del plugin.
  */
-function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = null, $download_type = 'single_class', $filename = 'cuaderno_exportado.xlsx') {
+function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = null, $download_type = 'single_class', $filename = 'cuaderno_exportado.xlsx', $evaluacion_id) {
     
     if (!is_user_logged_in() || get_current_user_id() != $user_id) {
         wp_die('No tienes permiso para realizar esta acción.');
@@ -59,7 +59,7 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
                 $spreadsheet->createSheet();
             }
             $sheet = $spreadsheet->getSheet($sheet_index);
-            cpp_populate_sheet_with_class_data($sheet, $clase_info_loop, $user_id);
+            cpp_populate_sheet_with_class_data($sheet, $clase_info_loop, $user_id, $evaluacion_id);
             $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_info_loop['nombre']), 0, 31);
             $sheet->setTitle($sheet_name ?: ('Clase ' . ($sheet_index + 1)));
             $sheet_index++;
@@ -94,15 +94,15 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
  * Función auxiliar para rellenar una hoja de Excel con los datos de una clase.
  * (Esta función es usada por cpp_generate_excel_for_download)
  */
-function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id) {
+function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $evaluacion_id) {
     $clase_id = $clase_info_array['id'];
     $nombre_clase = $clase_info_array['nombre'];
     $base_nota_final_clase = isset($clase_info_array['base_nota_final']) ? floatval($clase_info_array['base_nota_final']) : 100.00;
     if ($base_nota_final_clase <= 0) $base_nota_final_clase = 100.00;
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id); 
-    $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id); 
-    $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id);
+    $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id); 
+    $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_id);
 
     $header_font_style = ['bold' => true, 'color' => ['rgb' => 'FFFFFF']];
     $header_fill_style = ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4A86E8']]; 
