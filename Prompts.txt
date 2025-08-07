@@ -1,0 +1,11 @@
+Hola, estoy desarrollando un plugin para Wordpress y necesito ayuda para mejorar alguna funcionalidad. Te voy a pasar el archivo principal y quiero que me pidas uno a uno los demás archivos del plugin para que te hagas una idea de como funciona todo y poder ayudarme con el código. No comentes nada sobre los archivos hasta que no tengas todo. EL archivo principal es este:
+
+
+
+
+Hola, estoy desarrollando un plugin para Wordpress y necesito ayuda para mejorar alguna funcionalidad que no están funcionando bien. Te voy a pasar el archivo principal y quiero que me pidas uno a uno los demás archivos del plugin para que te hagas una idea de como funciona todo y poder ayudarme con el código. Pídeme todos los archivos incluidos el css y los js. No comentes nada sobre los archivos hasta que no tengas todo. EL archivo principal es este:
+
+
+
+
+Ahora me gustraría añadir una funcionalidad. Querría que las clases tuvieran la posibilidad de tener varias evaluaciones y en cada evaluación sus notas y tareas con su nota final propia de la evaluación. Me gustaría que el usuario pudiera crear las evaluaciones que necesite dentro de la clase y poder cambiar de evaluaciones de una forma fácil tal vez creando un menú en la barra superior o lo que creas que es más accesible. También tendría que haber una evaluación final en cada clase en la que se saca un resumen de las notas finales de todas las evaluaciones. Vamos a implementar esto de la mejor manera posible. Siempre que haya que hacer cambios recuerda pasarme los archivos completos y siempre de uno en uno. ¡Gracias!
