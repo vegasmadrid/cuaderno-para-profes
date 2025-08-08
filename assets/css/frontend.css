@@ -948,3 +948,24 @@ body.cpp-no-text-select {
     font-weight: 700 !important;
 }
 /* --- FIN: Estilos para Notas Suspensas --- */
+
+/* --- INICIO: Estilos para Evaluación Final --- */
+.cpp-evaluacion-final-item .cpp-evaluacion-nombre {
+    font-style: italic;
+    color: #5f6368;
+}
+.cpp-final-eval-tag {
+    font-size: 11px;
+    font-weight: normal;
+    color: #1a73e8;
+    background-color: #e8f0fe;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+.cpp-evaluacion-actions .cpp-btn-icon:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+/* --- FIN: Estilos para Evaluación Final --- */

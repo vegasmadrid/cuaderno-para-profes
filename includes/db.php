@@ -18,6 +18,7 @@ function cpp_crear_tablas() {
         clase_id mediumint(9) UNSIGNED NOT NULL,
         user_id bigint(20) UNSIGNED NOT NULL,
         nombre_evaluacion varchar(100) NOT NULL,
+        tipo varchar(20) DEFAULT 'normal' NOT NULL,
         calculo_nota varchar(20) NOT NULL DEFAULT 'total',
         orden int NOT NULL DEFAULT 0,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,

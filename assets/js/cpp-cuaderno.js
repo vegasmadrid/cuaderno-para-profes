@@ -95,8 +95,11 @@
                             }
                             self.renderEvaluacionesDropdown(response.data.evaluaciones, response.data.evaluacion_activa_id);
                             if (cpp.modals.evaluacion && typeof cpp.modals.evaluacion.toggleSettingsButton === 'function') {
-                                cpp.modals.evaluacion.toggleSettingsButton(true);
+                                // Ocultar el botón de ajustes para la evaluación final, ya que no tiene ponderaciones
+                                cpp.modals.evaluacion.toggleSettingsButton(!response.data.is_final_evaluation);
                             }
+                            // Ocultar el botón de añadir actividad para la evaluación final
+                            $('#cpp-a1-add-activity-btn').toggle(!response.data.is_final_evaluation);
                             if (response.data.nombre_clase && (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function')) { cpp.utils.updateTopBarClassName(response.data.nombre_clase); }
                             if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
 

@@ -11,7 +11,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
 define('CPP_DB_VERSION_OPTION', 'cpp_db_version');
-define('CPP_VERSION', '1.6.0'); // Versión actualizada para la nueva funcionalidad
+define('CPP_VERSION', '1.7.0'); // Versión para la evaluación final automática
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));

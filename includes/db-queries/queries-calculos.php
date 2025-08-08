@@ -12,16 +12,40 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         return 0.00;
     }
 
-    // 1. Obtener el método de cálculo para esta evaluación
+    // --- INICIO LÓGICA MEJORADA ---
+    // 1. Obtener el tipo y método de cálculo para esta evaluación
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
-    $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
+    $evaluacion_actual = $wpdb->get_row($wpdb->prepare("SELECT tipo, calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id), ARRAY_A);
 
-    // Fallback por si la columna no existiera o estuviera vacía
-    if (empty($metodo_calculo)) {
-        $metodo_calculo = 'total';
+    if (!$evaluacion_actual) { return 0.00; }
+
+    $tipo_evaluacion = $evaluacion_actual['tipo'];
+    $metodo_calculo = !empty($evaluacion_actual['calculo_nota']) ? $evaluacion_actual['calculo_nota'] : 'total';
+
+    // 2. Si es de tipo 'final', calcular la media de las otras evaluaciones
+    if ($tipo_evaluacion === 'final') {
+        $evaluaciones_normales = $wpdb->get_results($wpdb->prepare(
+            "SELECT id FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d AND tipo = 'normal'",
+            $clase_id, $user_id
+        ), ARRAY_A);
+
+        if (empty($evaluaciones_normales)) { return 0.00; }
+
+        $suma_notas_finales = 0.0;
+        $num_evaluaciones = count($evaluaciones_normales);
+
+        foreach ($evaluaciones_normales as $eval) {
+            // Llamada recursiva para obtener la nota final (0-100) de cada evaluación normal
+            $suma_notas_finales += cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $eval['id']);
+        }
+
+        $media_final = ($num_evaluaciones > 0) ? ($suma_notas_finales / $num_evaluaciones) : 0.0;
+        return round($media_final, 2);
     }
+    // --- FIN LÓGICA MEJORADA ---
 
-    // 2. Obtener todas las actividades y calificaciones de la evaluación
+
+    // 3. Si es 'normal', proceder con el cálculo basado en actividades
     $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
     if (empty($actividades_raw)) { return 0.00; }
 
@@ -39,7 +63,7 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
     $calificaciones_alumno = []; 
     foreach ($calificaciones_alumno_raw as $cal) { $calificaciones_alumno[$cal['actividad_id']] = $cal['nota']; }
 
-    // 3. Aplicar la lógica de cálculo según el método
+    // 4. Aplicar la lógica de cálculo según el método
     if ($metodo_calculo === 'ponderada') {
         // --- MODO PONDERADO POR CATEGORÍAS ---
         $categorias_evaluacion = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);

@@ -270,12 +270,17 @@
 
             if (evaluaciones && evaluaciones.length > 0) {
                 evaluaciones.forEach(function(evaluacion) {
-                    html += `<li data-evaluacion-id="${evaluacion.id}">
-                                <span class="cpp-drag-handle dashicons dashicons-menu"></span>
-                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
+                    const isFinal = evaluacion.tipo === 'final';
+                    const disabledAttr = isFinal ? 'disabled' : '';
+                    const editTitle = isFinal ? 'La Evaluación Final no se puede editar' : 'Renombrar';
+                    const deleteTitle = isFinal ? 'La Evaluación Final no se puede eliminar' : 'Eliminar';
+
+                    html += `<li data-evaluacion-id="${evaluacion.id}" class="${isFinal ? 'cpp-evaluacion-final-item' : ''}">
+                                <span class="cpp-drag-handle dashicons dashicons-menu" ${isFinal ? 'style="visibility:hidden;"' : ''}></span>
+                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()} ${isFinal ? '<span class="cpp-final-eval-tag">(Final)</span>' : ''}</span>
                                 <div class="cpp-evaluacion-actions">
-                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="Renombrar"><span class="dashicons dashicons-edit"></span></button>
-                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="${editTitle}" ${disabledAttr}><span class="dashicons dashicons-edit"></span></button>
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="${deleteTitle}" ${disabledAttr}><span class="dashicons dashicons-trash"></span></button>
                                 </div>
                              </li>`;
                 });
