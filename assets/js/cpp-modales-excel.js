@@ -32,26 +32,31 @@
 
         triggerDownload: function(event, downloadType) {
             if (event) event.preventDefault();
-            
-            let url = cppFrontendData.ajaxUrl + 
+
+            // Validar que tenemos los datos necesarios antes de construir la URL
+            if (downloadType === 'single_class') {
+                if (!cpp.currentClaseIdCuaderno || !cpp.currentEvaluacionId) {
+                    alert('Por favor, selecciona una clase y asegúrate de que tiene una evaluación cargada para poder exportar.');
+                    return;
+                }
+            }
+
+            let url = cppFrontendData.ajaxUrl +
                         '?action=cpp_download_handler' +
                         '&nonce=' + cppFrontendData.nonce +
                         '&download_type=' + downloadType;
-            // El nombre del archivo ('filename') se genera y maneja completamente en el backend (PHP)
 
             if (downloadType === 'single_class') {
-                if (!cpp.currentClaseIdCuaderno) { 
-                    alert('Por favor, selecciona una clase primero para descargarla.');
-                    return;
-                }
                 url += '&clase_id=' + cpp.currentClaseIdCuaderno;
+                url += '&evaluacion_id=' + cpp.currentEvaluacionId;
             }
+            // Para 'all_classes', no necesitamos IDs específicos, el backend se encargará de obtener todas las clases del usuario.
             
             window.location.href = url;
             
             // Ocultar el modal de opciones después de iniciar la descarga
             if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
-                cpp.modals.general.hideAll(); 
+                cpp.modals.general.hideAll();
             }
         },
 
