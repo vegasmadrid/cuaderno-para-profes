@@ -59,27 +59,51 @@ function cpp_cargar_assets() {
 // Acción para manejar la descarga de Excel (exportación)
 add_action('wp_ajax_cpp_download_handler', 'cpp_trigger_excel_download_handler');
 function cpp_trigger_excel_download_handler() {
-    // 1. Verificar el nonce para seguridad. El nombre 'clase_ppppghjtu...' debe coincidir con el que usas en tu JavaScript.
-    check_ajax_referer('clase_ppppghjtu...', 'nonce');
+    // 1. Verificar nonce y permisos de usuario.
+    if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'cpp_frontend_nonce')) {
+        wp_die('Error de seguridad (nonce).');
+    }
+    if (!is_user_logged_in()) {
+        wp_die('Debes iniciar sesión para descargar.');
+    }
+    $user_id = get_current_user_id();
 
-    // 2. Recoger y limpiar todos los datos que vienen del navegador.
-    $id_curso = isset($_POST['id_curso']) ? intval($_POST['id_curso']) : 0;
-    $id_clase = isset($_POST['id_clase']) ? intval($_POST['id_clase']) : 0;
-    $id_evaluacion = isset($_POST['id_evaluacion']) ? intval($_POST['id_evaluacion']) : 0;
-    $type = isset($_POST['type']) ? sanitize_text_field($_POST['type']) : '';
-    $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
+    // 2. Recoger y sanitizar datos de la URL (GET).
+    $download_type = isset($_GET['download_type']) ? sanitize_text_field($_GET['download_type']) : null;
+    $clase_id = isset($_GET['clase_id']) ? intval($_GET['clase_id']) : null;
+    $evaluacion_id = isset($_GET['evaluacion_id']) ? intval($_GET['evaluacion_id']) : null;
 
-    // 3. Comprobar que tenemos los IDs necesarios antes de continuar.
-    if (empty($id_curso) || empty($id_clase) || empty($id_evaluacion)) {
-        // Si falta algún dato importante, detenemos la ejecución.
-        wp_die('Faltan datos para generar el informe.');
+    // 3. Validar datos necesarios según el tipo de descarga.
+    if ($download_type === 'single_class' && (empty($clase_id) || empty($evaluacion_id))) {
+        wp_die('Faltan datos (clase o evaluación) para generar el archivo.');
+    }
+    if (empty($download_type)) {
+        wp_die('No se ha especificado un tipo de descarga.');
     }
 
-    // 4. Llamar a la función principal del exportador con todos los datos correctos.
-    cpp_generate_excel_for_download($id_curso, $id_clase, $id_evaluacion, $type, $nonce);
+    // 4. Generar nombre de archivo dinámicamente.
+    $filename = 'cuaderno-exportado.xlsx'; // Nombre por defecto
+    if ($download_type === 'single_class') {
+        global $wpdb;
+        $clase_nombre = $wpdb->get_var($wpdb->prepare("SELECT nombre FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+        if ($clase_nombre) {
+            $filename = 'Cuaderno - ' . sanitize_file_name($clase_nombre) . '.xlsx';
+        }
+    } elseif ($download_type === 'all_classes') {
+        $filename = 'Cuaderno - Todas las clases.xlsx';
+    }
 
-    // Es importante terminar la ejecución en las llamadas AJAX.
-    wp_die();
+    // 5. Llamar a la función de exportación con los parámetros correctos.
+    cpp_generate_excel_for_download(
+        $user_id,
+        $clase_id,
+        $download_type,
+        $filename,
+        $evaluacion_id
+    );
+
+    // La función cpp_generate_excel_for_download se encarga de llamar a exit;
+    // por lo que no es necesario wp_die() aquí.
 }
 
 function cpp_migrate_add_default_evaluations() {
