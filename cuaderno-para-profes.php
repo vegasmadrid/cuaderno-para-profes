@@ -57,7 +57,7 @@ function cpp_cargar_assets() {
 }
 
 // Acción para manejar la descarga de Excel (exportación)
-add_action('wp_ajax_cpp_download_excel', 'cpp_trigger_excel_download_handler');
+add_action('wp_ajax_cpp_download_handler', 'cpp_trigger_excel_download_handler');
 function cpp_trigger_excel_download_handler() {
     // 1. Verificar el nonce para seguridad. El nombre 'clase_ppppghjtu...' debe coincidir con el que usas en tu JavaScript.
     check_ajax_referer('clase_ppppghjtu...', 'nonce');

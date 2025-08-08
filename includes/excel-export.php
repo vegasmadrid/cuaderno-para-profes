@@ -76,10 +76,30 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
     header('Cache-Control: cache, must-revalidate'); 
     header('Pragma: public'); 
 
-    $writer = new Xlsx($spreadsheet);
-    ob_start(); 
-    $writer->save('php://output');
-    $excel_output = ob_get_clean(); 
+    // --- INICIA CÓDIGO CORREGIDO ---
+
+// Limpiar cualquier salida de buffer anterior para evitar errores
+if (ob_get_level()) {
+    ob_end_clean();
+}
+
+// Preparar el nombre del archivo
+$filename = 'calificaciones-' . sanitize_title($clase_info['nombre']) . '.xlsx';
+
+// Enviar las cabeceras HTTP para forzar la descarga en el navegador
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment;filename="' . $filename . '"');
+header('Cache-Control: max-age=0');
+
+// Crear el "escritor" de Excel y enviarlo directamente a la salida del navegador
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
+
+// Terminar la ejecución del script inmediatamente.
+// Esto es CRUCIAL para evitar que WordPress añada el "-1" o cualquier otro contenido al archivo.
+exit;
+
+// --- FIN CÓDIGO CORREGIDO ---
 
     if (!empty($excel_output)) {
         echo $excel_output;

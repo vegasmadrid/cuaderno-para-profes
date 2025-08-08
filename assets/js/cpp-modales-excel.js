@@ -34,7 +34,7 @@
             if (event) event.preventDefault();
             
             let url = cppFrontendData.ajaxUrl + 
-                        '?action=cpp_download_excel' +
+                        '?action=cpp_download_handler' +
                         '&nonce=' + cppFrontendData.nonce +
                         '&download_type=' + downloadType;
             // El nombre del archivo ('filename') se genera y maneja completamente en el backend (PHP)
