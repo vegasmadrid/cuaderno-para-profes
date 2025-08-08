@@ -52,6 +52,7 @@ function cpp_crear_tablas() {
         nombre varchar(100) NOT NULL,
         color varchar(7) DEFAULT '#FFFFFF' NOT NULL, 
         base_nota_final decimal(5,2) DEFAULT 100.00 NOT NULL,
+        nota_minima decimal(5,2) DEFAULT 5.00 NOT NULL,
         orden INT NOT NULL DEFAULT 0,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),

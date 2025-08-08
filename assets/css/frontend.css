@@ -940,3 +940,11 @@ body.cpp-no-text-select {
 }
 
 /* --- FIN: Estilos para Gestión de Evaluaciones en Modal --- */
+
+/* --- INICIO: Estilos para Notas Suspensas --- */
+.cpp-nota-suspensa {
+    background-color: #fce8e6 !important;
+    color: #a50e0e !important;
+    font-weight: 700 !important;
+}
+/* --- FIN: Estilos para Notas Suspensas --- */

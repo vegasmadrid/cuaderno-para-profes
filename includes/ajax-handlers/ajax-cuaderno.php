@@ -16,7 +16,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
 
     global $wpdb;
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
-    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final, nota_minima FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
@@ -147,7 +147,8 @@ function cpp_ajax_cargar_cuaderno_clase() {
     wp_send_json_success([
         'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db->nombre, 'evaluaciones' => $evaluaciones,
         'evaluacion_activa_id' => $evaluacion_activa_id, 'calculo_nota' => $metodo_calculo,
-        'base_nota_final' => $base_nota_final_clase
+        'base_nota_final' => $base_nota_final_clase,
+        'nota_minima' => isset($clase_db->nota_minima) ? floatval($clase_db->nota_minima) : 5.0
     ]);
 }
 
@@ -235,16 +236,24 @@ function cpp_ajax_guardar_calificacion_alumno() {
     $resultado_guardado = cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota_a_guardar, $user_id);
     if ($resultado_guardado === false) { wp_send_json_error(['data' => ['message' => 'Error al guardar la calificación. Verifique que la nota no excede la máxima.']]); return; }
     global $wpdb;
-    $clase_info = $wpdb->get_row($wpdb->prepare("SELECT act.clase_id, c.base_nota_final FROM {$wpdb->prefix}cpp_actividades_evaluables act JOIN {$wpdb->prefix}cpp_clases c ON act.clase_id = c.id WHERE act.id = %d AND act.user_id = %d", $actividad_id, $user_id ));
+    $clase_info = $wpdb->get_row($wpdb->prepare("SELECT act.clase_id, c.base_nota_final, c.nota_minima FROM {$wpdb->prefix}cpp_actividades_evaluables act JOIN {$wpdb->prefix}cpp_clases c ON act.clase_id = c.id WHERE act.id = %d AND act.user_id = %d", $actividad_id, $user_id ));
     if (!$clase_info) { wp_send_json_error(['data' => ['message' => 'Error al obtener datos de la clase para recalcular.']]); return; }
     $clase_id = $clase_info->clase_id;
     $base_nota_final_clase = floatval($clase_info->base_nota_final);
     if ($base_nota_final_clase <= 0) { $base_nota_final_clase = 100.00; }
+    $nota_minima = floatval($clase_info->nota_minima);
+
     $nota_final_alumno_0_100 = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
     $nota_final_reescalada = ($nota_final_alumno_0_100 / 100) * $base_nota_final_clase;
     $decimales_nota_final = 2;
     if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) { $decimales_nota_final = 0; }
-    wp_send_json_success([ 'message' => 'Calificación guardada.', 'alumno_id' => $alumno_id, 'nota_final_alumno' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final) ]);
+    wp_send_json_success([
+        'message' => 'Calificación guardada.',
+        'alumno_id' => $alumno_id,
+        'nota_final_alumno_raw' => $nota_final_reescalada,
+        'nota_final_alumno_formateada' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final),
+        'nota_minima' => $nota_minima
+    ]);
 }
 
 add_action('wp_ajax_cpp_eliminar_actividad', 'cpp_ajax_eliminar_actividad');

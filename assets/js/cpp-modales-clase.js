@@ -121,6 +121,7 @@
                         $classSwatchesContainer.find(`.cpp-color-swatch[data-color="${colorParaSeleccionar.toUpperCase()}"]`).addClass('selected');
 
                         $form.find('#base_nota_final_clase_modal').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
+                        $form.find('#nota_minima_clase_modal').val(clase.nota_minima ? parseFloat(clase.nota_minima).toFixed(2) : '5.00');
                         $modal.find('#cpp-modal-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
                         $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
@@ -150,6 +151,7 @@
             const esEdicion = claseIdEditar && claseIdEditar !== '';
             const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
+            const notaMinimaClase = $form.find('[name="nota_minima_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
 
             if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
@@ -158,13 +160,19 @@
             if (baseNotaFinalClase === '' || isNaN(baseNotaNumerica) || baseNotaNumerica <= 0) {
                 alert('Por favor, introduce un valor numérico positivo para la Base de Nota Final.'); return;
             }
+            const notaMinimaNumerica = parseFloat(notaMinimaClase.replace(',', '.'));
+            if (notaMinimaClase === '' || isNaN(notaMinimaNumerica) || notaMinimaNumerica < 0) {
+                alert('Por favor, introduce un valor numérico válido para la Nota Mínima.'); return;
+            }
+
             const btnTextProcesando = esEdicion ? 'Actualizando...' : 'Guardando...';
             const btnTextOriginal = esEdicion ? '<span class="dashicons dashicons-edit"></span> Actualizar Clase' : '<span class="dashicons dashicons-saved"></span> Guardar Clase';
             $btn.prop('disabled', true).html(`<span class="dashicons dashicons-update dashicons-spin"></span> ${btnTextProcesando}`);
             const ajaxData = {
                 action: 'cpp_crear_clase', nonce: cppFrontendData.nonce,
                 clase_id_editar: claseIdEditar, nombre_clase: nombreClase,
-                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2) 
+                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2),
+                nota_minima_clase: notaMinimaNumerica.toFixed(2)
             };
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,

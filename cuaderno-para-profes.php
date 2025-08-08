@@ -10,7 +10,8 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.5.1');
+define('CPP_DB_VERSION_OPTION', 'cpp_db_version');
+define('CPP_VERSION', '1.6.0'); // Versión actualizada para la nueva funcionalidad
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -24,8 +25,23 @@ require_once CPP_PLUGIN_DIR . 'includes/ajax.php';
 require_once CPP_PLUGIN_DIR . 'includes/excel-export.php'; 
 require_once CPP_PLUGIN_DIR . 'includes/excel-import.php';
 
-// Crear tablas al activar
+// Crear tablas al activar y manejar actualizaciones
 register_activation_hook(__FILE__, 'cpp_crear_tablas');
+
+function cpp_update_check() {
+    $current_version = get_option(CPP_DB_VERSION_OPTION);
+    if ($current_version != CPP_VERSION) {
+        // dbDelta es seguro para ejecutarse varias veces y añadirá las columnas que falten.
+        cpp_crear_tablas();
+
+        // Aquí se pueden añadir otras funciones de migración específicas si son necesarias en el futuro.
+
+        // Actualizar la versión en la base de datos a la versión actual del plugin.
+        update_option(CPP_DB_VERSION_OPTION, CPP_VERSION);
+    }
+}
+add_action('plugins_loaded', 'cpp_update_check');
+
 
 // Cargar assets
 add_action('wp_enqueue_scripts', 'cpp_cargar_assets');
