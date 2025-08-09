@@ -969,3 +969,44 @@ body.cpp-no-text-select {
     opacity: 0.5;
 }
 /* --- FIN: Estilos para Evaluación Final --- */
+
+/* --- INICIO: Estilos para Pantalla de Bienvenida (Sin Clases) --- */
+.cpp-welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    height: 100%;
+    background-color: #f8f9fa;
+}
+.cpp-welcome-title {
+    font-size: 28px;
+    font-weight: 500;
+    color: #1a73e8;
+    margin-bottom: 12px;
+}
+.cpp-welcome-subtitle {
+    font-size: 16px;
+    color: #5f6368;
+    max-width: 450px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+.cpp-btn-lg {
+    padding: 0 24px;
+    height: 48px;
+    font-size: 16px;
+}
+#cpp-btn-crear-primera-clase .dashicons {
+    font-size: 22px;
+    animation: cpp-sparkle-animation 2s infinite;
+}
+
+@keyframes cpp-sparkle-animation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+/* --- FIN: Estilos para Pantalla de Bienvenida --- */

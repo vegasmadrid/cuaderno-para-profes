@@ -72,11 +72,17 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <div id="cpp-cuaderno-tabla-area"> 
                 <div id="cpp-cuaderno-contenido">
                     <?php if (empty($clases)): ?>
-                        <div class="cpp-cuaderno-mensaje-vacio">
-                            <p class="cpp-mensaje">No tienes clases creadas. Por favor, crea una clase primero para usar el cuaderno.</p>
+                        <div class="cpp-welcome-screen">
+                            <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno para Profes!</h2>
+                            <p class="cpp-welcome-subtitle">Parece que este es tu primer viaje. ¿Listo para organizar tu universo de clases?</p>
+                            <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
+                                <span class="dashicons dashicons-sparkles"></span> Crear mi primera clase
+                            </button>
                         </div>
                     <?php else: ?>
-                        <p class="cpp-cuaderno-cargando">Cargando clase...</p> 
+                        <div class="cpp-cuaderno-mensaje-vacio">
+                            <p class="cpp-cuaderno-cargando">Cargando clase...</p>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
