@@ -94,10 +94,15 @@ const cpp = {
         const $ = jQuery; 
 
         if ($('.cpp-cuaderno-viewport-classroom').length === 0) {
-            $('html, body').removeClass('cpp-plugin-active');
-            $('body').removeClass('cpp-cuaderno-page-active');
+            return; // No estamos en la página del cuaderno
+        }
+
+        // Si la pantalla de bienvenida se muestra (renderizada por PHP), no hacemos nada más.
+        if ($('.cpp-welcome-screen').length > 0) {
+            console.log("CPP Core: Pantalla de bienvenida detectada. La inicialización de la vista del cuaderno se detiene aquí.");
             return;
         }
+
         console.log("CPP Core: initializeCuadernoView ejecutándose...");
         $('html, body').addClass('cpp-plugin-active'); 
         $('body').addClass('cpp-cuaderno-page-active');
@@ -107,54 +112,49 @@ const cpp = {
         let $itemToActivate = null;
         const $clasesSidebarItems = $('.cpp-sidebar-clases-list .cpp-sidebar-clase-item');
 
+        // Si no hay clases en la barra lateral, no hay nada que cargar.
+        if ($clasesSidebarItems.length === 0) {
+            console.warn("CPP Core: No hay clases en la barra lateral para cargar.");
+            return;
+        }
+
+        // 1. Intentar cargar la última clase abierta desde localStorage
         if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') {
             const lastOpenedClaseId = localStorage.getItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId);
             if (lastOpenedClaseId) {
                 $itemToActivate = $clasesSidebarItems.filter(`[data-clase-id="${lastOpenedClaseId}"]`);
                 if ($itemToActivate.length > 0) {
                     claseIdToLoad = lastOpenedClaseId;
-                    claseNombreToLoad = $itemToActivate.data('clase-nombre');
-                    const baseNotaFinal = $itemToActivate.data('base-nota-final');
-                    if (typeof baseNotaFinal !== 'undefined') {
-                        cpp.currentBaseNotaFinal = parseFloat(baseNotaFinal) || 100; 
-                    }
                 } else {
+                    // La clase guardada ya no existe, limpiar localStorage
                     localStorage.removeItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId);
                 }
             }
         }
 
-        if (!claseIdToLoad && $clasesSidebarItems.length > 0) {
+        // 2. Si no hay última clase guardada, cargar la primera de la lista
+        if (!claseIdToLoad) {
             $itemToActivate = $clasesSidebarItems.first();
             claseIdToLoad = $itemToActivate.data('clase-id');
-            claseNombreToLoad = $itemToActivate.data('clase-nombre');
-            const baseNotaFinal = $itemToActivate.data('base-nota-final');
-            if (typeof baseNotaFinal !== 'undefined') {
-                cpp.currentBaseNotaFinal = parseFloat(baseNotaFinal) || 100; 
-            }
         }
 
+        // 3. Si se ha determinado una clase para cargar, proceder
         if (claseIdToLoad && $itemToActivate && $itemToActivate.length > 0) {
+            claseNombreToLoad = $itemToActivate.data('clase-nombre');
             console.log("CPP Core: Clase inicial a cargar ID:", claseIdToLoad);
+
             $clasesSidebarItems.removeClass('cpp-sidebar-item-active');
             $itemToActivate.addClass('cpp-sidebar-item-active');
             
             if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
-                // Pasamos null como tercer parámetro para que el backend cargue la primera evaluación por defecto.
                 cpp.gradebook.cargarContenidoCuaderno(claseIdToLoad, claseNombreToLoad, null);
             } else {
                  console.error("CPP Core: cpp.gradebook.cargarContenidoCuaderno NO ESTÁ DEFINIDO. El cuaderno no se cargará.");
                  $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Módulo del cuaderno no cargado.</p></div>');
             }
-        } else if ($clasesSidebarItems.length === 0) {
-            console.log("CPP Core: No hay clases, mostrando mensaje.");
-            $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-mensaje">No tienes clases creadas.</p></div>');
-            if (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function') {
-                cpp.utils.updateTopBarClassName('Cuaderno');
-            }
         } else {
-            console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
-            $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');
+            // Este caso ahora solo debería ocurrir si hay un error extraño, como clases en la lista pero sin data-clase-id.
+            console.warn("CPP Core: No se pudo determinar una clase válida para cargar.");
         }
     }
 };
