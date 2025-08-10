@@ -1,7 +1,7 @@
 <?php
 
 /*
-Plugin Name: Cuaderno para Profesores
+Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
 Version: 1.5.1
 Author: Javier Vegas Serrano

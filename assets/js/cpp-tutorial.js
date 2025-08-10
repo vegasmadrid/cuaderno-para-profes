@@ -116,7 +116,10 @@
             if (this.currentStep + 1 < this.steps.length) {
                 this.currentStep++;
                 localStorage.setItem('cpp_tutorial_step', this.currentStep);
-                this.showStep(this.currentStep);
+                // Añadimos un pequeño delay para dar tiempo a la UI a reaccionar (ej. modales apareciendo)
+                setTimeout(() => {
+                    this.showStep(this.currentStep);
+                }, 150);
             } else {
                 this.end();
             }

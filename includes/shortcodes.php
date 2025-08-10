@@ -73,7 +73,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <div id="cpp-cuaderno-contenido">
                     <?php if (empty($clases)): ?>
                         <div class="cpp-welcome-screen" id="cpp-welcome-box">
-                            <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno para Profes!</h2>
+                            <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno de profe!</h2>
                             <p class="cpp-welcome-subtitle">Parece que este es tu primer viaje. ¿Listo para organizar tu universo de clases?</p>
                             <div class="cpp-welcome-actions">
                                 <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">

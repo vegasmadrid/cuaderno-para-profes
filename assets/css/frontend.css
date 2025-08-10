@@ -178,10 +178,37 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     position: relative; background-color: #fff; border: none;
     cursor: default;
 }
-.cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando {
-    display: flex; justify-content: center; align-items: center;
-    min-height: 200px; font-size: 15px;
-    color: #6c757d; padding: 20px;
+.cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando, .cpp-welcome-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    text-align: center;
+    padding: 20px;
+}
+
+.cpp-welcome-screen {
+    background-color: #f8f9fa;
+    color: #3c4043;
+}
+
+.cpp-welcome-title {
+    font-size: 28px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.cpp-welcome-subtitle {
+    font-size: 16px;
+    color: #5f6368;
+    margin-bottom: 24px;
+    max-width: 450px;
+}
+
+.cpp-welcome-actions {
+    display: flex;
+    gap: 15px;
 }
 
 /* Tabla Principal del Cuaderno */
