@@ -41,9 +41,11 @@
                 content: '¡Ya tienes tu primera clase! Ahora, vamos a meter a tus alumnos en ella desde este botón.',
                 placement: 'right',
                 trigger: { event: 'click', selector: '.cpp-sidebar-clase-alumnos-btn' },
-                onShow: function() {
+                onShow: function(callback) {
                     if (cpp.sidebar && !cpp.sidebar.isSidebarVisible) {
-                        cpp.sidebar.toggle();
+                        cpp.sidebar.toggle(callback); // Pasamos el callback a la función toggle
+                    } else {
+                        callback(); // Si ya está visible, ejecutamos el callback inmediatamente
                     }
                 }
             },
@@ -165,53 +167,57 @@
             }
 
             const step = this.steps[stepIndex];
+            const self = this;
 
-            // Ejecutar el callback onShow si existe, antes de buscar el target
-            if (typeof step.onShow === 'function') {
-                step.onShow();
-            }
+            // Función que renderiza el popover y el highlight
+            const renderStep = function() {
+                const $target = $(step.target);
 
-            const $target = $(step.target);
+                if (!$target.length || !$target.is(':visible')) {
+                    console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
+                    setTimeout(() => {
+                        if (self.isActive && self.currentStep === stepIndex) {
+                            self.showStep(stepIndex);
+                        }
+                    }, 300);
+                    return;
+                }
 
-            // Retry mechanism for dynamic elements
-            if (!$target.length || !$target.is(':visible')) {
-                console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
-                setTimeout(() => {
-                    if (this.isActive && this.currentStep === stepIndex) {
-                        this.showStep(stepIndex);
-                    }
-                }, 300);
-                return;
-            }
+                $('body').append('<div class="cpp-tutorial-popover"></div>');
+                const $popover = $('.cpp-tutorial-popover');
+                let popoverContent = `<div class="cpp-tutorial-content">${step.content}</div>`;
+                popoverContent += `<div class="cpp-tutorial-nav"><button type="button" class="cpp-tutorial-end-btn">Saltar Tour</button></div>`;
+                $popover.html(popoverContent).attr('data-placement', step.placement);
 
-            $('body').append('<div class="cpp-tutorial-popover"></div>');
-            const $popover = $('.cpp-tutorial-popover');
-            let popoverContent = `<div class="cpp-tutorial-content">${step.content}</div>`;
-            popoverContent += `<div class="cpp-tutorial-nav"><button type="button" class="cpp-tutorial-end-btn">Saltar Tour</button></div>`;
-            $popover.html(popoverContent).attr('data-placement', step.placement);
+                $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
+                const $highlight = $('.cpp-tutorial-highlight-overlay');
+                const targetOffset = $target.offset();
+                const targetWidth = $target.outerWidth();
+                const targetHeight = $target.outerHeight();
 
-            $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
-            const $highlight = $('.cpp-tutorial-highlight-overlay');
-            const targetOffset = $target.offset();
-            const targetWidth = $target.outerWidth();
-            const targetHeight = $target.outerHeight();
-
-            $highlight.css({
-                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-                zIndex: 10000,
-                boxShadow: `0 0 0 9999px rgba(0,0,0,0.5)`,
-                'clip-path': `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px)`,
-                pointerEvents: 'none'
-            });
-
-            $popover.css({pointerEvents: 'auto'});
-            this.positionPopover($popover, $target);
-
-            // Listen for the trigger for the *current* step
-            if (step.trigger && step.trigger.selector && step.trigger.event) {
-                $(document).one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
-                    this.advance(stepIndex);
+                $highlight.css({
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    zIndex: 10000,
+                    boxShadow: `0 0 0 9999px rgba(0,0,0,0.5)`,
+                    'clip-path': `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px)`,
+                    pointerEvents: 'none'
                 });
+
+                $popover.css({pointerEvents: 'auto'});
+                self.positionPopover($popover, $target);
+
+                if (step.trigger && step.trigger.selector && step.trigger.event) {
+                    $(document).one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
+                        self.advance(stepIndex);
+                    });
+                }
+            };
+
+            // Ejecutar el callback onShow si existe, y pasarle renderStep como el callback
+            if (typeof step.onShow === 'function') {
+                step.onShow(renderStep);
+            } else {
+                renderStep(); // Si no hay onShow, renderizar directamente
             }
         },
 
