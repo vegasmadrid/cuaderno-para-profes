@@ -12,77 +12,87 @@
         isActive: false,
         currentStep: 0,
         steps: [
-            { // 0
+            { // 0: Start
                 target: '#cpp-btn-crear-primera-clase',
-                content: '¡Bienvenido/a! Para empezar, pulsa aquí para crear tu primera clase.',
+                content: '¡Bienvenido/a al <strong>Cuaderno de profe</strong>! Para empezar, pulsa aquí para crear tu primera clase.',
                 placement: 'bottom',
-                requiresInteraction: true
+                trigger: { event: 'click', selector: '#cpp-btn-crear-primera-clase' }
             },
-            { // 1
+            { // 1: Name the class
                 target: '#cpp-modal-clase #nombre_clase_modal',
-                content: 'Introduce un nombre para tu clase. Por ejemplo, "Mates 1ºA" o "Historia".',
-                placement: 'top'
-            },
-            { // 2
-                target: '#cpp-modal-clase #cpp-submit-clase-btn-modal',
-                content: 'Una vez que hayas puesto el nombre, haz clic aquí para guardar la clase. ¡Ya casi estamos!',
-                placement: 'top',
-                requiresInteraction: true
-            },
-            { // 3: Después de recargar la página
-                target: '.cpp-sidebar-clase-alumnos-btn',
-                content: '¡Genial! Tu clase está creada. Ahora, vamos a añadir a tu primer alumno usando este botón.',
+                content: 'Dale un nombre a tu clase. Cuando empieces a escribir, continuará el tour.',
                 placement: 'right',
-                requiresInteraction: true
+                trigger: { event: 'input', selector: '#cpp-modal-clase #nombre_clase_modal' }
             },
-            { // 4: Dentro del modal de alumnos
+            { // 2: Choose a color
+                target: '#cpp-modal-clase .cpp-color-swatches-container',
+                content: '¡Genial! Ahora, si quieres, puedes elegir un color para identificar la clase.',
+                placement: 'right',
+                trigger: { event: 'click', selector: '#cpp-modal-clase .cpp-color-swatch' }
+            },
+            { // 3: Save the class
+                target: '#cpp-modal-clase #cpp-submit-clase-btn-modal',
+                content: 'Perfecto. Haz clic aquí para guardar tu nueva clase. La página se recargará.',
+                placement: 'top',
+                trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' }
+            },
+            { // 4: After reload, manage students
+                target: '.cpp-sidebar-clase-alumnos-btn',
+                content: '¡Clase creada! Ahora, vamos a añadir a tu primer alumno usando este botón.',
+                placement: 'right',
+                trigger: { event: 'click', selector: '.cpp-sidebar-clase-alumnos-btn' }
+            },
+            { // 5: Click "Add New Student"
                 target: '#cpp-nuevo-alumno-btn',
-                content: 'Estupendo. Ahora, haz clic aquí para abrir el formulario y añadir un nuevo alumno.',
+                content: 'Estupendo. Ahora, haz clic aquí para abrir el formulario de nuevo alumno.',
                 placement: 'top',
-                requiresInteraction: true
+                trigger: { event: 'click', selector: '#cpp-nuevo-alumno-btn' }
             },
-            { // 5: Formulario de alumno visible
+            { // 6: Type student name
                 target: '#cpp-form-nuevo-alumno [name="nombre_alumno"]',
-                content: 'Introduce el nombre y apellidos de tu alumno.',
-                placement: 'top'
-            },
-            { // 6
-                target: '#cpp-form-nuevo-alumno #cpp-submit-alumno-btn',
-                content: 'Ahora, guarda el alumno. La lista se actualizará automáticamente.',
+                content: 'Introduce el nombre y apellidos de tu alumno. El tour continuará al escribir.',
                 placement: 'top',
-                requiresInteraction: true
+                trigger: { event: 'input', selector: '#cpp-form-nuevo-alumno [name="nombre_alumno"]' }
             },
-            { // 7: Lista de alumnos actualizada
+            { // 7: Save student
+                target: '#cpp-form-nuevo-alumno #cpp-submit-alumno-btn',
+                content: 'Ahora, guarda el alumno. La lista se actualizará.',
+                placement: 'top',
+                trigger: { event: 'click', selector: '#cpp-form-nuevo-alumno #cpp-submit-alumno-btn' }
+            },
+            { // 8: Close student modal
                 target: '#cpp-modal-alumnos .cpp-modal-close',
                 content: '¡Alumno añadido! Cierra esta ventana para volver al cuaderno.',
                 placement: 'bottom',
-                requiresInteraction: true
+                trigger: { event: 'click', selector: '#cpp-modal-alumnos .cpp-modal-close' }
             },
-            { // 8: De vuelta en el cuaderno
+            { // 9: Add activity
                 target: '#cpp-a1-add-activity-btn',
-                content: 'Es hora de crear la primera actividad o examen. Haz clic aquí.',
+                content: 'De vuelta al cuaderno. Es hora de crear la primera actividad o examen. Haz clic aquí.',
                 placement: 'bottom',
-                requiresInteraction: true
+                trigger: { event: 'click', selector: '#cpp-a1-add-activity-btn' }
             },
-            { // 9: En el modal de actividad
+            { // 10: Type activity name
                 target: '#cpp-modal-actividad-evaluable-cuaderno #nombre_actividad_cuaderno_input',
-                content: "Dale un nombre a tu actividad, como 'Examen Tema 1' o 'Deberes'.",
-                placement: 'top'
+                content: "Dale un nombre a tu actividad, como 'Examen Tema 1'.",
+                placement: 'top',
+                trigger: { event: 'input', selector: '#cpp-modal-actividad-evaluable-cuaderno #nombre_actividad_cuaderno_input' }
             },
-            { // 10
+            { // 11: Save activity
                 target: '#cpp-modal-actividad-evaluable-cuaderno #cpp-submit-actividad-btn-cuaderno-form',
                 content: 'Guarda la actividad para añadirla al cuaderno.',
                 placement: 'top',
-                requiresInteraction: true
+                trigger: { event: 'click', selector: '#cpp-modal-actividad-evaluable-cuaderno #cpp-submit-actividad-btn-cuaderno-form' }
             },
-            { // 11: De vuelta en el cuaderno, con la actividad creada
+            { // 12: Enter a grade
                 target: 'td.cpp-celda-calificacion:first .cpp-calificacion-input',
-                content: '¡Ya lo tienes! Ahora solo tienes que hacer clic aquí para introducir una nota. El cuaderno guardará los cambios automáticamente.',
-                placement: 'top'
+                content: '¡Ya lo tienes! Haz clic aquí e introduce una nota. El cuaderno guardará los cambios automáticamente. ¡Esto es lo último!',
+                placement: 'top',
+                trigger: { event: 'focus', selector: 'td.cpp-celda-calificacion:first .cpp-calificacion-input' }
             },
-            { // 12: Final
+            { // 13: Final summary
                 target: '#cpp-cuaderno-header',
-                content: '¡Enhorabuena! Ya dominas lo básico. Explora los botones de la cabecera para descubrir más funciones. ¡Disfruta del plugin!',
+                content: '¡Enhorabuena! Ya dominas lo básico. Puedes saltar el tour en cualquier momento con el botón. ¡Disfruta del plugin!',
                 placement: 'bottom'
             }
         ],
@@ -99,6 +109,7 @@
 
         start: function() {
             if (this.isActive) return;
+            console.log("Tutorial: Iniciando...");
             this.isActive = true;
             this.currentStep = 0;
             localStorage.setItem('cpp_tutorial_step', '0');
@@ -107,35 +118,41 @@
 
         resumeAt: function(step) {
             if (this.isActive || !this.steps[step]) return;
+            console.log(`Tutorial: Reanudando en el paso ${step}`);
             this.isActive = true;
             this.currentStep = step;
             this.showStep(this.currentStep);
         },
 
-        nextStep: function() {
-            if (this.currentStep + 1 < this.steps.length) {
-                this.currentStep++;
-                localStorage.setItem('cpp_tutorial_step', this.currentStep);
-                // Añadimos un pequeño delay para dar tiempo a la UI a reaccionar (ej. modales apareciendo)
-                setTimeout(() => {
-                    this.showStep(this.currentStep);
-                }, 150);
-            } else {
+        advance: function(expectedStep) {
+            if (!this.isActive || this.currentStep !== expectedStep) {
+                return;
+            }
+            console.log(`Tutorial: Avanzando desde el paso ${expectedStep}`);
+            this.currentStep++;
+            localStorage.setItem('cpp_tutorial_step', this.currentStep);
+
+            if (this.currentStep >= this.steps.length) {
                 this.end();
+            } else {
+                this.showStep(this.currentStep);
             }
         },
 
         end: function() {
+            console.log("Tutorial: Finalizando.");
             this.isActive = false;
             this.currentStep = 0;
             localStorage.removeItem('cpp_tutorial_step');
             $('.cpp-tutorial-highlight-overlay').remove();
             $('.cpp-tutorial-popover').remove();
+            $(document).off('.cppTutorial');
         },
 
         showStep: function(stepIndex) {
             $('.cpp-tutorial-highlight-overlay').remove();
             $('.cpp-tutorial-popover').remove();
+            $(document).off('.cppTutorial');
 
             if (!this.isActive || !this.steps[stepIndex]) {
                 this.end();
@@ -145,28 +162,21 @@
             const step = this.steps[stepIndex];
             const $target = $(step.target);
 
+            // Retry mechanism for dynamic elements
             if (!$target.length || !$target.is(':visible')) {
-                console.warn(`Tutorial: El elemento target '${step.target}' para el paso ${stepIndex} no está visible o no existe. Finalizando tutorial.`);
-                this.end();
+                console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
+                setTimeout(() => {
+                    if (this.isActive && this.currentStep === stepIndex) {
+                        this.showStep(stepIndex);
+                    }
+                }, 300);
                 return;
             }
 
             $('body').append('<div class="cpp-tutorial-popover"></div>');
-
             const $popover = $('.cpp-tutorial-popover');
             let popoverContent = `<div class="cpp-tutorial-content">${step.content}</div>`;
-            popoverContent += `<div class="cpp-tutorial-nav">`;
-            if (step.requiresInteraction) {
-                 popoverContent += `<button type="button" class="cpp-tutorial-end-btn">Saltar Tour</button>`;
-            } else {
-                 if (stepIndex === this.steps.length - 1) {
-                    popoverContent += `<button type="button" class="cpp-tutorial-end-btn">Finalizar</button>`;
-                 } else {
-                    popoverContent += `<button type="button" class="cpp-tutorial-end-btn">Terminar</button>`;
-                    popoverContent += `<button type="button" class="cpp-tutorial-next-btn">Siguiente &rarr;</button>`;
-                 }
-            }
-            popoverContent += `</div>`;
+            popoverContent += `<div class="cpp-tutorial-nav"><button type="button" class="cpp-tutorial-end-btn">Saltar Tour</button></div>`;
             $popover.html(popoverContent).attr('data-placement', step.placement);
 
             $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
@@ -176,28 +186,35 @@
             const targetHeight = $target.outerHeight();
 
             $highlight.css({
-                position: 'fixed',
-                top: 0, left: 0, width: '100%', height: '100%',
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
                 zIndex: 10000,
                 boxShadow: `0 0 0 9999px rgba(0,0,0,0.5)`,
-                'clip-path': `polygon(
-                    0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
-                    ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px,
-                    ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY}px,
-                    ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY + targetHeight}px,
-                    ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY + targetHeight}px,
-                    ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px
-                )`,
+                'clip-path': `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px)`,
                 pointerEvents: 'none'
             });
 
             $popover.css({pointerEvents: 'auto'});
+            this.positionPopover($popover, $target);
 
+            // Listen for the trigger for the *current* step
+            if (step.trigger && step.trigger.selector && step.trigger.event) {
+                $(document).one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
+                    this.advance(stepIndex);
+                });
+            }
+        },
+
+        positionPopover: function($popover, $target) {
+            // This function needs to be called after the popover is added to the DOM to measure its dimensions
+            const targetOffset = $target.offset();
+            const targetWidth = $target.outerWidth();
+            const targetHeight = $target.outerHeight();
             const popoverHeight = $popover.outerHeight();
             const popoverWidth = $popover.outerWidth();
             let popoverTop, popoverLeft;
+            const placement = $popover.attr('data-placement') || 'bottom';
 
-            switch (step.placement) {
+            switch (placement) {
                 case 'top':
                     popoverTop = targetOffset.top - popoverHeight - 15;
                     popoverLeft = targetOffset.left + (targetWidth / 2) - (popoverWidth / 2);
@@ -223,7 +240,6 @@
         },
 
         bindEvents: function() {
-            $('body').on('click', '.cpp-tutorial-next-btn', (e) => { e.preventDefault(); this.nextStep(); });
             $('body').on('click', '.cpp-tutorial-end-btn', (e) => { e.preventDefault(); this.end(); });
         }
     };

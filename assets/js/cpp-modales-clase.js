@@ -70,13 +70,7 @@
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
             
-            $modal.fadeIn(function() {
-                $(this).find('#nombre_clase_modal').focus();
-                // Hook para el tutorial: se ejecuta DESPUÉS de que el modal es visible.
-                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 0) {
-                    cpp.tutorial.nextStep();
-                }
-            });
+            $modal.fadeIn().find('#nombre_clase_modal').focus();
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
@@ -150,14 +144,6 @@
         
         guardar: function(eventForm) { 
             eventForm.preventDefault(); 
-
-            // Hook para el tutorial
-            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
-                // No llamamos a nextStep() porque la página se va a recargar.
-                // Simplemente preparamos el localStorage para que el tutorial continúe después.
-                localStorage.setItem('cpp_tutorial_step', 3);
-            }
-
             const $form = $(eventForm.target); 
             const $btn = $form.find('button[type="submit"]');
             const claseIdEditar = $form.find('#clase_id_editar').val();
@@ -165,6 +151,10 @@
             const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
+
+            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                localStorage.setItem('cpp_tutorial_step', 4); // Preparar para el siguiente paso después de recargar
+            }
 
             if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
             if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
@@ -186,15 +176,15 @@
                     if (response.success) {
                         window.location.reload();
                     } else {
-                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
-                           localStorage.setItem('cpp_tutorial_step', 2);
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                           localStorage.setItem('cpp_tutorial_step', 3); // Revertir si falla
                         }
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
                     }
                 },
                 error: function() {
-                    if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
-                       localStorage.setItem('cpp_tutorial_step', 2);
+                    if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                       localStorage.setItem('cpp_tutorial_step', 3); // Revertir si falla
                     }
                     alert('Error de conexión.');
                 },
