@@ -13,19 +13,9 @@
         localStorageKey_enterDirection: 'cpp_enter_key_direction_user_', 
         localStorageKey_lastEval: 'cpp_last_opened_eval_clase_',
         currentCalculoNota: 'total',
-        currentNotaMinima: 5.0,
         isDraggingSelection: false,
         selectionStartCellInput: null,
         currentSelectedInputs: [],
-
-        checkAndHighlightGrade: function($cell, grade, passingGrade) {
-            const numericGrade = parseFloat(String(grade).replace(',', '.'));
-            if (!isNaN(numericGrade) && numericGrade < passingGrade) {
-                $cell.addClass('cpp-nota-suspensa');
-            } else {
-                $cell.removeClass('cpp-nota-suspensa');
-            }
-        },
 
         init: function() {
             console.log("CPP Gradebook Module Initializing...");
@@ -88,28 +78,15 @@
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
-                            self.currentNotaMinima = parseFloat(response.data.nota_minima) || 5.0;
-
                             if (typeof localStorage !== 'undefined' && cpp.currentClaseIdCuaderno && cpp.currentEvaluacionId) {
                                 localStorage.setItem(self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
                             }
                             self.renderEvaluacionesDropdown(response.data.evaluaciones, response.data.evaluacion_activa_id);
                             if (cpp.modals.evaluacion && typeof cpp.modals.evaluacion.toggleSettingsButton === 'function') {
-                                // Ocultar el botón de ajustes para la evaluación final, ya que no tiene ponderaciones
-                                cpp.modals.evaluacion.toggleSettingsButton(!response.data.is_final_evaluation);
+                                cpp.modals.evaluacion.toggleSettingsButton(true);
                             }
-                            // Ocultar el botón de añadir actividad para la evaluación final
-                            $('#cpp-a1-add-activity-btn').toggle(!response.data.is_final_evaluation);
                             if (response.data.nombre_clase && (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function')) { cpp.utils.updateTopBarClassName(response.data.nombre_clase); }
                             if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
-
-                            // Recorrer las notas finales y aplicar resaltado
-                            $('.cpp-cuaderno-td-final').each(function() {
-                                const $cell = $(this);
-                                const grade = $cell.text();
-                                self.checkAndHighlightGrade($cell, grade, self.currentNotaMinima);
-                            });
-
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
                             self.updateEnterDirectionButton();
                             self.clearCellSelection();
@@ -161,99 +138,7 @@
         },
         
         limpiarErrorNotaInput: function(inputElement){ const $input = $(inputElement); $input.removeClass('cpp-nota-error cpp-nota-guardada'); $input.closest('td').find('.cpp-nota-validation-message').hide().text(''); },
-        guardarNotaDesdeInput: function(event, callbackFn) {
-            const $input = $(this);
-            const alumnoId = $input.data('alumno-id');
-            const actividadId = $input.data('actividad-id');
-            const notaMaxima = parseFloat($input.data('nota-maxima'));
-            let notaStr = $input.val().trim();
-            const $td = $input.closest('td');
-            const $validationMessage = $td.find('.cpp-nota-validation-message');
-            const self = cpp.gradebook; // Referencia a cpp.gradebook
-
-            self.limpiarErrorNotaInput(this);
-
-            if (notaStr !== '') {
-                notaStr = notaStr.replace(',', '.');
-                const notaNum = parseFloat(notaStr);
-                if (isNaN(notaNum)) {
-                    $validationMessage.text('No es un nº').show();
-                    $input.addClass('cpp-nota-error');
-                    if (typeof callbackFn === 'function') callbackFn(false);
-                    return;
-                }
-                if (notaNum < 0 || notaNum > notaMaxima) {
-                    $validationMessage.text(`Nota 0-${notaMaxima}`).show();
-                    $input.addClass('cpp-nota-error');
-                    if (typeof callbackFn === 'function') callbackFn(false);
-                    return;
-                }
-            }
-
-            const originalNota = $input.data('original-nota') || '';
-            if (notaStr === originalNota && event && event.type === 'blur') {
-                if (typeof callbackFn === 'function') callbackFn(true, false);
-                return;
-            }
-
-            $input.prop('disabled', true);
-            $validationMessage.hide().text('');
-
-            const ajaxData = {
-                action: 'cpp_guardar_calificacion_alumno',
-                nonce: cppFrontendData.nonce,
-                alumno_id: alumnoId,
-                actividad_id: actividadId,
-                nota: notaStr,
-                evaluacion_id: cpp.currentEvaluacionId
-            };
-
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: ajaxData,
-                success: function(response) {
-                    if (response && response.success) {
-                        $input.addClass('cpp-nota-guardada');
-                        if (response.data && typeof response.data.nota_final_alumno_formateada !== 'undefined') {
-                            const $finalGradeCell = $(`#cpp-nota-final-alumno-${alumnoId}`);
-                            $finalGradeCell.text(response.data.nota_final_alumno_formateada);
-                            self.checkAndHighlightGrade($finalGradeCell, response.data.nota_final_alumno_raw, response.data.nota_minima);
-                        }
-
-                        let displayNota = '';
-                        if (notaStr !== '') {
-                            const num = parseFloat(notaStr.replace(',', '.'));
-                            if (!isNaN(num)) {
-                                displayNota = (num % 1 !== 0) ? num.toFixed(2) : String(parseInt(num));
-                            }
-                        }
-                        $input.val(displayNota);
-                        $input.data('original-nota', displayNota);
-
-                        setTimeout(function() {
-                            $input.removeClass('cpp-nota-guardada');
-                        }, 1500);
-
-                        if (typeof callbackFn === 'function') callbackFn(true, true);
-                    } else {
-                        const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error desconocido al guardar.';
-                        $validationMessage.text(errorMsg).show();
-                        $input.addClass('cpp-nota-error');
-                        if (typeof callbackFn === 'function') callbackFn(false);
-                    }
-                },
-                error: function() {
-                    $validationMessage.text('Error de conexión').show();
-                    $input.addClass('cpp-nota-error');
-                    if (typeof callbackFn === 'function') callbackFn(false);
-                },
-                complete: function() {
-                    $input.prop('disabled', false);
-                }
-            });
-        },
+        guardarNotaDesdeInput: function(event, callbackFn) { const $input = $(this); const alumnoId = $input.data('alumno-id'); const actividadId = $input.data('actividad-id'); const notaMaxima = parseFloat($input.data('nota-maxima')); let notaStr = $input.val().trim(); const $td = $input.closest('td'); const $validationMessage = $td.find('.cpp-nota-validation-message'); cpp.gradebook.limpiarErrorNotaInput(this); if (notaStr !== '') { notaStr = notaStr.replace(',', '.'); const notaNum = parseFloat(notaStr); if (isNaN(notaNum)) { $validationMessage.text('No es un nº').show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); return; } if (notaNum < 0 || notaNum > notaMaxima) { $validationMessage.text(`Nota 0-${notaMaxima}`).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); return; } } const originalNota = $input.data('original-nota') || ''; if (notaStr === originalNota && event && event.type === 'blur') { if (typeof callbackFn === 'function') callbackFn(true, false); return; } $input.prop('disabled', true); $validationMessage.hide().text(''); const ajaxData = { action: 'cpp_guardar_calificacion_alumno', nonce: cppFrontendData.nonce, alumno_id: alumnoId, actividad_id: actividadId, nota: notaStr, evaluacion_id: cpp.currentEvaluacionId }; $.ajax({ url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData, success: function(response) { if (response && response.success) { $input.addClass('cpp-nota-guardada'); if (response.data && typeof response.data.nota_final_alumno !== 'undefined') { $(`#cpp-nota-final-alumno-${alumnoId}`).text(response.data.nota_final_alumno); } let displayNota = ''; if (notaStr !== '') { const num = parseFloat(notaStr.replace(',', '.')); if (!isNaN(num)) { displayNota = (num % 1 !== 0) ? num.toFixed(2) : String(parseInt(num)); } } $input.val(displayNota); $input.data('original-nota', displayNota); setTimeout(function() { $input.removeClass('cpp-nota-guardada'); }, 1500); if (typeof callbackFn === 'function') callbackFn(true, true); } else { const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error desconocido al guardar.'; $validationMessage.text(errorMsg).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); } }, error: function() { $validationMessage.text('Error de conexión').show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); }, complete: function() { $input.prop('disabled', false); } }); },
         manejarNavegacionTablaNotas: function(e) { const $thisInput = $(this); const $td = $thisInput.closest('td'); const $tr = $td.closest('tr'); let $nextCell; if (e.key === 'Enter') { e.preventDefault(); cpp.gradebook.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved) { if (isValid) { if (cpp.gradebook.enterKeyDirection === 'down') { $nextCell = $tr.next('tr').find(`td:eq(${$td.index()})`); } else { $nextCell = $td.nextAll('td:has(input.cpp-input-nota)').first(); if (!$nextCell.length) { $nextCell = $tr.next('tr').find('td:has(input.cpp-input-nota)').first(); } } if ($nextCell && $nextCell.length) { $nextCell.find('input.cpp-input-nota').focus().select(); } } }); } else if (e.key === 'Tab') { e.preventDefault(); cpp.gradebook.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved) { if (isValid) { if (e.shiftKey) { $nextCell = $td.prevAll('td:has(input.cpp-input-nota)').first(); if (!$nextCell.length) { $nextCell = $tr.prev('tr').find('td:has(input.cpp-input-nota)').last(); } } else { $nextCell = $td.nextAll('td:has(input.cpp-input-nota)').first(); if (!$nextCell.length) { $nextCell = $tr.next('tr').find('td:has(input.cpp-input-nota)').first(); } } if ($nextCell && $nextCell.length) { $nextCell.find('input.cpp-input-nota').focus().select(); } } }); } else if (e.key === 'ArrowUp') { e.preventDefault(); $nextCell = $tr.prev('tr').find(`td:eq(${$td.index()})`); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } else if (e.key === 'ArrowDown') { e.preventDefault(); $nextCell = $tr.next('tr').find(`td:eq(${$td.index()})`); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } else if (e.key === 'ArrowLeft') { if (this.selectionStart === 0 && this.selectionEnd === 0) { e.preventDefault(); $nextCell = $td.prevAll('td:has(input.cpp-input-nota)').first(); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } } else if (e.key === 'ArrowRight') { if (this.selectionStart === this.value.length && this.selectionEnd === this.value.length) { e.preventDefault(); $nextCell = $td.nextAll('td:has(input.cpp-input-nota)').first(); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } } else if (e.key === 'Escape') { $thisInput.val($thisInput.data('original-nota') || ''); cpp.gradebook.limpiarErrorNotaInput(this); $thisInput.blur(); cpp.gradebook.clearCellSelection(); } },
         clearCellSelection: function() { $('.cpp-input-nota.cpp-cell-selected').removeClass('cpp-cell-selected'); this.currentSelectedInputs = []; },
         updateSelectionRange: function(startInputDom, currentInputDom) { $('.cpp-input-nota.cpp-cell-selected').removeClass('cpp-cell-selected'); this.currentSelectedInputs = []; const $startTd = $(startInputDom).closest('td'); const $currentTd = $(currentInputDom).closest('td'); const $startTr = $startTd.closest('tr'); const $currentTr = $currentTd.closest('tr'); const allTrs = $('.cpp-cuaderno-tabla tbody tr:visible'); const startRowIndex = allTrs.index($startTr); const currentRowIndex = allTrs.index($currentTr); const startColRelIndex = $startTr.find('td.cpp-cuaderno-td-nota').index($startTd.filter('.cpp-cuaderno-td-nota')); const currentColRelIndex = $currentTr.find('td.cpp-cuaderno-td-nota').index($currentTd.filter('.cpp-cuaderno-td-nota')); if (startRowIndex === -1 || currentRowIndex === -1 || startColRelIndex === -1 || currentColRelIndex === -1) { $(startInputDom).addClass('cpp-cell-selected'); this.currentSelectedInputs.push(startInputDom); return; } const minRow = Math.min(startRowIndex, currentRowIndex); const maxRow = Math.max(startRowIndex, currentRowIndex); const minColRel = Math.min(startColRelIndex, currentColRelIndex); const maxColRel = Math.max(startColRelIndex, currentColRelIndex); for (let r = minRow; r <= maxRow; r++) { const $row = $(allTrs[r]); const $tdsInRow = $row.find('td.cpp-cuaderno-td-nota'); for (let c = minColRel; c <= maxColRel; c++) { if (c < $tdsInRow.length) { const $td = $($tdsInRow[c]); const $inputInCell = $td.find('.cpp-input-nota'); if ($inputInCell.length) { $inputInCell.addClass('cpp-cell-selected'); this.currentSelectedInputs.push($inputInCell[0]); } } } } },
@@ -268,20 +153,14 @@
             const self = this;
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
+            // Botón para crear la primera clase desde la pantalla de bienvenida
             $document.on('click', '#cpp-btn-crear-primera-clase', function(e) {
                 if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaCrear === 'function') {
                     cpp.modals.clase.showParaCrear(e);
                 }
             });
 
-            $document.on('change', '#cpp-evaluacion-selector', function(e) { const nuevaEvaluacionId = $(this).val(); if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) { if (!isNaN(nuevaEvaluacionId)) { const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text(); self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId); } } }); $cuadernoContenido.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); }); $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); }); $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } }); $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); }); $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); }); $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); }); $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); }); $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){ if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarParaEditar === 'function') { cpp.modals.actividades.cargarParaEditar(this, e); } else { console.error("Función cpp.modals.actividades.cargarParaEditar no encontrada."); } }); $document.on('click', '#cpp-a1-add-activity-btn', function(e) {
-                e.stopPropagation();
-                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 8) {
-                    cpp.tutorial.nextStep();
-                }
-                if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') {
-                    cpp.modals.actividades.mostrarAnadir();
-                } else { console.error("Función cpp.modals.actividades.mostrarAnadir no encontrada."); } }); $document.on('click', '#cpp-a1-import-students-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') { cpp.modals.excel.showImportStudents(e); } else { console.error("Función cpp.modals.excel.showImportStudents no encontrada.");} }); $document.on('click', '#cpp-a1-download-excel-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showDownloadOptions === 'function') { cpp.modals.excel.showDownloadOptions(e); } else { console.error("Función cpp.modals.excel.showDownloadOptions no encontrada.");} }); $document.on('click', '#cpp-a1-take-attendance-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (cpp.modals && cpp.modals.asistencia && typeof cpp.modals.asistencia.mostrar === 'function') { if (cpp.currentClaseIdCuaderno) { cpp.modals.asistencia.mostrar(cpp.currentClaseIdCuaderno); } else { alert("Por favor, selecciona o carga una clase primero."); } } else { console.error("Función cpp.modals.asistencia.mostrar no encontrada."); } }); $document.on('click', '#cpp-a1-enter-direction-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (self.enterKeyDirection === 'down') { self.enterKeyDirection = 'right'; } else { self.enterKeyDirection = 'down'; } self.updateEnterDirectionButton(); if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') { try { localStorage.setItem(self.localStorageKey_enterDirection + cppFrontendData.userId, self.enterKeyDirection); } catch (lsError) { console.warn("No se pudo guardar la preferencia de dirección de Enter en localStorage:", lsError); } } }); $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); }); $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } }); $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); }); }
+            $document.on('change', '#cpp-evaluacion-selector', function(e) { const nuevaEvaluacionId = $(this).val(); if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) { if (!isNaN(nuevaEvaluacionId)) { const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text(); self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId); } } }); $cuadernoContenido.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); }); $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); }); $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } }); $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); }); $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); }); $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); }); $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); }); $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){ if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarParaEditar === 'function') { cpp.modals.actividades.cargarParaEditar(this, e); } else { console.error("Función cpp.modals.actividades.cargarParaEditar no encontrada."); } }); $document.on('click', '#cpp-a1-add-activity-btn', function(e) { e.stopPropagation(); if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') { cpp.modals.actividades.mostrarAnadir(); } else { console.error("Función cpp.modals.actividades.mostrarAnadir no encontrada."); } }); $document.on('click', '#cpp-a1-import-students-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') { cpp.modals.excel.showImportStudents(e); } else { console.error("Función cpp.modals.excel.showImportStudents no encontrada.");} }); $document.on('click', '#cpp-a1-download-excel-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showDownloadOptions === 'function') { cpp.modals.excel.showDownloadOptions(e); } else { console.error("Función cpp.modals.excel.showDownloadOptions no encontrada.");} }); $document.on('click', '#cpp-a1-take-attendance-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (cpp.modals && cpp.modals.asistencia && typeof cpp.modals.asistencia.mostrar === 'function') { if (cpp.currentClaseIdCuaderno) { cpp.modals.asistencia.mostrar(cpp.currentClaseIdCuaderno); } else { alert("Por favor, selecciona o carga una clase primero."); } } else { console.error("Función cpp.modals.asistencia.mostrar no encontrada."); } }); $document.on('click', '#cpp-a1-enter-direction-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (self.enterKeyDirection === 'down') { self.enterKeyDirection = 'right'; } else { self.enterKeyDirection = 'down'; } self.updateEnterDirectionButton(); if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') { try { localStorage.setItem(self.localStorageKey_enterDirection + cppFrontendData.userId, self.enterKeyDirection); } catch (lsError) { console.warn("No se pudo guardar la preferencia de dirección de Enter en localStorage:", lsError); } } }); $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); }); $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } }); $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); }); }
     };
 
 })(jQuery);

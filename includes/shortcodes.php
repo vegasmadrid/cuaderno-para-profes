@@ -128,11 +128,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <input type="number" id="base_nota_final_clase_modal" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
                                     <small>La nota final de los alumnos se calculará sobre esta base.</small>
                                 </div>
-                                <div class="cpp-form-group">
-                                    <label for="nota_minima_clase_modal">Nota Mínima para Aprobar (ej: 5):</label>
-                                    <input type="number" id="nota_minima_clase_modal" name="nota_minima_clase" value="5" step="0.01" min="0" required>
-                                    <small>Las notas finales por debajo de este valor se resaltarán como suspensas.</small>
-                                </div>
                             </div>
                             <div id="cpp-tab-evaluaciones" class="cpp-tab-content">
                                 <div id="cpp-clase-modal-evaluaciones-container">
@@ -293,59 +288,39 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <div class="cpp-modal" id="cpp-modal-ficha-alumno">
                 <div class="cpp-modal-content cpp-modal-ficha-alumno-content">
                     <span class="cpp-modal-close">&times;</span>
-                    <div class="cpp-modal-ficha-header">
-                        <div id="cpp-ficha-alumno-foto-container">
-                            <img id="cpp-ficha-alumno-foto" src="" alt="Foto Alumno" style="display:none;">
-                            <div id="cpp-ficha-alumno-avatar-inicial" class="cpp-avatar-inicial"></div>
-                        </div>
-                        <div class="cpp-modal-ficha-header-info">
-                            <h2 id="cpp-modal-ficha-alumno-titulo">Ficha del Alumno</h2>
-                            <p>Clase: <strong id="cpp-ficha-clase-nombre-contexto"></strong></p>
-                        </div>
-                        <button type="button" class="cpp-btn-icon cpp-edit-info-alumno-btn" title="Editar Información"><span class="dashicons dashicons-edit"></span></button>
-                    </div>
-
-                    <div class="cpp-modal-ficha-body">
-                        <div class="cpp-ficha-columna-principal">
-                            <!-- Formulario de Edición (oculto por defecto) -->
-                            <div id="cpp-ficha-form-container" style="display:none;">
-                                <h4>Editando Información</h4>
-                                <form id="cpp-form-editar-alumno-ficha">
-                                    <input type="hidden" id="ficha_alumno_id_editar" name="alumno_id_editar">
-                                    <div class="cpp-form-group"><label for="ficha_nombre_alumno">Nombre:</label><input type="text" id="ficha_nombre_alumno" name="nombre_alumno" required></div>
-                                    <div class="cpp-form-group"><label for="ficha_apellidos_alumno">Apellidos:</label><input type="text" id="ficha_apellidos_alumno" name="apellidos_alumno" required></div>
-                                    <div class="cpp-form-group"><label for="ficha_foto_alumno">Cambiar Foto (opcional):</label><input type="file" id="ficha_foto_alumno" name="foto_alumno" accept="image/*"></div>
-                                    <div class="cpp-modal-actions">
-                                        <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar</button>
-                                        <button type="button" class="cpp-btn cpp-btn-secondary cpp-cancel-edit-info-alumno-btn">Cancelar</button>
-                                    </div>
-                                </form>
+                    <h2 id="cpp-modal-ficha-alumno-titulo">Ficha del Alumno</h2>
+                    <div class="cpp-ficha-alumno-grid">
+                        <div class="cpp-ficha-alumno-info-personal">
+                            <h3>Datos Personales <button type="button" class="cpp-btn-icon cpp-edit-info-alumno-btn" title="Editar Información"><span class="dashicons dashicons-edit"></span></button></h3>
+                            <div id="cpp-ficha-alumno-foto-container" style="text-align:center; margin-bottom:15px;">
+                                <img id="cpp-ficha-alumno-foto" src="" alt="Foto Alumno" style="max-width:100px; max-height:100px; border-radius:50%; border:2px solid #eee; display:none; object-fit: cover;">
+                                <div id="cpp-ficha-alumno-avatar-inicial" class="cpp-avatar-inicial" style="width:100px; height:100px; font-size:40px; margin:0 auto; display:flex; align-items:center; justify-content:center; background-color:#e9ecef; color:#495057; border-radius:50%;"></div>
                             </div>
-
-                            <!-- Display de Información (visible por defecto) -->
-                            <div id="cpp-ficha-display-container">
-                                <div class="cpp-ficha-seccion">
-                                    <h4>Calificaciones (Evaluación Actual)</h4>
-                                    <div class="cpp-ficha-nota-final-wrapper">
-                                        <span class="label">Nota Final:</span>
-                                        <span id="cpp-ficha-nota-final-valor" class="valor">-</span>
-                                        <span class="contexto">(sobre <span id="cpp-ficha-base-nota-clase"></span>)</span>
-                                    </div>
-                                    <h5>Desglose por Categorías</h5>
-                                    <div id="cpp-ficha-lista-categorias-notas" class="cpp-ficha-lista-scrollable"></div>
-                                    <h5>Desglose por Actividades</h5>
-                                    <div id="cpp-ficha-lista-actividades-notas" class="cpp-ficha-lista-scrollable"></div>
-                                </div>
+                            <form id="cpp-form-editar-alumno-ficha" style="display:none;">
+                                <input type="hidden" id="ficha_alumno_id_editar" name="alumno_id_editar">
+                                <div class="cpp-form-group"><label for="ficha_nombre_alumno">Nombre:</label><input type="text" id="ficha_nombre_alumno" name="nombre_alumno" required></div>
+                                <div class="cpp-form-group"><label for="ficha_apellidos_alumno">Apellidos:</label><input type="text" id="ficha_apellidos_alumno" name="apellidos_alumno" required></div>
+                                <div class="cpp-form-group"><label for="ficha_foto_alumno">Cambiar Foto (opcional):</label><input type="file" id="ficha_foto_alumno" name="foto_alumno" accept="image/*"></div>
+                                <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar Cambios</button>
+                                <button type="button" class="cpp-btn cpp-btn-secondary cpp-cancel-edit-info-alumno-btn">Cancelar</button>
+                            </form>
+                            <div id="cpp-ficha-alumno-info-display">
+                                <p><strong>Nombre:</strong> <span id="cpp-ficha-display-nombre"></span></p>
+                                <p><strong>Apellidos:</strong> <span id="cpp-ficha-display-apellidos"></span></p>
                             </div>
                         </div>
-
-                        <div class="cpp-ficha-columna-lateral">
-                            <div class="cpp-ficha-seccion">
-                                <h4>Asistencia</h4>
-                                <div id="cpp-ficha-stats-asistencia"></div>
-                                <h5>Historial de Asistencia</h5>
-                                <div id="cpp-ficha-lista-asistencia" class="cpp-ficha-lista-scrollable"></div>
+                        <div class="cpp-ficha-alumno-resumen-notas">
+                             <h3>Resumen de Notas (<span id="cpp-ficha-clase-nombre-notas"></span>)</h3>
+                            <p><strong>Nota Final Calculada:</strong> <strong id="cpp-ficha-nota-final-alumno" style="font-size: 1.2em;">-</strong> (sobre <span id="cpp-ficha-base-nota-clase"></span>)</p>
+                            <h4>Desglose por Evaluación:</h4>
+                            <div id="cpp-ficha-lista-categorias-notas" class="cpp-lista-scrollable">
+                                <p>Cargando medias...</p>
                             </div>
+                        </div>
+                        <div class="cpp-ficha-alumno-historial-asistencia">
+                            <h3>Historial de Asistencia (<span id="cpp-ficha-clase-nombre-asistencia"></span>)</h3>
+                            <div id="cpp-ficha-stats-asistencia" style="margin-bottom:10px; padding-bottom:10px; border-bottom: 1px solid #eee;"><p>Cargando estadísticas...</p></div>
+                            <div id="cpp-ficha-lista-asistencia" class="cpp-lista-scrollable"><p>Cargando historial...</p></div>
                         </div>
                     </div>
                 </div>
@@ -356,7 +331,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         ?>
 
     </div> 
-
     <?php
     return ob_get_clean();
 }

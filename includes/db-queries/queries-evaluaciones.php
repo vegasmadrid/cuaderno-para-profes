@@ -129,21 +129,6 @@ function cpp_copiar_categorias_de_evaluacion($id_evaluacion_origen, $id_evaluaci
     return true;
 }
 
-function cpp_obtener_primera_evaluacion_clase($clase_id, $user_id) {
-    global $wpdb;
-    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
-    // Asegurarse de que la clase pertenece al usuario
-    $clase_pertenece = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
-    if ($clase_pertenece == 0) {
-        return null;
-    }
-    // Obtener la primera evaluación por orden y luego por fecha de creación
-    return $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d ORDER BY orden ASC, fecha_creacion ASC LIMIT 1",
-        $clase_id, $user_id
-    ), ARRAY_A);
-}
-
 // ====================================================================
 // --- NUEVA FUNCIÓN ---
 // Asigna actividades sin categoría a una categoría por defecto.

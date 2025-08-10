@@ -166,9 +166,8 @@
             popoverContent += `</div>`;
             $popover.html(popoverContent).attr('data-placement', step.placement);
 
-            const highlightId = 'cpp-tutorial-highlight-overlay-' + new Date().getTime();
-            $('body').append(`<div class="cpp-tutorial-highlight-overlay" id="${highlightId}"></div>`);
-            const $highlight = $('#' + highlightId);
+            $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
+            const $highlight = $('.cpp-tutorial-highlight-overlay');
             const targetOffset = $target.offset();
             const targetWidth = $target.outerWidth();
             const targetHeight = $target.outerHeight();
@@ -221,7 +220,6 @@
         },
 
         bindEvents: function() {
-            $('body').on('click', '#cpp-start-tutorial-btn', (e) => { e.preventDefault(); this.start(); });
             $('body').on('click', '.cpp-tutorial-next-btn', (e) => { e.preventDefault(); this.nextStep(); });
             $('body').on('click', '.cpp-tutorial-end-btn', (e) => { e.preventDefault(); this.end(); });
         }

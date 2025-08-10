@@ -22,11 +22,6 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment; // NUEVO: Para la alineación
 use PhpOffice\PhpSpreadsheet\Style\Border;  // NUEVO: Para los bordes
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate; // Para convertir índices de columna
 
-// Hooks para las acciones AJAX de importación/exportación de plantillas
-add_action('wp_ajax_cpp_download_student_template', 'cpp_handle_student_template_download');
-add_action('wp_ajax_cpp_upload_student_excel', 'cpp_handle_student_excel_upload');
-add_action('wp_ajax_cpp_import_students_from_file', 'cpp_handle_process_students_import');
-
 /**
  * Manejador para la descarga de la plantilla Excel de alumnos.
  */
@@ -82,19 +77,21 @@ function cpp_handle_student_template_download() {
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment;filename="' . $filename . '"');
     header('Cache-Control: max-age=0');
-    header('Cache-Control: max-age=0');
+    header('Cache-Control: cache, must-revalidate');
+    header('Pragma: public');
 
-    // Limpiar cualquier buffer de salida para prevenir corrupción del archivo.
-    if (ob_get_level()) {
-        ob_end_clean();
-    }
-
-    // Guardar directamente en la salida de PHP
     $writer = new Xlsx($spreadsheet);
+    ob_start();
     $writer->save('php://output');
+    $excel_output = ob_get_clean();
 
-    // Detener la ejecución para evitar que WordPress añada contenido extra (como el '0' o '-1')
-    exit;
+    if (!empty($excel_output)) {
+        echo $excel_output;
+    } else {
+        status_header(500);
+        echo "Error al generar la plantilla Excel."; // Esto no se debería ver si las cabeceras ya se enviaron
+    }
+    wp_die();
 }
 
 

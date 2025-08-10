@@ -36,9 +36,6 @@ function cpp_ajax_crear_evaluacion() {
             $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
             $wpdb->update($tabla_evaluaciones, ['calculo_nota' => 'ponderada'], ['id' => $nueva_evaluacion_id]);
         }
-        // Gestionar la evaluación final después de crear una nueva
-        cpp_manage_final_evaluation($clase_id, $user_id);
-
         wp_send_json_success(['message' => 'Evaluación creada.', 'evaluacion_id' => $nueva_evaluacion_id]);
     } else {
         wp_send_json_error(['message' => 'Error al crear la evaluación.']);
@@ -69,18 +66,7 @@ function cpp_ajax_eliminar_evaluacion() {
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
     if (empty($evaluacion_id)) { wp_send_json_error(['message' => 'ID de evaluación no proporcionado.']); return; }
 
-    // Obtener el clase_id ANTES de eliminar la evaluación
-    global $wpdb;
-    $clase_id = $wpdb->get_var($wpdb->prepare(
-        "SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d",
-        $evaluacion_id, $user_id
-    ));
-
     if (cpp_eliminar_evaluacion_y_dependencias($evaluacion_id, $user_id)) {
-        // Si se eliminó correctamente y teníamos un clase_id, gestionar la evaluación final
-        if ($clase_id) {
-            cpp_manage_final_evaluation($clase_id, $user_id);
-        }
         wp_send_json_success(['message' => 'Evaluación eliminada correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Error al eliminar la evaluación o no tienes permiso.']);
@@ -151,44 +137,4 @@ function cpp_ajax_guardar_metodo_calculo() {
     // ====================================================================
 
     wp_send_json_success(['message' => 'Método de cálculo guardado.']);
-}
-
-
-function cpp_manage_final_evaluation($clase_id, $user_id) {
-    global $wpdb;
-    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
-
-    // 1. Contar evaluaciones 'normales'
-    $normal_eval_count = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d AND tipo = 'normal'",
-        $clase_id, $user_id
-    ));
-
-    // 2. Buscar si ya existe una evaluación 'final'
-    $final_eval_id = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d AND tipo = 'final'",
-        $clase_id, $user_id
-    ));
-
-    // 3. Lógica de creación/eliminación
-    if ($normal_eval_count > 1) {
-        if (!$final_eval_id) {
-            // Crear la evaluación final si no existe
-            $wpdb->insert(
-                $tabla_evaluaciones,
-                [
-                    'clase_id' => $clase_id,
-                    'user_id' => $user_id,
-                    'nombre_evaluacion' => 'Evaluación Final',
-                    'tipo' => 'final',
-                    'calculo_nota' => 'total', // O un tipo específico si se necesita
-                    'orden' => 999 // Ponerla siempre al final
-                ],
-                ['%d', '%d', '%s', '%s', '%s', '%d']
-            );
-        }
-    } elseif ($final_eval_id) {
-        // Eliminar la evaluación final si ya no hay suficientes evaluaciones normales
-        cpp_eliminar_evaluacion_y_dependencias($final_eval_id, $user_id);
-    }
 }

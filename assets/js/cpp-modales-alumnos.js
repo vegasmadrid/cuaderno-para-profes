@@ -63,13 +63,7 @@
             $modal.find('#cpp-modal-alumnos-title').text(`Gestión de Alumnos: ${claseNombre}`);
             $container.html('<p class="cpp-cuaderno-cargando">Cargando alumnos...</p>');
             
-            this.resetForm(); // Resetea y asegura que el form esté oculto
-            
-            // Asegurar que otros modales estén ocultos
-            if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function' && $modal.is(":hidden")) {
-                // No llamar a hideAll aquí para evitar bucles si el clic vino de otro modal que ya se cerró.
-                // El flujo normal es que hideAll se llama, y luego se llama a esta función 'mostrar'.
-            }
+            this.resetForm();
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -92,7 +86,12 @@
                     $container.html('<p class="cpp-error-message">Error de conexión al cargar alumnos.</p>');
                 },
                 complete: function() {
-                    $modal.fadeIn();
+                    $modal.fadeIn(function() {
+                        // Hook para el tutorial: se ejecuta DESPUÉS de que el modal es visible.
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                            cpp.tutorial.nextStep();
+                        }
+                    });
                 }
             });
         },

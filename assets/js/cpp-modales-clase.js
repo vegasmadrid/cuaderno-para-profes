@@ -61,11 +61,6 @@
         showParaCrear: function(e) {
             if (e) e.preventDefault();
             
-            // Hook para el tutorial
-            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 0) {
-                cpp.tutorial.nextStep();
-            }
-
             const $modal = $('#cpp-modal-clase');
             this.resetForm(); 
 
@@ -75,7 +70,13 @@
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
             
-            $modal.fadeIn().find('#nombre_clase_modal').focus();
+            $modal.fadeIn(function() {
+                $(this).find('#nombre_clase_modal').focus();
+                // Hook para el tutorial: se ejecuta DESPUÉS de que el modal es visible.
+                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 0) {
+                    cpp.tutorial.nextStep();
+                }
+            });
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
@@ -126,7 +127,6 @@
                         $classSwatchesContainer.find(`.cpp-color-swatch[data-color="${colorParaSeleccionar.toUpperCase()}"]`).addClass('selected');
 
                         $form.find('#base_nota_final_clase_modal').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
-                        $form.find('#nota_minima_clase_modal').val(clase.nota_minima ? parseFloat(clase.nota_minima).toFixed(2) : '5.00');
                         $modal.find('#cpp-modal-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
                         $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
@@ -164,7 +164,6 @@
             const esEdicion = claseIdEditar && claseIdEditar !== '';
             const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
-            const notaMinimaClase = $form.find('[name="nota_minima_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
 
             if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
@@ -173,28 +172,20 @@
             if (baseNotaFinalClase === '' || isNaN(baseNotaNumerica) || baseNotaNumerica <= 0) {
                 alert('Por favor, introduce un valor numérico positivo para la Base de Nota Final.'); return;
             }
-            const notaMinimaNumerica = parseFloat(notaMinimaClase.replace(',', '.'));
-            if (notaMinimaClase === '' || isNaN(notaMinimaNumerica) || notaMinimaNumerica < 0) {
-                alert('Por favor, introduce un valor numérico válido para la Nota Mínima.'); return;
-            }
-
             const btnTextProcesando = esEdicion ? 'Actualizando...' : 'Guardando...';
             const btnTextOriginal = esEdicion ? '<span class="dashicons dashicons-edit"></span> Actualizar Clase' : '<span class="dashicons dashicons-saved"></span> Guardar Clase';
             $btn.prop('disabled', true).html(`<span class="dashicons dashicons-update dashicons-spin"></span> ${btnTextProcesando}`);
             const ajaxData = {
                 action: 'cpp_crear_clase', nonce: cppFrontendData.nonce,
                 clase_id_editar: claseIdEditar, nombre_clase: nombreClase,
-                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2),
-                nota_minima_clase: notaMinimaNumerica.toFixed(2)
+                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2)
             };
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,
                 success: function(response) {
                     if (response.success) {
                         window.location.reload();
-                    }
-                    else {
-                        // Si falla, y estábamos en el tutorial, reseteamos el paso para que no se salte.
+                    } else {
                         if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
                            localStorage.setItem('cpp_tutorial_step', 2);
                         }
@@ -296,17 +287,12 @@
 
             if (evaluaciones && evaluaciones.length > 0) {
                 evaluaciones.forEach(function(evaluacion) {
-                    const isFinal = evaluacion.tipo === 'final';
-                    const disabledAttr = isFinal ? 'disabled' : '';
-                    const editTitle = isFinal ? 'La Evaluación Final no se puede editar' : 'Renombrar';
-                    const deleteTitle = isFinal ? 'La Evaluación Final no se puede eliminar' : 'Eliminar';
-
-                    html += `<li data-evaluacion-id="${evaluacion.id}" class="${isFinal ? 'cpp-evaluacion-final-item' : ''}">
-                                <span class="cpp-drag-handle dashicons dashicons-menu" ${isFinal ? 'style="visibility:hidden;"' : ''}></span>
-                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()} ${isFinal ? '<span class="cpp-final-eval-tag">(Final)</span>' : ''}</span>
+                    html += `<li data-evaluacion-id="${evaluacion.id}">
+                                <span class="cpp-drag-handle dashicons dashicons-menu"></span>
+                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
                                 <div class="cpp-evaluacion-actions">
-                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="${editTitle}" ${disabledAttr}><span class="dashicons dashicons-edit"></span></button>
-                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="${deleteTitle}" ${disabledAttr}><span class="dashicons dashicons-trash"></span></button>
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="Renombrar"><span class="dashicons dashicons-edit"></span></button>
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
                                 </div>
                              </li>`;
                 });

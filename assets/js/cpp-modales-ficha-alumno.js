@@ -21,23 +21,28 @@
             if (!$modal.length) return;
 
             $modal.find('#cpp-modal-ficha-alumno-titulo').text('Ficha del Alumno');
-            $modal.find('#cpp-ficha-clase-nombre-contexto').text('-');
             
             $modal.find('#cpp-ficha-alumno-foto').attr('src', '').hide();
             $modal.find('#cpp-ficha-alumno-avatar-inicial').text('').show();
+            $modal.find('#cpp-ficha-display-nombre').text('-');
+            $modal.find('#cpp-ficha-display-apellidos').text('-');
             
-            // Ocultar formulario de edición y mostrar display
-            this.toggleEditInfoAlumno(false);
+            const $form = $modal.find('#cpp-form-editar-alumno-ficha');
+            $form.trigger('reset');
+            $form.find('#ficha_alumno_id_editar').val('');
+            $form.hide();
+            $modal.find('#cpp-ficha-alumno-info-display').show();
+            $modal.find('.cpp-edit-info-alumno-btn').show();
 
-            // Resetear valores de notas
-            $modal.find('#cpp-ficha-nota-final-valor').text('-');
-            $modal.find('#cpp-ficha-base-nota-clase').text('100');
-            $modal.find('#cpp-ficha-lista-categorias-notas').html('<p class="cpp-cargando-placeholder">Cargando...</p>');
-            $modal.find('#cpp-ficha-lista-actividades-notas').html('<p class="cpp-cargando-placeholder">Cargando...</p>');
+            $modal.find('#cpp-ficha-clase-nombre-notas').text('-');
+            $modal.find('#cpp-ficha-nota-final-alumno').text('-');
+            $modal.find('#cpp-ficha-base-nota-clase').text('-');
+            $modal.find('#cpp-ficha-lista-categorias-notas').html('<p>Cargando notas por categoría...</p>'); // Actualizado placeholder
+            // $modal.find('#cpp-ficha-lista-actividades-notas').html('<p>Cargando notas...</p>'); // Este se reemplaza por el de categorías
 
-            // Resetear valores de asistencia
-            $modal.find('#cpp-ficha-stats-asistencia').html('<p class="cpp-cargando-placeholder">Cargando...</p>');
-            $modal.find('#cpp-ficha-lista-asistencia').html('<p class="cpp-cargando-placeholder">Cargando...</p>');
+            $modal.find('#cpp-ficha-clase-nombre-asistencia').text('-');
+            $modal.find('#cpp-ficha-stats-asistencia').html('<p>Cargando estadísticas...</p>'); // Placeholder para stats
+            $modal.find('#cpp-ficha-lista-asistencia').html('<p>Cargando historial...</p>');
         },
 
         mostrar: function(alumnoId, claseId) {
@@ -66,8 +71,7 @@
                     action: 'cpp_obtener_datos_ficha_alumno',
                     nonce: cppFrontendData.nonce,
                     alumno_id: self.currentAlumnoId,
-                    clase_id: self.currentClaseId,
-                    evaluacion_id: cpp.currentEvaluacionId
+                    clase_id: self.currentClaseId
                 },
                 success: function(response) {
                     if (response.success) {
@@ -88,9 +92,12 @@
             const $modal = $('#cpp-modal-ficha-alumno');
             if (!$modal.length || !data) return;
 
-            // --- Cabecera e Información General ---
+            // Información del Alumno
             if (data.alumno_info) {
-                $modal.find('#cpp-modal-ficha-alumno-titulo').text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
+                $modal.find('#cpp-modal-ficha-alumno-titulo').text(`Ficha de: ${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
+                $modal.find('#cpp-ficha-display-nombre').text(data.alumno_info.nombre);
+                $modal.find('#cpp-ficha-display-apellidos').text(data.alumno_info.apellidos);
+
                 if (data.alumno_info.foto) {
                     $modal.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.foto).show();
                     $modal.find('#cpp-ficha-alumno-avatar-inicial').hide();
@@ -99,102 +106,84 @@
                     const inicial = data.alumno_info.nombre ? data.alumno_info.nombre.charAt(0).toUpperCase() : '';
                     $modal.find('#cpp-ficha-alumno-avatar-inicial').text(inicial).show();
                 }
-                // Precargar el formulario de edición
                 $modal.find('#ficha_alumno_id_editar').val(data.alumno_info.id);
                 $modal.find('#ficha_nombre_alumno').val(data.alumno_info.nombre);
                 $modal.find('#ficha_apellidos_alumno').val(data.alumno_info.apellidos);
             }
 
+            // Información de la Clase para contexto
             if (data.clase_info) {
-                $modal.find('#cpp-ficha-clase-nombre-contexto').text(data.clase_info.nombre);
+                $modal.find('#cpp-ficha-clase-nombre-notas').text(data.clase_info.nombre);
+                $modal.find('#cpp-ficha-clase-nombre-asistencia').text(data.clase_info.nombre);
                 $modal.find('#cpp-ficha-base-nota-clase').text(data.clase_info.base_nota_final);
             }
 
-            // --- Sección de Calificaciones ---
+            // Resumen de Notas
             if (data.resumen_notas) {
-                $modal.find('#cpp-ficha-nota-final-valor').text(data.resumen_notas.nota_final_formateada || '-');
+                $modal.find('#cpp-ficha-nota-final-alumno').text(data.resumen_notas.nota_final_formateada || '-');
 
-                // Desglose por Categorías
-                let htmlCategorias = '<ul>';
+                // NUEVO: Mostrar notas medias por categoría
+                let htmlCategoriasNotas = '<ul>';
                 if (data.resumen_notas.notas_medias_por_categoria && data.resumen_notas.notas_medias_por_categoria.length > 0) {
-                    data.resumen_notas.notas_medias_por_categoria.forEach(cat => {
-                        htmlCategorias += `<li>
-                            <span class="cpp-ficha-list-item-main">
-                                <span class="cpp-category-color-indicator" style="background-color:${cat.color_categoria || '#ccc'};"></span>
-                                ${$('<div>').text(cat.nombre_categoria).html()} (${cat.porcentaje_categoria}%)
-                            </span>
-                            <span class="cpp-ficha-list-item-side">${cat.nota_media_formateada}</span>
+                    data.resumen_notas.notas_medias_por_categoria.forEach(function(cat) {
+                        htmlCategoriasNotas += `<li>
+                            <span class="cpp-category-color-indicator" style="background-color:${cat.color_categoria || '#eee'};"></span>
+                            <strong>${$('<div>').text(cat.nombre_categoria).html()}</strong> (${cat.porcentaje_categoria}%):
+                            <span>${cat.nota_media_formateada}</span> (sobre ${data.clase_info.base_nota_final || 'N/A'})
                         </li>`;
                     });
                 } else {
-                    htmlCategorias += '<li>No hay desglose por categorías.</li>';
+                    htmlCategoriasNotas += '<li>No hay desglose por categorías disponible.</li>';
                 }
-                htmlCategorias += '</ul>';
-                $modal.find('#cpp-ficha-lista-categorias-notas').html(htmlCategorias);
-
-                // Desglose por Actividades
-                let htmlActividades = '<ul>';
-                if (data.resumen_notas.calificaciones_individuales && data.resumen_notas.calificaciones_individuales.length > 0) {
-                    data.resumen_notas.calificaciones_individuales.forEach(act => {
-                        htmlActividades += `<li>
-                            <span class="cpp-ficha-list-item-main">${$('<div>').text(act.nombre_actividad).html()}</span>
-                            <span class="cpp-ficha-list-item-side"><strong>${act.calificacion}</strong> / ${act.nota_maxima}</span>
-                        </li>`;
-                    });
-                } else {
-                    htmlActividades += '<li>No hay actividades en esta evaluación.</li>';
-                }
-                htmlActividades += '</ul>';
-                $modal.find('#cpp-ficha-lista-actividades-notas').html(htmlActividades);
+                htmlCategoriasNotas += '</ul>';
+                $modal.find('#cpp-ficha-lista-categorias-notas').html(htmlCategoriasNotas);
             }
 
-            // --- Sección de Asistencia ---
+            // Historial y Estadísticas de Asistencia
             if (data.stats_asistencia) {
-                let htmlStats = '<div class="cpp-ficha-stats-grid">';
-                htmlStats += `<div><span class="stat-value">${data.stats_asistencia.presente || 0}</span><span class="stat-label">Presente</span></div>`;
-                htmlStats += `<div><span class="stat-value ausente">${data.stats_asistencia.ausente || 0}</span><span class="stat-label">Ausente</span></div>`;
-                htmlStats += `<div><span class="stat-value retraso">${data.stats_asistencia.retraso || 0}</span><span class="stat-label">Retraso</span></div>`;
-                htmlStats += `<div><span class="stat-value justificado">${data.stats_asistencia.justificado || 0}</span><span class="stat-label">Justificado</span></div>`;
-                htmlStats += '</div>';
-                $modal.find('#cpp-ficha-stats-asistencia').html(htmlStats);
+                let htmlStatsAsistencia = '<p>';
+                htmlStatsAsistencia += `<strong>Presente:</strong> ${data.stats_asistencia.presente || 0} | `;
+                htmlStatsAsistencia += `<strong>Ausente:</strong> ${data.stats_asistencia.ausente || 0} | `;
+                htmlStatsAsistencia += `<strong>Retraso:</strong> ${data.stats_asistencia.retraso || 0} | `;
+                htmlStatsAsistencia += `<strong>Justificado:</strong> ${data.stats_asistencia.justificado || 0}`;
+                // Puedes añadir más estados aquí si los manejas
+                htmlStatsAsistencia += '</p>';
+                $modal.find('#cpp-ficha-stats-asistencia').html(htmlStatsAsistencia);
             }
 
             if (data.historial_asistencia) {
-                let htmlHistorial = '<ul>';
+                let htmlAsistencia = '<ul>';
                 if (data.historial_asistencia.length > 0) {
-                    data.historial_asistencia.forEach(item => {
-                        const fecha = new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString();
-                        htmlHistorial += `<li>
-                            <span class="cpp-ficha-list-item-main">${fecha}</span>
-                            <span class="cpp-ficha-list-item-side estado-${item.estado.toLowerCase()}">${$('<div>').text(item.estado).html()}</span>
-                        </li>`;
-                        if (item.observaciones) {
-                            htmlHistorial += `<li class="observacion">↳ <small><em>${$('<div>').text(item.observaciones).html()}</em></small></li>`;
-                        }
+                    data.historial_asistencia.forEach(function(asistencia) {
+                        const fechaFormateada = asistencia.fecha_asistencia ? new Date(asistencia.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'Fecha desconocida';
+                        htmlAsistencia += `<li><strong>${fechaFormateada}</strong>: ${$('<div>').text(asistencia.estado).html()}
+                                          ${asistencia.observaciones ? `<em>(${ $('<div>').text(asistencia.observaciones).html()})</em>` : ''}</li>`;
                     });
                 } else {
-                    htmlHistorial += '<li>No hay historial de asistencia.</li>';
+                    htmlAsistencia += '<li>No hay registros de asistencia para esta clase.</li>';
                 }
-                htmlHistorial += '</ul>';
-                $modal.find('#cpp-ficha-lista-asistencia').html(htmlHistorial);
+                htmlAsistencia += '</ul>';
+                $modal.find('#cpp-ficha-lista-asistencia').html(htmlAsistencia);
             }
         },
 
         toggleEditInfoAlumno: function(showForm) {
             const $modal = $('#cpp-modal-ficha-alumno');
-            const $displayContainer = $modal.find('#cpp-ficha-display-container');
-            const $formContainer = $modal.find('#cpp-ficha-form-container');
+            const $displayDiv = $modal.find('#cpp-ficha-alumno-info-display');
+            const $form = $modal.find('#cpp-form-editar-alumno-ficha');
             const $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
 
             if (showForm) {
-                $displayContainer.hide();
-                $formContainer.show();
+                $displayDiv.hide();
+                $form.show();
                 $editBtn.hide();
+                $form.find('#ficha_nombre_alumno').val($modal.find('#cpp-ficha-display-nombre').text());
+                $form.find('#ficha_apellidos_alumno').val($modal.find('#cpp-ficha-display-apellidos').text());
             } else {
-                $formContainer.hide();
-                $displayContainer.show();
+                $form.hide();
+                $displayDiv.show();
                 $editBtn.show();
-                $formContainer.find('form').trigger('reset');
+                $form.trigger('reset');
             }
         },
 
