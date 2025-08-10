@@ -79,9 +79,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
                                     <span class="dashicons dashicons-plus"></span> Crear mi primera clase
                                 </button>
-                                <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-start-tutorial-btn">
-                                    <span class="dashicons dashicons-admin-customizer"></span> Mostrarme cómo
-                                </button>
                             </div>
                         </div>
                     <?php else: ?>

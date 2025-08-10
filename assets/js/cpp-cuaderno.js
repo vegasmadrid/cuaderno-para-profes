@@ -268,8 +268,11 @@
             const self = this;
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
-            // El click en '#cpp-btn-crear-primera-clase' ahora es gestionado por su propio módulo para abrir el modal.
-            // El tutorial se engancha en 'cpp.modals.clase.showParaCrear'.
+            $document.on('click', '#cpp-btn-crear-primera-clase', function(e) {
+                if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaCrear === 'function') {
+                    cpp.modals.clase.showParaCrear(e);
+                }
+            });
 
             $document.on('change', '#cpp-evaluacion-selector', function(e) { const nuevaEvaluacionId = $(this).val(); if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) { if (!isNaN(nuevaEvaluacionId)) { const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text(); self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId); } } }); $cuadernoContenido.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); }); $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); }); $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } }); $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); }); $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); }); $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); }); $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); }); $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){ if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarParaEditar === 'function') { cpp.modals.actividades.cargarParaEditar(this, e); } else { console.error("Función cpp.modals.actividades.cargarParaEditar no encontrada."); } }); $document.on('click', '#cpp-a1-add-activity-btn', function(e) {
                 e.stopPropagation();

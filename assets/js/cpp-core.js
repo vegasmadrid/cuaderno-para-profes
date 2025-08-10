@@ -91,10 +91,19 @@ const cpp = {
             return; // No estamos en la página del cuaderno
         }
 
-        // Si la pantalla de bienvenida se muestra (renderizada por PHP), no hacemos nada más.
+        // Si la pantalla de bienvenida se muestra, iniciamos el tutorial automáticamente.
         if ($('.cpp-welcome-screen').length > 0) {
-            console.log("CPP Core: Pantalla de bienvenida detectada. La inicialización de la vista del cuaderno se detiene aquí.");
-            return;
+            console.log("CPP Core: Pantalla de bienvenida detectada. Iniciando tutorial automáticamente.");
+            // Pequeño delay para asegurar que todo está listo
+            if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
+                // Solo empezar si no hay ya un paso guardado (evita reiniciar si se recarga la página)
+                if (!localStorage.getItem('cpp_tutorial_step')) {
+                    setTimeout(() => {
+                        cpp.tutorial.start();
+                    }, 500);
+                }
+            }
+            return; // Detenemos la inicialización normal del cuaderno
         }
 
         console.log("CPP Core: initializeCuadernoView ejecutándose...");
