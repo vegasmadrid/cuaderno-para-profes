@@ -151,6 +151,11 @@
             });
 
             $document.on('click', '.cpp-sidebar-clase-alumnos-btn', function(e){
+                // Hook para el tutorial
+                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                    cpp.tutorial.nextStep();
+                }
+
                 if (cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.mostrar === 'function') {
                     cpp.modals.alumnos.mostrar(e); 
                 } else {

@@ -36,14 +36,8 @@ const cpp = {
             { name: 'modalsExcel', objRef: 'modals.excel' },
             { name: 'modalsAsistencia', objRef: 'modals.asistencia' },
             { name: 'modalsFichaAlumno', objRef: 'modals.fichaAlumno' },
-            // ====================================================================
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // Añadimos nuestro nuevo módulo de modal a la lista de inicialización.
-            // ====================================================================
-            { name: 'modalsEvaluacion', objRef: 'modals.evaluacion' }
-            // ====================================================================
-            // --- FIN DE LA MODIFICACIÓN ---
-            // ====================================================================
+            { name: 'modalsEvaluacion', objRef: 'modals.evaluacion' },
+            { name: 'tutorial', objRef: 'tutorial' }
         ];
         
         modulesToInitialize.forEach(moduleInfo => {

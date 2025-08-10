@@ -42,6 +42,18 @@
             $(document).on('click', '.cpp-modal-close', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+
+                // Hook para el tutorial
+                const $modal = $(this).closest('.cpp-modal');
+                if (cpp.tutorial && cpp.tutorial.isActive) {
+                    if ($modal.is('#cpp-modal-alumnos') && cpp.tutorial.currentStep === 7) {
+                        cpp.tutorial.nextStep(); // This is a required step in the flow
+                    } else if ($modal.is('#cpp-modal-actividad-evaluable-cuaderno') && (cpp.tutorial.currentStep === 9 || cpp.tutorial.currentStep === 10)) {
+                        // If the user closes the activity modal instead of saving, end the tutorial.
+                        cpp.tutorial.end();
+                    }
+                }
+
                 cpp.modals.general.hideAll();
             });
 

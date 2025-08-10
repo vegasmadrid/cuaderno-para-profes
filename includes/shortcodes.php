@@ -72,12 +72,17 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <div id="cpp-cuaderno-tabla-area"> 
                 <div id="cpp-cuaderno-contenido">
                     <?php if (empty($clases)): ?>
-                        <div class="cpp-welcome-screen">
+                        <div class="cpp-welcome-screen" id="cpp-welcome-box">
                             <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno para Profes!</h2>
                             <p class="cpp-welcome-subtitle">Parece que este es tu primer viaje. ¿Listo para organizar tu universo de clases?</p>
-                            <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
-                                <span class="dashicons dashicons-sparkles"></span> Crear mi primera clase
-                            </button>
+                            <div class="cpp-welcome-actions">
+                                <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
+                                    <span class="dashicons dashicons-plus"></span> Crear mi primera clase
+                                </button>
+                                <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-start-tutorial-btn">
+                                    <span class="dashicons dashicons-admin-customizer"></span> Mostrarme cómo
+                                </button>
+                            </div>
                         </div>
                     <?php else: ?>
                         <div class="cpp-cuaderno-mensaje-vacio">
@@ -354,6 +359,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         ?>
 
     </div> 
+
     <?php
     return ob_get_clean();
 }

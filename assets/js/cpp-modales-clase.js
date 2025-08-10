@@ -61,6 +61,11 @@
         showParaCrear: function(e) {
             if (e) e.preventDefault();
             
+            // Hook para el tutorial
+            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 0) {
+                cpp.tutorial.nextStep();
+            }
+
             const $modal = $('#cpp-modal-clase');
             this.resetForm(); 
 
@@ -145,6 +150,14 @@
         
         guardar: function(eventForm) { 
             eventForm.preventDefault(); 
+
+            // Hook para el tutorial
+            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
+                // No llamamos a nextStep() porque la página se va a recargar.
+                // Simplemente preparamos el localStorage para que el tutorial continúe después.
+                localStorage.setItem('cpp_tutorial_step', 3);
+            }
+
             const $form = $(eventForm.target); 
             const $btn = $form.find('button[type="submit"]');
             const claseIdEditar = $form.find('#clase_id_editar').val();
@@ -177,10 +190,23 @@
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,
                 success: function(response) {
-                    if (response.success) { window.location.reload(); } 
-                    else { alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.')); }
+                    if (response.success) {
+                        window.location.reload();
+                    }
+                    else {
+                        // Si falla, y estábamos en el tutorial, reseteamos el paso para que no se salte.
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
+                           localStorage.setItem('cpp_tutorial_step', 2);
+                        }
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
+                    }
                 },
-                error: function() { alert('Error de conexión.'); },
+                error: function() {
+                    if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 2) {
+                       localStorage.setItem('cpp_tutorial_step', 2);
+                    }
+                    alert('Error de conexión.');
+                },
                 complete: function() { $btn.prop('disabled', false).html(btnTextOriginal); }
             });
         },

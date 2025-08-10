@@ -49,6 +49,7 @@ function cpp_cargar_assets() {
     $plugin_version = defined('WP_DEBUG') && WP_DEBUG ? time() : CPP_VERSION;
 
     wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
+    wp_enqueue_style('cpp-tutorial-css', CPP_PLUGIN_URL . 'assets/css/cpp-tutorial.css', ['cpp-frontend-css'], $plugin_version);
     wp_enqueue_style('dashicons');
     wp_enqueue_script('jquery-ui-sortable');
 
@@ -64,6 +65,7 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-tutorial-js', CPP_PLUGIN_URL . 'assets/js/cpp-tutorial.js', ['cpp-core-js'], $plugin_version, true);
 
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
         'ajaxUrl' => admin_url('admin-ajax.php'),

@@ -1,0 +1,118 @@
+/* assets/css/cpp-tutorial.css */
+
+/* El highlight se gestiona ahora con box-shadow en un div separado,
+   así que el overlay es solo una capa sutil, si se necesita.
+   En la implementación JS actual, el overlay no se usa si el highlight ya crea el efecto de fondo.
+   Lo dejamos por si se quiere cambiar la técnica de resaltado. */
+.cpp-tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+}
+
+/* El popover principal del tutorial */
+.cpp-tutorial-popover {
+    position: absolute;
+    z-index: 10002; /* Por encima del overlay/highlight */
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: 300px;
+    max-width: 90vw;
+    padding: 16px;
+    display: none; /* Se muestra con JS */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+}
+
+/* Flecha del popover */
+.cpp-tutorial-popover::after {
+    content: '';
+    position: absolute;
+    border-width: 8px;
+    border-style: solid;
+}
+
+/* Flechas de posicionamiento */
+.cpp-tutorial-popover.arrow-top::after {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: transparent transparent #ffffff transparent;
+}
+
+.cpp-tutorial-popover.arrow-bottom::after {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: #ffffff transparent transparent transparent;
+}
+
+.cpp-tutorial-popover.arrow-left::after {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent #ffffff transparent transparent;
+}
+
+.cpp-tutorial-popover.arrow-right::after {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent transparent transparent #ffffff;
+}
+
+/* Contenido de texto del popover */
+.cpp-tutorial-content {
+    margin-bottom: 16px;
+}
+
+/* Navegación (botones) */
+.cpp-tutorial-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+
+/* Estilo base para los botones del tutorial */
+.cpp-tutorial-nav button {
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Botón de terminar/saltar */
+.cpp-tutorial-end-btn {
+    background-color: transparent;
+    color: #555;
+}
+
+.cpp-tutorial-end-btn:hover {
+    color: #222;
+    text-decoration: underline;
+}
+
+/* Botón de siguiente */
+.cpp-tutorial-next-btn {
+    background-color: #2962FF; /* Azul principal */
+    color: #fff;
+    border-color: #2962FF;
+}
+
+.cpp-tutorial-next-btn:hover {
+    background-color: #0039cb;
+    border-color: #0039cb;
+}

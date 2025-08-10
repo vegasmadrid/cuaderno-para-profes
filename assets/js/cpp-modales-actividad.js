@@ -161,7 +161,15 @@
             $.ajax({ 
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData, 
                 success: function(response) { 
-                    if (response.success) { 
+                    if (response.success) {
+                        // Hook para el tutorial
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 10) {
+                            // Usamos un timeout para dar tiempo a que el cuaderno se recargue con la nueva actividad
+                            setTimeout(function() {
+                                cpp.tutorial.nextStep();
+                            }, 500);
+                        }
+
                         $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut(); 
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = "Cuaderno";
