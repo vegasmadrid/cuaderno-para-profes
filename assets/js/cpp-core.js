@@ -143,13 +143,13 @@ const cpp = {
         } else if ($clasesSidebarItems.length === 0) {
             // Si no hay clases, la pantalla de bienvenida se muestra desde PHP.
             // Aquí es donde debemos iniciar el tutorial automáticamente.
+            // Si no hay clases, estamos en la pantalla de bienvenida.
+            // Forzamos el inicio del tutorial desde el principio, limpiando cualquier estado anterior.
             if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
-                // Solo empezar si no hay ya un paso guardado (evita reiniciar si se recarga la página)
-                if (!localStorage.getItem('cpp_tutorial_step')) {
-                    setTimeout(() => {
-                        cpp.tutorial.start();
-                    }, 500);
-                }
+                localStorage.removeItem('cpp_tutorial_step');
+                setTimeout(() => {
+                    cpp.tutorial.start();
+                }, 500); // Un pequeño retardo para asegurar que todo esté renderizado.
             }
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
