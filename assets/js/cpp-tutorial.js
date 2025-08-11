@@ -14,92 +14,109 @@
         steps: [
             { // 0: Start
                 target: '#cpp-btn-crear-primera-clase',
-                content: '¡Hola! Te damos la bienvenida al <strong>Cuaderno de profe</strong>. Pulsa aquí para crear tu primera clase.',
+                content: '¡Hola, profe! Te doy la bienvenida al <strong>Cuaderno de Profe</strong>. ¡Estoy aquí para ayudarte! Empecemos por crear tu primera clase haciendo clic aquí.',
                 placement: 'bottom',
                 trigger: { event: 'click', selector: '#cpp-btn-crear-primera-clase' }
             },
             { // 1: Name the class
                 target: '#cpp-modal-clase #nombre_clase_modal',
-                content: 'Primero, ponle un nombre a tu clase. En cuanto empieces a escribir, seguimos.',
+                content: '¡Genial! Lo primero es ponerle un nombre con cariño a tu clase. Por ejemplo: "Mis Súper Estrellas de 4ºB". En cuanto empieces a escribir, seguimos.',
                 placement: 'right',
                 trigger: { event: 'input', selector: '#cpp-modal-clase #nombre_clase_modal' }
             },
             { // 2: Choose a color
                 target: '#cpp-modal-clase .cpp-color-swatches-container',
-                content: '¡Así me gusta! Ahora, si te apetece, elige un color para la clase. ¡Dale un toque personal!',
+                content: '¡Qué buen nombre! Ahora, si quieres, puedes elegir un color para identificar la clase. ¡Dale un toque personal y alegre!',
                 placement: 'right',
                 trigger: { event: 'click', selector: '#cpp-modal-clase .cpp-color-swatch' }
             },
-            { // 3: Save the class
+            { // 3: Grading system (NEW)
+                target: '#cpp-modal-clase #base_calificacion_modal',
+                content: 'Un último detalle. Aquí puedes decidir la nota máxima (normalmente 10 o 100). No te preocupes, ¡puedes cambiarlo cuando quieras!',
+                placement: 'right',
+                trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' } // Advances when saving
+            },
+            { // 4: Save the class
                 target: '#cpp-modal-clase #cpp-submit-clase-btn-modal',
-                content: '¡Perfecto! Dale a guardar para tener tu clase lista.',
+                content: '¡Todo listo! Pulsa aquí para guardar tu nueva clase y que la magia comience.',
                 placement: 'top',
                 trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' }
             },
-            { // 4: After reload, manage students
-                target: '.cpp-sidebar-clase-alumnos-btn',
-                content: '¡Ya tienes tu primera clase! Ahora, vamos a meter a tus alumnos en ella desde este botón.',
+            { // 5: After reload, prompt to open sidebar (CHANGED)
+                target: '#cpp-a1-menu-btn-toggle',
+                content: '¡Tu clase está creada! Qué emoción. Ahora, vamos a gestionar a tus alumnos. Haz clic aquí para abrir el menú de clases.',
                 placement: 'right',
-                trigger: { event: 'click', selector: '.cpp-sidebar-clase-alumnos-btn' },
-                onShow: function(callback) {
-                    if (cpp.sidebar && !cpp.sidebar.isSidebarVisible) {
-                        cpp.sidebar.toggle(callback); // Pasamos el callback a la función toggle
-                    } else {
-                        callback(); // Si ya está visible, ejecutamos el callback inmediatamente
-                    }
-                }
+                trigger: { event: 'click', selector: '#cpp-a1-menu-btn-toggle' }
             },
-            { // 5: Click "Add New Student"
+            { // 6: Click "Manage Students" (NEW)
+                target: '.cpp-sidebar-clase-alumnos-btn',
+                content: '¡Genial! Desde aquí gestionarás todo lo de esta clase. Pulsa en este botón para empezar a añadir a tus estudiantes.',
+                placement: 'right',
+                trigger: { event: 'click', selector: '.cpp-sidebar-clase-alumnos-btn' }
+            },
+            { // 7: Click "Add New Student" (WAS 5)
                 target: '#cpp-nuevo-alumno-btn',
-                content: 'Venga, sin miedo. Dale aquí para añadir a tu primer estudiante.',
-                placement: 'top',
+                content: '¡Perfecto! Este es tu centro de operaciones para los alumnos. Dale a este botón para añadir al primero.',
+                placement: 'bottom',
                 trigger: { event: 'click', selector: '#cpp-nuevo-alumno-btn' }
             },
-            { // 6: Type student name
+            { // 7: Type student name (WAS 6)
                 target: '#cpp-form-nuevo-alumno [name="nombre_alumno"]',
-                content: 'Escribe el nombre de tu alumno/a y verás qué pasa.',
+                content: 'Empecemos por el nombre de tu alumno/a. ¡Cada genio tiene un nombre!',
                 placement: 'top',
                 trigger: { event: 'input', selector: '#cpp-form-nuevo-alumno [name="nombre_alumno"]' }
             },
-            { // 7: Save student
+            { // 8: Type student last name (NEW)
+                target: '#cpp-form-nuevo-alumno [name="apellidos_alumno"]',
+                content: '¡Muy bien! Ahora sus apellidos. Este campo es importante, ¡no te lo saltes!',
+                placement: 'top',
+                trigger: { event: 'input', selector: '#cpp-form-nuevo-alumno [name="apellidos_alumno"]' }
+            },
+            { // 9: Save student (WAS 7)
                 target: '#cpp-form-nuevo-alumno #cpp-submit-alumno-btn',
-                content: '¡Guárdalo! Así de fácil.',
+                content: '¡Fantástico! Pulsa aquí para guardar y añadirlo a tu lista.',
                 placement: 'top',
                 trigger: { event: 'click', selector: '#cpp-form-nuevo-alumno #cpp-submit-alumno-btn' }
             },
-            { // 8: Close student modal
+            { // 10: Close student modal (WAS 8)
                 target: '#cpp-modal-alumnos .cpp-modal-close',
-                content: '¡Dentro! Ya tienes a tu primer alumno. Cierra esta ventana y volvamos al cuaderno.',
+                content: '¡Ya tienes a tu primer/a valiente! Cierra esta ventanita para volver al cuaderno.',
                 placement: 'bottom',
                 trigger: { event: 'click', selector: '#cpp-modal-alumnos .cpp-modal-close' }
             },
-            { // 9: Add activity
+            { // 11: Prompt to close sidebar (NEW)
+                target: '#cpp-a1-menu-btn-toggle',
+                content: '¡Genial! Ahora, para ver tu cuaderno completo, pulsa aquí de nuevo para cerrar este panel.',
+                placement: 'right',
+                trigger: { event: 'click', selector: '#cpp-a1-menu-btn-toggle' }
+            },
+            { // 12: Add activity (WAS 9)
                 target: '#cpp-a1-add-activity-btn',
-                content: 'Ahora lo importante: ¡las notas! Pulsa aquí para crear tu primera actividad (un examen, deberes, etc.).',
+                content: '¡Ahora empieza lo bueno! Vamos a crear la primera actividad: un examen, un trabajo, lo que quieras. ¡Pulsa aquí!',
                 placement: 'bottom',
                 trigger: { event: 'click', selector: '#cpp-a1-add-activity-btn' }
             },
-            { // 10: Type activity name
+            { // 13: Type activity name (WAS 10)
                 target: '#cpp-modal-actividad-evaluable-cuaderno #nombre_actividad_cuaderno_input',
-                content: "Ponle un nombre, como \"Examen Sorpresa\" o \"Trabajo de Historia\".",
+                content: "Ponle un nombre chulo, como \"Examen de los Planetas\" o \"Proyecto de Héroes y Heroínas\".",
                 placement: 'top',
                 trigger: { event: 'input', selector: '#cpp-modal-actividad-evaluable-cuaderno #nombre_actividad_cuaderno_input' }
             },
-            { // 11: Save activity
+            { // 14: Save activity (WAS 11)
                 target: '#cpp-modal-actividad-evaluable-cuaderno #cpp-submit-actividad-btn-cuaderno-form',
-                content: '¡Guárdala y a poner notas!',
+                content: '¡Guárdala y prepárate para calificar!',
                 placement: 'top',
                 trigger: { event: 'click', selector: '#cpp-modal-actividad-evaluable-cuaderno #cpp-submit-actividad-btn-cuaderno-form' }
             },
-            { // 12: Enter a grade
+            { // 15: Enter a grade (WAS 12)
                 target: 'td.cpp-celda-calificacion:first .cpp-calificacion-input',
-                content: '¡La hora de la verdad! Haz clic aquí y pon tu primera nota. Se guarda sola al quitar el ratón de la celda.',
+                content: '¡La hora de la verdad! Haz clic aquí y pon tu primera nota. Se guardará sola cuando hagas clic fuera. ¡Mágico!',
                 placement: 'top',
                 trigger: { event: 'focus', selector: 'td.cpp-celda-calificacion:first .cpp-calificacion-input' }
             },
-            { // 13: Final summary
+            { // 16: Final summary (WAS 13)
                 target: '#cpp-cuaderno-header',
-                content: '¡Esto es todo! Ya sabes cómo funciona lo principal. Si te pierdes, recuerda que puedes saltar el tour con el botón. ¡A disfrutarlo!',
+                content: '¡Lo has conseguido! Ya dominas lo esencial del Cuaderno de Profe. Explora y verás cuántas cosas más puedes hacer. ¡Estoy aquí si me necesitas! ❤️',
                 placement: 'bottom'
             }
         ],
@@ -253,7 +270,7 @@
                     $popover.addClass('arrow-top');
             }
 
-            $popover.css({ position: 'absolute', top: popoverTop, left: popoverLeft }).fadeIn();
+            $popover.css({ position: 'fixed', top: popoverTop - $(window).scrollTop(), left: popoverLeft - $(window).scrollLeft() }).fadeIn();
         },
 
         bindEvents: function() {

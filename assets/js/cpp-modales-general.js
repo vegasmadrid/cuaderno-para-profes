@@ -55,11 +55,13 @@
                 cpp.modals.general.hideAll();
             });
 
-            $(document).on('click', '.cpp-modal', function(event) {
-                if ($(event.target).is('.cpp-modal')) {
-                    cpp.modals.general.hideAll();
-                }
-            });
+            // Se comenta esta sección para evitar que el modal se cierre al hacer clic fuera.
+            // El comportamiento deseado es que solo se cierre con el botón X.
+            // $(document).on('click', '.cpp-modal', function(event) {
+            //     if ($(event.target).is('.cpp-modal')) {
+            //         cpp.modals.general.hideAll();
+            //     }
+            // });
         }
     };
 

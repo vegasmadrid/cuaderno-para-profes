@@ -326,6 +326,19 @@
             console.log("Binding Modals Clase events...");
             const $modalClase = $('#cpp-modal-clase'); 
 
+            // Manejo del Enter en el formulario de la clase
+            $modalClase.on('keydown', '#cpp-form-clase', (e) => {
+                // Prevenir que la tecla Enter envíe el formulario durante el tutorial
+                if (e.key === 'Enter' && $(e.target).is('#nombre_clase_modal')) {
+                    if (typeof cpp.tutorial !== 'undefined' && cpp.tutorial.isActive && cpp.tutorial.currentStep === 1) {
+                        e.preventDefault();
+                        // No es necesario avanzar el tutorial aquí, porque el trigger 'input' ya lo hace.
+                        // Solo prevenimos el envío del formulario. El tour avanzará en cuanto el usuario escriba.
+                        // Si quisiéramos que 'Enter' avanzara, llamaríamos a cpp.tutorial.advance(1);
+                    }
+                }
+            });
+
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
             $modalClase.on('click', '.cpp-tab-link', (e) => { this.handleTabClick(e, null, $modalClase); });
