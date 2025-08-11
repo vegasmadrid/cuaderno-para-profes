@@ -174,48 +174,38 @@
         },
 
         showStep: function(stepIndex) {
-            console.log(`[Debug] showStep(${stepIndex}) called.`);
             $('.cpp-tutorial-highlight-overlay').remove();
             $('.cpp-tutorial-popover').remove();
             $(document).off('.cppTutorial');
 
             if (!this.isActive || !this.steps[stepIndex]) {
-                console.error(`[Debug] Tutorial not active or step ${stepIndex} does not exist. Ending.`);
                 this.end();
                 return;
             }
 
             const step = this.steps[stepIndex];
             const self = this;
-            console.log(`[Debug] Preparing to show step ${stepIndex} with target '${step.target}'.`);
 
             // Función que renderiza el popover y el highlight
             const renderStep = function() {
-                console.log(`[Debug] renderStep for step ${stepIndex} is executing.`);
                 const $target = $(step.target);
 
-                if (!$target.length) {
-                    console.warn(`[Debug] Target '${step.target}' for step ${stepIndex} NOT FOUND in the DOM. Retrying...`);
-                    setTimeout(() => { if (self.isActive && self.currentStep === stepIndex) self.showStep(stepIndex); }, 300);
+                if (!$target.length || !$target.is(':visible')) {
+                    console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
+                    setTimeout(() => {
+                        if (self.isActive && self.currentStep === stepIndex) {
+                            self.showStep(stepIndex);
+                        }
+                    }, 300);
                     return;
                 }
 
-                if (!$target.is(':visible')) {
-                    console.warn(`[Debug] Target '${step.target}' for step ${stepIndex} was found but is NOT VISIBLE. Retrying...`);
-                    setTimeout(() => { if (self.isActive && self.currentStep === stepIndex) self.showStep(stepIndex); }, 300);
-                    return;
-                }
-
-                console.log(`[Debug] Target '${step.target}' found and visible. Dimensions: ${$target.outerWidth()}x${$target.outerHeight()}. Offset:`, $target.offset());
-
-                console.log("[Debug] Appending popover to body.");
                 $('body').append('<div class="cpp-tutorial-popover"></div>');
                 const $popover = $('.cpp-tutorial-popover');
                 let popoverContent = `<div class="cpp-tutorial-content">${step.content}</div>`;
                 popoverContent += `<div class="cpp-tutorial-nav"><button type="button" class="cpp-tutorial-end-btn">Saltar Tour</button></div>`;
                 $popover.html(popoverContent).attr('data-placement', step.placement);
 
-                console.log("[Debug] Appending highlight overlay to body.");
                 $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
                 const $highlight = $('.cpp-tutorial-highlight-overlay');
                 const targetOffset = $target.offset();
@@ -249,7 +239,6 @@
         },
 
         positionPopover: function($popover, $target) {
-            console.log("[Debug] positionPopover called.");
             // This function needs to be called after the popover is added to the DOM to measure its dimensions
             const targetOffset = $target.offset();
             const targetWidth = $target.outerWidth();
@@ -258,8 +247,6 @@
             const popoverWidth = $popover.outerWidth();
             let popoverTop, popoverLeft;
             const placement = $popover.attr('data-placement') || 'bottom';
-
-            console.log(`[Debug] Popover dimensions: ${popoverWidth}x${popoverHeight}`);
 
             switch (placement) {
                 case 'top':
@@ -286,11 +273,7 @@
             const finalTop = popoverTop - $(window).scrollTop();
             const finalLeft = popoverLeft - $(window).scrollLeft();
 
-            console.log(`[Debug] Calculated popover position (absolute): top=${popoverTop}, left=${popoverLeft}`);
-            console.log(`[Debug] Final popover position (fixed): top=${finalTop}, left=${finalLeft}`);
-
-            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft }).fadeIn();
-            console.log("[Debug] Popover CSS set and fadeIn called.");
+            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft, opacity: 1 });
         },
 
         bindEvents: function() {
