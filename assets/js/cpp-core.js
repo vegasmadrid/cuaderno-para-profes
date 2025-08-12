@@ -146,9 +146,7 @@ const cpp = {
             // Forzamos el inicio del tutorial desde el principio, limpiando cualquier estado anterior.
             if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
                 localStorage.removeItem('cpp_tutorial_step');
-                setTimeout(() => {
-                    cpp.tutorial.start();
-                }, 500); // Un pequeño retardo para asegurar que todo esté renderizado.
+                cpp.tutorial.start();
             }
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
