@@ -146,7 +146,14 @@ const cpp = {
             // Forzamos el inicio del tutorial desde el principio, limpiando cualquier estado anterior.
             if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
                 localStorage.removeItem('cpp_tutorial_step');
-                cpp.tutorial.start();
+                // -- INICIO DIAGNÓSTICO --
+                if ($('#cpp-btn-crear-primera-clase').length > 0) {
+                    console.log("CPP Core: Botón de inicio de tutorial encontrado. Iniciando tutorial.");
+                    cpp.tutorial.start();
+                } else {
+                    console.error("CPP Core: No se encontró el botón de inicio del tutorial ('#cpp-btn-crear-primera-clase'). El tutorial no puede comenzar.");
+                }
+                // -- FIN DIAGNÓSTICO --
             }
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
