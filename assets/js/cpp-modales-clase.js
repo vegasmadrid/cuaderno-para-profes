@@ -174,7 +174,10 @@
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,
                 success: function(response) {
                     if (response.success) {
-                        window.location.reload();
+                        // Forzar recarga sin caché para evitar que se muestre la vista antigua
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('nocache', new Date().getTime());
+                        window.location.href = url.href;
                     } else {
                         if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
                            localStorage.setItem('cpp_tutorial_step', 3); // Revertir si falla
