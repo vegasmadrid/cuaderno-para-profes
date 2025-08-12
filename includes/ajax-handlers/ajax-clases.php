@@ -50,12 +50,6 @@ function cpp_ajax_crear_clase() {
     if ($clase_id_editar > 0) {
         $resultado = cpp_actualizar_clase_completa($clase_id_editar, $user_id, $datos);
         if ($resultado !== false) {
-            if (function_exists('wp_cache_clear_cache')) {
-                wp_cache_clear_cache();
-            }
-            if (function_exists('w3tc_flush_all')) {
-                w3tc_flush_all();
-            }
             wp_send_json_success(['message' => 'Clase actualizada correctamente. La página se recargará.']);
         } else {
             global $wpdb;
@@ -64,12 +58,6 @@ function cpp_ajax_crear_clase() {
     } else {
         $resultado = cpp_guardar_clase($user_id, $datos);
         if ($resultado) {
-            if (function_exists('wp_cache_clear_cache')) {
-                wp_cache_clear_cache();
-            }
-            if (function_exists('w3tc_flush_all')) {
-                w3tc_flush_all();
-            }
             wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $GLOBALS['wpdb']->insert_id]);
         } else {
             global $wpdb;
