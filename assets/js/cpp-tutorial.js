@@ -40,6 +40,20 @@
                 target: '#cpp-modal-clase #cpp-submit-clase-btn-modal',
                 content: '¡Todo listo! Pulsa aquí para guardar tu nueva clase y que la magia comience.',
                 placement: 'top',
+                onShow: function(renderStep) {
+                    const $modal = $('#cpp-modal-clase');
+                    if (!$modal.is(':visible')) {
+                        // El modal no está abierto, lo mostramos.
+                        cpp.modals.clase.showParaCrear();
+                        // Usamos promise() para esperar a que la animación fadeIn termine.
+                        $modal.promise().done(function() {
+                            renderStep();
+                        });
+                    } else {
+                        // El modal ya estaba abierto, simplemente renderizamos el paso.
+                        renderStep();
+                    }
+                },
                 trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' }
             },
             { // 5: After reload, prompt to open sidebar (CHANGED)
