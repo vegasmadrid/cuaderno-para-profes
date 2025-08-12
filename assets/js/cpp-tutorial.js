@@ -190,8 +190,22 @@
             const renderStep = function() {
                 const $target = $(step.target);
 
-                if (!$target.length || !$target.is(':visible')) {
-                    console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
+                // Para el paso 0, confiamos en que el botón existe (lo hemos verificado) y solo comprobamos longitud.
+                // Para los demás pasos, comprobamos también la visibilidad.
+                const isStepZero = (stepIndex === 0);
+                const isTargetInvalid = isStepZero ? !$target.length : (!$target.length || !$target.is(':visible'));
+
+                if (isTargetInvalid) {
+                    const reason = $target.length ? 'not visible' : 'not found';
+                    console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} ${reason}. Retrying...`);
+
+                    // No reintentar para el paso 0 si no se encuentra, para evitar bucles infinitos en el caso improbable.
+                    if (isStepZero && !$target.length) {
+                        console.error("Tutorial: Abortando. El target del paso 0 no existe en el DOM.");
+                        self.end();
+                        return;
+                    }
+
                     setTimeout(() => {
                         if (self.isActive && self.currentStep === stepIndex) {
                             self.showStep(stepIndex);

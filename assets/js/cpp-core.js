@@ -25,7 +25,6 @@ const cpp = {
         }
         console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
-        this.initializeCuadernoView();
         const modulesToInitialize = [
             { name: 'utils', objRef: 'utils' },
             { name: 'sidebar', objRef: 'sidebar' },
@@ -80,6 +79,8 @@ const cpp = {
             }
         });
         
+        this.initializeCuadernoView();
+
         console.log("CPP Core: init() completado.");
     }, 
 
@@ -140,8 +141,16 @@ const cpp = {
                  $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Módulo del cuaderno no cargado.</p></div>');
             }
         } else if ($clasesSidebarItems.length === 0) {
-            // La lógica para iniciar el tutorial se ha movido a cpp-cuaderno.js init()
-            // para asegurar que se ejecuta en el contexto correcto después de que la UI esté completamente estabilizada.
+            // Si no hay clases, la pantalla de bienvenida se muestra desde PHP.
+            // Aquí es donde debemos iniciar el tutorial automáticamente.
+            // Si no hay clases, estamos en la pantalla de bienvenida.
+            // Forzamos el inicio del tutorial desde el principio, limpiando cualquier estado anterior.
+            if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
+                localStorage.removeItem('cpp_tutorial_step');
+                setTimeout(() => {
+                    cpp.tutorial.start();
+                }, 500); // Un pequeño retardo para asegurar que todo esté renderizado.
+            }
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');
