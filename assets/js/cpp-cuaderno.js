@@ -23,6 +23,16 @@
                 const savedDirection = localStorage.getItem(this.localStorageKey_enterDirection + cppFrontendData.userId);
                 if (savedDirection === 'right' || savedDirection === 'down') { this.enterKeyDirection = savedDirection; }
             }
+
+            // Lógica para iniciar el tutorial si estamos en la pantalla de bienvenida.
+            // Se mueve aquí desde cpp-core.js para asegurar el contexto de ejecución.
+            if ($('#cpp-btn-crear-primera-clase').length > 0) {
+                 if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
+                    console.log("CPP Cuaderno: Botón de bienvenida detectado, iniciando tutorial.");
+                    localStorage.removeItem('cpp_tutorial_step'); // Limpiar estado por si acaso
+                    cpp.tutorial.start();
+                }
+            }
         },
 
         updateEnterDirectionButton: function() {
