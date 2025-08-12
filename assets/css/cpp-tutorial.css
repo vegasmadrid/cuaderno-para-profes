@@ -1,0 +1,129 @@
+/* assets/css/cpp-tutorial.css */
+
+.cpp-tutorial-highlight-overlay {
+    pointer-events: none; /* Allows clicks to pass through to elements underneath */
+}
+
+.cpp-tutorial-popover {
+    position: absolute;
+    z-index: 10002;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: 300px;
+    max-width: 90vw;
+    padding: 16px;
+    display: none; /* Shown with JS */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+}
+
+.cpp-tutorial-popover::before, .cpp-tutorial-popover::after {
+    content: '';
+    position: absolute;
+    border-style: solid;
+    border-width: 8px;
+}
+
+.cpp-tutorial-popover.arrow-top::before {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: transparent transparent #ddd transparent;
+}
+.cpp-tutorial-popover.arrow-top::after {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: transparent transparent #fff transparent;
+    margin-bottom: -1px;
+}
+
+.cpp-tutorial-popover.arrow-bottom::before {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: #ddd transparent transparent transparent;
+}
+.cpp-tutorial-popover.arrow-bottom::after {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: #fff transparent transparent transparent;
+    margin-top: -1px;
+}
+
+.cpp-tutorial-popover.arrow-left::before {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent #ddd transparent transparent;
+}
+.cpp-tutorial-popover.arrow-left::after {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent #fff transparent transparent;
+    margin-right: -1px;
+}
+
+.cpp-tutorial-popover.arrow-right::before {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent transparent transparent #ddd;
+}
+.cpp-tutorial-popover.arrow-right::after {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent transparent transparent #fff;
+    margin-left: -1px;
+}
+
+.cpp-tutorial-content {
+    margin-bottom: 16px;
+}
+
+.cpp-tutorial-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+
+.cpp-tutorial-nav button {
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.cpp-tutorial-end-btn {
+    background-color: transparent;
+    color: #555;
+    text-decoration: none;
+}
+
+.cpp-tutorial-end-btn:hover {
+    color: #222;
+    text-decoration: underline;
+}
+
+.cpp-tutorial-next-btn {
+    background-color: #2962FF;
+    color: #fff;
+    border-color: #2962FF;
+}
+
+.cpp-tutorial-next-btn:hover {
+    background-color: #0039cb;
+    border-color: #0039cb;
+}

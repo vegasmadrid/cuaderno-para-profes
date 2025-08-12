@@ -72,11 +72,19 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <div id="cpp-cuaderno-tabla-area"> 
                 <div id="cpp-cuaderno-contenido">
                     <?php if (empty($clases)): ?>
-                        <div class="cpp-cuaderno-mensaje-vacio">
-                            <p class="cpp-mensaje">No tienes clases creadas. Por favor, crea una clase primero para usar el cuaderno.</p>
+                        <div class="cpp-welcome-screen" id="cpp-welcome-box">
+                            <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno de profe!</h2>
+                            <p class="cpp-welcome-subtitle">Parece que este es tu primer viaje. ¿Listo para organizar tu universo de clases?</p>
+                            <div class="cpp-welcome-actions">
+                                <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
+                                    <span class="dashicons dashicons-plus"></span> Crear mi primera clase
+                                </button>
+                            </div>
                         </div>
                     <?php else: ?>
-                        <p class="cpp-cuaderno-cargando">Cargando clase...</p> 
+                        <div class="cpp-cuaderno-mensaje-vacio">
+                            <p class="cpp-cuaderno-cargando">Cargando clase...</p>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -278,7 +286,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         if (empty(did_action('cpp_modal_ficha_alumno_outputted'))) {
             ?>
             <div class="cpp-modal" id="cpp-modal-ficha-alumno">
-                <div class="cpp-modal-content cpp-modal-ficha-alumno-content"> 
+                <div class="cpp-modal-content cpp-modal-ficha-alumno-content">
                     <span class="cpp-modal-close">&times;</span>
                     <h2 id="cpp-modal-ficha-alumno-titulo">Ficha del Alumno</h2>
                     <div class="cpp-ficha-alumno-grid">
@@ -314,7 +322,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <div id="cpp-ficha-stats-asistencia" style="margin-bottom:10px; padding-bottom:10px; border-bottom: 1px solid #eee;"><p>Cargando estadísticas...</p></div>
                             <div id="cpp-ficha-lista-asistencia" class="cpp-lista-scrollable"><p>Cargando historial...</p></div>
                         </div>
-                    </div> 
+                    </div>
                 </div>
             </div>
             <?php

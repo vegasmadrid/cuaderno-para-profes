@@ -42,14 +42,26 @@
             $(document).on('click', '.cpp-modal-close', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+
+                const $modal = $(this).closest('.cpp-modal');
+                if (cpp.tutorial && cpp.tutorial.isActive) {
+                    if ($modal.is('#cpp-modal-alumnos') && cpp.tutorial.currentStep === 7) {
+                        cpp.tutorial.nextStep();
+                    } else if ($modal.is('#cpp-modal-actividad-evaluable-cuaderno') && (cpp.tutorial.currentStep === 9 || cpp.tutorial.currentStep === 10)) {
+                        cpp.tutorial.end();
+                    }
+                }
+
                 cpp.modals.general.hideAll();
             });
 
-            $(document).on('click', '.cpp-modal', function(event) {
-                if ($(event.target).is('.cpp-modal')) {
-                    cpp.modals.general.hideAll();
-                }
-            });
+            // Se comenta esta sección para evitar que el modal se cierre al hacer clic fuera.
+            // El comportamiento deseado es que solo se cierre con el botón X.
+            // $(document).on('click', '.cpp-modal', function(event) {
+            //     if ($(event.target).is('.cpp-modal')) {
+            //         cpp.modals.general.hideAll();
+            //     }
+            // });
         }
     };
 

@@ -152,6 +152,10 @@
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
 
+            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                localStorage.setItem('cpp_tutorial_step', 4); // Preparar para el siguiente paso después de recargar
+            }
+
             if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
             if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
             const baseNotaNumerica = parseFloat(baseNotaFinalClase.replace(',', '.'));
@@ -164,15 +168,26 @@
             const ajaxData = {
                 action: 'cpp_crear_clase', nonce: cppFrontendData.nonce,
                 clase_id_editar: claseIdEditar, nombre_clase: nombreClase,
-                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2) 
+                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2)
             };
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,
                 success: function(response) {
-                    if (response.success) { window.location.reload(); } 
-                    else { alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.')); }
+                    if (response.success) {
+                        window.location.reload();
+                    } else {
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                           localStorage.setItem('cpp_tutorial_step', 3); // Revertir si falla
+                        }
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
+                    }
                 },
-                error: function() { alert('Error de conexión.'); },
+                error: function() {
+                    if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                       localStorage.setItem('cpp_tutorial_step', 3); // Revertir si falla
+                    }
+                    alert('Error de conexión.');
+                },
                 complete: function() { $btn.prop('disabled', false).html(btnTextOriginal); }
             });
         },
@@ -310,6 +325,19 @@
         bindEvents: function() {
             console.log("Binding Modals Clase events...");
             const $modalClase = $('#cpp-modal-clase'); 
+
+            // Manejo del Enter en el formulario de la clase
+            $modalClase.on('keydown', '#cpp-form-clase', (e) => {
+                // Prevenir que la tecla Enter envíe el formulario durante el tutorial
+                if (e.key === 'Enter' && $(e.target).is('#nombre_clase_modal')) {
+                    if (typeof cpp.tutorial !== 'undefined' && cpp.tutorial.isActive && cpp.tutorial.currentStep === 1) {
+                        e.preventDefault();
+                        // No es necesario avanzar el tutorial aquí, porque el trigger 'input' ya lo hace.
+                        // Solo prevenimos el envío del formulario. El tour avanzará en cuanto el usuario escriba.
+                        // Si quisiéramos que 'Enter' avanzara, llamaríamos a cpp.tutorial.advance(1);
+                    }
+                }
+            });
 
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });

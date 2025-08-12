@@ -121,14 +121,14 @@
             // Resumen de Notas
             if (data.resumen_notas) {
                 $modal.find('#cpp-ficha-nota-final-alumno').text(data.resumen_notas.nota_final_formateada || '-');
-                
+
                 // NUEVO: Mostrar notas medias por categoría
                 let htmlCategoriasNotas = '<ul>';
                 if (data.resumen_notas.notas_medias_por_categoria && data.resumen_notas.notas_medias_por_categoria.length > 0) {
                     data.resumen_notas.notas_medias_por_categoria.forEach(function(cat) {
                         htmlCategoriasNotas += `<li>
                             <span class="cpp-category-color-indicator" style="background-color:${cat.color_categoria || '#eee'};"></span>
-                            <strong>${$('<div>').text(cat.nombre_categoria).html()}</strong> (${cat.porcentaje_categoria}%): 
+                            <strong>${$('<div>').text(cat.nombre_categoria).html()}</strong> (${cat.porcentaje_categoria}%):
                             <span>${cat.nota_media_formateada}</span> (sobre ${data.clase_info.base_nota_final || 'N/A'})
                         </li>`;
                     });
@@ -156,7 +156,7 @@
                 if (data.historial_asistencia.length > 0) {
                     data.historial_asistencia.forEach(function(asistencia) {
                         const fechaFormateada = asistencia.fecha_asistencia ? new Date(asistencia.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'Fecha desconocida';
-                        htmlAsistencia += `<li><strong>${fechaFormateada}</strong>: ${$('<div>').text(asistencia.estado).html()} 
+                        htmlAsistencia += `<li><strong>${fechaFormateada}</strong>: ${$('<div>').text(asistencia.estado).html()}
                                           ${asistencia.observaciones ? `<em>(${ $('<div>').text(asistencia.observaciones).html()})</em>` : ''}</li>`;
                     });
                 } else {
@@ -183,7 +183,7 @@
                 $form.hide();
                 $displayDiv.show();
                 $editBtn.show();
-                $form.trigger('reset'); 
+                $form.trigger('reset');
             }
         },
 

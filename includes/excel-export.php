@@ -10,7 +10,7 @@ if (file_exists(CPP_PLUGIN_DIR . 'lib/vendor/autoload.php')) {
         wp_die('Error Crítico: La librería PhpSpreadsheet no se encuentra en la ruta esperada (lib/vendor/autoload.php) para la exportación. Por favor, asegúrate de que se ha instalado y subido correctamente.');
     }
     error_log('Error crítico en el plugin Cuaderno para Profesores (excel-export.php): Librería PhpSpreadsheet no encontrada en lib/vendor/autoload.php.');
-    return; 
+    return;
 }
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -73,8 +73,8 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment;filename="' . $filename . '"');
     header('Cache-Control: max-age=0');
-    header('Cache-Control: cache, must-revalidate'); 
-    header('Pragma: public'); 
+    header('Cache-Control: cache, must-revalidate');
+    header('Pragma: public');
 
     // --- INICIA CÓDIGO CORREGIDO ---
 
@@ -107,7 +107,7 @@ exit;
         status_header(500);
         echo "Error al generar el archivo Excel (sin salida)."; // Mensaje genérico
     }
-    wp_die(); 
+    wp_die();
 }
 
 /**
@@ -123,7 +123,7 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
     if ($base_nota_final_clase <= 0) $base_nota_final_clase = 100.00;
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id); 
-    $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id); 
+    $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_id);
 
     $header_font_style = ['bold' => true, 'color' => ['rgb' => 'FFFFFF']];
@@ -141,7 +141,7 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
     
     foreach ($actividades as $act) {
         $col_index++;
-        $header_text = $act['nombre_actividad'] . "\n" . 
+        $header_text = $act['nombre_actividad'] . "\n" .
                        '(' . ($act['nombre_categoria'] ?: 'Sin Cat.') . ' / ' . cpp_formatear_nota_display($act['nota_maxima']) . ')';
         $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index) . '3', $header_text);
         $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($col_index))->setWidth(18);
@@ -173,9 +173,9 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
                 $nota_actividad_raw = isset($calificaciones_raw[$alumno['id']][$act['id']]) ? $calificaciones_raw[$alumno['id']][$act['id']] : null;
                 if (is_numeric($nota_actividad_raw)) {
                     $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, floatval($nota_actividad_raw));
-                    $sheet->getStyle(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel)->getNumberFormat()->setFormatCode('0.00'); 
+                    $sheet->getStyle(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel)->getNumberFormat()->setFormatCode('0.00');
                 } else {
-                    $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, ''); 
+                    $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, '');
                 }
                 $sheet->getStyle(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }

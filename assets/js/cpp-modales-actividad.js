@@ -38,7 +38,6 @@
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
-            // Lógica principal: decidir si mostrar el selector de categoría
             if (cpp.gradebook.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
                 if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') {
@@ -49,11 +48,15 @@
                     });
                 }
             } else {
-                // Si el modo es 'total', simplemente ocultamos el campo.
                 $selectCategoriasGroup.hide();
             }
 
-            $('#cpp-modal-actividad-evaluable-cuaderno').fadeIn().find('#nombre_actividad_cuaderno_input').focus();
+            $('#cpp-modal-actividad-evaluable-cuaderno').fadeIn(function() {
+                $(this).find('#nombre_actividad_cuaderno_input').focus();
+                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 8) {
+                    cpp.tutorial.nextStep();
+                }
+            });
         },
         
         cargarParaEditar: function(elementClicked, event) { 
@@ -161,7 +164,12 @@
             $.ajax({ 
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData, 
                 success: function(response) { 
-                    if (response.success) { 
+                    if (response.success) {
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 10) {
+                            setTimeout(function() {
+                                cpp.tutorial.nextStep();
+                            }, 500);
+                        }
                         $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut(); 
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = "Cuaderno";

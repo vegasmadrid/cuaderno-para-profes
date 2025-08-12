@@ -45,7 +45,7 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
         // En lugar de calcular medias por categoría, calculamos la nota final de la evaluación completa
         $nota_final_evaluacion_0_100 = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
         $nota_final_reescalada = ($nota_final_evaluacion_0_100 / 100) * $base_nota_clase;
-        
+
         $decimales_nota_final = 2;
         if ($base_nota_clase == floor($base_nota_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) {
             $decimales_nota_final = 0;
@@ -60,9 +60,9 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
             'nota_final_formateada' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final)
         ];
     }
-    
+
     $historial_asistencia = cpp_obtener_asistencia_alumno_para_clase($user_id, $alumno_id, $clase_id);
-    
+
     $stats_asistencia = [ 'presente' => 0, 'ausente' => 0, 'retraso' => 0, 'justificado' => 0, ];
     foreach($historial_asistencia as $asistencia_item) {
         if (isset($stats_asistencia[$asistencia_item['estado']])) {

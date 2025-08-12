@@ -38,7 +38,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
             $metodo_calculo = $evaluaciones[0]['calculo_nota'];
         }
     }
-    
+
     $alumnos = cpp_obtener_alumnos_clase($clase_id);
     $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_activa_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_activa_id);
@@ -48,10 +48,10 @@ function cpp_ajax_cargar_cuaderno_clase() {
     if (is_array($categorias_evaluacion)) {
         foreach ($categorias_evaluacion as $cat) { $map_categorias_porcentajes[$cat['id']] = floatval($cat['porcentaje']); }
     }
-    
+
     $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
     if ($base_nota_final_clase <= 0) $base_nota_final_clase = 100.00;
-    
+
     $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
     $soft_class_color = cpp_lighten_hex_color($clase_color_actual, 0.92);
@@ -64,7 +64,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
             $notas_finales_alumnos[$alumno['id']] = $nota_reescalada;
         }
     }
-    
+
     ob_start();
     ?>
     <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
@@ -119,7 +119,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                             </th>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    
+
                     <th class="cpp-cuaderno-th-final" data-base-nota-final="<?php echo esc_attr($base_nota_final_clase); ?>"><div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(sobre <?php echo cpp_formatear_nota_display($base_nota_final_clase, ($base_nota_final_clase == floor($base_nota_final_clase) ? 0 : 2) ); ?>)</span></div></th>
                 </tr>
             </thead>

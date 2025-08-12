@@ -63,13 +63,7 @@
             $modal.find('#cpp-modal-alumnos-title').text(`Gestión de Alumnos: ${claseNombre}`);
             $container.html('<p class="cpp-cuaderno-cargando">Cargando alumnos...</p>');
             
-            this.resetForm(); // Resetea y asegura que el form esté oculto
-            
-            // Asegurar que otros modales estén ocultos
-            if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function' && $modal.is(":hidden")) {
-                // No llamar a hideAll aquí para evitar bucles si el clic vino de otro modal que ya se cerró.
-                // El flujo normal es que hideAll se llama, y luego se llama a esta función 'mostrar'.
-            }
+            this.resetForm();
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -92,7 +86,12 @@
                     $container.html('<p class="cpp-error-message">Error de conexión al cargar alumnos.</p>');
                 },
                 complete: function() {
-                    $modal.fadeIn();
+                    $modal.fadeIn(function() {
+                        // Hook para el tutorial: se ejecuta DESPUÉS de que el modal es visible.
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
+                            cpp.tutorial.nextStep();
+                        }
+                    });
                 }
             });
         },
@@ -174,13 +173,16 @@
 
             const originalBtnHtml = $btn.html();
             $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
-            const self = this; // Para acceder a this dentro de callbacks
+            const self = this;
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', data: formData,
                 processData: false, contentType: false, dataType: 'json',
                 success: function(response) {
                     if (response.success) {
+                        if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 6) {
+                            cpp.tutorial.nextStep();
+                        }
                         self.refreshList(); 
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && 
                             cpp.currentClaseIdCuaderno && 
@@ -280,15 +282,26 @@
         bindEvents: function() {
             console.log("Binding Modals Alumnos events...");
             const $document = $(document);
-            
-            // Los botones que ABREN este modal (.cpp-sidebar-clase-alumnos-btn) se bindean en cpp.sidebar.js
+            const self = this;
 
-            // Eventos DENTRO del modal de alumnos
-            // Es importante usar $document para la delegación si #cpp-alumnos-container se reemplaza completamente
-            $document.on('click', '#cpp-nuevo-alumno-btn', function(e){ cpp.modals.alumnos.mostrarForm.call(cpp.modals.alumnos, e, null); }); 
-            $document.on('submit', '#cpp-form-nuevo-alumno', function(e){ cpp.modals.alumnos.guardar.call(cpp.modals.alumnos, e); });
-            $document.on('click', '#cpp-alumnos-container .cpp-alumno-actions .cpp-btn-editar', function(e){ cpp.modals.alumnos.cargarParaEditar.call(cpp.modals.alumnos, e); }); 
-            $document.on('click', '#cpp-alumnos-container .cpp-alumno-actions .cpp-btn-eliminar-alumno', function(e){ cpp.modals.alumnos.eliminar.call(cpp.modals.alumnos, e); });
+            $document.on('click', '#cpp-nuevo-alumno-btn', function(e) {
+                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 4) {
+                    cpp.tutorial.nextStep();
+                }
+                self.mostrarForm.call(self, e, null);
+            });
+
+            $document.on('submit', '#cpp-form-nuevo-alumno', function(e) {
+                self.guardar.call(self, e);
+            });
+
+            $document.on('click', '#cpp-alumnos-container .cpp-alumno-actions .cpp-btn-editar', function(e) {
+                self.cargarParaEditar.call(self, e);
+            });
+
+            $document.on('click', '#cpp-alumnos-container .cpp-alumno-actions .cpp-btn-eliminar-alumno', function(e) {
+                self.eliminar.call(self, e);
+            });
         }
     };
 

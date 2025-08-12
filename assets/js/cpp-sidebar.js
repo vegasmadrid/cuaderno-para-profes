@@ -67,24 +67,29 @@
             }
         },
 
-        toggle: function() {
-            console.log("cpp.sidebar.toggle INVOCADA. Estado actual isSidebarVisible:", this.isSidebarVisible);
+        toggle: function(callback) {
             const $sidebar = $('#cpp-cuaderno-sidebar');
             const $overlay = $('#cpp-sidebar-overlay');
 
             if (!$sidebar.length) {
                 console.error("Elemento Sidebar '#cpp-cuaderno-sidebar' NO ENCONTRADO.");
+                if (typeof callback === 'function') callback();
                 return;
             }
-            this.isSidebarVisible = !this.isSidebarVisible;
-            console.log("Nuevo estado isSidebarVisible:", this.isSidebarVisible);
 
+            // Si hay un callback, nos preparamos para ejecutarlo cuando la transición termine
+            if (typeof callback === 'function') {
+                $sidebar.one('transitionend', function() {
+                    callback();
+                });
+            }
+
+            this.isSidebarVisible = !this.isSidebarVisible;
             $sidebar.toggleClass('cpp-sidebar-visible', this.isSidebarVisible);
             if ($overlay.length) {
                 $overlay.toggleClass('cpp-sidebar-visible', this.isSidebarVisible);
             }
             $('body').toggleClass('cpp-cuaderno-sidebar-is-open', this.isSidebarVisible);
-            // console.log("Visibilidad del Sidebar cambiada. Clases CSS aplicadas.");
         },
 
         seleccionarClase: function(event) { // 'this' será el elemento <a> dentro de esta función debido a .call()

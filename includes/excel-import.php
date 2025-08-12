@@ -88,7 +88,7 @@ function cpp_handle_student_template_download() {
     if (!empty($excel_output)) {
         echo $excel_output;
     } else {
-        status_header(500); 
+        status_header(500);
         echo "Error al generar la plantilla Excel."; // Esto no se debería ver si las cabeceras ya se enviaron
     }
     wp_die();
