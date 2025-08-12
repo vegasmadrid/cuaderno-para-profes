@@ -25,6 +25,7 @@ const cpp = {
         }
         console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
+        this.initializeCuadernoView();
         const modulesToInitialize = [
             { name: 'utils', objRef: 'utils' },
             { name: 'sidebar', objRef: 'sidebar' },
@@ -79,8 +80,6 @@ const cpp = {
             }
         });
         
-        this.initializeCuadernoView(); 
-
         console.log("CPP Core: init() completado.");
     }, 
 
