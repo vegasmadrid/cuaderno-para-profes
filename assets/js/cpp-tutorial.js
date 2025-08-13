@@ -208,20 +208,20 @@
 
                 $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
                 const $highlight = $('.cpp-tutorial-highlight-overlay');
-                const targetOffset = $target.offset();
-                const targetWidth = $target.outerWidth();
-                const targetHeight = $target.outerHeight();
+                const targetRect = $target[0].getBoundingClientRect();
+                const radius = Math.max(targetRect.width, targetRect.height) / 2 + 30; // 30px padding
+                const centerX = targetRect.left + targetRect.width / 2;
+                const centerY = targetRect.top + targetRect.height / 2;
 
                 $highlight.css({
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
                     zIndex: 10000,
-                    boxShadow: `0 0 0 9999px rgba(0,0,0,0.5)`,
-                    'clip-path': `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY}px, ${targetOffset.left - window.scrollX + targetWidth}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY + targetHeight}px, ${targetOffset.left - window.scrollX}px ${targetOffset.top - window.scrollY}px)`,
+                    background: `radial-gradient(circle at ${centerX}px ${centerY}px, transparent ${radius}px, rgba(0,0,0,0.5) ${radius}px)`,
                     pointerEvents: 'none'
                 });
 
                 $popover.css({pointerEvents: 'auto'});
-                self.positionPopover($popover, $target);
+                self.positionPopover($popover); // Target no longer needed for positioning
 
                 if (step.trigger && step.trigger.selector && step.trigger.event) {
                     $(document).one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
@@ -238,53 +238,18 @@
             }
         },
 
-        positionPopover: function($popover, $target) {
-            const targetRect = $target[0].getBoundingClientRect();
-            const popoverHeight = $popover.outerHeight();
+        positionPopover: function($popover) {
+            // Position the popover at the bottom-center of the screen.
             const popoverWidth = $popover.outerWidth();
-            const placement = $popover.attr('data-placement') || 'bottom';
-            const margin = 15; // Space between target and popover
+            const left = (window.innerWidth / 2) - (popoverWidth / 2);
 
-            let top, left;
-
-            switch (placement) {
-                case 'top':
-                    top = targetRect.top - popoverHeight - margin;
-                    left = targetRect.left + (targetRect.width / 2) - (popoverWidth / 2);
-                    $popover.addClass('arrow-bottom');
-                    break;
-                case 'left':
-                    top = targetRect.top + (targetRect.height / 2) - (popoverHeight / 2);
-                    left = targetRect.left - popoverWidth - margin;
-                    $popover.addClass('arrow-right');
-                    break;
-                case 'right':
-                    top = targetRect.top + (targetRect.height / 2) - (popoverHeight / 2);
-                    left = targetRect.left + targetRect.width + margin;
-                    $popover.addClass('arrow-left');
-                    break;
-                default: // bottom
-                    top = targetRect.bottom + margin;
-                    left = targetRect.left + (targetRect.width / 2) - (popoverWidth / 2);
-                    $popover.addClass('arrow-top');
-            }
-
-            // Boundary checks to ensure popover is always visible
-            const viewportMargin = 8; // Small margin from the edge of the viewport
-            if (top < viewportMargin) {
-                top = viewportMargin;
-            }
-            if (left < viewportMargin) {
-                left = viewportMargin;
-            }
-            if (left + popoverWidth > window.innerWidth - viewportMargin) {
-                left = window.innerWidth - popoverWidth - viewportMargin;
-            }
-            if (top + popoverHeight > window.innerHeight - viewportMargin) {
-                top = window.innerHeight - popoverHeight - viewportMargin;
-            }
-
-            $popover.css({ position: 'fixed', top: top, left: left }).addClass('fade-in');
+            $popover.css({
+                position: 'fixed',
+                top: 'auto',
+                bottom: '30px',
+                left: `${left}px`,
+                right: 'auto'
+            }).addClass('fade-in');
         },
 
         bindEvents: function() {
