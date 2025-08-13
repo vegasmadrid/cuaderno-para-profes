@@ -36,12 +36,6 @@
                 placement: 'right',
                 trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' } // Advances when saving
             },
-            { // 4: Save the class
-                target: '#cpp-modal-clase #cpp-submit-clase-btn-modal',
-                content: '¡Todo listo! Pulsa aquí para guardar tu nueva clase y que la magia comience.',
-                placement: 'top',
-                trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' }
-            },
             { // 5: After reload, prompt to open sidebar (CHANGED)
                 target: '#cpp-a1-menu-btn-toggle',
                 content: '¡Tu clase está creada! Qué emoción. Ahora, vamos a gestionar a tus alumnos. Haz clic aquí para abrir el menú de clases.',
