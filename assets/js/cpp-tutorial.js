@@ -246,10 +246,6 @@
             const popoverHeight = $popover.outerHeight();
             const popoverWidth = $popover.outerWidth();
 
-            console.log("--- DEBUG Popover Positioning ---");
-            console.log("Target Offset:", targetOffset, "Target Dims:", targetWidth, "x", targetHeight);
-            console.log("Popover Dims:", popoverWidth, "x", popoverHeight);
-
             let popoverTop, popoverLeft;
             const placement = $popover.attr('data-placement') || 'bottom';
 
@@ -278,19 +274,7 @@
             const finalTop = popoverTop - $(window).scrollTop();
             const finalLeft = popoverLeft - $(window).scrollLeft();
 
-            console.log("Final Coords (top, left):", finalTop, finalLeft);
-
-            // Fallback en caso de coordenadas inválidas
-            if (isNaN(finalTop) || isNaN(finalLeft)) {
-                console.error("Tutorial: Coordenadas de popover inválidas. Usando fallback.");
-                const fallbackTop = '50%';
-                const fallbackLeft = '50%';
-                const fallbackTransform = 'translate(-50%, -50%)';
-                $popover.css({ position: 'fixed', top: fallbackTop, left: fallbackLeft, transform: fallbackTransform, opacity: 1 });
-            } else {
-                $popover.css({ position: 'fixed', top: finalTop, left: finalLeft, opacity: 1 });
-            }
-            console.log("--- END Popover Positioning ---");
+            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft }).addClass('fade-in');
         },
 
         bindEvents: function() {
