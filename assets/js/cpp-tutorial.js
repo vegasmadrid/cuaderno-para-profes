@@ -31,7 +31,7 @@
                 trigger: { event: 'click', selector: '#cpp-modal-clase .cpp-color-swatch' }
             },
             { // 3: Grading system (NEW)
-                target: '#cpp-modal-clase #base_calificacion_modal',
+                target: '#cpp-modal-clase #base_nota_final_clase_modal',
                 content: 'Un último detalle. Aquí puedes decidir la nota máxima (normalmente 10 o 100). No te preocupes, ¡puedes cambiarlo cuando quieras!',
                 placement: 'right',
                 trigger: { event: 'click', selector: '#cpp-modal-clase #cpp-submit-clase-btn-modal' } // Advances when saving
