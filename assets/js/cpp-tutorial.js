@@ -52,6 +52,10 @@
                 content: '¡Genial! Desde aquí gestionarás todo lo de esta clase. Pulsa en este botón para empezar a añadir a tus estudiantes.',
                 placement: 'right',
                 style: 'page',
+                onShow: function(renderStep) {
+                    // Wait for sidebar animation to finish
+                    setTimeout(renderStep, 300);
+                },
                 trigger: { event: 'click', selector: '.cpp-sidebar-clase-alumnos-btn' }
             },
             { // 7: Click "Add New Student" (WAS 5)
@@ -106,7 +110,7 @@
             { // 13: Type activity name (WAS 10)
                 target: '#cpp-modal-actividad-evaluable-cuaderno #nombre_actividad_cuaderno_input',
                 content: "Ponle un nombre chulo, como \"Examen de los Planetas\" o \"Proyecto de Héroes y Heroínas\".",
-                placement: 'top',
+                placement: 'bottom',
                 style: 'modal',
                 trigger: { event: 'input', selector: '#cpp-modal-actividad-evaluable-cuaderno #nombre_actividad_cuaderno_input' }
             },
@@ -126,7 +130,7 @@
             },
             { // 16: Final summary (WAS 13)
                 target: '#cpp-cuaderno-header',
-                content: '¡Lo has conseguido! Ya dominas lo esencial del Cuaderno de Profe. Explora y verás cuántas cosas más puedes hacer. ¡Estoy aquí si me necesitas! ❤️',
+                content: '¡Y con esto terminamos el repaso! 💪 Ahora ya sabes lo más básico para empezar a usar tu cuaderno. ¡Pero hay mucho más por descubrir! Así que, ánimo, explora sin miedo y, si me necesitas, ya sabes dónde encontrarme. ¡A disfrutarlo, profe! 😎',
                 placement: 'bottom',
                 style: 'page'
             }
@@ -217,32 +221,42 @@
                 $popover.html(popoverContent).attr('data-placement', step.placement || 'bottom');
                 $popover.show();
 
-                $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
-                const $highlight = $('.cpp-tutorial-highlight-overlay');
-                const targetRect = $target[0].getBoundingClientRect();
+                if (stepIndex !== 0) {
+                    $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
+                    const $highlight = $('.cpp-tutorial-highlight-overlay');
+                    const targetRect = $target[0].getBoundingClientRect();
 
-                // Conditional styling based on step.style
-                if (step.style === 'page') {
-                    // New style: circular highlight
-                    const radius = Math.max(targetRect.width, targetRect.height) / 2 + 30;
-                    const centerX = targetRect.left + targetRect.width / 2;
-                    const centerY = targetRect.top + targetRect.height / 2;
-                    $highlight.css({
-                        background: `radial-gradient(circle at ${centerX}px ${centerY}px, transparent ${radius}px, rgba(0,0,0,0.5) ${radius}px)`
-                    });
-                } else {
-                    // Old/Modal style: rectangular highlight
-                    $highlight.css({
-                        boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
-                        'clip-path': `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, ${targetRect.left}px ${targetRect.top}px, ${targetRect.right}px ${targetRect.top}px, ${targetRect.right}px ${targetRect.bottom}px, ${targetRect.left}px ${targetRect.bottom}px, ${targetRect.left}px ${targetRect.top}px)`
-                    });
+                    // Base styles for the overlay
+                    const baseHighlightStyle = {
+                        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                        zIndex: 10000, pointerEvents: 'none'
+                    };
+
+                    // Conditional styling based on step.style
+                    if (step.style === 'page') {
+                        // New style: circular highlight
+                        const radius = Math.max(targetRect.width, targetRect.height) / 2 + 30;
+                        const centerX = targetRect.left + targetRect.width / 2;
+                        const centerY = targetRect.top + targetRect.height / 2;
+                        $highlight.css($.extend({}, baseHighlightStyle, {
+                            background: `radial-gradient(circle at ${centerX}px ${centerY}px, transparent ${radius}px, rgba(0,0,0,0.5) ${radius}px)`
+                        }));
+                    } else {
+                        // Old/Modal style: rectangular highlight
+                        $highlight.css($.extend({}, baseHighlightStyle, {
+                            boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+                            'clip-path': `polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%, ${targetRect.left}px ${targetRect.top}px, ${targetRect.right}px ${targetRect.top}px, ${targetRect.right}px ${targetRect.bottom}px, ${targetRect.left}px ${targetRect.bottom}px, ${targetRect.left}px ${targetRect.top}px)`
+                        }));
+                    }
                 }
 
                 $popover.css({pointerEvents: 'auto'});
                 self.positionPopover($popover, $target, step.style);
 
                 if (step.trigger && step.trigger.selector && step.trigger.event) {
-                    $(document).one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
+                    // We bind directly to the trigger element to avoid issues with other scripts
+                    // that might call e.stopPropagation() on the event.
+                    $(step.trigger.selector).one(step.trigger.event + '.cppTutorial', (e) => {
                         self.advance(stepIndex);
                     });
                 }
