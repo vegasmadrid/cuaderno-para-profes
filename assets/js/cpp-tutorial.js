@@ -239,42 +239,52 @@
         },
 
         positionPopover: function($popover, $target) {
-            // This function needs to be called after the popover is added to the DOM to measure its dimensions
-            const targetOffset = $target.offset();
-            const targetWidth = $target.outerWidth();
-            const targetHeight = $target.outerHeight();
+            const targetRect = $target[0].getBoundingClientRect();
             const popoverHeight = $popover.outerHeight();
             const popoverWidth = $popover.outerWidth();
-
-            let popoverTop, popoverLeft;
             const placement = $popover.attr('data-placement') || 'bottom';
+            const margin = 15; // Space between target and popover
+
+            let top, left;
 
             switch (placement) {
                 case 'top':
-                    popoverTop = targetOffset.top - popoverHeight - 15;
-                    popoverLeft = targetOffset.left + (targetWidth / 2) - (popoverWidth / 2);
+                    top = targetRect.top - popoverHeight - margin;
+                    left = targetRect.left + (targetRect.width / 2) - (popoverWidth / 2);
                     $popover.addClass('arrow-bottom');
                     break;
                 case 'left':
-                    popoverTop = targetOffset.top + (targetHeight / 2) - (popoverHeight / 2);
-                    popoverLeft = targetOffset.left - popoverWidth - 15;
+                    top = targetRect.top + (targetRect.height / 2) - (popoverHeight / 2);
+                    left = targetRect.left - popoverWidth - margin;
                     $popover.addClass('arrow-right');
                     break;
                 case 'right':
-                    popoverTop = targetOffset.top + (targetHeight / 2) - (popoverHeight / 2);
-                    popoverLeft = targetOffset.left + targetWidth + 15;
+                    top = targetRect.top + (targetRect.height / 2) - (popoverHeight / 2);
+                    left = targetRect.left + targetRect.width + margin;
                     $popover.addClass('arrow-left');
                     break;
                 default: // bottom
-                    popoverTop = targetOffset.top + targetHeight + 15;
-                    popoverLeft = targetOffset.left + (targetWidth / 2) - (popoverWidth / 2);
+                    top = targetRect.bottom + margin;
+                    left = targetRect.left + (targetRect.width / 2) - (popoverWidth / 2);
                     $popover.addClass('arrow-top');
             }
 
-            const finalTop = popoverTop - $(window).scrollTop();
-            const finalLeft = popoverLeft - $(window).scrollLeft();
+            // Boundary checks to ensure popover is always visible
+            const viewportMargin = 8; // Small margin from the edge of the viewport
+            if (top < viewportMargin) {
+                top = viewportMargin;
+            }
+            if (left < viewportMargin) {
+                left = viewportMargin;
+            }
+            if (left + popoverWidth > window.innerWidth - viewportMargin) {
+                left = window.innerWidth - popoverWidth - viewportMargin;
+            }
+            if (top + popoverHeight > window.innerHeight - viewportMargin) {
+                top = window.innerHeight - popoverHeight - viewportMargin;
+            }
 
-            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft }).addClass('fade-in');
+            $popover.css({ position: 'fixed', top: top, left: left }).addClass('fade-in');
         },
 
         bindEvents: function() {
