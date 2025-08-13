@@ -190,22 +190,24 @@
             const renderStep = function() {
                 const $target = $(step.target);
 
-                // Para el paso 0, confiamos en que el botón existe (lo hemos verificado) y solo comprobamos longitud.
-                // Para los demás pasos, comprobamos también la visibilidad.
-                const isStepZero = (stepIndex === 0);
-                const isTargetInvalid = isStepZero ? !$target.length : (!$target.length || !$target.is(':visible'));
-
-                if (isTargetInvalid) {
-                    const reason = $target.length ? 'not visible' : 'not found';
-                    console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} ${reason}. Retrying...`);
-
-                    // No reintentar para el paso 0 si no se encuentra, para evitar bucles infinitos en el caso improbable.
-                    if (isStepZero && !$target.length) {
-                        console.error("Tutorial: Abortando. El target del paso 0 no existe en el DOM.");
-                        self.end();
-                        return;
+                if (stepIndex === 0) {
+                    console.log("--- DEBUG TUTORIAL STEP 0 ---");
+                    console.log("Target selector:", step.target);
+                    console.log("Target exists in DOM:", $target.length > 0);
+                    if ($target.length > 0) {
+                        console.log("Target is visible:", $target.is(':visible'));
+                        console.log("Target display:", $target.css('display'));
+                        console.log("Target visibility:", $target.css('visibility'));
+                        console.log("Target opacity:", $target.css('opacity'));
+                        console.log("Target width:", $target.width());
+                        console.log("Target height:", $target.height());
+                        console.log("Parent visibility:", $target.parent().is(':visible'));
                     }
+                    console.log("--- END DEBUG ---");
+                }
 
+                if (!$target.length || !$target.is(':visible')) {
+                    console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
                     setTimeout(() => {
                         if (self.isActive && self.currentStep === stepIndex) {
                             self.showStep(stepIndex);
