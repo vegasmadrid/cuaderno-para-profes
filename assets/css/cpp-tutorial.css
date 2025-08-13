@@ -22,7 +22,81 @@
     text-align: center; /* Center align text */
 }
 
-/* Arrows are no longer needed with the new centered design */
+.cpp-tutorial-popover::before, .cpp-tutorial-popover::after {
+    content: '';
+    position: absolute;
+    border-style: solid;
+    border-width: 8px;
+    display: none; /* Hide by default */
+}
+
+/* Only show arrows for modal style, not page style */
+.cpp-tutorial-popover[data-placement="top"]::before,
+.cpp-tutorial-popover[data-placement="bottom"]::before,
+.cpp-tutorial-popover[data-placement="left"]::before,
+.cpp-tutorial-popover[data-placement="right"]::before,
+.cpp-tutorial-popover[data-placement="top"]::after,
+.cpp-tutorial-popover[data-placement="bottom"]::after,
+.cpp-tutorial-popover[data-placement="left"]::after,
+.cpp-tutorial-popover[data-placement="right"]::after {
+    display: block;
+}
+
+.cpp-tutorial-popover.arrow-top::before {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: transparent transparent #ddd transparent;
+}
+.cpp-tutorial-popover.arrow-top::after {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: transparent transparent #fff transparent;
+    margin-bottom: -1px;
+}
+
+.cpp-tutorial-popover.arrow-bottom::before {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: #ddd transparent transparent transparent;
+}
+.cpp-tutorial-popover.arrow-bottom::after {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-color: #fff transparent transparent transparent;
+    margin-top: -1px;
+}
+
+.cpp-tutorial-popover.arrow-left::before {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent #ddd transparent transparent;
+}
+.cpp-tutorial-popover.arrow-left::after {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent #fff transparent transparent;
+    margin-right: -1px;
+}
+
+.cpp-tutorial-popover.arrow-right::before {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent transparent transparent #ddd;
+}
+.cpp-tutorial-popover.arrow-right::after {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-color: transparent transparent transparent #fff;
+    margin-left: -1px;
+}
 
 .cpp-tutorial-content {
     margin-bottom: 16px;
