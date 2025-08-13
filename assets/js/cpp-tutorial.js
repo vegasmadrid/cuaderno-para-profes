@@ -206,6 +206,12 @@
                 popoverContent += `<div class="cpp-tutorial-nav"><button type="button" class="cpp-tutorial-end-btn">Saltar Tour</button></div>`;
                 $popover.html(popoverContent).attr('data-placement', step.placement);
 
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Mostramos el popover antes de calcular su posición,
+                // ya que los cálculos de dimensiones no funcionan si el elemento tiene "display: none".
+                $popover.show();
+                // --- FIN DE LA CORRECIÓN ---
+
                 $('body').append('<div class="cpp-tutorial-highlight-overlay"></div>');
                 const $highlight = $('.cpp-tutorial-highlight-overlay');
                 const targetOffset = $target.offset();
