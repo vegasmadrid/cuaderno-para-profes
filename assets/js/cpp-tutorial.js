@@ -245,6 +245,7 @@
             const targetHeight = $target.outerHeight();
             const popoverHeight = $popover.outerHeight();
             const popoverWidth = $popover.outerWidth();
+
             let popoverTop, popoverLeft;
             const placement = $popover.attr('data-placement') || 'bottom';
 
@@ -273,7 +274,7 @@
             const finalTop = popoverTop - $(window).scrollTop();
             const finalLeft = popoverLeft - $(window).scrollLeft();
 
-            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft, opacity: 1 });
+            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft }).addClass('fade-in');
         },
 
         bindEvents: function() {

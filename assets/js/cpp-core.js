@@ -79,7 +79,7 @@ const cpp = {
             }
         });
         
-        this.initializeCuadernoView(); 
+        this.initializeCuadernoView();
 
         console.log("CPP Core: init() completado.");
     }, 
