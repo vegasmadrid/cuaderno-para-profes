@@ -190,22 +190,6 @@
             const renderStep = function() {
                 const $target = $(step.target);
 
-                if (stepIndex === 0) {
-                    console.log("--- DEBUG TUTORIAL STEP 0 ---");
-                    console.log("Target selector:", step.target);
-                    console.log("Target exists in DOM:", $target.length > 0);
-                    if ($target.length > 0) {
-                        console.log("Target is visible:", $target.is(':visible'));
-                        console.log("Target display:", $target.css('display'));
-                        console.log("Target visibility:", $target.css('visibility'));
-                        console.log("Target opacity:", $target.css('opacity'));
-                        console.log("Target width:", $target.width());
-                        console.log("Target height:", $target.height());
-                        console.log("Parent visibility:", $target.parent().is(':visible'));
-                    }
-                    console.log("--- END DEBUG ---");
-                }
-
                 if (!$target.length || !$target.is(':visible')) {
                     console.warn(`Tutorial: Target '${step.target}' for step ${stepIndex} not found/visible. Retrying...`);
                     setTimeout(() => {
@@ -261,6 +245,11 @@
             const targetHeight = $target.outerHeight();
             const popoverHeight = $popover.outerHeight();
             const popoverWidth = $popover.outerWidth();
+
+            console.log("--- DEBUG Popover Positioning ---");
+            console.log("Target Offset:", targetOffset, "Target Dims:", targetWidth, "x", targetHeight);
+            console.log("Popover Dims:", popoverWidth, "x", popoverHeight);
+
             let popoverTop, popoverLeft;
             const placement = $popover.attr('data-placement') || 'bottom';
 
@@ -289,7 +278,19 @@
             const finalTop = popoverTop - $(window).scrollTop();
             const finalLeft = popoverLeft - $(window).scrollLeft();
 
-            $popover.css({ position: 'fixed', top: finalTop, left: finalLeft, opacity: 1 });
+            console.log("Final Coords (top, left):", finalTop, finalLeft);
+
+            // Fallback en caso de coordenadas inválidas
+            if (isNaN(finalTop) || isNaN(finalLeft)) {
+                console.error("Tutorial: Coordenadas de popover inválidas. Usando fallback.");
+                const fallbackTop = '50%';
+                const fallbackLeft = '50%';
+                const fallbackTransform = 'translate(-50%, -50%)';
+                $popover.css({ position: 'fixed', top: fallbackTop, left: fallbackLeft, transform: fallbackTransform, opacity: 1 });
+            } else {
+                $popover.css({ position: 'fixed', top: finalTop, left: finalLeft, opacity: 1 });
+            }
+            console.log("--- END Popover Positioning ---");
         },
 
         bindEvents: function() {
