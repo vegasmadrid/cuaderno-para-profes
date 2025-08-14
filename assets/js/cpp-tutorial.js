@@ -264,11 +264,10 @@
                 self.positionPopover($popover, $target, step.style);
 
                 if (step.trigger && step.trigger.selector && step.trigger.event) {
-                    // Use a more robust event delegation strategy.
-                    // For modals, delegate from the modal content itself, as it's stable.
-                    // For the page, delegate from the document.
-                    const $context = (step.style === 'modal') ? $target.closest('.cpp-modal') : $(document);
-                    $context.one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
+                    // We bind directly to the trigger element. This is simpler and more robust
+                    // for this app, as it avoids issues with both event propagation stopping
+                    // and with delegated events not firing for certain types (like 'input').
+                    $(step.trigger.selector).one(step.trigger.event + '.cppTutorial', (e) => {
                         self.advance(stepIndex);
                     });
                 }
