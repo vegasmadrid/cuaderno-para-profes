@@ -14,7 +14,7 @@
         steps: [
             { // 0: Start
                 target: '#cpp-btn-crear-primera-clase',
-                content: '¡Hola, profe! Te doy la bienvenida al <strong>Cuaderno de Profe</strong>. ¡Estoy aquí para ayudarte! Empecemos por crear tu primera clase haciendo clic aquí.',
+                content: '¡Hola, profe! Te doy la bienvenida al <strong>Cuaderno de Profe</strong>. ¡Estoy aquí para ayudarte! Empecemos por crear tu primera clase.',
                 placement: 'bottom',
                 style: 'page',
                 trigger: { event: 'click', selector: '#cpp-btn-crear-primera-clase' }
@@ -42,14 +42,14 @@
             },
             { // 5: After reload, prompt to open sidebar (CHANGED)
                 target: '#cpp-a1-menu-btn-toggle',
-                content: '¡Tu clase está creada! Qué emoción. Ahora, vamos a gestionar a tus alumnos. Haz clic aquí para abrir el menú de clases.',
+                content: '¡Tu clase está creada! Qué emoción. Ahora, vamos a gestionar a tus alumnos. Pulsa en las tres rayitas para abrir el menú de clases.',
                 placement: 'right',
                 style: 'page',
                 trigger: { event: 'click', selector: '#cpp-a1-menu-btn-toggle' }
             },
             { // 6: Click "Manage Students" (NEW)
                 target: '.cpp-sidebar-clase-alumnos-btn',
-                content: '¡Genial! Desde aquí gestionarás todo lo de esta clase. Pulsa en este botón para empezar a añadir a tus estudiantes.',
+                content: 'Desde aquí gestionarás todo lo de esta clase. Pulsa sobre el icono de los muñecos para empezar a añadir a tus estudiantes.',
                 placement: 'right',
                 style: 'page',
                 onShow: function(renderStep) {
@@ -75,7 +75,7 @@
             { // 8: Type student last name (NEW)
                 target: '#cpp-form-nuevo-alumno [name="apellidos_alumno"]',
                 content: '¡Muy bien! Ahora sus apellidos. Este campo es importante, ¡no te lo saltes!',
-                placement: 'top',
+                placement: 'bottom',
                 style: 'modal',
                 trigger: { event: 'input', selector: '#cpp-form-nuevo-alumno [name="apellidos_alumno"]' }
             },
@@ -95,14 +95,14 @@
             },
             { // 11: Prompt to close sidebar (NEW)
                 target: '#cpp-a1-menu-btn-toggle',
-                content: '¡Genial! Ahora, para ver tu cuaderno completo, pulsa aquí de nuevo para cerrar este panel.',
+                content: '¡Genial! Ahora, para ver tu cuaderno completo, pulsa de nuevo sobre las tres rayitas para cerrar este panel.',
                 placement: 'right',
                 style: 'page',
                 trigger: { event: 'click', selector: '#cpp-a1-menu-btn-toggle' }
             },
             { // 12: Add activity (WAS 9)
                 target: '#cpp-a1-add-activity-btn',
-                content: '¡Ahora empieza lo bueno! Vamos a crear la primera actividad: un examen, un trabajo, lo que quieras. ¡Pulsa aquí!',
+                content: '¡Ahora empieza lo bueno! Vamos a crear la primera actividad: un examen, un trabajo, lo que quieras. Pulsa en el botón \'+\' para crearla.',
                 placement: 'bottom',
                 style: 'page',
                 trigger: { event: 'click', selector: '#cpp-a1-add-activity-btn' }
@@ -123,7 +123,7 @@
             },
             { // 15: Enter a grade (WAS 12)
                 target: 'td.cpp-celda-calificacion:first .cpp-calificacion-input',
-                content: '¡La hora de la verdad! Haz clic aquí y pon tu primera nota. Se guardará sola cuando hagas clic fuera. ¡Mágico!',
+                content: '¡La hora de la verdad! Pon tu primera nota en la casilla que se ilumina. Se guardará sola cuando hagas clic fuera. ¡Mágico!',
                 placement: 'top',
                 style: 'page',
                 trigger: { event: 'focus', selector: 'td.cpp-celda-calificacion:first .cpp-calificacion-input' }
@@ -234,13 +234,23 @@
 
                     // Conditional styling based on step.style
                     if (step.style === 'page') {
-                        // New style: circular highlight
-                        const radius = Math.max(targetRect.width, targetRect.height) / 2 + 30;
+                        // New style: circular highlight with pulse
+                        const radius = Math.max(targetRect.width, targetRect.height) / 2 + 15; // Smaller padding for the hole
                         const centerX = targetRect.left + targetRect.width / 2;
                         const centerY = targetRect.top + targetRect.height / 2;
+
                         $highlight.css($.extend({}, baseHighlightStyle, {
                             background: `radial-gradient(circle at ${centerX}px ${centerY}px, transparent ${radius}px, rgba(0,0,0,0.5) ${radius}px)`
                         }));
+
+                        // Add the pulsing element
+                        $('body').append('<div class="cpp-tutorial-pulse-element"></div>');
+                        $('.cpp-tutorial-pulse-element').css({
+                            top: centerY - radius,
+                            left: centerX - radius,
+                            width: radius * 2,
+                            height: radius * 2,
+                        });
                     } else {
                         // Old/Modal style: rectangular highlight
                         $highlight.css($.extend({}, baseHighlightStyle, {
@@ -254,9 +264,11 @@
                 self.positionPopover($popover, $target, step.style);
 
                 if (step.trigger && step.trigger.selector && step.trigger.event) {
-                    // We bind directly to the trigger element to avoid issues with other scripts
-                    // that might call e.stopPropagation() on the event.
-                    $(step.trigger.selector).one(step.trigger.event + '.cppTutorial', (e) => {
+                    // Use a more robust event delegation strategy.
+                    // For modals, delegate from the modal content itself, as it's stable.
+                    // For the page, delegate from the document.
+                    const $context = (step.style === 'modal') ? $target.closest('.cpp-modal') : $(document);
+                    $context.one(step.trigger.event + '.cppTutorial', step.trigger.selector, (e) => {
                         self.advance(stepIndex);
                     });
                 }
