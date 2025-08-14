@@ -30,15 +30,15 @@
     display: none; /* Hide by default */
 }
 
-/* Only show arrows for modal style, not page style */
-.cpp-tutorial-popover[data-placement="top"]::before,
-.cpp-tutorial-popover[data-placement="bottom"]::before,
-.cpp-tutorial-popover[data-placement="left"]::before,
-.cpp-tutorial-popover[data-placement="right"]::before,
-.cpp-tutorial-popover[data-placement="top"]::after,
-.cpp-tutorial-popover[data-placement="bottom"]::after,
-.cpp-tutorial-popover[data-placement="left"]::after,
-.cpp-tutorial-popover[data-placement="right"]::after {
+/* Only show arrows when an arrow class is present */
+.cpp-tutorial-popover.arrow-top::before,
+.cpp-tutorial-popover.arrow-top::after,
+.cpp-tutorial-popover.arrow-bottom::before,
+.cpp-tutorial-popover.arrow-bottom::after,
+.cpp-tutorial-popover.arrow-left::before,
+.cpp-tutorial-popover.arrow-left::after,
+.cpp-tutorial-popover.arrow-right::before,
+.cpp-tutorial-popover.arrow-right::after {
     display: block;
 }
 
