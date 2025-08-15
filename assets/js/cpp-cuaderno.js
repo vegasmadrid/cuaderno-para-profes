@@ -82,9 +82,6 @@
                                 localStorage.setItem(self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
                             }
                             self.renderEvaluacionesDropdown(response.data.evaluaciones, response.data.evaluacion_activa_id);
-                            if (cpp.modals.evaluacion && typeof cpp.modals.evaluacion.toggleSettingsButton === 'function') {
-                                cpp.modals.evaluacion.toggleSettingsButton(true);
-                            }
                             if (response.data.nombre_clase && (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function')) { cpp.utils.updateTopBarClassName(response.data.nombre_clase); }
                             if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);

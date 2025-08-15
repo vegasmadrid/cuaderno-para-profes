@@ -71,7 +71,6 @@ function cpp_ajax_cargar_cuaderno_clase() {
         <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
         <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
         <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
-        <button class="cpp-btn-icon cpp-evaluacion-settings-btn" id="cpp-btn-evaluacion-settings" title="Ajustes de Ponderación" style="margin-left: 10px; display: none;"><span class="dashicons dashicons-admin-generic"></span></button>
     </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">

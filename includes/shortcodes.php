@@ -110,6 +110,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <div class="cpp-tab-nav">
                                 <button type="button" class="cpp-tab-link active" data-tab="cpp-tab-general">General</button>
                                 <button type="button" class="cpp-tab-link" data-tab="cpp-tab-evaluaciones">Evaluaciones</button>
+                                <button type="button" class="cpp-tab-link" data-tab="cpp-tab-ponderaciones">Ponderaciones</button>
                             </div>
                             <div id="cpp-tab-general" class="cpp-tab-content active">
                                 <h3>Información General</h3>
@@ -137,6 +138,11 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <p>Cargando evaluaciones...</p>
                                 </div>
                             </div>
+                            <div id="cpp-tab-ponderaciones" class="cpp-tab-content">
+                                <div id="cpp-clase-modal-ponderaciones-container">
+                                    <p>Selecciona una evaluación para ver sus ponderaciones.</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="cpp-modal-actions">
                             <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-crear-clase-ejemplo-modal" style="margin-right: auto;"><span class="dashicons dashicons-admin-plugins"></span> Crear Clase de Ejemplo</button>
@@ -148,21 +154,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             </div>
             <?php
             do_action('cpp_modal_clase_outputted');
-        }
-
-        if (empty(did_action('cpp_modal_evaluacion_settings_outputted'))) {
-            ?>
-            <div class="cpp-modal" id="cpp-modal-evaluacion-settings">
-                <div class="cpp-modal-content">
-                    <span class="cpp-modal-close">&times;</span>
-                    <h2 id="cpp-modal-evaluacion-settings-titulo">Ajustes de Ponderación</h2>
-                    <div id="cpp-evaluacion-settings-container">
-                        <p class="cpp-cuaderno-cargando">Cargando...</p>
-                    </div>
-                </div>
-            </div>
-            <?php
-            do_action('cpp_modal_evaluacion_settings_outputted');
         }
         
         if (empty(did_action('cpp_modal_alumnos_outputted'))) {
