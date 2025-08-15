@@ -23,6 +23,14 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $evaluacion_activa_id = null;
     $metodo_calculo = 'total';
 
+    if (count($evaluaciones) > 1) {
+        $evaluaciones[] = [
+            'id' => 'final',
+            'nombre_evaluacion' => 'Evaluación Final (Media)',
+            'calculo_nota' => 'total'
+        ];
+    }
+
     if (!empty($evaluaciones)) {
         if ($evaluacion_id_solicitada) {
             foreach ($evaluaciones as $eval) {
@@ -256,4 +264,62 @@ function cpp_ajax_eliminar_actividad() {
     $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
     if ($resultado) { wp_send_json_success(['message' => 'Actividad eliminada correctamente.']); } 
     else { wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']); }
+}
+
+add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');
+function cpp_ajax_cargar_vista_final() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
+
+    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+    if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+
+    $alumnos = cpp_obtener_alumnos_clase($clase_id);
+    $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
+    $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
+
+    $notas_finales_promediadas = [];
+    foreach ($alumnos as $alumno) {
+        $nota_0_100 = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
+        $notas_finales_promediadas[$alumno['id']] = $nota_reescalada;
+    }
+
+    ob_start();
+    ?>
+    <div class="cpp-cuaderno-tabla-wrapper">
+        <table class="cpp-cuaderno-tabla">
+            <thead>
+                <tr>
+                    <th class="cpp-cuaderno-th-alumno">Alumno</th>
+                    <th class="cpp-cuaderno-th-final">Nota Final (Media)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($alumnos)): ?>
+                    <tr><td colspan="2">No hay alumnos en esta clase.</td></tr>
+                <?php else: foreach ($alumnos as $index => $alumno):
+                        $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
+                        $nota_final_display = isset($notas_finales_promediadas[$alumno['id']]) ? cpp_formatear_nota_display($notas_finales_promediadas[$alumno['id']], 2) : '-';
+                    ?>
+                    <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" <?php echo $row_style_attr; ?>>
+                        <td class="cpp-cuaderno-td-alumno">
+                            <div class="cpp-alumno-avatar-cuaderno">
+                                <?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?>
+                            </div>
+                            <span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($alumno['apellidos'] . ', ' . $alumno['nombre']); ?></span>
+                        </td>
+                        <td class="cpp-cuaderno-td-final"><?php echo esc_html($nota_final_display); ?></td>
+                    </tr>
+                <?php endforeach; endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+    $html_cuaderno = ob_get_clean();
+    wp_send_json_success(['html_cuaderno' => $html_cuaderno]);
 }

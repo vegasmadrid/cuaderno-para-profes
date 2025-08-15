@@ -345,8 +345,17 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
                 ]);
 
                 if ($actividad_id) {
+                    // Designar a 2 alumnos para que tengan notas más bajas
+                    $alumnos_suspensos_ids = array_slice($alumnos_ids, 0, 2);
+
                     foreach ($alumnos_ids as $alumno_id) {
-                        $nota = round(max(0, min($act['nota_maxima'], $act['nota_maxima'] * (rand(40, 98) / 100))), 2);
+                        if (in_array($alumno_id, $alumnos_suspensos_ids)) {
+                            // Generar notas más bajas para los alumnos suspensos (entre 1.0 y 4.5)
+                            $nota = round(max(0, min($act['nota_maxima'], $act['nota_maxima'] * (rand(10, 45) / 100))), 2);
+                        } else {
+                            // Generar notas de aprobado para el resto (entre 5.0 y 9.8)
+                            $nota = round(max(0, min($act['nota_maxima'], $act['nota_maxima'] * (rand(50, 98) / 100))), 2);
+                        }
                         cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota, $user_id);
                     }
                 }
