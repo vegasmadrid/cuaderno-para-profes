@@ -306,7 +306,7 @@ function cpp_ajax_cargar_vista_final() {
         <table class="cpp-cuaderno-tabla">
             <thead>
                 <tr>
-                    <th class="cpp-cuaderno-th-alumno">Alumno</th>
+                    <th class="cpp-cuaderno-th-alumno"></th>
                     <?php foreach ($evaluaciones_reales as $evaluacion): ?>
                         <th class="cpp-cuaderno-th-actividad"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></th>
                     <?php endforeach; ?>
