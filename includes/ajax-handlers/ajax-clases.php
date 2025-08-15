@@ -56,9 +56,9 @@ function cpp_ajax_crear_clase() {
             wp_send_json_error(['message' => 'Error al actualizar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
         }
     } else {
-        $resultado = cpp_guardar_clase($user_id, $datos);
-        if ($resultado) {
-            wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $GLOBALS['wpdb']->insert_id]);
+        $nueva_clase_id = cpp_guardar_clase($user_id, $datos);
+        if ($nueva_clase_id) {
+            wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $nueva_clase_id]);
         } else {
             global $wpdb;
             wp_send_json_error(['message' => 'Error al guardar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);

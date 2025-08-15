@@ -109,8 +109,9 @@ function cpp_guardar_clase($user_id, $datos) {
     if($resultado) {
         $nueva_clase_id = $wpdb->insert_id;
         cpp_crear_evaluacion($nueva_clase_id, $user_id, 'Evaluación General');
+        return $nueva_clase_id;
     }
-    return $resultado;
+    return false;
 }
 
 function cpp_actualizar_orden_clases($user_id, $clases_ids_ordenadas) {
@@ -182,16 +183,15 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
     global $wpdb;
 
     // 1. Crear la clase de ejemplo
-    $resultado_clase = cpp_guardar_clase($user_id, [
+    $clase_id = cpp_guardar_clase($user_id, [
         'nombre' => 'Clase Ejemplo',
         'color' => '#cd18be',
         'base_nota_final' => 10.00
     ]);
 
-    if (!$resultado_clase) {
+    if (!$clase_id) {
         return false; // No se pudo crear la clase
     }
-    $clase_id = $wpdb->insert_id;
 
     // Eliminar la evaluación "General" que se crea por defecto
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
