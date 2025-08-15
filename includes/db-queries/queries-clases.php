@@ -212,7 +212,7 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
     $alumnos_ids = [];
     foreach ($alumnos as $alumno_data) {
         $unique_slug = sanitize_title($alumno_data['nombre'] . ' ' . $alumno_data['apellidos']);
-        $alumno_data['foto'] = 'https://i.pravatar.cc/150?u=' . $unique_slug;
+        $alumno_data['foto'] = 'https://api.dicebear.com/8.x/adventurer/svg?seed=' . $unique_slug;
         $resultado = cpp_guardar_alumno($clase_id, $alumno_data);
         if ($resultado) {
             $alumnos_ids[] = $wpdb->insert_id;
@@ -220,14 +220,14 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
     }
 
     // 3. Crear 3 evaluaciones con categorías y actividades
-    $milan_vivid_colors = ['#D50000', '#0091EA', '#00C853', '#FF6D00', '#AA00FF', '#FFD600'];
+    $pastel_colors = ['#F08080', '#ADD8E6', '#98FB98', '#FFDAB9', '#E6E6FA', '#D8BFD8'];
     $evaluaciones = [
         '1ª Evaluación' => [
             'categorias' => [
-                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $milan_vivid_colors[0]],
-                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $milan_vivid_colors[1]],
-                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $milan_vivid_colors[2]],
-                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $milan_vivid_colors[3]],
+                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $pastel_colors[0]],
+                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $pastel_colors[1]],
+                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $pastel_colors[2]],
+                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $pastel_colors[3]],
             ],
             'actividades' => [
                 'Exámenes' => [
@@ -258,10 +258,10 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
         ],
         '2ª Evaluación' => [
             'categorias' => [
-                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $milan_vivid_colors[0]],
-                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $milan_vivid_colors[1]],
-                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $milan_vivid_colors[2]],
-                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $milan_vivid_colors[3]],
+                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $pastel_colors[0]],
+                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $pastel_colors[1]],
+                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $pastel_colors[2]],
+                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $pastel_colors[3]],
             ],
             'actividades' => [
                 'Exámenes' => [
@@ -292,9 +292,9 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
         ],
         '3ª Evaluación' => [
             'categorias' => [
-                ['nombre' => 'Proyecto Final', 'porcentaje' => 50, 'color' => $milan_vivid_colors[4]],
-                ['nombre' => 'Examen Final', 'porcentaje' => 40, 'color' => $milan_vivid_colors[0]],
-                ['nombre' => 'Participación', 'porcentaje' => 10, 'color' => $milan_vivid_colors[5]],
+                ['nombre' => 'Proyecto Final', 'porcentaje' => 50, 'color' => $pastel_colors[4]],
+                ['nombre' => 'Examen Final', 'porcentaje' => 40, 'color' => $pastel_colors[0]],
+                ['nombre' => 'Participación', 'porcentaje' => 10, 'color' => $pastel_colors[5]],
             ],
              'actividades' => [
                 'Proyecto Final' => [
