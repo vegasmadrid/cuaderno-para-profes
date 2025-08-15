@@ -48,12 +48,13 @@
                 $modal.find('#cpp-eliminar-clase-modal-btn').hide();
                 
                 $modal.find('.cpp-tab-nav').show(); 
-                $modal.find('.cpp-tab-link').removeClass('active');
+                $modal.find('.cpp-tab-link').removeClass('active').show();
                 $modal.find('.cpp-tab-content').removeClass('active').hide();
                 $modal.find('.cpp-tab-link[data-tab="cpp-tab-general"]').addClass('active');
                 $modal.find('#cpp-tab-general').addClass('active').show();
                 
                 $('#cpp-clase-modal-evaluaciones-container').html('<p>Abre una clase existente para gestionar sus evaluaciones.</p>');
+                $('#cpp-clase-modal-ponderaciones-container').html('<p>Abre una clase existente para gestionar sus ponderaciones.</p>');
             }
             this.currentClaseIdForModal = null;
         },
@@ -69,6 +70,7 @@
             $('#cpp-eliminar-clase-modal-btn').hide();
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
+            $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
             
             $modal.fadeIn().find('#nombre_clase_modal').focus();
         },
@@ -386,7 +388,7 @@
                     });
                 }
             });
-        },
+        }, // ESTA COMA FALTABA
 
         bindEvents: function() {
             console.log("Binding Modals Clase events...");
