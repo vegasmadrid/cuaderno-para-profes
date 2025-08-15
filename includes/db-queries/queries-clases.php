@@ -210,61 +210,64 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
         ['nombre' => 'Diego', 'apellidos' => 'Blanco Soler']
     ];
     $alumnos_ids = [];
-    foreach ($alumnos as $alumno) {
-        $alumno_id = cpp_guardar_alumno($clase_id, $alumno);
-        if ($alumno_id) {
+    foreach ($alumnos as $alumno_data) {
+        $unique_slug = sanitize_title($alumno_data['nombre'] . ' ' . $alumno_data['apellidos']);
+        $alumno_data['foto'] = 'https://i.pravatar.cc/150?u=' . $unique_slug;
+        $resultado = cpp_guardar_alumno($clase_id, $alumno_data);
+        if ($resultado) {
             $alumnos_ids[] = $wpdb->insert_id;
         }
     }
 
     // 3. Crear 3 evaluaciones con categorías y actividades
+    $category_colors = ['#D50000', '#0091EA', '#00C853', '#FF6D00'];
     $evaluaciones = [
         '1ª Evaluación' => [
             'categorias' => [
-                ['nombre' => 'Exámenes', 'porcentaje' => 70],
-                ['nombre' => 'Tareas', 'porcentaje' => 30]
+                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $category_colors[0]],
+                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $category_colors[1]],
+                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $category_colors[2]],
+                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $category_colors[3]],
             ],
             'actividades' => [
-                'Exámenes' => [['nombre' => 'Examen Tema 1', 'nota_maxima' => 10], ['nombre' => 'Examen Tema 2', 'nota_maxima' => 10]],
-                'Tareas' => [['nombre' => 'Tarea Volcanes', 'nota_maxima' => 10], ['nombre' => 'Tarea Ríos de España', 'nota_maxima' => 10], ['nombre' => 'Redacción: El Quijote', 'nota_maxima' => 10]]
+                'Exámenes' => [
+                    ['nombre' => 'Examen T.1: La Hidrosfera', 'nota_maxima' => 10, 'fecha' => '2023-10-15', 'desc' => 'Evaluación de los conceptos sobre el ciclo del agua.'],
+                    ['nombre' => 'Examen T.2: La Atmósfera', 'nota_maxima' => 10, 'fecha' => '2023-11-20', 'desc' => 'Prueba sobre las capas de la atmósfera y los fenómenos meteorológicos.'],
+                    ['nombre' => 'Prueba Corta Sorpresa', 'nota_maxima' => 10, 'fecha' => '2023-11-05', 'desc' => 'Test rápido sobre los últimos conceptos vistos en clase.'],
+                    ['nombre' => 'Examen Oral T.1-2', 'nota_maxima' => 10, 'fecha' => '2023-11-25', 'desc' => 'Exposición oral de los temas 1 y 2.'],
+                ],
+                'Tareas' => [
+                    ['nombre' => 'Maqueta: El Volcán', 'nota_maxima' => 10, 'fecha' => '2023-10-22', 'desc' => 'Construcción de un modelo a escala de un volcán en erupción.'],
+                    ['nombre' => 'Mapa: Ríos de España', 'nota_maxima' => 10, 'fecha' => '2023-11-12', 'desc' => 'Elaboración de un mapa físico con los principales ríos de la península.'],
+                    ['nombre' => 'Redacción: El Quijote', 'nota_maxima' => 10, 'fecha' => '2023-10-30', 'desc' => 'Análisis y resumen del primer capítulo de Don Quijote.'],
+                    ['nombre' => 'Infografía: Ciclo del Agua', 'nota_maxima' => 10, 'fecha' => '2023-10-10', 'desc' => 'Creación de una infografía visual sobre el ciclo del agua.'],
+                ],
+                'Deberes' => [
+                    ['nombre' => 'Ejercicios Pág. 25', 'nota_maxima' => 10, 'fecha' => '2023-10-05', 'desc' => 'Resolución de los ejercicios 1, 2 y 3 del libro de texto.'],
+                    ['nombre' => 'Ejercicios Pág. 32', 'nota_maxima' => 10, 'fecha' => '2023-10-19', 'desc' => 'Resolución de los ejercicios 4 y 5 del libro de texto.'],
+                    ['nombre' => 'Búsqueda de Información', 'nota_maxima' => 10, 'fecha' => '2023-11-02', 'desc' => 'Investigación sobre los tipos de nubes.'],
+                    ['nombre' => 'Ver Documental y Resumir', 'nota_maxima' => 10, 'fecha' => '2023-11-16', 'desc' => 'Visualización del documental "Cosmos" y entrega de un resumen.'],
+                ],
+                'Cuaderno' => [
+                    ['nombre' => 'Revisión de Septiembre', 'nota_maxima' => 10, 'fecha' => '2023-09-30', 'desc' => 'Revisión de la presentación y organización del cuaderno.'],
+                    ['nombre' => 'Revisión de Octubre', 'nota_maxima' => 10, 'fecha' => '2023-10-31', 'desc' => 'Revisión de la limpieza, orden y contenido del cuaderno.'],
+                    ['nombre' => 'Revisión de Noviembre', 'nota_maxima' => 10, 'fecha' => '2023-11-30', 'desc' => 'Revisión final del cuaderno de la evaluación.'],
+                    ['nombre' => 'Autoevaluación del Cuaderno', 'nota_maxima' => 10, 'fecha' => '2023-12-01', 'desc' => 'El alumno evalúa su propio cuaderno siguiendo una rúbrica.'],
+                ],
             ]
         ],
-        '2ª Evaluación' => [
-            'categorias' => [
-                ['nombre' => 'Exámenes', 'porcentaje' => 70],
-                ['nombre' => 'Tareas', 'porcentaje' => 30]
-            ],
-            'actividades' => [
-                'Exámenes' => [['nombre' => 'Examen Tema 3', 'nota_maxima' => 10], ['nombre' => 'Examen Tema 4', 'nota_maxima' => 10]],
-                'Tareas' => [['nombre' => 'Tarea Sistema Solar', 'nota_maxima' => 10], ['nombre' => 'Tarea II Guerra Mundial', 'nota_maxima' => 10]]
-            ]
-        ],
-        '3ª Evaluación' => [
-            'categorias' => [
-                ['nombre' => 'Exámenes', 'porcentaje' => 60],
-                ['nombre' => 'Proyecto Final', 'porcentaje' => 40]
-            ],
-            'actividades' => [
-                'Exámenes' => [['nombre' => 'Examen Final', 'nota_maxima' => 10]],
-                'Proyecto Final' => [['nombre' => 'Proyecto de Investigación', 'nota_maxima' => 10]]
-            ]
-        ]
+        // Se podrían añadir aquí la 2ª y 3ª evaluación con una estructura similar
     ];
 
     foreach ($evaluaciones as $nombre_eval => $data) {
         $evaluacion_id = cpp_crear_evaluacion($clase_id, $user_id, $nombre_eval);
         if (!$evaluacion_id) continue;
 
-        // Actualizar el modo de cálculo a 'ponderada'
-        $wpdb->update(
-            $wpdb->prefix . 'cpp_evaluaciones',
-            ['calculo_nota' => 'ponderada'],
-            ['id' => $evaluacion_id]
-        );
+        $wpdb->update($wpdb->prefix . 'cpp_evaluaciones', ['calculo_nota' => 'ponderada'], ['id' => $evaluacion_id]);
 
         $categorias_ids = [];
         foreach ($data['categorias'] as $cat) {
-            $categoria_id = cpp_guardar_categoria_evaluacion($evaluacion_id, $user_id, $cat['nombre'], $cat['porcentaje']);
+            $categoria_id = cpp_guardar_categoria_evaluacion($evaluacion_id, $user_id, $cat['nombre'], $cat['porcentaje'], $cat['color']);
             if ($categoria_id) {
                 $categorias_ids[$cat['nombre']] = $categoria_id;
             }
@@ -276,12 +279,9 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
 
             foreach ($actividades as $act) {
                 $actividad_id = cpp_guardar_actividad_evaluable([
-                    'clase_id' => $clase_id,
-                    'evaluacion_id' => $evaluacion_id,
-                    'categoria_id' => $categoria_id_actual,
-                    'nombre_actividad' => $act['nombre'],
-                    'nota_maxima' => $act['nota_maxima'],
-                    'user_id' => $user_id
+                    'clase_id' => $clase_id, 'evaluacion_id' => $evaluacion_id, 'categoria_id' => $categoria_id_actual,
+                    'nombre_actividad' => $act['nombre'], 'nota_maxima' => $act['nota_maxima'],
+                    'fecha_actividad' => $act['fecha'], 'descripcion_actividad' => $act['desc'], 'user_id' => $user_id
                 ]);
 
                 if ($actividad_id) {
