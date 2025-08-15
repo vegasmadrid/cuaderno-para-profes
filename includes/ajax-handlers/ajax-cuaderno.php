@@ -310,7 +310,7 @@ function cpp_ajax_cargar_vista_final() {
                     <?php foreach ($evaluaciones_reales as $evaluacion): ?>
                         <th class="cpp-cuaderno-th-actividad"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></th>
                     <?php endforeach; ?>
-                    <th class="cpp-cuaderno-th-final">Nota Final (Media)</th>
+                    <th class="cpp-cuaderno-th-final"><div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(Media)</span></div></th>
                 </tr>
             </thead>
             <tbody>
