@@ -280,32 +280,44 @@ function cpp_ajax_cargar_vista_final() {
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id);
+    $evaluaciones_reales = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
     $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
+    $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
 
+    $notas_por_evaluacion = [];
     $notas_finales_promediadas = [];
+
     foreach ($alumnos as $alumno) {
-        $nota_0_100 = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
-        $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
-        $notas_finales_promediadas[$alumno['id']] = $nota_reescalada;
+        $notas_finales_promediadas[$alumno['id']] = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        foreach ($evaluaciones_reales as $evaluacion) {
+            $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
+        }
     }
 
     ob_start();
     ?>
+    <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
+        <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
+        <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+        <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+    </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
             <thead>
                 <tr>
                     <th class="cpp-cuaderno-th-alumno">Alumno</th>
+                    <?php foreach ($evaluaciones_reales as $evaluacion): ?>
+                        <th class="cpp-cuaderno-th-actividad"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></th>
+                    <?php endforeach; ?>
                     <th class="cpp-cuaderno-th-final">Nota Final (Media)</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($alumnos)): ?>
-                    <tr><td colspan="2">No hay alumnos en esta clase.</td></tr>
+                    <tr><td colspan="<?php echo count($evaluaciones_reales) + 2; ?>">No hay alumnos en esta clase.</td></tr>
                 <?php else: foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
-                        $nota_final_display = isset($notas_finales_promediadas[$alumno['id']]) ? cpp_formatear_nota_display($notas_finales_promediadas[$alumno['id']], 2) : '-';
                     ?>
                     <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" <?php echo $row_style_attr; ?>>
                         <td class="cpp-cuaderno-td-alumno">
@@ -314,7 +326,19 @@ function cpp_ajax_cargar_vista_final() {
                             </div>
                             <span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($alumno['apellidos'] . ', ' . $alumno['nombre']); ?></span>
                         </td>
-                        <td class="cpp-cuaderno-td-final"><?php echo esc_html($nota_final_display); ?></td>
+                        <?php foreach ($evaluaciones_reales as $evaluacion):
+                            $nota_0_100 = $notas_por_evaluacion[$alumno['id']][$evaluacion['id']];
+                            $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
+                        ?>
+                            <td class="cpp-cuaderno-td-nota"><?php echo cpp_formatear_nota_display($nota_reescalada, 2); ?></td>
+                        <?php endforeach; ?>
+                        <td class="cpp-cuaderno-td-final">
+                            <?php
+                                $nota_promediada_0_100 = $notas_finales_promediadas[$alumno['id']];
+                                $nota_promediada_reescalada = ($nota_promediada_0_100 / 100) * $base_nota_final_clase;
+                                echo cpp_formatear_nota_display($nota_promediada_reescalada, 2);
+                            ?>
+                        </td>
                     </tr>
                 <?php endforeach; endif; ?>
             </tbody>
@@ -322,5 +346,16 @@ function cpp_ajax_cargar_vista_final() {
     </div>
     <?php
     $html_cuaderno = ob_get_clean();
-    wp_send_json_success(['html_cuaderno' => $html_cuaderno]);
+
+    $evaluaciones_con_final = $evaluaciones_reales;
+    if (count($evaluaciones_reales) > 1) {
+        $evaluaciones_con_final[] = ['id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)'];
+    }
+
+    wp_send_json_success([
+        'html_cuaderno' => $html_cuaderno,
+        'evaluaciones' => $evaluaciones_con_final,
+        'evaluacion_activa_id' => 'final',
+        'nombre_clase' => $clase_db->nombre,
+    ]);
 }

@@ -56,17 +56,13 @@
         },
         
         cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId) {
-            console.log(`cpp.gradebook.cargarContenidoCuaderno - INICIO - Clase ID: ${claseId}, Evaluación ID: ${evaluacionId}`);
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
-            // Ocultar botones no relevantes para la vista final
-            const $addButton = $('#cpp-a1-add-activity-btn');
-            if (evaluacionId === 'final') {
-                $addButton.hide();
-            } else {
-                $addButton.show();
-            }
+            const isFinalView = evaluacionId === 'final';
+            $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
+            $('#cpp-a1-import-students-btn').toggle(!isFinalView);
+            $('#cpp-a1-take-attendance-btn').toggle(!isFinalView);
 
             if (claseId && typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId) {
                 try { localStorage.setItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId, claseId); } catch (e) { console.warn("No se pudo guardar la última clase abierta en localStorage:", e); }
@@ -74,17 +70,15 @@
                     evaluacionId = localStorage.getItem(this.localStorageKey_lastEval + claseId);
                 }
             }
+
             if (claseId) {
                 $contenidoCuaderno.html('<p class="cpp-cuaderno-cargando">Cargando cuaderno...</p>');
                 if (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function') { cpp.utils.updateTopBarClassName(claseNombre); }
                 const self = this;
 
-                let ajaxAction = 'cpp_cargar_cuaderno_clase';
+                const ajaxAction = isFinalView ? 'cpp_cargar_vista_final' : 'cpp_cargar_cuaderno_clase';
                 let ajaxData = { nonce: cppFrontendData.nonce, clase_id: claseId };
-
-                if (evaluacionId === 'final') {
-                    ajaxAction = 'cpp_cargar_vista_final';
-                } else if (evaluacionId) {
+                if (!isFinalView && evaluacionId) {
                     ajaxData.evaluacion_id = evaluacionId;
                 }
 
@@ -94,17 +88,14 @@
                         if (response && response.success && response.data && typeof response.data.html_cuaderno !== 'undefined') {
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
 
-                            // Solo actualizamos estos datos si no es la vista final
-                            if (evaluacionId !== 'final') {
-                                cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
-                                self.currentCalculoNota = response.data.calculo_nota || 'total';
-                                if (typeof localStorage !== 'undefined' && cpp.currentClaseIdCuaderno && cpp.currentEvaluacionId) {
-                                    localStorage.setItem(self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
-                                }
-                                self.renderEvaluacionesDropdown(response.data.evaluaciones, response.data.evaluacion_activa_id);
-                                if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
-                                $('#clase_id_actividad_cuaderno_form').val(claseId);
+                            cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
+                            self.currentCalculoNota = response.data.calculo_nota || 'total';
+                            if (typeof localStorage !== 'undefined' && cpp.currentClaseIdCuaderno && cpp.currentEvaluacionId) {
+                                localStorage.setItem(self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
                             }
+                            self.renderEvaluacionesDropdown(response.data.evaluaciones, response.data.evaluacion_activa_id);
+                            if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
+                            $('#clase_id_actividad_cuaderno_form').val(claseId);
 
                             if (response.data.nombre_clase && (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function')) { cpp.utils.updateTopBarClassName(response.data.nombre_clase); }
                             self.updateEnterDirectionButton();
