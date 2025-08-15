@@ -220,43 +220,103 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
     }
 
     // 3. Crear 3 evaluaciones con categorías y actividades
-    $category_colors = ['#D50000', '#0091EA', '#00C853', '#FF6D00'];
+    $milan_vivid_colors = ['#D50000', '#0091EA', '#00C853', '#FF6D00', '#AA00FF', '#FFD600'];
     $evaluaciones = [
         '1ª Evaluación' => [
             'categorias' => [
-                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $category_colors[0]],
-                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $category_colors[1]],
-                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $category_colors[2]],
-                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $category_colors[3]],
+                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $milan_vivid_colors[0]],
+                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $milan_vivid_colors[1]],
+                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $milan_vivid_colors[2]],
+                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $milan_vivid_colors[3]],
             ],
             'actividades' => [
                 'Exámenes' => [
-                    ['nombre' => 'Examen T.1: La Hidrosfera', 'nota_maxima' => 10, 'fecha' => '2023-10-15', 'desc' => 'Evaluación de los conceptos sobre el ciclo del agua.'],
-                    ['nombre' => 'Examen T.2: La Atmósfera', 'nota_maxima' => 10, 'fecha' => '2023-11-20', 'desc' => 'Prueba sobre las capas de la atmósfera y los fenómenos meteorológicos.'],
-                    ['nombre' => 'Prueba Corta Sorpresa', 'nota_maxima' => 10, 'fecha' => '2023-11-05', 'desc' => 'Test rápido sobre los últimos conceptos vistos en clase.'],
-                    ['nombre' => 'Examen Oral T.1-2', 'nota_maxima' => 10, 'fecha' => '2023-11-25', 'desc' => 'Exposición oral de los temas 1 y 2.'],
+                    ['nombre' => 'Examen T.1: La Hidrosfera', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month')), 'desc' => 'Evaluación de los conceptos sobre el ciclo del agua.'],
+                    ['nombre' => 'Examen T.2: La Atmósfera', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-1 month')), 'desc' => 'Prueba sobre las capas de la atmósfera y los fenómenos meteorológicos.'],
+                    ['nombre' => 'Prueba Corta Sorpresa', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-1 month -15 days')), 'desc' => 'Test rápido sobre los últimos conceptos vistos en clase.'],
+                    ['nombre' => 'Examen Oral T.1-2', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-10 days')), 'desc' => 'Exposición oral de los temas 1 y 2.'],
                 ],
                 'Tareas' => [
-                    ['nombre' => 'Maqueta: El Volcán', 'nota_maxima' => 10, 'fecha' => '2023-10-22', 'desc' => 'Construcción de un modelo a escala de un volcán en erupción.'],
-                    ['nombre' => 'Mapa: Ríos de España', 'nota_maxima' => 10, 'fecha' => '2023-11-12', 'desc' => 'Elaboración de un mapa físico con los principales ríos de la península.'],
-                    ['nombre' => 'Redacción: El Quijote', 'nota_maxima' => 10, 'fecha' => '2023-10-30', 'desc' => 'Análisis y resumen del primer capítulo de Don Quijote.'],
-                    ['nombre' => 'Infografía: Ciclo del Agua', 'nota_maxima' => 10, 'fecha' => '2023-10-10', 'desc' => 'Creación de una infografía visual sobre el ciclo del agua.'],
+                    ['nombre' => 'Maqueta: El Volcán', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month +7 days')), 'desc' => 'Construcción de un modelo a escala de un volcán en erupción.'],
+                    ['nombre' => 'Mapa: Ríos de España', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-1 month +12 days')), 'desc' => 'Elaboración de un mapa físico con los principales ríos de la península.'],
+                    ['nombre' => 'Redacción: El Quijote', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month -5 days')), 'desc' => 'Análisis y resumen del primer capítulo de Don Quijote.'],
+                    ['nombre' => 'Infografía: Ciclo del Agua', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month -15 days')), 'desc' => 'Creación de una infografía visual sobre el ciclo del agua.'],
                 ],
                 'Deberes' => [
-                    ['nombre' => 'Ejercicios Pág. 25', 'nota_maxima' => 10, 'fecha' => '2023-10-05', 'desc' => 'Resolución de los ejercicios 1, 2 y 3 del libro de texto.'],
-                    ['nombre' => 'Ejercicios Pág. 32', 'nota_maxima' => 10, 'fecha' => '2023-10-19', 'desc' => 'Resolución de los ejercicios 4 y 5 del libro de texto.'],
-                    ['nombre' => 'Búsqueda de Información', 'nota_maxima' => 10, 'fecha' => '2023-11-02', 'desc' => 'Investigación sobre los tipos de nubes.'],
-                    ['nombre' => 'Ver Documental y Resumir', 'nota_maxima' => 10, 'fecha' => '2023-11-16', 'desc' => 'Visualización del documental "Cosmos" y entrega de un resumen.'],
+                    ['nombre' => 'Ejercicios Pág. 25', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month -20 days')), 'desc' => 'Resolución de los ejercicios 1, 2 y 3 del libro de texto.'],
+                    ['nombre' => 'Ejercicios Pág. 32', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month -10 days')), 'desc' => 'Resolución de los ejercicios 4 y 5 del libro de texto.'],
+                    ['nombre' => 'Búsqueda de Información', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-1 month -20 days')), 'desc' => 'Investigación sobre los tipos de nubes.'],
+                    ['nombre' => 'Ver Documental y Resumir', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-1 month -10 days')), 'desc' => 'Visualización del documental "Cosmos" y entrega de un resumen.'],
                 ],
                 'Cuaderno' => [
-                    ['nombre' => 'Revisión de Septiembre', 'nota_maxima' => 10, 'fecha' => '2023-09-30', 'desc' => 'Revisión de la presentación y organización del cuaderno.'],
-                    ['nombre' => 'Revisión de Octubre', 'nota_maxima' => 10, 'fecha' => '2023-10-31', 'desc' => 'Revisión de la limpieza, orden y contenido del cuaderno.'],
-                    ['nombre' => 'Revisión de Noviembre', 'nota_maxima' => 10, 'fecha' => '2023-11-30', 'desc' => 'Revisión final del cuaderno de la evaluación.'],
-                    ['nombre' => 'Autoevaluación del Cuaderno', 'nota_maxima' => 10, 'fecha' => '2023-12-01', 'desc' => 'El alumno evalúa su propio cuaderno siguiendo una rúbrica.'],
+                    ['nombre' => 'Revisión de Septiembre', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-3 month')), 'desc' => 'Revisión de la presentación y organización del cuaderno.'],
+                    ['nombre' => 'Revisión de Octubre', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-2 month')), 'desc' => 'Revisión de la limpieza, orden y contenido del cuaderno.'],
+                    ['nombre' => 'Revisión de Noviembre', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-1 month')), 'desc' => 'Revisión final del cuaderno de la evaluación.'],
+                    ['nombre' => 'Autoevaluación del Cuaderno', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('-5 days')), 'desc' => 'El alumno evalúa su propio cuaderno siguiendo una rúbrica.'],
                 ],
             ]
         ],
-        // Se podrían añadir aquí la 2ª y 3ª evaluación con una estructura similar
+        '2ª Evaluación' => [
+            'categorias' => [
+                ['nombre' => 'Exámenes', 'porcentaje' => 60, 'color' => $milan_vivid_colors[0]],
+                ['nombre' => 'Tareas', 'porcentaje' => 20, 'color' => $milan_vivid_colors[1]],
+                ['nombre' => 'Deberes', 'porcentaje' => 10, 'color' => $milan_vivid_colors[2]],
+                ['nombre' => 'Cuaderno', 'porcentaje' => 10, 'color' => $milan_vivid_colors[3]],
+            ],
+            'actividades' => [
+                'Exámenes' => [
+                    ['nombre' => 'Examen T.3: La Geosfera', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month')), 'desc' => 'Prueba sobre las capas de la Tierra y sus componentes.'],
+                    ['nombre' => 'Examen T.4: El Universo', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+2 month')), 'desc' => 'Evaluación de los conocimientos sobre el sistema solar y las galaxias.'],
+                    ['nombre' => 'Prueba Práctica: Rocas', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month +15 days')), 'desc' => 'Identificación de diferentes tipos de rocas y minerales.'],
+                    ['nombre' => 'Debate: Vida Extraterrestre', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+2 month +10 days')), 'desc' => 'Participación en un debate sobre la posibilidad de vida en otros planetas.'],
+                ],
+                'Tareas' => [
+                    ['nombre' => 'Presentación: Planetas', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month +5 days')), 'desc' => 'Creación de una presentación de diapositivas sobre un planeta asignado.'],
+                    ['nombre' => 'Línea de Tiempo: Big Bang', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+2 month -10 days')), 'desc' => 'Elaboración de una línea de tiempo desde el Big Bang hasta la actualidad.'],
+                    ['nombre' => 'Biografía: Marie Curie', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month -5 days')), 'desc' => 'Investigación y redacción de una biografía sobre Marie Curie.'],
+                    ['nombre' => 'Póster: Constelaciones', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+2 month +5 days')), 'desc' => 'Diseño de un póster informativo sobre una constelación.'],
+                ],
+                 'Deberes' => [
+                    ['nombre' => 'Ejercicios Pág. 45', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+20 days')), 'desc' => 'Resolución de los ejercicios sobre la tectónica de placas.'],
+                    ['nombre' => 'Ejercicios Pág. 52', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month +10 days')), 'desc' => 'Ejercicios de cálculo de distancias astronómicas.'],
+                    ['nombre' => 'Artículo de Opinión', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month +20 days')), 'desc' => 'Redacción sobre la importancia de la exploración espacial.'],
+                    ['nombre' => 'Cuestionario Online', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+2 month')), 'desc' => 'Completar el cuestionario de repaso del tema 4.'],
+                ],
+                'Cuaderno' => [
+                    ['nombre' => 'Revisión de Enero', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+1 month')), 'desc' => 'Revisión de la presentación y organización del cuaderno.'],
+                    ['nombre' => 'Revisión de Febrero', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+2 month')), 'desc' => 'Revisión de la limpieza, orden y contenido del cuaderno.'],
+                    ['nombre' => 'Revisión de Marzo', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+3 month')), 'desc' => 'Revisión final del cuaderno de la evaluación.'],
+                    ['nombre' => 'Autoevaluación del Cuaderno', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+3 month +5 days')), 'desc' => 'El alumno evalúa su propio cuaderno siguiendo una rúbrica.'],
+                ],
+            ]
+        ],
+        '3ª Evaluación' => [
+            'categorias' => [
+                ['nombre' => 'Proyecto Final', 'porcentaje' => 50, 'color' => $milan_vivid_colors[4]],
+                ['nombre' => 'Examen Final', 'porcentaje' => 40, 'color' => $milan_vivid_colors[0]],
+                ['nombre' => 'Participación', 'porcentaje' => 10, 'color' => $milan_vivid_colors[5]],
+            ],
+             'actividades' => [
+                'Proyecto Final' => [
+                    ['nombre' => 'Entrega 1: Propuesta', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+3 month +15 days')), 'desc' => 'Presentación de la propuesta del proyecto final.'],
+                    ['nombre' => 'Entrega 2: Desarrollo', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+4 month')), 'desc' => 'Entrega de la parte principal del proyecto.'],
+                    ['nombre' => 'Entrega 3: Borrador Final', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+4 month +15 days')), 'desc' => 'Revisión del borrador antes de la entrega final.'],
+                    ['nombre' => 'Defensa del Proyecto', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+5 month')), 'desc' => 'Exposición y defensa oral del proyecto final ante la clase.'],
+                ],
+                'Examen Final' => [
+                    ['nombre' => 'Examen Final Teórico', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+5 month +10 days')), 'desc' => 'Prueba escrita que abarca todo el temario del curso.'],
+                    ['nombre' => 'Examen Final Práctico', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+5 month +12 days')), 'desc' => 'Resolución de un caso práctico aplicando los conocimientos adquiridos.'],
+                    ['nombre' => 'Repaso General 1', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+4 month +20 days')), 'desc' => 'Actividad de repaso de la primera mitad del temario.'],
+                    ['nombre' => 'Repaso General 2', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+5 month')), 'desc' => 'Actividad de repaso de la segunda mitad del temario.'],
+                ],
+                'Participación' => [
+                    ['nombre' => 'Debate 1', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+3 month +20 days')), 'desc' => 'Evaluación de la participación en el primer debate.'],
+                    ['nombre' => 'Debate 2', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+4 month +10 days')), 'desc' => 'Evaluación de la participación en el segundo debate.'],
+                    ['nombre' => 'Actitud y Esfuerzo', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+5 month +15 days')), 'desc' => 'Valoración global de la actitud y el esfuerzo durante la evaluación.'],
+                    ['nombre' => 'Ayuda a Compañeros', 'nota_maxima' => 10, 'fecha' => date('Y-m-d', strtotime('+5 month +15 days')), 'desc' => 'Valoración del trabajo en equipo y la ayuda a los compañeros.'],
+                ],
+            ]
+        ]
     ];
 
     foreach ($evaluaciones as $nombre_eval => $data) {
