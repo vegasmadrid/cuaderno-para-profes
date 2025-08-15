@@ -36,8 +36,7 @@ const cpp = {
             { name: 'modalsExcel', objRef: 'modals.excel' },
             { name: 'modalsAsistencia', objRef: 'modals.asistencia' },
             { name: 'modalsFichaAlumno', objRef: 'modals.fichaAlumno' },
-            { name: 'modalsEvaluacion', objRef: 'modals.evaluacion' },
-            { name: 'tutorial', objRef: 'tutorial' }
+            { name: 'modalsEvaluacion', objRef: 'modals.evaluacion' }
         ];
         
         modulesToInitialize.forEach(moduleInfo => {
@@ -141,16 +140,9 @@ const cpp = {
                  $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Módulo del cuaderno no cargado.</p></div>');
             }
         } else if ($clasesSidebarItems.length === 0) {
-            // Si no hay clases, la pantalla de bienvenida se muestra desde PHP.
-            // Aquí es donde debemos iniciar el tutorial automáticamente.
-            // Si no hay clases, estamos en la pantalla de bienvenida.
-            // Forzamos el inicio del tutorial desde el principio, limpiando cualquier estado anterior.
-            if (cpp.tutorial && typeof cpp.tutorial.start === 'function') {
-                localStorage.removeItem('cpp_tutorial_step');
-                setTimeout(() => {
-                    cpp.tutorial.start();
-                }, 500); // Un pequeño retardo para asegurar que todo esté renderizado.
-            }
+            // This is the welcome screen. The PHP has already rendered the welcome message.
+            // No JS action is needed here.
+            console.log("CPP Core: No hay clases, mostrando pantalla de bienvenida.");
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');

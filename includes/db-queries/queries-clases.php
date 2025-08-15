@@ -155,10 +155,24 @@ function cpp_eliminar_clase_y_alumnos($clase_id, $user_id) {
         $placeholders = implode(', ', array_fill(0, count($actividades_ids), '%d'));
         $wpdb->query($wpdb->prepare("DELETE FROM $tabla_calificaciones WHERE actividad_id IN ($placeholders)", $actividades_ids));
     }
-    $wpdb->delete($tabla_actividades, ['clase_id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
-    $wpdb->delete($tabla_categorias_evaluacion, ['clase_id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
-    $wpdb->delete($tabla_evaluaciones, ['clase_id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
-    $wpdb->delete($tabla_asistencia, ['clase_id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
+    $wpdb->delete($tabla_actividades, ['clase_id' => $clase_id], ['%d']);
+
+    // Obtener todas las evaluaciones asociadas a la clase
+    $evaluaciones_ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM $tabla_evaluaciones WHERE clase_id = %d", $clase_id));
+
+    if (!empty($evaluaciones_ids)) {
+        // Crear placeholders para la consulta IN ()
+        $placeholders_evaluaciones = implode(', ', array_fill(0, count($evaluaciones_ids), '%d'));
+
+        // Eliminar categorías asociadas a esas evaluaciones
+        $wpdb->query($wpdb->prepare("DELETE FROM $tabla_categorias_evaluacion WHERE evaluacion_id IN ($placeholders_evaluaciones)", $evaluaciones_ids));
+    }
+
+    // Eliminar las evaluaciones de la clase
+    $wpdb->delete($tabla_evaluaciones, ['clase_id' => $clase_id], ['%d']);
+
+    // Eliminar registros de asistencia
+    $wpdb->delete($tabla_asistencia, ['clase_id' => $clase_id], ['%d']);
     cpp_eliminar_todos_alumnos_clase($clase_id, $user_id); 
     $clase_eliminada = $wpdb->delete($tabla_clases, ['id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
     return $clase_eliminada;
