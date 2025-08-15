@@ -299,8 +299,8 @@
                         let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
                         contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
                         contentHtml += '<option value="">-- Selecciona --</option>';
-                        response.data.evaluaciones.forEach(function(eval) {
-                            contentHtml += `<option value="${eval.id}">${$('<div>').text(eval.nombre_evaluacion).html()}</option>`;
+                        response.data.evaluaciones.forEach(function(evaluacion) {
+                            contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
                         });
                         contentHtml += '</select></div><hr>';
                         contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
