@@ -139,6 +139,10 @@ const cpp = {
                  console.error("CPP Core: cpp.gradebook.cargarContenidoCuaderno NO ESTÁ DEFINIDO. El cuaderno no se cargará.");
                  $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Módulo del cuaderno no cargado.</p></div>');
             }
+        } else if ($clasesSidebarItems.length === 0) {
+            // This is the welcome screen. The PHP has already rendered the welcome message.
+            // No JS action is needed here.
+            console.log("CPP Core: No hay clases, mostrando pantalla de bienvenida.");
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');
