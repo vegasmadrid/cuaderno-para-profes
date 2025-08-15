@@ -79,6 +79,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
                                     <span class="dashicons dashicons-plus"></span> Crear mi primera clase
                                 </button>
+                            <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-btn-crear-clase-ejemplo">
+                                <span class="dashicons dashicons-admin-plugins"></span> Crear clase de ejemplo
+                            </button>
                             </div>
                         </div>
                     <?php else: ?>
@@ -136,6 +139,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             </div>
                         </div>
                         <div class="cpp-modal-actions">
+                            <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-crear-clase-ejemplo-modal" style="margin-right: auto;"><span class="dashicons dashicons-admin-plugins"></span> Crear Clase de Ejemplo</button>
                             <button type="submit" class="cpp-btn cpp-btn-primary cpp-modal-submit-btn" id="cpp-submit-clase-btn-modal"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
                             <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-modal-btn" style="display: none;"><span class="dashicons dashicons-trash"></span> Eliminar Clase</button>
                         </div>

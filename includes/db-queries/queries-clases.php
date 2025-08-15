@@ -177,3 +177,121 @@ function cpp_eliminar_clase_y_alumnos($clase_id, $user_id) {
     $clase_eliminada = $wpdb->delete($tabla_clases, ['id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
     return $clase_eliminada;
 }
+
+function cpp_crear_clase_de_ejemplo_completa($user_id) {
+    global $wpdb;
+
+    // 1. Crear la clase de ejemplo
+    $clase_id = cpp_guardar_clase($user_id, [
+        'nombre' => 'Clase Ejemplo',
+        'color' => '#FF5722',
+        'base_nota_final' => 10.00
+    ]);
+
+    if (!$clase_id) {
+        return false; // No se pudo crear la clase
+    }
+
+    // Eliminar la evaluación "General" que se crea por defecto
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $wpdb->delete($tabla_evaluaciones, ['clase_id' => $clase_id, 'nombre_evaluacion' => 'Evaluación General']);
+
+
+    // 2. Crear alumnos de ejemplo
+    $alumnos = [
+        ['nombre' => 'Juan', 'apellidos' => 'García Pérez'], ['nombre' => 'María', 'apellidos' => 'Fernández López'],
+        ['nombre' => 'Carlos', 'apellidos' => 'Martínez Sánchez'], ['nombre' => 'Ana', 'apellidos' => 'Ruiz Gómez'],
+        ['nombre' => 'David', 'apellidos' => 'Jiménez Hernández'], ['nombre' => 'Laura', 'apellidos' => 'Vázquez Romero'],
+        ['nombre' => 'Javier', 'apellidos' => 'Moreno Navarro'], ['nombre' => 'Sofía', 'apellidos' => 'Iglesias Castillo'],
+        ['nombre' => 'Pablo', 'apellidos' => 'Ortega Rubio'], ['nombre' => 'Elena', 'apellidos' => 'Molina Serrano'],
+        ['nombre' => 'Miguel', 'apellidos' => 'Reyes Gil'], ['nombre' => 'Lucía', 'apellidos' => 'Santos Cabrera'],
+        ['nombre' => 'Adrián', 'apellidos' => 'Domínguez Torres'], ['nombre' => 'Paula', 'apellidos' => 'Vega Ríos'],
+        ['nombre' => 'Diego', 'apellidos' => 'Blanco Soler']
+    ];
+    $alumnos_ids = [];
+    foreach ($alumnos as $alumno) {
+        $alumno_id = cpp_guardar_alumno($clase_id, $alumno);
+        if ($alumno_id) {
+            $alumnos_ids[] = $wpdb->insert_id;
+        }
+    }
+
+    // 3. Crear 3 evaluaciones con categorías y actividades
+    $evaluaciones = [
+        '1ª Evaluación' => [
+            'categorias' => [
+                ['nombre' => 'Exámenes', 'porcentaje' => 70],
+                ['nombre' => 'Tareas', 'porcentaje' => 30]
+            ],
+            'actividades' => [
+                'Exámenes' => [['nombre' => 'Examen Tema 1', 'nota_maxima' => 10], ['nombre' => 'Examen Tema 2', 'nota_maxima' => 10]],
+                'Tareas' => [['nombre' => 'Tarea Volcanes', 'nota_maxima' => 10], ['nombre' => 'Tarea Ríos de España', 'nota_maxima' => 10], ['nombre' => 'Redacción: El Quijote', 'nota_maxima' => 10]]
+            ]
+        ],
+        '2ª Evaluación' => [
+            'categorias' => [
+                ['nombre' => 'Exámenes', 'porcentaje' => 70],
+                ['nombre' => 'Tareas', 'porcentaje' => 30]
+            ],
+            'actividades' => [
+                'Exámenes' => [['nombre' => 'Examen Tema 3', 'nota_maxima' => 10], ['nombre' => 'Examen Tema 4', 'nota_maxima' => 10]],
+                'Tareas' => [['nombre' => 'Tarea Sistema Solar', 'nota_maxima' => 10], ['nombre' => 'Tarea II Guerra Mundial', 'nota_maxima' => 10]]
+            ]
+        ],
+        '3ª Evaluación' => [
+            'categorias' => [
+                ['nombre' => 'Exámenes', 'porcentaje' => 60],
+                ['nombre' => 'Proyecto Final', 'porcentaje' => 40]
+            ],
+            'actividades' => [
+                'Exámenes' => [['nombre' => 'Examen Final', 'nota_maxima' => 10]],
+                'Proyecto Final' => [['nombre' => 'Proyecto de Investigación', 'nota_maxima' => 10]]
+            ]
+        ]
+    ];
+
+    foreach ($evaluaciones as $nombre_eval => $data) {
+        $evaluacion_id = cpp_crear_evaluacion($clase_id, $user_id, $nombre_eval);
+        if (!$evaluacion_id) continue;
+
+        // Actualizar el modo de cálculo a 'ponderada'
+        $wpdb->update(
+            $wpdb->prefix . 'cpp_evaluaciones',
+            ['calculo_nota' => 'ponderada'],
+            ['id' => $evaluacion_id]
+        );
+
+        $categorias_ids = [];
+        foreach ($data['categorias'] as $cat) {
+            $categoria_id = cpp_guardar_categoria_evaluacion($evaluacion_id, $user_id, $cat['nombre'], $cat['porcentaje']);
+            if ($categoria_id) {
+                $categorias_ids[$cat['nombre']] = $categoria_id;
+            }
+        }
+
+        foreach ($data['actividades'] as $nombre_cat => $actividades) {
+            if (!isset($categorias_ids[$nombre_cat])) continue;
+            $categoria_id_actual = $categorias_ids[$nombre_cat];
+
+            foreach ($actividades as $act) {
+                $actividad_id = cpp_guardar_actividad_evaluable([
+                    'clase_id' => $clase_id,
+                    'evaluacion_id' => $evaluacion_id,
+                    'categoria_id' => $categoria_id_actual,
+                    'nombre_actividad' => $act['nombre'],
+                    'nota_maxima' => $act['nota_maxima'],
+                    'user_id' => $user_id
+                ]);
+
+                if ($actividad_id) {
+                    foreach ($alumnos_ids as $alumno_id) {
+                        $nota = round(max(0, min($act['nota_maxima'], $act['nota_maxima'] * (rand(40, 98) / 100))), 2);
+                        cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota, $user_id);
+                    }
+                }
+            }
+        }
+    }
+
+    return $clase_id;
+}

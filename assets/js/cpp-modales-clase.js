@@ -223,6 +223,36 @@
             }
         },
 
+        crearClaseEjemplo: function(event) {
+            event.preventDefault();
+            const $btn = $(event.currentTarget);
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Creando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_crear_clase_ejemplo',
+                    nonce: cppFrontendData.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (response.data.message || 'No se pudo crear la clase de ejemplo.'));
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                    }
+                },
+                error: function() {
+                    alert('Error de conexión al crear la clase de ejemplo.');
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
+        },
+
         handleTabClick: function(event, targetTabId = null, modalContext = null) { 
             if (event) event.preventDefault();
             const $clickedLink = event ? $(event.currentTarget).closest('.cpp-tab-link') : null;
@@ -342,6 +372,8 @@
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
             $modalClase.on('click', '.cpp-tab-link', (e) => { this.handleTabClick(e, null, $modalClase); });
+
+            $('body').on('click', '#cpp-btn-crear-clase-ejemplo, #cpp-btn-crear-clase-ejemplo-modal', (e) => { this.crearClaseEjemplo(e); });
 
             const evaluacionContainerSelector = '#cpp-clase-modal-evaluaciones-container';
 
