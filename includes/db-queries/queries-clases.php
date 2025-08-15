@@ -182,15 +182,16 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
     global $wpdb;
 
     // 1. Crear la clase de ejemplo
-    $clase_id = cpp_guardar_clase($user_id, [
+    $resultado_clase = cpp_guardar_clase($user_id, [
         'nombre' => 'Clase Ejemplo',
-        'color' => '#FF5722',
+        'color' => '#cd18be',
         'base_nota_final' => 10.00
     ]);
 
-    if (!$clase_id) {
+    if (!$resultado_clase) {
         return false; // No se pudo crear la clase
     }
+    $clase_id = $wpdb->insert_id;
 
     // Eliminar la evaluación "General" que se crea por defecto
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
