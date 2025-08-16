@@ -149,7 +149,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     background: none; border: none; cursor: pointer; display: inline-flex;
     align-items: center; justify-content: center; transition: background-color 0.15s ease;
 }
-.cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle .dashicons { font-size: 24px; line-height: 1; }
+.cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle .dashicons { font-size: 24px; line-height: 1; vertical-align: middle; }
 .cpp-fixed-top-bar[style*="color: rgb(255, 255, 255)"] .cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle:hover,
 .cpp-fixed-top-bar[style*="color: #FFF"] .cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle:hover,
 .cpp-fixed-top-bar[style*="color: #FFFFFF"] .cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle:hover {
