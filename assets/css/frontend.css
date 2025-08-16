@@ -148,6 +148,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     color: inherit !important; margin-right: 12px; padding: 8px; border-radius: 50%;
     background: none; border: none; cursor: pointer; display: inline-flex;
     align-items: center; justify-content: center; transition: background-color 0.15s ease;
+    margin-top: -6px;
 }
 .cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle .dashicons { font-size: 24px; line-height: 1; vertical-align: middle; }
 .cpp-fixed-top-bar[style*="color: rgb(255, 255, 255)"] .cpp-top-bar-menu-btn#cpp-a1-menu-btn-toggle:hover,
@@ -1008,6 +1009,7 @@ body.cpp-no-text-select {
     height: 36px;
     cursor: pointer;
     display: block;
+    overflow: hidden;
 }
 .cpp-fixed-top-bar:not([style*="color: rgb(255, 255, 255)"]) .cpp-user-menu-avatar-btn {
     border-color: rgba(0,0,0,0.3);
