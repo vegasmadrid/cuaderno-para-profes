@@ -219,6 +219,38 @@ function cpp_crear_clase_de_ejemplo_completa($user_id) {
         }
     }
 
+    // 4. Crear historial de asistencia para el último año
+    $fecha_actual = new DateTime();
+    $fecha_inicio = (new DateTime())->modify('-3 months'); // Simular 3 meses de historial
+    $intervalo = new DateInterval('P1D');
+    $periodo = new DatePeriod($fecha_inicio, $intervalo, $fecha_actual);
+    $estados_posibles = ['presente', 'ausente', 'retraso', 'justificado'];
+
+    foreach ($periodo as $fecha) {
+        // Omitir fines de semana
+        if ($fecha->format('N') >= 6) {
+            continue;
+        }
+
+        $asistencias_dia = [];
+        foreach ($alumnos_ids as $alumno_id) {
+            // 95% de probabilidad de estar presente
+            $estado = (rand(1, 100) <= 95) ? 'presente' : $estados_posibles[rand(1, 3)];
+
+            // No es necesario guardar los presentes si ese es el estado por defecto,
+            // pero lo guardamos para que el ejemplo sea explícito.
+            $asistencias_dia[] = [
+                'alumno_id' => $alumno_id,
+                'estado' => $estado,
+                'observaciones' => ''
+            ];
+        }
+
+        if (!empty($asistencias_dia)) {
+            cpp_guardar_asistencia_multiple($user_id, $clase_id, $fecha->format('Y-m-d'), $asistencias_dia);
+        }
+    }
+
     // 3. Crear 3 evaluaciones con categorías y actividades
     $pastel_colors = ['#F08080', '#ADD8E6', '#98FB98', '#FFDAB9', '#E6E6FA', '#D8BFD8'];
     $evaluaciones = [
