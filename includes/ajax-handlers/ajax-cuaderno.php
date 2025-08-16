@@ -76,9 +76,26 @@ function cpp_ajax_cargar_cuaderno_clase() {
     ob_start();
     ?>
     <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
-        <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
-        <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
-        <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+        <div class="cpp-top-bar-left">
+            <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
+            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+            <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+        </div>
+        <div class="cpp-top-bar-right">
+            <div class="cpp-user-menu-container">
+                <button class="cpp-user-menu-avatar-btn">
+                    <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
+                </button>
+                <div class="cpp-user-menu-dropdown">
+                    <ul>
+                        <li><a href="/my-account">Mi Cuenta</a></li>
+                        <li><a href="/ayuda">Ayuda</a></li>
+                        <li><a href="/contacto">Contacto</a></li>
+                        <li><a href="/member-logout">Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
@@ -298,9 +315,26 @@ function cpp_ajax_cargar_vista_final() {
     ob_start();
     ?>
     <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
-        <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
-        <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
-        <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+        <div class="cpp-top-bar-left">
+            <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
+            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+            <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+        </div>
+        <div class="cpp-top-bar-right">
+            <div class="cpp-user-menu-container">
+                <button class="cpp-user-menu-avatar-btn">
+                    <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
+                </button>
+                <div class="cpp-user-menu-dropdown">
+                    <ul>
+                        <li><a href="/my-account">Mi Cuenta</a></li>
+                        <li><a href="/ayuda">Ayuda</a></li>
+                        <li><a href="/contacto">Contacto</a></li>
+                        <li><a href="/member-logout">Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
