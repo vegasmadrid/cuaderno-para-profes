@@ -23,6 +23,14 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $evaluacion_activa_id = null;
     $metodo_calculo = 'total';
 
+    if (count($evaluaciones) > 1) {
+        $evaluaciones[] = [
+            'id' => 'final',
+            'nombre_evaluacion' => 'Evaluación Final (Media)',
+            'calculo_nota' => 'total'
+        ];
+    }
+
     if (!empty($evaluaciones)) {
         if ($evaluacion_id_solicitada) {
             foreach ($evaluaciones as $eval) {
@@ -68,10 +76,26 @@ function cpp_ajax_cargar_cuaderno_clase() {
     ob_start();
     ?>
     <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
-        <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
-        <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
-        <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
-        <button class="cpp-btn-icon cpp-evaluacion-settings-btn" id="cpp-btn-evaluacion-settings" title="Ajustes de Ponderación" style="margin-left: 10px; display: none;"><span class="dashicons dashicons-admin-generic"></span></button>
+        <div class="cpp-top-bar-left">
+            <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
+            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+            <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+        </div>
+        <div class="cpp-top-bar-right">
+            <div class="cpp-user-menu-container">
+                <button class="cpp-user-menu-avatar-btn">
+                    <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
+                </button>
+                <div class="cpp-user-menu-dropdown">
+                    <ul>
+                        <li><a href="/my-account">Mi Cuenta</a></li>
+                        <li><a href="/ayuda">Ayuda</a></li>
+                        <li><a href="/contacto">Contacto</a></li>
+                        <li><a href="/member-logout">Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
@@ -257,4 +281,115 @@ function cpp_ajax_eliminar_actividad() {
     $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
     if ($resultado) { wp_send_json_success(['message' => 'Actividad eliminada correctamente.']); } 
     else { wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']); }
+}
+
+add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');
+function cpp_ajax_cargar_vista_final() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    global $wpdb;
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
+
+    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+    if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+
+    $alumnos = cpp_obtener_alumnos_clase($clase_id);
+    $evaluaciones_reales = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
+    $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
+    $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
+
+    $notas_por_evaluacion = [];
+    $notas_finales_promediadas = [];
+
+    foreach ($alumnos as $alumno) {
+        $notas_finales_promediadas[$alumno['id']] = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        foreach ($evaluaciones_reales as $evaluacion) {
+            $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
+        }
+    }
+
+    ob_start();
+    ?>
+    <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
+        <div class="cpp-top-bar-left">
+            <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases"><span class="dashicons dashicons-menu-alt"></span></button>
+            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+            <div id="cpp-evaluacion-selector-container" class="cpp-top-bar-selector-container"></div>
+        </div>
+        <div class="cpp-top-bar-right">
+            <div class="cpp-user-menu-container">
+                <button class="cpp-user-menu-avatar-btn">
+                    <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
+                </button>
+                <div class="cpp-user-menu-dropdown">
+                    <ul>
+                        <li><a href="/my-account">Mi Cuenta</a></li>
+                        <li><a href="/ayuda">Ayuda</a></li>
+                        <li><a href="/contacto">Contacto</a></li>
+                        <li><a href="/member-logout">Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="cpp-cuaderno-tabla-wrapper">
+        <table class="cpp-cuaderno-tabla">
+            <thead>
+                <tr>
+                    <th class="cpp-cuaderno-th-alumno"></th>
+                    <?php foreach ($evaluaciones_reales as $evaluacion): ?>
+                        <th class="cpp-cuaderno-th-actividad"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></th>
+                    <?php endforeach; ?>
+                    <th class="cpp-cuaderno-th-final"><div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(Media)</span></div></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($alumnos)): ?>
+                    <tr><td colspan="<?php echo count($evaluaciones_reales) + 2; ?>">No hay alumnos en esta clase.</td></tr>
+                <?php else: foreach ($alumnos as $index => $alumno):
+                        $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
+                    ?>
+                    <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" <?php echo $row_style_attr; ?>>
+                        <td class="cpp-cuaderno-td-alumno">
+                            <div class="cpp-alumno-avatar-cuaderno">
+                                <?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?>
+                            </div>
+                            <span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($alumno['apellidos'] . ', ' . $alumno['nombre']); ?></span>
+                        </td>
+                        <?php foreach ($evaluaciones_reales as $evaluacion):
+                            $nota_0_100 = $notas_por_evaluacion[$alumno['id']][$evaluacion['id']];
+                            $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
+                        ?>
+                            <td class="cpp-cuaderno-td-nota"><?php echo cpp_formatear_nota_display($nota_reescalada, 2); ?></td>
+                        <?php endforeach; ?>
+                        <td class="cpp-cuaderno-td-final">
+                            <?php
+                                $nota_promediada_0_100 = $notas_finales_promediadas[$alumno['id']];
+                                $nota_promediada_reescalada = ($nota_promediada_0_100 / 100) * $base_nota_final_clase;
+                                echo cpp_formatear_nota_display($nota_promediada_reescalada, 2);
+                            ?>
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+    $html_cuaderno = ob_get_clean();
+
+    $evaluaciones_con_final = $evaluaciones_reales;
+    if (count($evaluaciones_reales) > 1) {
+        $evaluaciones_con_final[] = ['id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)'];
+    }
+
+    wp_send_json_success([
+        'html_cuaderno' => $html_cuaderno,
+        'evaluaciones' => $evaluaciones_con_final,
+        'evaluacion_activa_id' => 'final',
+        'nombre_clase' => $clase_db->nombre,
+    ]);
 }

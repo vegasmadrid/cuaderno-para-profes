@@ -114,3 +114,29 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         }
     }
 }
+
+function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
+    // 1. Obtener todas las evaluaciones para la clase
+    $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+
+    if (empty($evaluaciones)) {
+        return 0.00;
+    }
+
+    $suma_notas_evaluaciones = 0.0;
+    $numero_evaluaciones = count($evaluaciones);
+
+    // 2. Iterar sobre cada evaluación y calcular la nota final del alumno
+    foreach ($evaluaciones as $evaluacion) {
+        $nota_evaluacion = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
+        $suma_notas_evaluaciones += $nota_evaluacion;
+    }
+
+    // 3. Calcular la media de todas las evaluaciones
+    if ($numero_evaluaciones > 0) {
+        $media_final = $suma_notas_evaluaciones / $numero_evaluaciones;
+        return round($media_final, 2); // Devuelve la nota media en escala 0-100
+    }
+
+    return 0.00;
+}

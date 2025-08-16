@@ -48,12 +48,13 @@
                 $modal.find('#cpp-eliminar-clase-modal-btn').hide();
                 
                 $modal.find('.cpp-tab-nav').show(); 
-                $modal.find('.cpp-tab-link').removeClass('active');
+                $modal.find('.cpp-tab-link').removeClass('active').show();
                 $modal.find('.cpp-tab-content').removeClass('active').hide();
                 $modal.find('.cpp-tab-link[data-tab="cpp-tab-general"]').addClass('active');
                 $modal.find('#cpp-tab-general').addClass('active').show();
                 
                 $('#cpp-clase-modal-evaluaciones-container').html('<p>Abre una clase existente para gestionar sus evaluaciones.</p>');
+                $('#cpp-clase-modal-ponderaciones-container').html('<p>Abre una clase existente para gestionar sus ponderaciones.</p>');
             }
             this.currentClaseIdForModal = null;
         },
@@ -69,6 +70,7 @@
             $('#cpp-eliminar-clase-modal-btn').hide();
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
+            $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
             
             $modal.fadeIn().find('#nombre_clase_modal').focus();
         },
@@ -223,6 +225,36 @@
             }
         },
 
+        crearClaseEjemplo: function(event) {
+            event.preventDefault();
+            const $btn = $(event.currentTarget);
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Creando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_crear_clase_ejemplo',
+                    nonce: cppFrontendData.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (response.data.message || 'No se pudo crear la clase de ejemplo.'));
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                    }
+                },
+                error: function() {
+                    alert('Error de conexión al crear la clase de ejemplo.');
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
+        },
+
         handleTabClick: function(event, targetTabId = null, modalContext = null) { 
             if (event) event.preventDefault();
             const $clickedLink = event ? $(event.currentTarget).closest('.cpp-tab-link') : null;
@@ -244,7 +276,43 @@
                 } else {
                      $('#cpp-clase-modal-evaluaciones-container').html('<p>Guarda la información general de la clase primero para añadir evaluaciones.</p>');
                 }
+            } else if (tabId === 'cpp-tab-ponderaciones') {
+                if (claseIdActualEnModal && claseIdActualEnModal !== '0') {
+                    this.loadPonderacionesTab(claseIdActualEnModal);
+                } else {
+                    $('#cpp-clase-modal-ponderaciones-container').html('<p>Guarda la información general de la clase primero para gestionar las ponderaciones.</p>');
+                }
             }
+        },
+
+        loadPonderacionesTab: function(claseId) {
+            const $container = $('#cpp-clase-modal-ponderaciones-container');
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando evaluaciones...</p>');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
+                success: function(response) {
+                    if (response.success && response.data.evaluaciones && response.data.evaluaciones.length > 0) {
+                        let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
+                        contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
+                        contentHtml += '<option value="">-- Selecciona --</option>';
+                        response.data.evaluaciones.forEach(function(evaluacion) {
+                            contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
+                        });
+                        contentHtml += '</select></div><hr>';
+                        contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
+                        $container.html(contentHtml);
+                    } else {
+                        $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la pestaña "Evaluaciones".</p>');
+                    }
+                },
+                error: function() {
+                    $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
+                }
+            });
         },
         
         refreshEvaluacionesList: function(claseId) {
@@ -320,7 +388,7 @@
                     });
                 }
             });
-        },
+        }, // ESTA COMA FALTABA
 
         bindEvents: function() {
             console.log("Binding Modals Clase events...");
@@ -342,6 +410,21 @@
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
             $modalClase.on('click', '.cpp-tab-link', (e) => { this.handleTabClick(e, null, $modalClase); });
+
+            $modalClase.on('change', '#cpp-ponderaciones-eval-selector', function() {
+                const evaluacionId = $(this).val();
+                const $settingsContainer = $('#cpp-ponderaciones-settings-content');
+                if (evaluacionId) {
+                    $settingsContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
+                    if (cpp.modals.evaluacion && typeof cpp.modals.evaluacion.refreshCategoriasList === 'function') {
+                        cpp.modals.evaluacion.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
+                    }
+                } else {
+                    $settingsContainer.empty();
+                }
+            });
+
+            $('body').on('click', '#cpp-btn-crear-clase-ejemplo, #cpp-btn-crear-clase-ejemplo-modal', (e) => { this.crearClaseEjemplo(e); });
 
             const evaluacionContainerSelector = '#cpp-clase-modal-evaluaciones-container';
 

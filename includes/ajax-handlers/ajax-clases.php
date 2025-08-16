@@ -56,9 +56,9 @@ function cpp_ajax_crear_clase() {
             wp_send_json_error(['message' => 'Error al actualizar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
         }
     } else {
-        $resultado = cpp_guardar_clase($user_id, $datos);
-        if ($resultado) {
-            wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $GLOBALS['wpdb']->insert_id]);
+        $nueva_clase_id = cpp_guardar_clase($user_id, $datos);
+        if ($nueva_clase_id) {
+            wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $nueva_clase_id]);
         } else {
             global $wpdb;
             wp_send_json_error(['message' => 'Error al guardar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
@@ -102,5 +102,21 @@ function cpp_ajax_guardar_orden_clases() {
         wp_send_json_success(['message' => 'Orden de las clases guardado correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Error al guardar el orden de las clases.']);
+    }
+}
+
+add_action('wp_ajax_cpp_crear_clase_ejemplo', 'cpp_ajax_crear_clase_ejemplo');
+function cpp_ajax_crear_clase_ejemplo() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id);
+    if ($resultado) {
+        wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente. La página se recargará.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al crear la clase de ejemplo.']);
     }
 }

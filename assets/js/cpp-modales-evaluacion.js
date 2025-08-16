@@ -17,39 +17,14 @@
             console.log("CPP Modals Evaluacion Module Initializing...");
         },
 
-        toggleSettingsButton: function(show) {
-            const $btn = $('#cpp-btn-evaluacion-settings');
-            if (show && cpp.currentEvaluacionId) {
-                $btn.show();
-            } else {
-                $btn.hide();
-            }
-        },
-
-        mostrar: function() {
-            this.currentEvaluacionId = cpp.currentEvaluacionId;
-            if (!this.currentEvaluacionId) {
-                alert('Error: No se ha seleccionado ninguna evaluación.');
-                return;
-            }
-
-            const $modal = $('#cpp-modal-evaluacion-settings');
-            const $container = $modal.find('#cpp-evaluacion-settings-container');
-            const evaluacionNombre = $('#cpp-evaluacion-selector option:selected').text();
-
-            $modal.find('#cpp-modal-evaluacion-settings-titulo').text(`Ajustes de Ponderación: ${evaluacionNombre}`);
-            $container.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
-            $modal.fadeIn();
-            
-            this.refreshCategoriasList();
-        },
-        
-        refreshCategoriasList: function() {
-            const $container = $('#cpp-evaluacion-settings-container');
-            if (!this.currentEvaluacionId) {
+        refreshCategoriasList: function(evaluacionId, containerSelector) {
+            const $container = $(containerSelector);
+            if (!evaluacionId) {
                 $container.html('<p class="cpp-error-message">Error: ID de evaluación no encontrado.</p>');
                 return;
             }
+            // Store the current evaluacionId in the container for other functions to use
+            $container.data('evaluacion-id', evaluacionId);
 
             const self = this;
             
@@ -60,12 +35,12 @@
                 data: {
                     action: 'cpp_obtener_categorias_evaluacion',
                     nonce: cppFrontendData.nonce,
-                    evaluacion_id: this.currentEvaluacionId
+                    evaluacion_id: evaluacionId
                 },
                 success: function(response) {
                     if (response.success) {
                         $container.html(response.data.html);
-                        self.resetCategoriaForm();
+                        self.resetCategoriaForm(containerSelector);
                     } else {
                         $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar las categorías.'}</p>`);
                     }
@@ -76,8 +51,8 @@
             });
         },
 
-        resetCategoriaForm: function() {
-            const $formContainer = $('#cpp-evaluacion-settings-container .cpp-form-categoria-container');
+        resetCategoriaForm: function(containerSelector) {
+            const $formContainer = $(`${containerSelector} .cpp-form-categoria-container`);
             if (!$formContainer.length) return;
 
             $formContainer.find('#categoria_id_editar_modal').val('');
@@ -95,8 +70,9 @@
             $formContainer.find('#cpp-cancelar-edicion-categoria-btn').hide();
         },
 
-        cargarParaEditar: function(categoriaId) {
-            const $formContainer = $('#cpp-evaluacion-settings-container .cpp-form-categoria-container');
+        cargarParaEditar: function(button) {
+            const $formContainer = $(button).closest('.cpp-clase-modal-ponderaciones-container').find('.cpp-form-categoria-container');
+            const categoriaId = $(button).data('categoria-id');
             
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
@@ -125,6 +101,9 @@
         
         submitCategoriaForm: function($btn) {
             const $formContainer = $btn.closest('.cpp-form-categoria-container');
+            const $mainContainer = $btn.closest('.cpp-clase-modal-ponderaciones-container');
+            const evaluacionId = $mainContainer.data('evaluacion-id');
+
             const categoriaId = $formContainer.find('#categoria_id_editar_modal').val();
             const nombre = $formContainer.find('#nombre_nueva_categoria_modal').val().trim();
             const porcentaje = $formContainer.find('#porcentaje_nueva_categoria_modal').val();
@@ -136,7 +115,7 @@
                 $errorContainer.text('Nombre y porcentaje son obligatorios.').show();
                 return;
             }
-            if (this.currentEvaluacionId === null) {
+            if (!evaluacionId) {
                 $errorContainer.text('Error: No se ha seleccionado una evaluación.').show();
                 return;
             }
@@ -150,7 +129,7 @@
                 data: {
                     action: 'cpp_guardar_o_actualizar_categoria',
                     nonce: cppFrontendData.nonce,
-                    evaluacion_id: self.currentEvaluacionId,
+                    evaluacion_id: evaluacionId,
                     categoria_id_editar: categoriaId,
                     nombre_nueva_categoria: nombre,
                     porcentaje_nueva_categoria: porcentaje,
@@ -158,8 +137,8 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        self.refreshCategoriasList();
-                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, self.currentEvaluacionId);
+                        self.refreshCategoriasList(evaluacionId, '#cpp-clase-modal-ponderaciones-container');
+                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                     } else {
                         $errorContainer.text(response.data.message || 'Error desconocido').show();
                     }
@@ -176,6 +155,8 @@
         eliminarCategoria: function($btn) {
             const categoriaId = $btn.data('categoria-id');
             const categoriaNombre = $btn.closest('li').find('.cpp-categoria-nombre-listado').text();
+            const $mainContainer = $btn.closest('.cpp-clase-modal-ponderaciones-container');
+            const evaluacionId = $mainContainer.data('evaluacion-id');
             
             if (confirm(`¿Seguro que quieres eliminar la categoría "${categoriaNombre}"?`)) {
                 const self = this;
@@ -184,8 +165,8 @@
                     data: { action: 'cpp_eliminar_categoria_evaluacion', nonce: cppFrontendData.nonce, categoria_id: categoriaId },
                     success: function(response) {
                         if (response.success) {
-                            self.refreshCategoriasList();
-                            cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, self.currentEvaluacionId);
+                            self.refreshCategoriasList(evaluacionId, '#cpp-clase-modal-ponderaciones-container');
+                            cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo eliminar.'));
                         }
@@ -198,12 +179,7 @@
             const $document = $(document);
             const self = this;
 
-            // Abrir el modal
-            $document.on('click', '#cpp-btn-evaluacion-settings', function() {
-                self.mostrar();
-            });
-
-            const containerSelector = '#cpp-evaluacion-settings-container';
+            const containerSelector = '#cpp-clase-modal-ponderaciones-container';
 
             // ====================================================================
             // --- INICIO DE LA NUEVA LÓGICA DE EVENTOS ---
