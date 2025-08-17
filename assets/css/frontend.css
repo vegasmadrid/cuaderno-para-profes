@@ -1061,3 +1061,64 @@ body.cpp-no-text-select {
 }
 
 /* --- FIN: Estilos para Menú de Usuario --- */
+
+/* --- INICIO: Rediseño Celda A1 --- */
+
+.cpp-cuaderno-th-alumno .cpp-a1-controls-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch; /* Estirar items */
+    height: 100%;
+    padding: 8px;
+}
+
+.cpp-a1-evaluacion-selector {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+#cpp-evaluacion-selector {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 4px;
+    background-color: #f1f3f4;
+    color: #3c4043;
+    border: 1px solid #e0e0e0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1em;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+#cpp-evaluacion-selector:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.cpp-a1-icons-row {
+    display: flex;
+    justify-content: space-around; /* Distribuir los iconos */
+    align-items: center;
+    width: 100%;
+    gap: 4px; /* Espacio reducido entre iconos */
+}
+
+.cpp-a1-icons-row .cpp-btn-icon {
+    flex-grow: 1; /* Para que ocupen el espacio disponible */
+}
+
+.cpp-a1-icons-row .cpp-btn-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* --- FIN: Rediseño Celda A1 --- */
