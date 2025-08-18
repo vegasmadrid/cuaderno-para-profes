@@ -50,7 +50,7 @@ function cpp_ajax_crear_clase() {
     if ($clase_id_editar > 0) {
         $resultado = cpp_actualizar_clase_completa($clase_id_editar, $user_id, $datos);
         if ($resultado !== false) {
-            wp_send_json_success(['message' => 'Clase actualizada correctamente. La página se recargará.']);
+            wp_send_json_success(['message' => 'Clase actualizada correctamente.']);
         } else {
             global $wpdb;
             wp_send_json_error(['message' => 'Error al actualizar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
@@ -58,7 +58,8 @@ function cpp_ajax_crear_clase() {
     } else {
         $nueva_clase_id = cpp_guardar_clase($user_id, $datos);
         if ($nueva_clase_id) {
-            wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $nueva_clase_id]);
+            $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
+            wp_send_json_success(['message' => 'Clase guardada correctamente.', 'clase' => $nueva_clase_data]);
         } else {
             global $wpdb;
             wp_send_json_error(['message' => 'Error al guardar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
@@ -119,9 +120,10 @@ function cpp_ajax_crear_clase_ejemplo() {
     }
     $color_clase = isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#cd18be';
 
-    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase, $color_clase);
-    if ($resultado) {
-        wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente. La página se recargará.']);
+    $nueva_clase_id = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase, $color_clase);
+    if ($nueva_clase_id) {
+        $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
+        wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente.', 'clase' => $nueva_clase_data]);
     } else {
         wp_send_json_error(['message' => 'Error al crear la clase de ejemplo.']);
     }
