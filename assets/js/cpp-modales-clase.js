@@ -231,7 +231,7 @@
             }
         },
 
-        crearClaseEjemplo: function(event, nombreClase = '') {
+        crearClaseEjemplo: function(event, nombreClase = '', colorClase = '#cd18be') {
             event.preventDefault();
             const $btn = $(event.currentTarget).is('form') ? $(event.currentTarget).find('button[type="submit"]') : $(event.currentTarget);
             const originalBtnHtml = $btn.html();
@@ -240,7 +240,8 @@
             const ajaxData = {
                 action: 'cpp_crear_clase_ejemplo',
                 nonce: cppFrontendData.nonce,
-                nombre_clase: nombreClase
+                nombre_clase: nombreClase,
+                color_clase: colorClase
             };
 
             $.ajax({

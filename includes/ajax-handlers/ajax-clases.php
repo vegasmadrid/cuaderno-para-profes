@@ -117,7 +117,9 @@ function cpp_ajax_crear_clase_ejemplo() {
     if (empty($nombre_clase)) {
         $nombre_clase = 'Clase Ejemplo';
     }
-    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase);
+    $color_clase = isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#cd18be';
+
+    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase, $color_clase);
     if ($resultado) {
         wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente. La página se recargará.']);
     } else {

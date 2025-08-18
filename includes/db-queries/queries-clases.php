@@ -179,13 +179,13 @@ function cpp_eliminar_clase_y_alumnos($clase_id, $user_id) {
     return $clase_eliminada;
 }
 
-function cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase = 'Clase Ejemplo') {
+function cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase = 'Clase Ejemplo', $color = '#cd18be') {
     global $wpdb;
 
     // 1. Crear la clase de ejemplo
     $clase_id = cpp_guardar_clase($user_id, [
         'nombre' => $nombre_clase,
-        'color' => '#cd18be',
+        'color' => $color,
         'base_nota_final' => 10.00
     ]);
 
