@@ -118,6 +118,12 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <label for="nombre_clase_modal">Nombre de la clase (máx. 16 caracteres):</label>
                                     <input type="text" id="nombre_clase_modal" name="nombre_clase" required maxlength="16">
                                 </div>
+                                <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container" style="display: none;">
+                                    <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
+                                        Rellenar la clase con datos de ejemplo
+                                    </label>
+                                </div>
                                 <div class="cpp-form-group">
                                     <label>Color de la clase:</label>
                                     <div class="cpp-color-swatches-container">

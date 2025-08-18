@@ -113,7 +113,11 @@ function cpp_ajax_crear_clase_ejemplo() {
         return;
     }
     $user_id = get_current_user_id();
-    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id);
+    $nombre_clase = isset($_POST['nombre_clase']) ? sanitize_text_field(trim($_POST['nombre_clase'])) : 'Clase Ejemplo';
+    if (empty($nombre_clase)) {
+        $nombre_clase = 'Clase Ejemplo';
+    }
+    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase);
     if ($resultado) {
         wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente. La página se recargará.']);
     } else {

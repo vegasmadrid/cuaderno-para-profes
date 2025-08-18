@@ -71,6 +71,9 @@
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
+
+            $('#cpp-opcion-clase-ejemplo-container').show();
+            $('#rellenar_clase_ejemplo').prop('checked', false);
             
             $modal.fadeIn().find('#nombre_clase_modal').focus();
         },
@@ -92,15 +95,10 @@
             const $modal = $('#cpp-modal-clase');
             const $form = $modal.find('#cpp-form-clase');
             
-            // ====================================================================
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Se llama a resetForm() ANTES de establecer el nuevo ID.
-            // ====================================================================
             this.resetForm();
             this.currentClaseIdForModal = claseId; 
-            // ====================================================================
-            // --- FIN DE LA CORRECCIÓN ---
-            // ====================================================================
+
+            $('#cpp-opcion-clase-ejemplo-container').hide();
 
             $modal.find('.cpp-tab-link').show();
 
@@ -153,13 +151,21 @@
             const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
+            const rellenarConEjemplo = $('#rellenar_clase_ejemplo').is(':checked');
+
+            if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
+            if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
 
             if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 3) {
                 localStorage.setItem('cpp_tutorial_step', 4); // Preparar para el siguiente paso después de recargar
             }
 
-            if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
-            if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
+            // Si es un nuevo curso y se marca la casilla de ejemplo
+            if (!esEdicion && rellenarConEjemplo) {
+                this.crearClaseEjemplo(eventForm, nombreClase);
+                return;
+            }
+
             const baseNotaNumerica = parseFloat(baseNotaFinalClase.replace(',', '.'));
             if (baseNotaFinalClase === '' || isNaN(baseNotaNumerica) || baseNotaNumerica <= 0) {
                 alert('Por favor, introduce un valor numérico positivo para la Base de Nota Final.'); return;
@@ -225,20 +231,23 @@
             }
         },
 
-        crearClaseEjemplo: function(event) {
+        crearClaseEjemplo: function(event, nombreClase = '') {
             event.preventDefault();
-            const $btn = $(event.currentTarget);
+            const $btn = $(event.currentTarget).is('form') ? $(event.currentTarget).find('button[type="submit"]') : $(event.currentTarget);
             const originalBtnHtml = $btn.html();
             $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Creando...');
+
+            const ajaxData = {
+                action: 'cpp_crear_clase_ejemplo',
+                nonce: cppFrontendData.nonce,
+                nombre_clase: nombreClase
+            };
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
                 dataType: 'json',
-                data: {
-                    action: 'cpp_crear_clase_ejemplo',
-                    nonce: cppFrontendData.nonce
-                },
+                data: ajaxData,
                 success: function(response) {
                     if (response.success) {
                         alert(response.data.message);
