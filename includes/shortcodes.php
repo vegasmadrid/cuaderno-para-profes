@@ -118,6 +118,12 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <label for="nombre_clase_modal">Nombre de la clase (máx. 16 caracteres):</label>
                                     <input type="text" id="nombre_clase_modal" name="nombre_clase" required maxlength="16">
                                 </div>
+                                <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container" style="display: none;">
+                                    <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
+                                        Rellenar la clase con datos de ejemplo
+                                    </label>
+                                </div>
                                 <div class="cpp-form-group">
                                     <label>Color de la clase:</label>
                                     <div class="cpp-color-swatches-container">
@@ -131,6 +137,11 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <label for="base_nota_final_clase_modal">Base Nota Final (ej: 10, 100):</label>
                                     <input type="number" id="base_nota_final_clase_modal" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
                                     <small>La nota final de los alumnos se calculará sobre esta base.</small>
+                                </div>
+                                <div class="cpp-form-group">
+                                    <label for="nota_aprobado_clase_modal">Nota mínima para aprobar (ej: 5, 50):</label>
+                                    <input type="number" id="nota_aprobado_clase_modal" name="nota_aprobado_clase" value="50" step="0.01" min="0" required>
+                                    <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
                                 </div>
                             </div>
                             <div id="cpp-tab-evaluaciones" class="cpp-tab-content">

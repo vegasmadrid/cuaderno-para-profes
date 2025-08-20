@@ -5,9 +5,17 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 // --- FUNCIONES PARA ALUMNOS ---
 
-function cpp_obtener_alumnos_clase($clase_id) {
+function cpp_obtener_alumnos_clase($clase_id, $sort_order = 'apellidos') {
     global $wpdb;
-    $query = $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}cpp_alumnos WHERE clase_id = %d ORDER BY apellidos, nombre", $clase_id );
+    $order_by_clause = 'apellidos, nombre';
+    if ($sort_order === 'nombre') {
+        $order_by_clause = 'nombre, apellidos';
+    }
+
+    $query = $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}cpp_alumnos WHERE clase_id = %d ORDER BY $order_by_clause",
+        $clase_id
+    );
     return $wpdb->get_results($query, ARRAY_A);
 }
 

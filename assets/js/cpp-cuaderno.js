@@ -25,15 +25,40 @@
             }
         },
 
+        updateSortButton: function(sortOrder) {
+            const $button = $('#cpp-a1-sort-students-btn');
+            if (!$button.length) return;
+
+            const icons = {
+                apellidos: '<svg class="icon-sort-alpha" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 18l-4-4h3V4h2v10h3l-4 4zM4.75 5.5H10c.83 0 1.5-.67 1.5-1.5S10.83 2.5 10 2.5H4.75c-.83 0-1.5.67-1.5 1.5S3.92 5.5 4.75 5.5zM10.25 8.5H4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.75c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zM10.25 14.5H4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.75c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/></svg>',
+                nombre: '<svg class="icon-sort-alpha" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 18l-4-4h3V4h2v10h3l-4 4zM4.5 11.5h5.75c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5H4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5zM4.75 5.5H10c.83 0 1.5-.67 1.5-1.5S10.83 2.5 10 2.5H4.75c-.83 0-1.5.67-1.5 1.5S3.92 5.5 4.75 5.5zM10.25 14.5H4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.75c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/></svg>'
+            };
+
+            if (sortOrder === 'nombre') {
+                $button.html(icons.nombre);
+                $button.attr('title', 'Ordenado por Nombre (clic para cambiar a Apellidos)');
+                $button.data('sort', 'nombre');
+            } else {
+                $button.html(icons.apellidos);
+                $button.attr('title', 'Ordenado por Apellidos (clic para cambiar a Nombre)');
+                $button.data('sort', 'apellidos');
+            }
+        },
+
         updateEnterDirectionButton: function() {
             const $button = $('#cpp-a1-enter-direction-btn');
             if (!$button.length) return;
-            const $icon = $button.find('.dashicons');
+
+            const icons = {
+                down: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>',
+                right: '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/></svg>'
+            };
+
             if (this.enterKeyDirection === 'down') {
-                $icon.removeClass('dashicons-arrow-right-alt2').addClass('dashicons-arrow-down-alt2');
+                $button.html(icons.down);
                 $button.attr('title', 'Desplazar hacia abajo al pulsar Intro (clic para cambiar a derecha)');
             } else {
-                $icon.removeClass('dashicons-arrow-down-alt2').addClass('dashicons-arrow-right-alt2');
+                $button.html(icons.right);
                 $button.attr('title', 'Desplazar hacia la derecha al pulsar Intro (clic para cambiar a abajo)');
             }
         },
@@ -55,7 +80,7 @@
             $container.html(selectHtml);
         },
         
-        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId) {
+        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder) {
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
@@ -77,7 +102,7 @@
                 const self = this;
 
                 const ajaxAction = isFinalView ? 'cpp_cargar_vista_final' : 'cpp_cargar_cuaderno_clase';
-                let ajaxData = { nonce: cppFrontendData.nonce, clase_id: claseId };
+                let ajaxData = { nonce: cppFrontendData.nonce, clase_id: claseId, sort_order: sortOrder || 'apellidos' };
                 if (!isFinalView && evaluacionId) {
                     ajaxData.evaluacion_id = evaluacionId;
                 }
@@ -98,6 +123,7 @@
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
 
                             if (response.data.nombre_clase && (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function')) { cpp.utils.updateTopBarClassName(response.data.nombre_clase); }
+                            self.updateSortButton(response.data.sort_order);
                             self.updateEnterDirectionButton();
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
@@ -174,7 +200,21 @@
                 const nuevaEvaluacionId = $(this).val();
                 if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId);
+                    const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
+                }
+            });
+
+            $document.on('click', '#cpp-a1-sort-students-btn', function(e) {
+                e.preventDefault();
+                const $button = $(this);
+                const currentSort = $button.data('sort');
+                const newSort = currentSort === 'apellidos' ? 'nombre' : 'apellidos';
+                $button.data('sort', newSort);
+
+                if (cpp.currentClaseIdCuaderno) {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort);
                 }
             });
 
@@ -190,7 +230,7 @@
                 }
             });
 
-            $cuadernoContenido.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); }); $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); }); $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } }); $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); }); $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); }); $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); }); $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); }); $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){ if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarParaEditar === 'function') { cpp.modals.actividades.cargarParaEditar(this, e); } else { console.error("Función cpp.modals.actividades.cargarParaEditar no encontrada."); } }); $document.on('click', '#cpp-a1-add-activity-btn', function(e) { e.stopPropagation(); if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') { cpp.modals.actividades.mostrarAnadir(); } else { console.error("Función cpp.modals.actividades.mostrarAnadir no encontrada."); } }); $document.on('click', '#cpp-a1-import-students-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') { cpp.modals.excel.showImportStudents(e); } else { console.error("Función cpp.modals.excel.showImportStudents no encontrada.");} }); $document.on('click', '#cpp-a1-download-excel-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showDownloadOptions === 'function') { cpp.modals.excel.showDownloadOptions(e); } else { console.error("Función cpp.modals.excel.showDownloadOptions no encontrada.");} }); $document.on('click', '#cpp-a1-take-attendance-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (cpp.modals && cpp.modals.asistencia && typeof cpp.modals.asistencia.mostrar === 'function') { if (cpp.currentClaseIdCuaderno) { cpp.modals.asistencia.mostrar(cpp.currentClaseIdCuaderno); } else { alert("Por favor, selecciona o carga una clase primero."); } } else { console.error("Función cpp.modals.asistencia.mostrar no encontrada."); } }); $document.on('click', '#cpp-a1-enter-direction-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (self.enterKeyDirection === 'down') { self.enterKeyDirection = 'right'; } else { self.enterKeyDirection = 'down'; } self.updateEnterDirectionButton(); if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') { try { localStorage.setItem(self.localStorageKey_enterDirection + cppFrontendData.userId, self.enterKeyDirection); } catch (lsError) { console.warn("No se pudo guardar la preferencia de dirección de Enter en localStorage:", lsError); } } }); $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); }); $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } }); $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); }); }
+            $document.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); }); $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); }); $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } }); $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); }); $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); }); $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); }); $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); }); $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){ if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarParaEditar === 'function') { cpp.modals.actividades.cargarParaEditar(this, e); } else { console.error("Función cpp.modals.actividades.cargarParaEditar no encontrada."); } }); $document.on('click', '#cpp-a1-add-activity-btn', function(e) { e.stopPropagation(); if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') { cpp.modals.actividades.mostrarAnadir(); } else { console.error("Función cpp.modals.actividades.mostrarAnadir no encontrada."); } }); $document.on('click', '#cpp-a1-import-students-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') { cpp.modals.excel.showImportStudents(e); } else { console.error("Función cpp.modals.excel.showImportStudents no encontrada.");} }); $document.on('click', '#cpp-a1-download-excel-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showDownloadOptions === 'function') { cpp.modals.excel.showDownloadOptions(e); } else { console.error("Función cpp.modals.excel.showDownloadOptions no encontrada.");} }); $document.on('click', '#cpp-a1-take-attendance-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (cpp.modals && cpp.modals.asistencia && typeof cpp.modals.asistencia.mostrar === 'function') { if (cpp.currentClaseIdCuaderno) { cpp.modals.asistencia.mostrar(cpp.currentClaseIdCuaderno); } else { alert("Por favor, selecciona o carga una clase primero."); } } else { console.error("Función cpp.modals.asistencia.mostrar no encontrada."); } }); $document.on('click', '#cpp-a1-enter-direction-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (self.enterKeyDirection === 'down') { self.enterKeyDirection = 'right'; } else { self.enterKeyDirection = 'down'; } self.updateEnterDirectionButton(); if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') { try { localStorage.setItem(self.localStorageKey_enterDirection + cppFrontendData.userId, self.enterKeyDirection); } catch (lsError) { console.warn("No se pudo guardar la preferencia de dirección de Enter en localStorage:", lsError); } } }); $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); }); $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } }); $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); }); }
     };
 
 })(jQuery);

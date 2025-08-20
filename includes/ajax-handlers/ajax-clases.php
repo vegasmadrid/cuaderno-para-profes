@@ -17,6 +17,9 @@ function cpp_ajax_obtener_datos_clase_completa() {
         if (isset($clase_data['base_nota_final'])) {
             $clase_data['base_nota_final'] = number_format(floatval($clase_data['base_nota_final']), 2, '.', '');
         }
+        if (isset($clase_data['nota_aprobado'])) {
+            $clase_data['nota_aprobado'] = number_format(floatval($clase_data['nota_aprobado']), 2, '.', '');
+        }
         wp_send_json_success(['clase' => $clase_data]);
     } else {
         wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']);
@@ -35,7 +38,8 @@ function cpp_ajax_crear_clase() {
     $datos = [
         'nombre'              => $nombre_clase_limitado,
         'color'               => isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#2962FF',
-        'base_nota_final'     => isset($_POST['base_nota_final_clase']) ? $_POST['base_nota_final_clase'] : '100'
+        'base_nota_final'     => isset($_POST['base_nota_final_clase']) ? $_POST['base_nota_final_clase'] : '100',
+        'nota_aprobado'       => isset($_POST['nota_aprobado_clase']) ? $_POST['nota_aprobado_clase'] : '50'
     ];
     if (empty($datos['nombre'])) {
         wp_send_json_error(['message' => 'El nombre de la clase es obligatorio.']);
@@ -47,10 +51,18 @@ function cpp_ajax_crear_clase() {
         return;
     }
     $datos['base_nota_final'] = floatval($base_nota_sanitizada);
+
+    $nota_aprobado_sanitizada = str_replace(',', '.', $datos['nota_aprobado']);
+    if (!is_numeric($nota_aprobado_sanitizada) || floatval($nota_aprobado_sanitizada) < 0) {
+        wp_send_json_error(['message' => 'La nota para aprobar debe ser un número positivo.']);
+        return;
+    }
+    $datos['nota_aprobado'] = floatval($nota_aprobado_sanitizada);
+
     if ($clase_id_editar > 0) {
         $resultado = cpp_actualizar_clase_completa($clase_id_editar, $user_id, $datos);
         if ($resultado !== false) {
-            wp_send_json_success(['message' => 'Clase actualizada correctamente. La página se recargará.']);
+            wp_send_json_success(['message' => 'Clase actualizada correctamente.']);
         } else {
             global $wpdb;
             wp_send_json_error(['message' => 'Error al actualizar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
@@ -58,7 +70,8 @@ function cpp_ajax_crear_clase() {
     } else {
         $nueva_clase_id = cpp_guardar_clase($user_id, $datos);
         if ($nueva_clase_id) {
-            wp_send_json_success(['message' => 'Clase guardada correctamente. La página se recargará.', 'clase_id' => $nueva_clase_id]);
+            $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
+            wp_send_json_success(['message' => 'Clase guardada correctamente.', 'clase' => $nueva_clase_data]);
         } else {
             global $wpdb;
             wp_send_json_error(['message' => 'Error al guardar la clase.', 'debug_db_error' => $wpdb->last_error, 'debug_data_sent' => $datos]);
@@ -113,9 +126,16 @@ function cpp_ajax_crear_clase_ejemplo() {
         return;
     }
     $user_id = get_current_user_id();
-    $resultado = cpp_crear_clase_de_ejemplo_completa($user_id);
-    if ($resultado) {
-        wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente. La página se recargará.']);
+    $nombre_clase = isset($_POST['nombre_clase']) ? sanitize_text_field(trim($_POST['nombre_clase'])) : 'Clase Ejemplo';
+    if (empty($nombre_clase)) {
+        $nombre_clase = 'Clase Ejemplo';
+    }
+    $color_clase = isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#cd18be';
+
+    $nueva_clase_id = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase, $color_clase);
+    if ($nueva_clase_id) {
+        $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
+        wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente.', 'clase' => $nueva_clase_data]);
     } else {
         wp_send_json_error(['message' => 'Error al crear la clase de ejemplo.']);
     }
