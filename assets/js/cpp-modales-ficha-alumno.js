@@ -14,6 +14,7 @@
 
         init: function() {
             console.log("CPP Modals Ficha Alumno Module Initializing...");
+            this.bindEvents();
         },
 
         resetModal: function() {
