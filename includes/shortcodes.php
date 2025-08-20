@@ -138,6 +138,11 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <input type="number" id="base_nota_final_clase_modal" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
                                     <small>La nota final de los alumnos se calculará sobre esta base.</small>
                                 </div>
+                                <div class="cpp-form-group">
+                                    <label for="nota_aprobado_clase_modal">Nota mínima para aprobar (ej: 5, 50):</label>
+                                    <input type="number" id="nota_aprobado_clase_modal" name="nota_aprobado_clase" value="50" step="0.01" min="0" required>
+                                    <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
+                                </div>
                             </div>
                             <div id="cpp-tab-evaluaciones" class="cpp-tab-content">
                                 <div id="cpp-clase-modal-evaluaciones-container">

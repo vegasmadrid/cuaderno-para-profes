@@ -17,6 +17,9 @@ function cpp_ajax_obtener_datos_clase_completa() {
         if (isset($clase_data['base_nota_final'])) {
             $clase_data['base_nota_final'] = number_format(floatval($clase_data['base_nota_final']), 2, '.', '');
         }
+        if (isset($clase_data['nota_aprobado'])) {
+            $clase_data['nota_aprobado'] = number_format(floatval($clase_data['nota_aprobado']), 2, '.', '');
+        }
         wp_send_json_success(['clase' => $clase_data]);
     } else {
         wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']);
@@ -35,7 +38,8 @@ function cpp_ajax_crear_clase() {
     $datos = [
         'nombre'              => $nombre_clase_limitado,
         'color'               => isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#2962FF',
-        'base_nota_final'     => isset($_POST['base_nota_final_clase']) ? $_POST['base_nota_final_clase'] : '100'
+        'base_nota_final'     => isset($_POST['base_nota_final_clase']) ? $_POST['base_nota_final_clase'] : '100',
+        'nota_aprobado'       => isset($_POST['nota_aprobado_clase']) ? $_POST['nota_aprobado_clase'] : '50'
     ];
     if (empty($datos['nombre'])) {
         wp_send_json_error(['message' => 'El nombre de la clase es obligatorio.']);
@@ -47,6 +51,14 @@ function cpp_ajax_crear_clase() {
         return;
     }
     $datos['base_nota_final'] = floatval($base_nota_sanitizada);
+
+    $nota_aprobado_sanitizada = str_replace(',', '.', $datos['nota_aprobado']);
+    if (!is_numeric($nota_aprobado_sanitizada) || floatval($nota_aprobado_sanitizada) < 0) {
+        wp_send_json_error(['message' => 'La nota para aprobar debe ser un número positivo.']);
+        return;
+    }
+    $datos['nota_aprobado'] = floatval($nota_aprobado_sanitizada);
+
     if ($clase_id_editar > 0) {
         $resultado = cpp_actualizar_clase_completa($clase_id_editar, $user_id, $datos);
         if ($resultado !== false) {

@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.5.1');
+define('CPP_VERSION', '1.6');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -211,6 +211,31 @@ function cpp_migrate_unify_default_category_v1_5_1() {
         ['%s'],
         ['%s']
     );
+}
+
+function cpp_migrate_add_passing_grade_v1_6() {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE 'nota_aprobado'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `nota_aprobado` DECIMAL(10,2) NOT NULL DEFAULT 5.00 AFTER `base_nota_final`;");
+    }
+
+    // Actualizar clases existentes para que tengan un valor por defecto razonable
+    $clases_sin_nota_aprobado = $wpdb->get_results("SELECT id, base_nota_final FROM `$tabla_clases` WHERE `nota_aprobado` = 5.00");
+
+    foreach ($clases_sin_nota_aprobado as $clase) {
+        $base_nota = (float) $clase->base_nota_final;
+        $nota_aprobado_default = $base_nota / 2;
+
+        $wpdb->update(
+            $tabla_clases,
+            ['nota_aprobado' => $nota_aprobado_default],
+            ['id' => $clase->id],
+            ['%f'],
+            ['%d']
+        );
+    }
 }
 // --- FIN: SCRIPT DE MIGRACIÓN DE DATOS ---
 

@@ -290,6 +290,12 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
 }
 .cpp-th-final-content-wrapper { line-height: 1.2; display: block; text-align: center; margin-bottom: 4px; }
 .cpp-cuaderno-th-final .cpp-nota-final-base-info { display: block; font-size: 11px; font-weight: normal; color: #5f6368; margin-top: 2px; }
+.cpp-th-final-actions { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+.cpp-th-final-actions .cpp-btn-icon { background: none; border: none; padding: 6px; cursor: pointer; color: #5f6368; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: background-color 0.15s ease, color 0.2s ease; }
+.cpp-th-final-actions .cpp-btn-icon:hover { background-color: #e8f0fe !important; color: #1a73e8 !important; }
+.cpp-th-final-actions .cpp-btn-icon.active { background-color: #e8f0fe !important; color: #1a73e8 !important; }
+.cpp-th-final-actions .cpp-btn-icon svg { width: 20px; height: 20px; }
+tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 /* Celdas de datos fijas (Alumno y Nota Final) */
 .cpp-cuaderno-tabla tbody td.cpp-cuaderno-td-alumno {

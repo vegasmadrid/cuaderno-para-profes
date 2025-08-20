@@ -43,6 +43,7 @@
                 }
                 
                 $form.find('#base_nota_final_clase_modal').val('100.00');
+                $form.find('#nota_aprobado_clase_modal').val('50.00');
                 $modal.find('#cpp-modal-clase-titulo').text('Crear Nueva Clase');
                 $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
                 $modal.find('#cpp-eliminar-clase-modal-btn').hide();
@@ -121,6 +122,7 @@
                         $classSwatchesContainer.find(`.cpp-color-swatch[data-color="${colorParaSeleccionar.toUpperCase()}"]`).addClass('selected');
 
                         $form.find('#base_nota_final_clase_modal').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
+                        $form.find('#nota_aprobado_clase_modal').val(clase.nota_aprobado ? parseFloat(clase.nota_aprobado).toFixed(2) : '50.00');
                         $modal.find('#cpp-modal-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
                         $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
@@ -185,6 +187,7 @@
             const esEdicion = claseIdEditar && claseIdEditar !== '';
             const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
+            const notaAprobadoClase = $form.find('[name="nota_aprobado_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
             const rellenarConEjemplo = $('#rellenar_clase_ejemplo').is(':checked');
 
@@ -201,6 +204,12 @@
                 alert('Por favor, introduce un valor numérico positivo para la Base de Nota Final.'); return;
             }
 
+            const notaAprobadoNumerica = parseFloat(notaAprobadoClase.replace(',', '.'));
+            if (notaAprobadoClase === '' || isNaN(notaAprobadoNumerica) || notaAprobadoNumerica < 0) {
+                alert('Por favor, introduce un valor numérico positivo para la Nota Mínima para Aprobar.'); return;
+            }
+
+
             const btnTextProcesando = esEdicion ? 'Actualizando...' : 'Guardando...';
             const btnTextOriginal = esEdicion ? '<span class="dashicons dashicons-edit"></span> Actualizar Clase' : '<span class="dashicons dashicons-saved"></span> Guardar Clase';
             $btn.prop('disabled', true).html(`<span class="dashicons dashicons-update dashicons-spin"></span> ${btnTextProcesando}`);
@@ -208,7 +217,8 @@
             const ajaxData = {
                 action: 'cpp_crear_clase', nonce: cppFrontendData.nonce,
                 clase_id_editar: claseIdEditar, nombre_clase: nombreClase,
-                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2)
+                color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2),
+                nota_aprobado_clase: notaAprobadoNumerica.toFixed(2)
             };
 
             $.ajax({
@@ -285,7 +295,7 @@
                     if (response.success) {
                         self._handleSuccessfulClassCreation(response.data.clase);
                     } else {
-                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo crear la clase de ejemplo.'));
+                        alert('Error: ' + (response.data.message || 'No se pudo crear la clase de ejemplo.'));
                     }
                 },
                 error: function() {

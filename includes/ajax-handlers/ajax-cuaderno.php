@@ -11,13 +11,13 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     $evaluacion_id_solicitada = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : null;
-    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
+    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : 'apellidos';
 
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
     global $wpdb;
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
-    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+    $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
@@ -25,11 +25,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $metodo_calculo = 'total';
 
     if (count($evaluaciones) > 1) {
-        $evaluaciones[] = [
-            'id' => 'final',
-            'nombre_evaluacion' => 'Evaluación Final (Media)',
-            'calculo_nota' => 'total'
-        ];
+        $evaluaciones[] = [ 'id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)', 'calculo_nota' => 'total' ];
     }
 
     if (!empty($evaluaciones)) {
@@ -48,31 +44,38 @@ function cpp_ajax_cargar_cuaderno_clase() {
         }
     }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, $sort_order);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
     $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_activa_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_activa_id);
-    $categorias_evaluacion = cpp_obtener_categorias_por_evaluacion($evaluacion_activa_id, $user_id);
 
-    $map_categorias_porcentajes = [];
-    if (is_array($categorias_evaluacion)) {
-        foreach ($categorias_evaluacion as $cat) { $map_categorias_porcentajes[$cat['id']] = floatval($cat['porcentaje']); }
-    }
-
-    $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
-    if ($base_nota_final_clase <= 0) $base_nota_final_clase = 100.00;
-
-    $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
-    $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
-    $soft_class_color = cpp_lighten_hex_color($clase_color_actual, 0.92);
+    $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
 
     $notas_finales_alumnos = [];
-    if (!empty($alumnos) && $evaluacion_activa_id) {
-        foreach ($alumnos as $alumno) {
+    if (!empty($alumnos)) {
+        foreach ($alumnos as $index => $alumno) {
             $nota_0_100 = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_activa_id);
             $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
             $notas_finales_alumnos[$alumno['id']] = $nota_reescalada;
+            $alumnos[$index]['nota_final_calculada'] = $nota_reescalada;
         }
     }
+
+    if ($sort_order === 'nota_asc' || $sort_order === 'nota_desc') {
+        usort($alumnos, function($a, $b) use ($sort_order) {
+            $notaA = $a['nota_final_calculada'];
+            $notaB = $b['nota_final_calculada'];
+            if ($notaA == $notaB) return 0;
+            if ($sort_order === 'nota_asc') {
+                return ($notaA < $notaB) ? -1 : 1;
+            } else {
+                return ($notaA > $notaB) ? -1 : 1;
+            }
+        });
+    }
+
+    $clase_color_actual = isset($clase_db['color']) && !empty($clase_db['color']) ? $clase_db['color'] : '#2962FF';
+    $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
+    $soft_class_color = cpp_lighten_hex_color($clase_color_actual, 0.92);
 
     ob_start();
     ?>
@@ -81,7 +84,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
             <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases">
                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
             </button>
-            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db['nombre']); ?></span>
         </div>
         <div class="cpp-top-bar-right">
             <div class="cpp-user-menu-container">
@@ -152,15 +155,28 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     <?php echo esc_html($actividad['nombre_actividad']); ?>
                                 </div>
                                 <div class="cpp-actividad-notamax" style="color: <?php echo esc_attr($contrasting_text_color); ?>;">(Sobre <?php echo cpp_formatear_nota_display($actividad['nota_maxima']); ?>)</div>
-                                <?php if ($metodo_calculo === 'ponderada'): ?>
-                                    <div class="cpp-actividad-categoria" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php echo esc_html($actividad['nombre_categoria'] ?: 'Sin categoría'); ?> (<?php echo esc_html(isset($map_categorias_porcentajes[$actividad['categoria_id']]) ? $map_categorias_porcentajes[$actividad['categoria_id']] . '%' : 'N/A'); ?>)</div>
+                                <?php if ($metodo_calculo === 'ponderada' && !empty($actividad['nombre_categoria']) && !in_array($actividad['nombre_categoria'], ['General', 'Sin categoría'])): ?>
+                                    <div class="cpp-actividad-categoria" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php echo esc_html($actividad['nombre_categoria']); ?> (<?php echo esc_html(isset($map_categorias_porcentajes[$actividad['categoria_id']]) ? $map_categorias_porcentajes[$actividad['categoria_id']] . '%' : 'N/A'); ?>)</div>
                                 <?php endif; ?>
                                 <div class="cpp-actividad-fecha" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php if($actividad['fecha_actividad']) echo esc_html(date('d/m/Y', strtotime($actividad['fecha_actividad']))); ?></div>
                             </th>
                         <?php endforeach; ?>
                     <?php endif; ?>
 
-                    <th class="cpp-cuaderno-th-final" data-base-nota-final="<?php echo esc_attr($base_nota_final_clase); ?>"><div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(sobre <?php echo cpp_formatear_nota_display($base_nota_final_clase, ($base_nota_final_clase == floor($base_nota_final_clase) ? 0 : 2) ); ?>)</span></div></th>
+                    <th class="cpp-cuaderno-th-final" data-base-nota-final="<?php echo esc_attr($base_nota_final_clase); ?>">
+                        <div class="cpp-th-final-content-wrapper">
+                            <span>Nota Final</span>
+                            <span class="cpp-nota-final-base-info">(sobre <?php echo cpp_formatear_nota_display($base_nota_final_clase, ($base_nota_final_clase == floor($base_nota_final_clase) ? 0 : 2) ); ?>)</span>
+                        </div>
+                        <div class="cpp-th-final-actions">
+                            <button class="cpp-btn-icon" id="cpp-final-grade-sort-btn" title="Ordenar por Nota Final">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+                            </button>
+                             <button class="cpp-btn-icon" id="cpp-final-grade-highlight-btn" title="Destacar Alumnos Suspensos">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                            </button>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -172,9 +188,9 @@ function cpp_ajax_cargar_cuaderno_clase() {
                         $nota_final_display = isset($notas_finales_alumnos[$alumno['id']]) ? cpp_formatear_nota_display($notas_finales_alumnos[$alumno['id']], $decimales_nota_final) : '-';
                     ?>
                         <?php
-                            $nombre_completo_display = ($sort_order === 'nombre') ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
+                            $nombre_completo_display = (in_array($sort_order, ['nombre'])) ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
                         ?>
-                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
+                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($notas_finales_alumnos[$alumno['id']]); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
                             <?php else: foreach ($actividades_raw as $actividad):
                                     $nota_alumno_actividad_raw = isset($calificaciones_raw[$alumno['id']][$actividad['id']]) ? $calificaciones_raw[$alumno['id']][$actividad['id']] : '';
                                     $nota_alumno_actividad_display = cpp_formatear_nota_display($nota_alumno_actividad_raw);
@@ -188,9 +204,9 @@ function cpp_ajax_cargar_cuaderno_clase() {
     <?php
     $html_cuaderno = ob_get_clean();
     wp_send_json_success([
-        'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db->nombre, 'evaluaciones' => $evaluaciones,
+        'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db['nombre'], 'evaluaciones' => $evaluaciones,
         'evaluacion_activa_id' => $evaluacion_activa_id, 'calculo_nota' => $metodo_calculo,
-        'base_nota_final' => $base_nota_final_clase,
+        'base_nota_final' => $base_nota_final_clase, 'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'sort_order' => $sort_order
     ]);
 }

@@ -42,6 +42,13 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
             $update_formats[] = '%f';
         }
     }
+    if (isset($datos['nota_aprobado'])) {
+        $nota_aprobado = floatval(str_replace(',', '.', $datos['nota_aprobado']));
+        if ($nota_aprobado >= 0) {
+            $update_data['nota_aprobado'] = $nota_aprobado;
+            $update_formats[] = '%f';
+        }
+    }
     if (empty($update_data)) {
         return 0; 
     }
@@ -95,6 +102,9 @@ function cpp_guardar_clase($user_id, $datos) {
     global $wpdb;
     $base_nota_final = isset($datos['base_nota_final']) ? floatval(str_replace(',', '.', $datos['base_nota_final'])) : 100.00;
     if ($base_nota_final <= 0) $base_nota_final = 100.00;
+    $nota_aprobado = isset($datos['nota_aprobado']) ? floatval(str_replace(',', '.', $datos['nota_aprobado'])) : $base_nota_final / 2;
+    if ($nota_aprobado < 0) $nota_aprobado = $base_nota_final / 2;
+
     $nombre_clase = isset($datos['nombre']) ? sanitize_text_field(substr(trim($datos['nombre']), 0, 100)) : '';
     $resultado = $wpdb->insert(
         $wpdb->prefix . 'cpp_clases',
@@ -102,9 +112,10 @@ function cpp_guardar_clase($user_id, $datos) {
             'user_id' => $user_id,
             'nombre' => $nombre_clase,
             'color' => preg_match('/^#[a-f0-9]{6}$/i', $datos['color']) ? $datos['color'] : '#2962FF',
-            'base_nota_final' => $base_nota_final
+            'base_nota_final' => $base_nota_final,
+            'nota_aprobado' => $nota_aprobado
         ],
-        ['%d', '%s', '%s', '%f'] 
+        ['%d', '%s', '%s', '%f', '%f']
     );
     if($resultado) {
         $nueva_clase_id = $wpdb->insert_id;
