@@ -106,10 +106,10 @@
 
             if (resumen.stats) {
                 html += '<div class="cpp-ficha-stats-grid">';
-                html += `<div class="stat-item"><span class="stat-icon">✅</span><div><strong>${resumen.stats.presente || 0}</strong><br>Presente</div></div>`;
-                html += `<div class="stat-item"><span class="stat-icon">❌</span><div><strong>${resumen.stats.ausente || 0}</strong><br>Ausente</div></div>`;
-                html += `<div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${resumen.stats.retraso || 0}</strong><br>Retraso</div></div>`;
-                html += `<div class="stat-item"><span class="stat-icon">📄</span><div><strong>${resumen.stats.justificado || 0}</strong><br>Justificado</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">(P)</span><div><strong>${resumen.stats.presente || 0}</strong><br>Presente</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">(A)</span><div><strong>${resumen.stats.ausente || 0}</strong><br>Ausente</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">(R)</span><div><strong>${resumen.stats.retraso || 0}</strong><br>Retraso</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">(J)</span><div><strong>${resumen.stats.justificado || 0}</strong><br>Justificado</div></div>`;
                 html += '</div>';
             }
 
@@ -227,7 +227,7 @@
                     $btn.prop('disabled', false).html(originalBtnHtml);
                 }
             });
-        },
+        }
 
         bindEvents: function() {
             console.log("Binding Modals Ficha Alumno events...");
