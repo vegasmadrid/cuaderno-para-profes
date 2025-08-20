@@ -37,41 +37,52 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
     $base_nota_clase = floatval($clase_info['base_nota_final']);
     if ($base_nota_clase <= 0) $base_nota_clase = 100.0;
 
-    // Obtener todas las evaluaciones para la clase y calcular la nota media para cada una
+    // --- Resumen Académico ---
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
-    $resumen_notas_ficha = [];
-    
+    $desglose_evaluaciones = [];
     foreach ($evaluaciones as $evaluacion) {
-        // En lugar de calcular medias por categoría, calculamos la nota final de la evaluación completa
         $nota_final_evaluacion_0_100 = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
         $nota_final_reescalada = ($nota_final_evaluacion_0_100 / 100) * $base_nota_clase;
-
-        $decimales_nota_final = 2;
-        if ($base_nota_clase == floor($base_nota_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) {
-            $decimales_nota_final = 0;
-        }
-
-        // El backend debería devolver la nota media para cada categoría en la evaluación activa
-        // Como la ficha ahora muestra el resumen de evaluaciones, vamos a modificar esta parte.
-        // Vamos a devolver un array con las notas finales de cada evaluación.
-        $resumen_notas_ficha[] = [
-            'id_evaluacion' => $evaluacion['id'],
+        $decimales = ($base_nota_clase == floor($base_nota_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) ? 0 : 2;
+        $desglose_evaluaciones[] = [
             'nombre_evaluacion' => $evaluacion['nombre_evaluacion'],
-            'nota_final_formateada' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final)
+            'nota_final_formateada' => cpp_formatear_nota_display($nota_final_reescalada, $decimales)
         ];
     }
 
-    $historial_asistencia = cpp_obtener_asistencia_alumno_para_clase($user_id, $alumno_id, $clase_id);
+    $nota_media_final_0_100 = cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id);
+    $nota_media_final_reescalada = ($nota_media_final_0_100 / 100) * $base_nota_clase;
+    $decimales_media_final = ($base_nota_clase == floor($base_nota_clase) && $nota_media_final_reescalada == floor($nota_media_final_reescalada)) ? 0 : 2;
 
-    $stats_asistencia = [ 'presente' => 0, 'ausente' => 0, 'retraso' => 0, 'justificado' => 0, ];
-    foreach($historial_asistencia as $asistencia_item) {
+    $resumen_academico = [
+        'nota_final_global_formateada' => cpp_formatear_nota_display($nota_media_final_reescalada, $decimales_media_final),
+        'desglose_evaluaciones' => $desglose_evaluaciones
+    ];
+
+    // --- Resumen de Asistencia ---
+    $historial_asistencia_completo = cpp_obtener_asistencia_alumno_para_clase($user_id, $alumno_id, $clase_id);
+    $stats_asistencia = [ 'presente' => 0, 'ausente' => 0, 'retraso' => 0, 'justificado' => 0 ];
+    $historial_incidencias = [];
+
+    foreach($historial_asistencia_completo as $asistencia_item) {
         if (isset($stats_asistencia[$asistencia_item['estado']])) {
             $stats_asistencia[$asistencia_item['estado']]++;
         }
+        if ($asistencia_item['estado'] !== 'presente') {
+            $historial_incidencias[] = $asistencia_item;
+        }
     }
+    // Ordenar incidencias por fecha descendente
+    usort($historial_incidencias, function($a, $b) {
+        return strtotime($b['fecha_asistencia']) - strtotime($a['fecha_asistencia']);
+    });
 
-    // El frontend espera 'resumen_notas' => ['notas_medias_por_evaluacion' => [...]]
-    // Así que lo envolvemos correctamente
+    $resumen_asistencia = [
+        'stats' => $stats_asistencia,
+        'historial_reciente' => array_slice($historial_incidencias, 0, 5)
+    ];
+
+    // --- Ensamblar datos finales ---
     $data_ficha = [
         'alumno_info' => $alumno_info,
         'clase_info' => [
@@ -79,9 +90,8 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
             'nombre' => $clase_info['nombre'],
             'base_nota_final' => cpp_formatear_nota_display($base_nota_clase, ($base_nota_clase == floor($base_nota_clase) ? 0 : 2))
         ],
-        'resumen_notas' => ['notas_medias_por_evaluacion' => $resumen_notas_ficha],
-        'historial_asistencia' => $historial_asistencia,
-        'stats_asistencia' => $stats_asistencia
+        'resumen_academico' => $resumen_academico,
+        'resumen_asistencia' => $resumen_asistencia
     ];
 
     wp_send_json_success($data_ficha);

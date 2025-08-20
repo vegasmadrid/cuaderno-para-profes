@@ -16,6 +16,9 @@
         isDraggingSelection: false,
         selectionStartCellInput: null,
         currentSelectedInputs: [],
+        finalGradeSortState: 'none', // none, desc, asc
+        failedStudentsHighlighted: false,
+        notaAprobado: 50, // Default, se actualiza al cargar la clase
 
         init: function() {
             console.log("CPP Gradebook Module Initializing...");
@@ -115,6 +118,9 @@
 
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
+                            if (typeof response.data.nota_aprobado !== 'undefined') {
+                                self.notaAprobado = parseFloat(response.data.nota_aprobado);
+                            }
                             if (typeof localStorage !== 'undefined' && cpp.currentClaseIdCuaderno && cpp.currentEvaluacionId) {
                                 localStorage.setItem(self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
                             }
@@ -183,6 +189,57 @@
         handlePasteCells: function(e) { e.preventDefault(); const self = cpp.gradebook; const $startInput = $(this); const $startTd = $startInput.closest('td'); const $startTr = $startInput.closest('tr'); const $tbody = $('.cpp-cuaderno-tabla tbody'); const startRowVisibleIndex = $tbody.find('tr:visible').index($startTr); const startColVisibleIndex = $startTr.find('td.cpp-cuaderno-td-nota').index($startTd); if (startRowVisibleIndex === -1 || startColVisibleIndex === -1) { console.error("Celda de inicio para pegar no válida."); return; } let pastedData = ''; if (e.originalEvent && e.originalEvent.clipboardData) { pastedData = e.originalEvent.clipboardData.getData('text/plain'); } else if (window.clipboardData) { pastedData = window.clipboardData.getData('Text'); } if (!pastedData) return; const rows = pastedData.split(/\r\n|\n|\r/); self.clearCellSelection(); const $allVisibleTrs = $tbody.find('tr:visible'); const newSelectedInputs = []; for (let i = 0; i < rows.length; i++) { const cells = rows[i].split('\t'); const targetRowIndex = startRowVisibleIndex + i; if (targetRowIndex >= $allVisibleTrs.length) break; const $targetTr = $($allVisibleTrs[targetRowIndex]); const $targetTdsNotas = $targetTr.find('td.cpp-cuaderno-td-nota'); for (let j = 0; j < cells.length; j++) { const targetColIndex = startColVisibleIndex + j; if (targetColIndex >= $targetTdsNotas.length) break; const $targetTd = $($targetTdsNotas[targetColIndex]); const $targetInput = $targetTd.find('.cpp-input-nota'); if ($targetInput.length) { const pastedValue = cells[j]; $targetInput.val(pastedValue); newSelectedInputs.push($targetInput[0]); const mockEvent = { type: 'paste', target: $targetInput[0] }; self.guardarNotaDesdeInput.call($targetInput[0], mockEvent, function(success, saved) {}); } } } if (newSelectedInputs.length > 0) { self.currentSelectedInputs = newSelectedInputs; $(newSelectedInputs).addClass('cpp-cell-selected'); } },
         handleClickAlumnoCell: function(e) { e.preventDefault(); const $td = $(this); const $tr = $td.closest('tr'); const alumnoId = $tr.data('alumno-id'); if (alumnoId && cpp.currentClaseIdCuaderno) { if (cpp.modals && cpp.modals.fichaAlumno && typeof cpp.modals.fichaAlumno.mostrar === 'function') { console.log(`Abriendo ficha para alumno ID: ${alumnoId}, Clase ID: ${cpp.currentClaseIdCuaderno}`); cpp.modals.fichaAlumno.mostrar(alumnoId, cpp.currentClaseIdCuaderno); } else { console.error("Función cpp.modals.fichaAlumno.mostrar no encontrada."); } } else { console.warn("No se pudo obtener alumnoId o claseId actual para abrir ficha."); } },
         handleClickNotaFinalHeader: function(e) { if (e.target !== this && $(e.target).closest(this).length) { if ($(e.target).is('button, a, input') || $(e.target).closest('button, a, input').length) { return; } } e.preventDefault(); if (!cpp.currentClaseIdCuaderno) { alert('Por favor, selecciona una clase primero.'); return; } if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaEditar === 'function') { cpp.modals.clase.showParaEditar(null, true, cpp.currentClaseIdCuaderno); } else { console.error("Función cpp.modals.clase.showParaEditar no encontrada."); } },
+
+        handleFinalGradeSort: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const self = cpp.gradebook;
+            let nextSortState;
+            let sortOrderForAjax;
+
+            if (self.finalGradeSortState === 'none') {
+                nextSortState = 'desc';
+                sortOrderForAjax = 'nota_desc';
+            } else if (self.finalGradeSortState === 'desc') {
+                nextSortState = 'asc';
+                sortOrderForAjax = 'nota_asc';
+            } else { // asc
+                nextSortState = 'none';
+                sortOrderForAjax = $('#cpp-a1-sort-students-btn').data('sort') || 'apellidos';
+            }
+            self.finalGradeSortState = nextSortState;
+
+            if (cpp.currentClaseIdCuaderno) {
+                const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, sortOrderForAjax);
+            }
+        },
+
+        toggleHighlightFailed: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const self = cpp.gradebook;
+            self.failedStudentsHighlighted = !self.failedStudentsHighlighted;
+            const $button = $('#cpp-final-grade-highlight-btn');
+            const $rows = $('.cpp-cuaderno-tabla tbody tr[data-nota-final]');
+
+            $button.toggleClass('active', self.failedStudentsHighlighted);
+
+            if (self.failedStudentsHighlighted) {
+                $rows.each(function() {
+                    const $row = $(this);
+                    const finalGrade = parseFloat($row.data('nota-final'));
+                    if (!isNaN(finalGrade) && finalGrade < self.notaAprobado) {
+                        $row.addClass('cpp-fila-suspenso');
+                    } else {
+                        $row.removeClass('cpp-fila-suspenso');
+                    }
+                });
+            } else {
+                $rows.removeClass('cpp-fila-suspenso');
+            }
+        },
+
         bindEvents: function() {
             console.log("Binding Gradebook (cuaderno) events...");
             const $document = $(document);
@@ -229,6 +286,9 @@
                     $('.cpp-user-menu-dropdown').removeClass('show-dropdown');
                 }
             });
+
+            $cuadernoContenido.on('click', '#cpp-final-grade-sort-btn', function(e) { self.handleFinalGradeSort.call(self, e); });
+            $cuadernoContenido.on('click', '#cpp-final-grade-highlight-btn', function(e) { self.toggleHighlightFailed.call(self, e); });
 
             $document.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); }); $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); }); $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } }); $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); }); $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); }); $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); }); $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); }); $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){ if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarParaEditar === 'function') { cpp.modals.actividades.cargarParaEditar(this, e); } else { console.error("Función cpp.modals.actividades.cargarParaEditar no encontrada."); } }); $document.on('click', '#cpp-a1-add-activity-btn', function(e) { e.stopPropagation(); if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') { cpp.modals.actividades.mostrarAnadir(); } else { console.error("Función cpp.modals.actividades.mostrarAnadir no encontrada."); } }); $document.on('click', '#cpp-a1-import-students-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') { cpp.modals.excel.showImportStudents(e); } else { console.error("Función cpp.modals.excel.showImportStudents no encontrada.");} }); $document.on('click', '#cpp-a1-download-excel-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showDownloadOptions === 'function') { cpp.modals.excel.showDownloadOptions(e); } else { console.error("Función cpp.modals.excel.showDownloadOptions no encontrada.");} }); $document.on('click', '#cpp-a1-take-attendance-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (cpp.modals && cpp.modals.asistencia && typeof cpp.modals.asistencia.mostrar === 'function') { if (cpp.currentClaseIdCuaderno) { cpp.modals.asistencia.mostrar(cpp.currentClaseIdCuaderno); } else { alert("Por favor, selecciona o carga una clase primero."); } } else { console.error("Función cpp.modals.asistencia.mostrar no encontrada."); } }); $document.on('click', '#cpp-a1-enter-direction-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (self.enterKeyDirection === 'down') { self.enterKeyDirection = 'right'; } else { self.enterKeyDirection = 'down'; } self.updateEnterDirectionButton(); if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') { try { localStorage.setItem(self.localStorageKey_enterDirection + cppFrontendData.userId, self.enterKeyDirection); } catch (lsError) { console.warn("No se pudo guardar la preferencia de dirección de Enter en localStorage:", lsError); } } }); $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); }); $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } }); $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); }); }
     };
