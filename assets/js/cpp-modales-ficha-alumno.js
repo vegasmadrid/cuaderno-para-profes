@@ -19,11 +19,12 @@
         resetModal: function() {
             const $modal = $('#cpp-modal-ficha-alumno');
             if (!$modal.length) return;
-            $modal.find('#cpp-modal-ficha-alumno-titulo').text('Ficha del Alumno');
+            $modal.find('#cpp-ficha-display-nombre-completo').text('Ficha del Alumno');
             $modal.find('#cpp-ficha-alumno-main-content').html('<p class="cpp-cuaderno-cargando">Cargando datos...</p>');
             const $form = $modal.find('#cpp-form-editar-alumno-ficha');
             $form.trigger('reset').hide();
-            $modal.find('.cpp-ficha-alumno-header').show();
+            $modal.find('#cpp-ficha-alumno-main-content').show();
+            $modal.find('.cpp-edit-info-alumno-btn').show();
         },
 
         mostrar: function(alumnoId, claseId) {
@@ -74,14 +75,12 @@
             let html = '<div class="cpp-ficha-seccion">';
             html += '<h3>Resumen Académico</h3>';
 
-            // Nota final global
             html += '<div class="cpp-ficha-nota-global-container">';
             html += '<span class="cpp-ficha-nota-global-valor">' + (resumen.nota_final_global_formateada || '-') + '</span>';
             html += '<span class="cpp-ficha-nota-global-base">/ ' + (claseInfo.base_nota_final || '100') + '</span>';
             html += '</div>';
             html += '<p class="cpp-ficha-nota-global-label">Nota Final Media</p>';
 
-            // Desglose por evaluaciones
             html += '<h4>Desglose por Evaluaciones</h4>';
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
@@ -104,7 +103,6 @@
             let html = '<div class="cpp-ficha-seccion">';
             html += '<h3>Resumen de Asistencia</h3>';
 
-            // Estadísticas
             if (resumen.stats) {
                 html += '<div class="cpp-ficha-stats-grid">';
                 html += `<div class="stat-item"><span class="stat-icon">✅</span><div><strong>${resumen.stats.presente || 0}</strong><br>Presente</div></div>`;
@@ -114,7 +112,6 @@
                 html += '</div>';
             }
 
-            // Incidencias recientes
             html += '<h4>Incidencias Recientes</h4>';
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.historial_reciente && resumen.historial_reciente.length > 0) {
@@ -137,7 +134,6 @@
             const $modal = $('#cpp-modal-ficha-alumno');
             if (!$modal.length || !data) return;
 
-            // --- Renderizar Cabecera ---
             const $header = $modal.find('.cpp-ficha-alumno-header');
             if (data.alumno_info) {
                 $header.find('#cpp-ficha-display-nombre-completo').text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
@@ -149,47 +145,40 @@
                     const inicial = data.alumno_info.nombre ? data.alumno_info.nombre.charAt(0).toUpperCase() : '';
                     $header.find('#cpp-ficha-alumno-avatar-inicial').text(inicial).show();
                 }
-                // Guardar datos para el formulario de edición
                 $modal.find('#ficha_alumno_id_editar').val(data.alumno_info.id);
                 $modal.find('#ficha_nombre_alumno').val(data.alumno_info.nombre);
                 $modal.find('#ficha_apellidos_alumno').val(data.alumno_info.apellidos);
             }
 
-            // --- Renderizar Contenido Principal (Dos Columnas) ---
             const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
             let mainHtml = '<div class="cpp-ficha-grid">';
 
-            // Columna Izquierda: Resumen Académico
             mainHtml += '<div class="cpp-ficha-col-izq">';
             mainHtml += this._buildResumenAcademicoHTML(data.resumen_academico, data.clase_info);
             mainHtml += '</div>';
 
-            // Columna Derecha: Resumen de Asistencia
             mainHtml += '<div class="cpp-ficha-col-der">';
             mainHtml += this._buildResumenAsistenciaHTML(data.resumen_asistencia);
             mainHtml += '</div>';
 
-            mainHtml += '</div>'; // Cierre de .cpp-ficha-grid
+            mainHtml += '</div>';
             $mainContent.html(mainHtml);
         },
 
         toggleEditInfoAlumno: function(showForm) {
             const $modal = $('#cpp-modal-ficha-alumno');
-            const $displayDiv = $modal.find('#cpp-ficha-alumno-info-display');
+            const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
             const $form = $modal.find('#cpp-form-editar-alumno-ficha');
             const $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
 
             if (showForm) {
-                $displayDiv.hide();
+                $mainContent.hide();
                 $form.show();
                 $editBtn.hide();
-                $form.find('#ficha_nombre_alumno').val($modal.find('#cpp-ficha-display-nombre').text());
-                $form.find('#ficha_apellidos_alumno').val($modal.find('#cpp-ficha-display-apellidos').text());
             } else {
                 $form.hide();
-                $displayDiv.show();
+                $mainContent.show();
                 $editBtn.show();
-                $form.trigger('reset');
             }
         },
 
