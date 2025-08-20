@@ -1128,3 +1128,22 @@ body.cpp-no-text-select {
 }
 
 /* --- FIN: Rediseño Celda A1 --- */
+
+/* --- START: Final Grade Button Styles --- */
+
+.cpp-cuaderno-tabla tbody tr.cpp-fila-suspenso > td {
+    background-color: #fce8e6 !important;
+}
+
+/* Ensure sticky columns get the highlight too */
+.cpp-cuaderno-tabla tbody tr.cpp-fila-suspenso > td.cpp-cuaderno-td-alumno,
+.cpp-cuaderno-tabla tbody tr.cpp-fila-suspenso > td.cpp-cuaderno-td-final {
+    background-color: #fce8e6 !important;
+}
+
+#cpp-final-grade-highlight-btn.active {
+    background-color: #e8f0fe !important;
+    color: #1a73e8 !important;
+}
+
+/* --- END: Final Grade Button Styles --- */

@@ -59,6 +59,11 @@ function cpp_ajax_crear_clase() {
     }
     $datos['nota_aprobado'] = floatval($nota_aprobado_sanitizada);
 
+    if ($datos['nota_aprobado'] >= $datos['base_nota_final']) {
+        wp_send_json_error(['message' => 'La nota para aprobar debe ser menor que la base de la nota final.']);
+        return;
+    }
+
     if ($clase_id_editar > 0) {
         $resultado = cpp_actualizar_clase_completa($clase_id_editar, $user_id, $datos);
         if ($resultado !== false) {

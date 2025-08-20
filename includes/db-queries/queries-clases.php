@@ -10,7 +10,7 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     return $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT id, user_id, nombre, color, base_nota_final, orden, fecha_creacion FROM $tabla_clases WHERE id = %d AND user_id = %d",
+            "SELECT id, user_id, nombre, color, base_nota_final, nota_aprobado, orden, fecha_creacion FROM $tabla_clases WHERE id = %d AND user_id = %d",
             $clase_id,
             $user_id
         ),

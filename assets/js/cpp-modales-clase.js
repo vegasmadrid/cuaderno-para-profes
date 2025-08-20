@@ -209,6 +209,10 @@
                 alert('Por favor, introduce un valor numérico positivo para la Nota Mínima para Aprobar.'); return;
             }
 
+            if (notaAprobadoNumerica >= baseNotaNumerica) {
+                alert('La nota mínima para aprobar debe ser menor que la base de la nota final.');
+                return;
+            }
 
             const btnTextProcesando = esEdicion ? 'Actualizando...' : 'Guardando...';
             const btnTextOriginal = esEdicion ? '<span class="dashicons dashicons-edit"></span> Actualizar Clase' : '<span class="dashicons dashicons-saved"></span> Guardar Clase';
