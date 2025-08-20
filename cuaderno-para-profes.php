@@ -239,4 +239,16 @@ function cpp_migrate_add_passing_grade_v1_6() {
 }
 // --- FIN: SCRIPT DE MIGRACIÓN DE DATOS ---
 
+function cpp_run_migrations() {
+    $current_version = get_option('cpp_version', '1.0');
+
+    if (version_compare($current_version, '1.6', '<')) {
+        cpp_migrate_add_passing_grade_v1_6();
+    }
+    // Aquí se podrían añadir futuras migraciones con if(version_compare...)
+
+    update_option('cpp_version', CPP_VERSION);
+}
+add_action('plugins_loaded', 'cpp_run_migrations');
+
 ?>
