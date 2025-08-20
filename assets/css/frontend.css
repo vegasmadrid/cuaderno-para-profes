@@ -533,52 +533,142 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     max-width: 850px;
     font-size: 14px;
 }
-#cpp-modal-ficha-alumno h3 {
-    font-size: 17px;
-    font-weight: 500;
-    color: #333;
-    margin-top: 0;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+#cpp-modal-ficha-alumno .cpp-modal-content { max-width: 750px; }
+
+.cpp-ficha-alumno-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
     border-bottom: 1px solid #e0e0e0;
+}
+#cpp-ficha-display-nombre-completo {
+    font-size: 22px;
+    font-weight: 500;
+    margin-left: 15px;
+    flex-grow: 1;
+}
+#cpp-ficha-alumno-foto, #cpp-ficha-alumno-avatar-inicial {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+#cpp-ficha-alumno-avatar-inicial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.cpp-ficha-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+.cpp-ficha-seccion h3 {
+    font-size: 16px;
+    font-weight: 500;
+    color: #3c4043;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+.cpp-ficha-nota-global-container {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.cpp-ficha-nota-global-valor {
+    font-size: 48px;
+    font-weight: 300;
+    line-height: 1;
+    color: #1a73e8;
+}
+.cpp-ficha-nota-global-base {
+    font-size: 24px;
+    font-weight: 400;
+    color: #5f6368;
+    margin-left: 2px;
+}
+.cpp-ficha-nota-global-label {
+    text-align: center;
+    font-size: 14px;
+    color: #5f6368;
+    margin-bottom: 20px;
+}
+
+.cpp-ficha-seccion h4 {
+    font-size: 14px;
+    font-weight: 500;
+    color: #3c4043;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.cpp-ficha-lista-desglose {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.cpp-ficha-lista-desglose li {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f3f4;
 }
-.cpp-ficha-alumno-grid {
+.cpp-ficha-lista-desglose li:last-child {
+    border-bottom: none;
+}
+.cpp-ficha-desglose-nombre {
+    font-weight: normal;
+    color: #3c4043;
+}
+.cpp-ficha-desglose-nota {
+    font-weight: 500;
+    color: #202124;
+    background-color: #f1f3f4;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.cpp-ficha-stats-grid {
     display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 30px;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
 }
-.cpp-ficha-alumno-info-personal {
-    grid-column: 1 / 2;
-    padding-right: 20px;
+.cpp-ficha-stats-grid .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
 }
-.cpp-ficha-alumno-resumen-notas {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
+.cpp-ficha-stats-grid .stat-icon {
+    font-size: 20px;
 }
-.cpp-ficha-alumno-historial-asistencia {
-    grid-column: 1 / 3;
-    grid-row: 2 / 3;
-    margin-top: 25px;
+.cpp-ficha-stats-grid .stat-item div {
+    line-height: 1.3;
+    font-size: 13px;
+    color: #5f6368;
+}
+.cpp-ficha-stats-grid .stat-item strong {
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    display: block;
 }
 
 @media (max-width: 768px) {
-    .cpp-ficha-alumno-grid {
+    .cpp-ficha-grid {
         grid-template-columns: 1fr;
-    }
-    .cpp-ficha-alumno-info-personal,
-    .cpp-ficha-alumno-resumen-notas,
-    .cpp-ficha-alumno-historial-asistencia {
-        grid-column: 1 / 2;
-        grid-row: auto;
-        padding-right: 0;
-        border-right: none;
-    }
-    .cpp-ficha-alumno-resumen-notas,
-    .cpp-ficha-alumno-historial-asistencia {
-        margin-top: 25px;
     }
 }
 
