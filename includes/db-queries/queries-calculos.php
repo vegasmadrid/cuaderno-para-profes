@@ -140,3 +140,127 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
 
     return 0.00;
 }
+
+function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_id, $evaluacion_id, $base_nota_clase) {
+    global $wpdb;
+
+    $resultado = [
+        'nota_final' => 0.00,
+        'nota_final_formateada' => cpp_formatear_nota_display(0, 0),
+        'desglose_categorias' => []
+    ];
+
+    if (empty($evaluacion_id)) {
+        return $resultado;
+    }
+
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
+    if (empty($metodo_calculo)) {
+        $metodo_calculo = 'total';
+    }
+
+    $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
+    if (empty($actividades_raw)) {
+        return $resultado;
+    }
+
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $calificaciones_alumno_raw = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT ca.actividad_id, ca.nota FROM $tabla_calificaciones ca
+             INNER JOIN $tabla_actividades act ON ca.actividad_id = act.id
+             WHERE ca.alumno_id = %d AND act.evaluacion_id = %d",
+            $alumno_id, $evaluacion_id
+        ), ARRAY_A
+    );
+
+    $calificaciones_alumno = [];
+    foreach ($calificaciones_alumno_raw as $cal) {
+        $calificaciones_alumno[$cal['actividad_id']] = $cal['nota'];
+    }
+
+    $nota_final_alumno_0_100 = 0.0;
+
+    if ($metodo_calculo === 'ponderada') {
+        $categorias_evaluacion = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);
+        if (empty($categorias_evaluacion)) {
+             $metodo_calculo = 'total';
+        } else {
+            $map_categorias = [];
+            $total_porcentaje = 0;
+            foreach ($categorias_evaluacion as $cat) {
+                $map_categorias[$cat['id']] = [
+                    'nombre' => $cat['nombre_categoria'],
+                    'porcentaje' => floatval($cat['porcentaje'])
+                ];
+                $total_porcentaje += floatval($cat['porcentaje']);
+            }
+
+            $notas_por_categoria_alumno = [];
+            foreach ($actividades_raw as $actividad) {
+                $categoria_id_actividad = $actividad['categoria_id'];
+                if (!isset($map_categorias[$categoria_id_actividad])) { continue; }
+
+                if (isset($calificaciones_alumno[$actividad['id']]) && is_numeric($calificaciones_alumno[$actividad['id']])) {
+                    $nota_obtenida = floatval($calificaciones_alumno[$actividad['id']]);
+                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                    $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+
+                    if (!isset($notas_por_categoria_alumno[$categoria_id_actividad])) {
+                        $notas_por_categoria_alumno[$categoria_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
+                    }
+                    $notas_por_categoria_alumno[$categoria_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
+                    $notas_por_categoria_alumno[$categoria_id_actividad]['contador']++;
+                }
+            }
+
+            foreach ($notas_por_categoria_alumno as $cat_id => $data_cat) {
+                if ($data_cat['contador'] > 0) {
+                    $media_categoria_normalizada = $data_cat['suma_normalizada'] / $data_cat['contador'];
+                    $porcentaje_categoria = $map_categorias[$cat_id]['porcentaje'];
+                    $nota_final_alumno_0_100 += $media_categoria_normalizada * $porcentaje_categoria;
+
+                    $nota_categoria_reescalada = ($media_categoria_normalizada * 100 / 100) * $base_nota_clase;
+                    $decimales_cat = ($base_nota_clase == floor($base_nota_clase) && $nota_categoria_reescalada == floor($nota_categoria_reescalada)) ? 0 : 2;
+
+                    $resultado['desglose_categorias'][] = [
+                        'nombre_categoria' => $map_categorias[$cat_id]['nombre'],
+                        'porcentaje' => $porcentaje_categoria,
+                        'nota_categoria_formateada' => cpp_formatear_nota_display($nota_categoria_reescalada, $decimales_cat)
+                    ];
+                }
+            }
+
+            if ($total_porcentaje > 0 && $total_porcentaje < 100) {
+                $nota_final_alumno_0_100 = ($nota_final_alumno_0_100 / $total_porcentaje) * 100;
+            }
+            $nota_final_alumno_0_100 = min($nota_final_alumno_0_100, 100);
+        }
+    }
+
+    if ($metodo_calculo === 'total') {
+        $suma_notas_normalizadas = 0.0;
+        $numero_de_actividades_con_nota = 0;
+        foreach ($actividades_raw as $actividad) {
+            if (isset($calificaciones_alumno[$actividad['id']]) && is_numeric($calificaciones_alumno[$actividad['id']])) {
+                $nota_obtenida = floatval($calificaciones_alumno[$actividad['id']]);
+                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
+                $numero_de_actividades_con_nota++;
+            }
+        }
+        if ($numero_de_actividades_con_nota > 0) {
+            $nota_final_alumno_0_100 = ($suma_notas_normalizadas / $numero_de_actividades_con_nota) * 100;
+        }
+    }
+
+    $nota_final_reescalada = ($nota_final_alumno_0_100 / 100) * $base_nota_clase;
+    $decimales = ($base_nota_clase == floor($base_nota_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) ? 0 : 2;
+
+    $resultado['nota_final'] = round($nota_final_reescalada, 2);
+    $resultado['nota_final_formateada'] = cpp_formatear_nota_display($nota_final_reescalada, $decimales);
+
+    return $resultado;
+}
