@@ -18,11 +18,11 @@
         },
 
         resetModal: function() {
-            const $modal = $('#cpp-modal-ficha-alumno');
+            var $modal = $('#cpp-modal-ficha-alumno');
             if (!$modal.length) return;
             $modal.find('#cpp-ficha-display-nombre-completo').text('Ficha del Alumno');
             $modal.find('#cpp-ficha-alumno-main-content').html('<p class="cpp-cuaderno-cargando">Cargando datos...</p>');
-            const $form = $modal.find('#cpp-form-editar-alumno-ficha');
+            var $form = $modal.find('#cpp-form-editar-alumno-ficha');
             $form.trigger('reset').hide();
             $modal.find('#cpp-ficha-alumno-main-content').show();
             $modal.find('.cpp-edit-info-alumno-btn').show();
@@ -40,11 +40,11 @@
                 cpp.modals.general.hideAll();
             }
 
-            const $modal = $('#cpp-modal-ficha-alumno');
-            this.resetModal(); 
+            var $modal = $('#cpp-modal-ficha-alumno');
+            this.resetModal();
             $modal.fadeIn();
 
-            const self = this;
+            var self = this;
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -61,7 +61,7 @@
                         self.renderizarFicha(response.data);
                     } else {
                         alert('Error al cargar datos de la ficha: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
-                        $modal.fadeOut(); 
+                        $modal.fadeOut();
                     }
                 },
                 error: function() {
@@ -73,7 +73,7 @@
 
         _buildResumenAcademicoHTML: function(resumen, claseInfo) {
             if (!resumen) return '<p>No hay datos académicos disponibles.</p>';
-            let html = '<div class="cpp-ficha-seccion">';
+            var html = '<div class="cpp-ficha-seccion">';
             html += '<h3>Resumen Académico</h3>';
 
             html += '<div class="cpp-ficha-nota-global-container">';
@@ -86,10 +86,10 @@
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
                 resumen.desglose_evaluaciones.forEach(function(eval) {
-                    html += `<li>
-                                <span class="cpp-ficha-desglose-nombre">${$('<div>').text(eval.nombre_evaluacion).html()}</span>
-                                <span class="cpp-ficha-desglose-nota">${eval.nota_final_formateada}</span>
-                             </li>`;
+                    html += '<li>' +
+                                '<span class="cpp-ficha-desglose-nombre">' + $('<div>').text(eval.nombre_evaluacion).html() + '</span>' +
+                                '<span class="cpp-ficha-desglose-nota">' + eval.nota_final_formateada + '</span>' +
+                             '</li>';
                 });
             } else {
                 html += '<li>No hay evaluaciones con notas.</li>';
@@ -101,15 +101,15 @@
 
         _buildResumenAsistenciaHTML: function(resumen) {
             if (!resumen) return '<p>No hay datos de asistencia disponibles.</p>';
-            let html = '<div class="cpp-ficha-seccion">';
+            var html = '<div class="cpp-ficha-seccion">';
             html += '<h3>Resumen de Asistencia</h3>';
 
             if (resumen.stats) {
                 html += '<div class="cpp-ficha-stats-grid">';
-                html += `<div class="stat-item"><span class="stat-icon">(P)</span><div><strong>${resumen.stats.presente || 0}</strong><br>Presente</div></div>`;
-                html += `<div class="stat-item"><span class="stat-icon">(A)</span><div><strong>${resumen.stats.ausente || 0}</strong><br>Ausente</div></div>`;
-                html += `<div class="stat-item"><span class="stat-icon">(R)</span><div><strong>${resumen.stats.retraso || 0}</strong><br>Retraso</div></div>`;
-                html += `<div class="stat-item"><span class="stat-icon">(J)</span><div><strong>${resumen.stats.justificado || 0}</strong><br>Justificado</div></div>`;
+                html += '<div class="stat-item"><span class="stat-icon">(P)</span><div><strong>' + (resumen.stats.presente || 0) + '</strong><br>Presente</div></div>';
+                html += '<div class="stat-item"><span class="stat-icon">(A)</span><div><strong>' + (resumen.stats.ausente || 0) + '</strong><br>Ausente</div></div>';
+                html += '<div class="stat-item"><span class="stat-icon">(R)</span><div><strong>' + (resumen.stats.retraso || 0) + '</strong><br>Retraso</div></div>';
+                html += '<div class="stat-item"><span class="stat-icon">(J)</span><div><strong>' + (resumen.stats.justificado || 0) + '</strong><br>Justificado</div></div>';
                 html += '</div>';
             }
 
@@ -117,11 +117,11 @@
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.historial_reciente && resumen.historial_reciente.length > 0) {
                 resumen.historial_reciente.forEach(function(item) {
-                    const fechaFormateada = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'N/A';
-                    html += `<li>
-                                <span class="cpp-ficha-desglose-nombre">${fechaFormateada}</span>
-                                <span class="cpp-ficha-desglose-nota">${$('<div>').text(item.estado).html()}</span>
-                             </li>`;
+                    var fechaFormateada = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'N/A';
+                    html += '<li>' +
+                                '<span class="cpp-ficha-desglose-nombre">' + fechaFormateada + '</span>' +
+                                '<span class="cpp-ficha-desglose-nota">' + $('<div>').text(item.estado).html() + '</span>' +
+                             '</li>';
                 });
             } else {
                 html += '<li>No hay incidencias recientes.</li>';
@@ -132,18 +132,18 @@
         },
 
         renderizarFicha: function(data) {
-            const $modal = $('#cpp-modal-ficha-alumno');
+            var $modal = $('#cpp-modal-ficha-alumno');
             if (!$modal.length || !data) return;
 
-            const $header = $modal.find('.cpp-ficha-alumno-header');
+            var $header = $modal.find('.cpp-ficha-alumno-header');
             if (data.alumno_info) {
-                $header.find('#cpp-ficha-display-nombre-completo').text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
+                $header.find('#cpp-ficha-display-nombre-completo').text(data.alumno_info.nombre + ' ' + data.alumno_info.apellidos);
                 if (data.alumno_info.foto) {
                     $header.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.foto).show();
                     $header.find('#cpp-ficha-alumno-avatar-inicial').hide();
                 } else {
                     $header.find('#cpp-ficha-alumno-foto').hide();
-                    const inicial = data.alumno_info.nombre ? data.alumno_info.nombre.charAt(0).toUpperCase() : '';
+                    var inicial = data.alumno_info.nombre ? data.alumno_info.nombre.charAt(0).toUpperCase() : '';
                     $header.find('#cpp-ficha-alumno-avatar-inicial').text(inicial).show();
                 }
                 $modal.find('#ficha_alumno_id_editar').val(data.alumno_info.id);
@@ -151,8 +151,8 @@
                 $modal.find('#ficha_apellidos_alumno').val(data.alumno_info.apellidos);
             }
 
-            const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
-            let mainHtml = '<div class="cpp-ficha-grid">';
+            var $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
+            var mainHtml = '<div class="cpp-ficha-grid">';
 
             mainHtml += '<div class="cpp-ficha-col-izq">';
             mainHtml += this._buildResumenAcademicoHTML(data.resumen_academico, data.clase_info);
@@ -167,10 +167,10 @@
         },
 
         toggleEditInfoAlumno: function(showForm) {
-            const $modal = $('#cpp-modal-ficha-alumno');
-            const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
-            const $form = $modal.find('#cpp-form-editar-alumno-ficha');
-            const $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
+            var $modal = $('#cpp-modal-ficha-alumno');
+            var $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
+            var $form = $modal.find('#cpp-form-editar-alumno-ficha');
+            var $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
 
             if (showForm) {
                 $mainContent.hide();
@@ -185,18 +185,18 @@
 
         guardarInfoAlumno: function(eventForm) {
             eventForm.preventDefault();
-            const $form = $(eventForm.target);
-            const $btn = $form.find('button[type="submit"]');
-            const formData = new FormData(eventForm.target); 
+            var $form = $(eventForm.target);
+            var $btn = $form.find('button[type="submit"]');
+            var formData = new FormData(eventForm.target);
 
-            formData.append('action', 'cpp_guardar_alumno'); 
+            formData.append('action', 'cpp_guardar_alumno');
             formData.append('nonce', cppFrontendData.nonce);
-            formData.append('clase_id_form_alumno', this.currentClaseId); 
+            formData.append('clase_id_form_alumno', this.currentClaseId);
 
 
-            const originalBtnHtml = $btn.html();
+            var originalBtnHtml = $btn.html();
             $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
-            const self = this;
+            var self = this;
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -208,10 +208,10 @@
                 success: function(response) {
                     if (response.success) {
                         alert(response.data.message || 'Información guardada.');
-                        self.toggleEditInfoAlumno(false); 
-                        self.mostrar(self.currentAlumnoId, self.currentClaseId); 
+                        self.toggleEditInfoAlumno(false);
+                        self.mostrar(self.currentAlumnoId, self.currentClaseId);
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
-                            const $claseActiva = $('.cpp-sidebar-clase-item.cpp-sidebar-item-active');
+                            var $claseActiva = $('.cpp-sidebar-clase-item.cpp-sidebar-item-active');
                             if ($claseActiva.length) {
                                 cpp.gradebook.cargarContenidoCuaderno($claseActiva.data('clase-id'), $claseActiva.data('clase-nombre'));
                             }
@@ -227,12 +227,12 @@
                     $btn.prop('disabled', false).html(originalBtnHtml);
                 }
             });
-        }
+        },
 
         bindEvents: function() {
             console.log("Binding Modals Ficha Alumno events...");
-            const $modal = $('#cpp-modal-ficha-alumno');
-            const self = this;
+            var $modal = $('#cpp-modal-ficha-alumno');
+            var self = this;
 
             $modal.on('click', '.cpp-edit-info-alumno-btn', function() {
                 self.toggleEditInfoAlumno(true);
