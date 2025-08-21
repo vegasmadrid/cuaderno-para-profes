@@ -29,26 +29,115 @@
         },
 
         mostrar: function(alumnoId, claseId) {
-            // DEBUGGING VERSION 2
-            alert('DEBUG-2: `mostrar` function called. This tests if the error is in the HTML-building functions.');
-            // The original AJAX call is commented out to prevent `renderizarFicha` from being called.
+            if (!alumnoId || !claseId) {
+                alert('Error: Se requiere ID de alumno y ID de clase para ver la ficha.');
+                return;
+            }
+            this.currentAlumnoId = alumnoId;
+            this.currentClaseId = claseId;
+
+            if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
+                cpp.modals.general.hideAll();
+            }
+
+            const $modal = $('#cpp-modal-ficha-alumno');
+            this.resetModal();
+            $modal.fadeIn();
+
+            const self = this;
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_obtener_datos_ficha_alumno',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: self.currentAlumnoId,
+                    clase_id: self.currentClaseId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.renderizarFicha(response.data);
+                    } else {
+                        alert('Error al cargar datos de la ficha: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
+                        $modal.fadeOut();
+                    }
+                },
+                error: function() {
+                    alert('Error de conexión al cargar datos de la ficha.');
+                    $modal.fadeOut();
+                }
+            });
         },
 
         _buildResumenAcademicoHTML: function(resumen, claseInfo) {
-            // Function body commented out for debugging
-            console.log("DEBUG-2: _buildResumenAcademicoHTML called, but is disabled.");
-            return "<!-- Academic Summary Disabled for Debugging -->";
+            if (!resumen) return '<p>No hay datos académicos disponibles.</p>';
+            let html = '<div class="cpp-ficha-seccion">';
+            html += '<h3>Resumen Académico</h3>';
+
+            html += '<div class="cpp-ficha-nota-global-container">';
+            html += '<span class="cpp-ficha-nota-global-valor">' + (resumen.nota_final_global_formateada || '-') + '</span>';
+            html += '<span class="cpp-ficha-nota-global-base">/ ' + (claseInfo.base_nota_final || '100') + '</span>';
+            html += '</div>';
+            html += '<p class="cpp-ficha-nota-global-label">Nota Final Media</p>';
+
+            html += '<h4>Desglose por Evaluaciones</h4>';
+            html += '<ul class="cpp-ficha-lista-desglose">';
+            if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
+                resumen.desglose_evaluaciones.forEach(function(eval) {
+                    html += `<li>
+                                <span class="cpp-ficha-desglose-nombre">${$('<div>').text(eval.nombre_evaluacion).html()}</span>
+                                <span class="cpp-ficha-desglose-nota">${eval.nota_final_formateada}</span>
+                             </li>`;
+                });
+            } else {
+                html += '<li>No hay evaluaciones con notas.</li>';
+            }
+            html += '</ul>';
+            html += '</div>';
+            return html;
         },
 
         _buildResumenAsistenciaHTML: function(resumen) {
             // Function body commented out for debugging
-            console.log("DEBUG-2: _buildResumenAsistenciaHTML called, but is disabled.");
+            console.log("DEBUG-3: _buildResumenAsistenciaHTML is disabled to test for errors within it.");
             return "<!-- Attendance Summary Disabled for Debugging -->";
         },
 
         renderizarFicha: function(data) {
-            // Function body commented out for debugging
-            console.log("DEBUG-2: renderizarFicha called, but is disabled.");
+            const $modal = $('#cpp-modal-ficha-alumno');
+            if (!$modal.length || !data) return;
+
+            const $header = $modal.find('.cpp-ficha-alumno-header');
+            if (data.alumno_info) {
+                $header.find('#cpp-ficha-display-nombre-completo').text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
+                if (data.alumno_info.foto) {
+                    $header.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.foto).show();
+                    $header.find('#cpp-ficha-alumno-avatar-inicial').hide();
+                } else {
+                    $header.find('#cpp-ficha-alumno-foto').hide();
+                    const inicial = data.alumno_info.nombre ? data.alumno_info.nombre.charAt(0).toUpperCase() : '';
+                    $header.find('#cpp-ficha-alumno-avatar-inicial').text(inicial).show();
+                }
+                $modal.find('#ficha_alumno_id_editar').val(data.alumno_info.id);
+                $modal.find('#ficha_nombre_alumno').val(data.alumno_info.nombre);
+                $modal.find('#ficha_apellidos_alumno').val(data.alumno_info.apellidos);
+            }
+
+            const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
+            let mainHtml = '<div class="cpp-ficha-grid">';
+
+            mainHtml += '<div class="cpp-ficha-col-izq">';
+            mainHtml += this._buildResumenAcademicoHTML(data.resumen_academico, data.clase_info);
+            mainHtml += '</div>';
+
+            mainHtml += '<div class="cpp-ficha-col-der">';
+            mainHtml += this._buildResumenAsistenciaHTML(data.resumen_asistencia);
+            mainHtml += '</div>';
+
+            mainHtml += '</div>';
+            $mainContent.html(mainHtml);
         },
 
         toggleEditInfoAlumno: function(showForm) {
