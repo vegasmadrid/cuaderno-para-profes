@@ -85,10 +85,10 @@
             html += '<h4>Desglose por Evaluaciones</h4>';
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
-                resumen.desglose_evaluaciones.forEach(function(eval) {
+                resumen.desglose_evaluaciones.forEach(function(evaluacion) {
                     html += `<li>
-                                <span class="cpp-ficha-desglose-nombre">${$('<div>').text(eval.nombre_evaluacion).html()}</span>
-                                <span class="cpp-ficha-desglose-nota">${eval.nota_final_formateada}</span>
+                                <span class="cpp-ficha-desglose-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
+                                <span class="cpp-ficha-desglose-nota">${evaluacion.nota_final_formateada}</span>
                              </li>`;
                 });
             } else {
@@ -100,9 +100,35 @@
         },
 
         _buildResumenAsistenciaHTML: function(resumen) {
-            // Function body commented out for debugging
-            console.log("DEBUG-3: _buildResumenAsistenciaHTML is disabled to test for errors within it.");
-            return "<!-- Attendance Summary Disabled for Debugging -->";
+            if (!resumen) return '<p>No hay datos de asistencia disponibles.</p>';
+            let html = '<div class="cpp-ficha-seccion">';
+            html += '<h3>Resumen de Asistencia</h3>';
+
+            if (resumen.stats) {
+                html += '<div class="cpp-ficha-stats-grid">';
+                html += `<div class="stat-item"><span class="stat-icon">✅</span><div><strong>${resumen.stats.presente || 0}</strong><br>Presente</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">❌</span><div><strong>${resumen.stats.ausente || 0}</strong><br>Ausente</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${resumen.stats.retraso || 0}</strong><br>Retraso</div></div>`;
+                html += `<div class="stat-item"><span class="stat-icon">📄</span><div><strong>${resumen.stats.justificado || 0}</strong><br>Justificado</div></div>`;
+                html += '</div>';
+            }
+
+            html += '<h4>Incidencias Recientes</h4>';
+            html += '<ul class="cpp-ficha-lista-desglose">';
+            if (resumen.historial_reciente && resumen.historial_reciente.length > 0) {
+                resumen.historial_reciente.forEach(function(item) {
+                    const fechaFormateada = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'N/A';
+                    html += `<li>
+                                <span class="cpp-ficha-desglose-nombre">${fechaFormateada}</span>
+                                <span class="cpp-ficha-desglose-nota">${$('<div>').text(item.estado).html()}</span>
+                             </li>`;
+                });
+            } else {
+                html += '<li>No hay incidencias recientes.</li>';
+            }
+            html += '</ul>';
+            html += '</div>';
+            return html;
         },
 
         renderizarFicha: function(data) {
