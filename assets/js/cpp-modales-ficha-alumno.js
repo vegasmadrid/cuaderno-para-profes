@@ -236,8 +236,8 @@
             if (!$nombreEl.parent().hasClass('cpp-ficha-nombre-wrapper')) {
                 const $nombreWrapper = $('<div class="cpp-ficha-nombre-wrapper"></div>');
                 $nombreEl.after($nombreWrapper);
-                $nombreWrapper.append($nombreEl);
                 $nombreWrapper.append($editBtn);
+                $nombreWrapper.append($nombreEl);
             }
 
             // --- Rellenar datos ---

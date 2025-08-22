@@ -550,13 +550,14 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     align-items: center;
     gap: 8px;
     flex-grow: 1;
-    justify-content: flex-start; /* Alinea el botón junto al nombre */
+    justify-content: flex-start;
+    margin-left: 15px; /* Mover el margen al contenedor */
 }
 
 #cpp-ficha-display-nombre-completo {
-    font-size: 24px; /* Un pelín más grande */
+    font-size: 24px;
     font-weight: 500;
-    margin-left: 15px;
+    margin-left: 0; /* Quitar margen individual */
     flex-grow: 0;
 }
 
@@ -658,8 +659,8 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 .cpp-ficha-stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas iguales */
+    gap: 10px; /* Reducir gap para que quepa mejor */
     margin-bottom: 20px;
 }
 .cpp-ficha-stats-grid .stat-item {
