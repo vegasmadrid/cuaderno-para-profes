@@ -48,6 +48,15 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_activa_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_activa_id);
 
+    // FIX: Crear el mapa de categorías y porcentajes que faltaba
+    $map_categorias_porcentajes = [];
+    if ($metodo_calculo === 'ponderada') {
+        $categorias_evaluacion = cpp_obtener_categorias_por_evaluacion($evaluacion_activa_id, $user_id);
+        foreach ($categorias_evaluacion as $categoria) {
+            $map_categorias_porcentajes[$categoria['id']] = $categoria['porcentaje'];
+        }
+    }
+
     $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
 
     $notas_finales_alumnos = [];
@@ -406,7 +415,17 @@ function cpp_ajax_cargar_vista_final() {
                     <?php foreach ($evaluaciones_reales as $evaluacion): ?>
                         <th class="cpp-cuaderno-th-actividad"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></th>
                     <?php endforeach; ?>
-                    <th class="cpp-cuaderno-th-final"><div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(Media)</span></div></th>
+                    <th class="cpp-cuaderno-th-final">
+                        <div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(Media)</span></div>
+                        <div class="cpp-th-final-actions">
+                            <button class="cpp-btn-icon" id="cpp-final-grade-sort-btn" title="Ordenar por Nota Final">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+                            </button>
+                             <button class="cpp-btn-icon" id="cpp-final-grade-highlight-btn" title="Destacar Alumnos Suspensos">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                            </button>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody>

@@ -1307,6 +1307,15 @@ body.cpp-no-text-select {
     align-items: center;
     width: 100%;
     gap: 15px; /* Added */
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    padding: 5px;
+    margin: -5px;
+    border-radius: 4px;
+}
+
+.cpp-ficha-evaluacion-header:hover {
+    background-color: #f0f2f5;
 }
 
 .cpp-ficha-evaluacion-header .cpp-ficha-desglose-nombre {

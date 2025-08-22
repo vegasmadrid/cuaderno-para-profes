@@ -80,7 +80,7 @@
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
                 resumen.desglose_evaluaciones.forEach(function(evaluacion) {
                     html += `<li class="cpp-ficha-evaluacion-item">
-                                <div class="cpp-ficha-evaluacion-header">
+                                <div class="cpp-ficha-evaluacion-header" data-evaluacion-id="${evaluacion.id}" title="Ir a esta evaluación en el cuaderno">
                                     <span class="cpp-ficha-desglose-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
                                     <span class="cpp-ficha-desglose-nota">${evaluacion.nota_final_formateada}</span>
                                 </div>`;
@@ -400,6 +400,21 @@
 
             $modal.on('submit', '#cpp-form-editar-alumno-ficha', function(e) {
                 self.guardarInfoAlumno(e);
+            });
+
+            // Navegación al cuaderno desde el desglose de evaluaciones
+            $modal.on('click', '.cpp-ficha-evaluacion-header', function() {
+                const evaluacionId = $(this).data('evaluacion-id');
+                const claseId = self.currentClaseId;
+                if (evaluacionId && claseId) {
+                    if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
+                        cpp.modals.general.hideAll();
+                    }
+                    if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
+                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                        cpp.gradebook.cargarContenidoCuaderno(claseId, claseNombre, evaluacionId);
+                    }
+                }
             });
         }
     };
