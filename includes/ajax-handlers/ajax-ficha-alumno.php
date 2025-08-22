@@ -43,6 +43,7 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
     foreach ($evaluaciones as $evaluacion) {
         $desglose_academico = cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_id, $evaluacion['id'], $base_nota_clase);
         $desglose_evaluaciones[] = [
+            'id' => $evaluacion['id'],
             'nombre_evaluacion' => $evaluacion['nombre_evaluacion'],
             'nota_final_formateada' => $desglose_academico['nota_final_formateada'],
             'desglose_categorias' => $desglose_academico['desglose_categorias']
@@ -78,7 +79,7 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
 
     $resumen_asistencia = [
         'stats' => $stats_asistencia,
-        'historial_reciente' => array_slice($historial_incidencias, 0, 5)
+        'historial_completo' => $historial_incidencias
     ];
 
     // --- Ensamblar datos finales ---

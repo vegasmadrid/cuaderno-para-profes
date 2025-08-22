@@ -76,12 +76,6 @@
             let html = '<div class="cpp-ficha-seccion">';
             html += '<h3>Resumen Académico</h3>';
 
-            html += '<div class="cpp-ficha-nota-global-container">';
-            html += '<span class="cpp-ficha-nota-global-valor">' + (resumen.nota_final_global_formateada || '-') + '</span>';
-            html += '<span class="cpp-ficha-nota-global-base">/ ' + (claseInfo.base_nota_final || '100') + '</span>';
-            html += '</div>';
-            html += '<p class="cpp-ficha-nota-global-label">Nota Final Media</p>';
-
             html += '<h4>Desglose por Evaluaciones</h4>';
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
@@ -92,7 +86,16 @@
                                     <span class="cpp-ficha-desglose-nota">${evaluacion.nota_final_formateada}</span>
                                 </div>`;
 
+                    // Contenedor para el gráfico y el desglose
+                    html += '<div class="cpp-evaluacion-details-container">';
+
                     if (evaluacion.desglose_categorias && evaluacion.desglose_categorias.length > 0) {
+                        // Contenedor del gráfico
+                        html += `<div class="cpp-evaluacion-chart-container">
+                                    <canvas id="chart-evaluacion-${evaluacion.id}"></canvas>
+                                 </div>`;
+                        // Contenedor del desglose
+                        html += '<div class="cpp-evaluacion-breakdown-container">';
                         html += '<ul class="cpp-ficha-lista-categorias-desglose">';
                         evaluacion.desglose_categorias.forEach(function(categoria) {
                             html += `<li class="cpp-ficha-categoria-item">
@@ -101,8 +104,12 @@
                                      </li>`;
                         });
                         html += '</ul>';
+                        html += '</div>'; // Cierre de breakdown-container
+                    } else {
+                        html += '<div class="cpp-no-breakdown-message"><p>No hay categorías con notas para mostrar en esta evaluación.</p></div>';
                     }
 
+                    html += '</div>'; // Cierre de details-container
                     html += `</li>`;
                 });
             } else {
@@ -111,6 +118,70 @@
             html += '</ul>';
             html += '</div>';
             return html;
+        },
+
+        _renderizarGraficoEvaluacion: function(evaluacionData, baseNota) {
+            const canvasId = `chart-evaluacion-${evaluacionData.id}`;
+            const ctx = document.getElementById(canvasId);
+            if (!ctx || typeof Chart === 'undefined') {
+                console.error("Chart.js no está definido o el canvas no existe.");
+                return;
+            }
+
+            const labels = evaluacionData.desglose_categorias.map(cat => cat.nombre_categoria);
+            const dataPoints = evaluacionData.desglose_categorias.map(cat => {
+                const nota = cat.nota_categoria_formateada ? cat.nota_categoria_formateada.replace(',', '.') : '0';
+                return parseFloat(nota);
+            });
+
+            // Destruir gráfico existente si lo hubiera para evitar conflictos
+            const chartInstance = Chart.getChart(canvasId);
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nota',
+                        data: dataPoints,
+                        backgroundColor: 'rgba(26, 115, 232, 0.5)',
+                        borderColor: 'rgba(26, 115, 232, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Barras horizontales
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: parseFloat(baseNota) || 10
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.x !== null) {
+                                        label += context.parsed.x.toLocaleString();
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         },
 
         _buildResumenAsistenciaHTML: function(resumen) {
@@ -127,20 +198,26 @@
                 html += '</div>';
             }
 
-            html += '<h4>Incidencias Recientes</h4>';
-            html += '<ul class="cpp-ficha-lista-desglose">';
-            if (resumen.historial_reciente && resumen.historial_reciente.length > 0) {
-                resumen.historial_reciente.forEach(function(item) {
-                    const fechaFormateada = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'N/A';
-                    html += `<li>
-                                <span class="cpp-ficha-desglose-nombre">${fechaFormateada}</span>
-                                <span class="cpp-ficha-desglose-nota">${$('<div>').text(item.estado).html()}</span>
+            html += '<h4>Historial de Incidencias</h4>';
+            html += '<div class="cpp-lista-scrollable cpp-ficha-asistencia-lista">';
+            html += '<ul>';
+            if (resumen.historial_completo && resumen.historial_completo.length > 0) {
+                resumen.historial_completo.forEach(function(item) {
+                    const fechaFormateada = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+                    let observacionHtml = item.observaciones ? `<small class="cpp-asistencia-observacion-item">${$('<div>').text(item.observaciones).html()}</small>` : '';
+                    html += `<li class="cpp-asistencia-fila-item">
+                                <div class="cpp-asistencia-info-principal">
+                                    <span class="cpp-asistencia-fecha-item">${fechaFormateada}</span>
+                                    <span class="cpp-asistencia-estado-item cpp-estado-${$('<div>').text(item.estado).html()}">${$('<div>').text(item.estado).html()}</span>
+                                </div>
+                                ${observacionHtml}
                              </li>`;
                 });
             } else {
-                html += '<li>No hay incidencias recientes.</li>';
+                html += '<li class="cpp-no-incidencias">No hay incidencias registradas.</li>';
             }
             html += '</ul>';
+            html += '</div>';
             html += '</div>';
             return html;
         },
@@ -150,8 +227,31 @@
             if (!$modal.length || !data) return;
 
             const $header = $modal.find('.cpp-ficha-alumno-header');
+
+            // Limpiar contenido previo para evitar duplicados al refrescar
+            $header.find('.cpp-ficha-nombre-wrapper').remove();
+            $header.find('.cpp-ficha-nota-global-wrapper').remove();
+            const $nombreElOriginal = $('#cpp-ficha-display-nombre-completo');
+            if (!$nombreElOriginal.parent().is($header)) {
+                 $header.append($nombreElOriginal);
+            }
+
+
             if (data.alumno_info) {
-                $header.find('#cpp-ficha-display-nombre-completo').text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
+                const $nombreEl = $header.find('#cpp-ficha-display-nombre-completo');
+                const $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
+
+                // 1. Agrupar nombre y botón de editar
+                const $nombreWrapper = $('<div class="cpp-ficha-nombre-wrapper"></div>');
+                $nombreEl.text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
+
+                // Si el wrapper no existe, lo creamos y movemos los elementos
+                if ($header.find('.cpp-ficha-nombre-wrapper').length === 0) {
+                    $nombreEl.after($nombreWrapper);
+                    $nombreWrapper.append($nombreEl);
+                    $nombreWrapper.append($editBtn);
+                }
+
                 if (data.alumno_info.foto) {
                     $header.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.foto).show();
                     $header.find('#cpp-ficha-alumno-avatar-inicial').hide();
@@ -163,6 +263,18 @@
                 $modal.find('#ficha_alumno_id_editar').val(data.alumno_info.id);
                 $modal.find('#ficha_nombre_alumno').val(data.alumno_info.nombre);
                 $modal.find('#ficha_apellidos_alumno').val(data.alumno_info.apellidos);
+            }
+
+            // 2. Añadir nota final media a la cabecera
+            if (data.resumen_academico && data.clase_info) {
+                let notaHtml = '<div class="cpp-ficha-nota-global-wrapper">';
+                notaHtml += '<div class="cpp-ficha-nota-global-container">';
+                notaHtml += '<span class="cpp-ficha-nota-global-valor">' + (data.resumen_academico.nota_final_global_formateada || '-') + '</span>';
+                notaHtml += '<span class="cpp-ficha-nota-global-base">/ ' + (data.clase_info.base_nota_final || '100') + '</span>';
+                notaHtml += '</div>';
+                notaHtml += '<p class="cpp-ficha-nota-global-label">Nota Final Media</p>';
+                notaHtml += '</div>';
+                $header.append(notaHtml);
             }
 
             const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
@@ -189,6 +301,19 @@
             tabContentHtml += '</div>';
 
             $mainContent.html(tabsHtml + tabContentHtml);
+
+            // Renderizar los gráficos después de que el HTML esté en el DOM
+            if (data.resumen_academico && data.resumen_academico.desglose_evaluaciones) {
+                const baseNotaFinal = parseFloat(data.clase_info.base_nota_final.replace(',', '.')) || 10;
+                const self = this;
+                setTimeout(function() {
+                    data.resumen_academico.desglose_evaluaciones.forEach(evaluacion => {
+                        if (evaluacion.desglose_categorias && evaluacion.desglose_categorias.length > 0) {
+                            self._renderizarGraficoEvaluacion(evaluacion, baseNotaFinal);
+                        }
+                    });
+                }, 100); // Pequeño delay para asegurar que el DOM está listo
+            }
         },
 
         toggleEditInfoAlumno: function(showForm) {
