@@ -537,16 +537,35 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 .cpp-ficha-alumno-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Alinear al inicio para que la nota no estire la altura */
+    justify-content: space-between; /* Para separar los elementos */
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px solid #e0e0e0;
+    gap: 15px; /* Espacio entre foto, nombre y nota */
 }
+
+.cpp-ficha-nombre-wrapper {
+    display: flex;
+    align-items: center; /* Alinear nombre y lápiz */
+    gap: 8px;
+    flex-grow: 1; /* Ocupa el espacio disponible */
+}
+
 #cpp-ficha-display-nombre-completo {
     font-size: 22px;
     font-weight: 500;
     margin-left: 15px;
-    flex-grow: 1;
+    flex-grow: 0; /* Ya no necesita crecer */
+}
+
+.cpp-ficha-nota-global-wrapper {
+    text-align: right;
+    flex-shrink: 0; /* Evita que se encoja */
+}
+
+.cpp-edit-info-alumno-btn {
+    align-self: center; /* Centra el botón verticalmente en el wrapper */
 }
 #cpp-ficha-alumno-foto, #cpp-ficha-alumno-avatar-inicial {
     width: 60px;
@@ -1282,9 +1301,15 @@ body.cpp-no-text-select {
 
 .cpp-ficha-evaluacion-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* Changed */
     align-items: center;
     width: 100%;
+    gap: 15px; /* Added */
+}
+
+.cpp-ficha-evaluacion-header .cpp-ficha-desglose-nombre {
+    flex-grow: 1; /* Added */
+    font-weight: 500; /* Make it bolder */
 }
 
 .cpp-ficha-evaluacion-item {
@@ -1305,10 +1330,36 @@ body.cpp-no-text-select {
 
 .cpp-ficha-categoria-item {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* Changed */
     align-items: center;
     padding: 6px 0;
     font-size: 13px;
+    gap: 15px; /* Added */
+}
+
+.cpp-ficha-categoria-item .cpp-ficha-categoria-nombre {
+    flex-grow: 1; /* Added */
+}
+
+.cpp-evaluacion-details-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 50% / 50% */
+    gap: 20px;
+    align-items: center;
+    margin-top: 15px;
+    padding-left: 20px;
+}
+
+.cpp-evaluacion-chart-container {
+    position: relative;
+    height: 180px; /* Altura ajustada para el gráfico */
+}
+
+.cpp-evaluacion-breakdown-container .cpp-ficha-lista-categorias-desglose {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+    padding-left: 0;
 }
 
 .cpp-ficha-categoria-nombre {
@@ -1328,3 +1379,72 @@ body.cpp-no-text-select {
 }
 
 /* --- END: Ficha Alumno Category Breakdown --- */
+
+/* --- START: Ficha Alumno Attendance List --- */
+.cpp-ficha-asistencia-lista {
+    max-height: 250px; /* Make it scrollable */
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #fdfdfd;
+}
+
+.cpp-ficha-asistencia-lista ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cpp-asistencia-fila-item {
+    padding: 10px;
+    border-bottom: 1px solid #f1f3f4;
+    display: flex;
+    flex-direction: column; /* Stack main info and observation */
+    gap: 4px;
+}
+
+.cpp-asistencia-fila-item:last-child {
+    border-bottom: none;
+}
+
+.cpp-asistencia-info-principal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.cpp-asistencia-fecha-item {
+    font-size: 14px;
+    color: #3c4043;
+}
+
+.cpp-asistencia-estado-item {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: capitalize;
+    color: #fff;
+}
+
+.cpp-estado-ausente { background-color: #dc3545; }
+.cpp-estado-retraso { background-color: #ffc107; color: #212529; }
+.cpp-estado-justificado { background-color: #17a2b8; }
+
+.cpp-asistencia-observacion-item {
+    font-size: 13px;
+    color: #5f6368;
+    padding-left: 10px;
+    border-left: 2px solid #e0e0e0;
+    margin-left: 5px;
+}
+
+.cpp-no-incidencias {
+    text-align: center;
+    color: #5f6368;
+    padding: 20px;
+    font-style: italic;
+}
+/* --- END: Ficha Alumno Attendance List --- */
