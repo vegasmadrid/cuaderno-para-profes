@@ -537,26 +537,27 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 .cpp-ficha-alumno-header {
     display: flex;
-    align-items: flex-start; /* Alinear al inicio para que la nota no estire la altura */
-    justify-content: space-between; /* Para separar los elementos */
+    align-items: center; /* Centrado vertical */
+    justify-content: space-between;
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px solid #e0e0e0;
-    gap: 15px; /* Espacio entre foto, nombre y nota */
+    gap: 15px;
 }
 
 .cpp-ficha-nombre-wrapper {
     display: flex;
-    align-items: center; /* Alinear nombre y lápiz */
+    align-items: center;
     gap: 8px;
-    flex-grow: 1; /* Ocupa el espacio disponible */
+    flex-grow: 1;
+    justify-content: flex-start; /* Alinea el botón junto al nombre */
 }
 
 #cpp-ficha-display-nombre-completo {
-    font-size: 22px;
+    font-size: 24px; /* Un pelín más grande */
     font-weight: 500;
     margin-left: 15px;
-    flex-grow: 0; /* Ya no necesita crecer */
+    flex-grow: 0;
 }
 
 .cpp-ficha-nota-global-wrapper {

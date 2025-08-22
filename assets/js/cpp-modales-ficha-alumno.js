@@ -76,7 +76,6 @@
             let html = '<div class="cpp-ficha-seccion">';
             html += '<h3>Resumen Académico</h3>';
 
-            html += '<h4>Desglose por Evaluaciones</h4>';
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
                 resumen.desglose_evaluaciones.forEach(function(evaluacion) {
@@ -227,30 +226,23 @@
             if (!$modal.length || !data) return;
 
             const $header = $modal.find('.cpp-ficha-alumno-header');
+            const $nombreEl = $header.find('#cpp-ficha-display-nombre-completo');
+            const $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
 
-            // Limpiar contenido previo para evitar duplicados al refrescar
-            $header.find('.cpp-ficha-nombre-wrapper').remove();
+            // --- Limpieza de contenido dinámico ---
             $header.find('.cpp-ficha-nota-global-wrapper').remove();
-            const $nombreElOriginal = $('#cpp-ficha-display-nombre-completo');
-            if (!$nombreElOriginal.parent().is($header)) {
-                 $header.append($nombreElOriginal);
+
+            // --- Reestructuración del DOM (solo si es necesario) ---
+            if (!$nombreEl.parent().hasClass('cpp-ficha-nombre-wrapper')) {
+                const $nombreWrapper = $('<div class="cpp-ficha-nombre-wrapper"></div>');
+                $nombreEl.after($nombreWrapper);
+                $nombreWrapper.append($nombreEl);
+                $nombreWrapper.append($editBtn);
             }
 
-
+            // --- Rellenar datos ---
             if (data.alumno_info) {
-                const $nombreEl = $header.find('#cpp-ficha-display-nombre-completo');
-                const $editBtn = $modal.find('.cpp-edit-info-alumno-btn');
-
-                // 1. Agrupar nombre y botón de editar
-                const $nombreWrapper = $('<div class="cpp-ficha-nombre-wrapper"></div>');
                 $nombreEl.text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
-
-                // Si el wrapper no existe, lo creamos y movemos los elementos
-                if ($header.find('.cpp-ficha-nombre-wrapper').length === 0) {
-                    $nombreEl.after($nombreWrapper);
-                    $nombreWrapper.append($nombreEl);
-                    $nombreWrapper.append($editBtn);
-                }
 
                 if (data.alumno_info.foto) {
                     $header.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.foto).show();
