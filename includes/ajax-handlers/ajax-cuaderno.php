@@ -336,13 +336,13 @@ function cpp_ajax_cargar_vista_final() {
     global $wpdb;
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
+    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : 'apellidos';
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
-    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final, nota_aprobado FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, $sort_order);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
     $evaluaciones_reales = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
     $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
@@ -351,11 +351,26 @@ function cpp_ajax_cargar_vista_final() {
     $notas_por_evaluacion = [];
     $notas_finales_promediadas = [];
 
-    foreach ($alumnos as $alumno) {
-        $notas_finales_promediadas[$alumno['id']] = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+    foreach ($alumnos as $index => $alumno) {
+        $nota_final_promediada = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        $notas_finales_promediadas[$alumno['id']] = $nota_final_promediada;
+        $alumnos[$index]['nota_final_calculada'] = $nota_final_promediada; // Used for sorting
         foreach ($evaluaciones_reales as $evaluacion) {
             $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
         }
+    }
+
+    if ($sort_order === 'nota_asc' || $sort_order === 'nota_desc') {
+        usort($alumnos, function($a, $b) use ($sort_order) {
+            $notaA = $a['nota_final_calculada'];
+            $notaB = $b['nota_final_calculada'];
+            if ($notaA == $notaB) return 0;
+            if ($sort_order === 'nota_asc') {
+                return ($notaA < $notaB) ? -1 : 1;
+            } else {
+                return ($notaA > $notaB) ? -1 : 1;
+            }
+        });
     }
 
     ob_start();
@@ -413,7 +428,9 @@ function cpp_ajax_cargar_vista_final() {
                         </div>
                     </th>
                     <?php foreach ($evaluaciones_reales as $evaluacion): ?>
-                        <th class="cpp-cuaderno-th-actividad"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></th>
+                        <th class="cpp-cuaderno-th-actividad" data-evaluacion-id="<?php echo esc_attr($evaluacion['id']); ?>" title="Ver la <?php echo esc_attr($evaluacion['nombre_evaluacion']); ?>">
+                            <?php echo esc_html($evaluacion['nombre_evaluacion']); ?>
+                        </th>
                     <?php endforeach; ?>
                     <th class="cpp-cuaderno-th-final">
                         <div class="cpp-th-final-content-wrapper">Nota Final<span class="cpp-nota-final-base-info">(Media)</span></div>
@@ -436,8 +453,10 @@ function cpp_ajax_cargar_vista_final() {
                     ?>
                     <?php
                         $nombre_completo_display = ($sort_order === 'nombre') ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
+                        $nota_promediada_0_100 = $notas_finales_promediadas[$alumno['id']];
+                        $nota_promediada_reescalada = ($nota_promediada_0_100 / 100) * $base_nota_final_clase;
                     ?>
-                    <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" <?php echo $row_style_attr; ?>>
+                    <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($nota_promediada_reescalada); ?>" <?php echo $row_style_attr; ?>>
                         <td class="cpp-cuaderno-td-alumno">
                             <div class="cpp-alumno-avatar-cuaderno">
                                 <?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?>
@@ -475,6 +494,8 @@ function cpp_ajax_cargar_vista_final() {
         'evaluaciones' => $evaluaciones_con_final,
         'evaluacion_activa_id' => 'final',
         'nombre_clase' => $clase_db->nombre,
-        'sort_order' => $sort_order
+        'sort_order' => $sort_order,
+        'base_nota_final' => $base_nota_final_clase,
+        'nota_aprobado' => floatval($clase_db->nota_aprobado)
     ]);
 }

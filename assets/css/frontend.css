@@ -335,7 +335,11 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     overflow: hidden;
     font-weight: 500;
 }
-.cpp-cuaderno-th-actividad:hover { filter: brightness(95%); } 
+.cpp-cuaderno-th-actividad:hover { filter: brightness(95%); }
+.cpp-cuaderno-th-actividad[data-evaluacion-id]:hover {
+    filter: brightness(92%);
+    box-shadow: inset 0 -3px 0 #1a73e8;
+}
 .cpp-actividad-notamax, .cpp-actividad-categoria, .cpp-actividad-fecha {
     font-size: 11px; line-height: 1.2; margin-top: 2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: normal;
