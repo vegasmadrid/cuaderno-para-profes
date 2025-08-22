@@ -1237,3 +1237,94 @@ body.cpp-no-text-select {
 }
 
 /* --- END: Final Grade Button Styles --- */
+
+/* --- START: Ficha Alumno Tabs --- */
+
+.cpp-ficha-tabs {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.cpp-ficha-tab-btn {
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    font-size: 15px;
+    font-weight: 500;
+    color: #5f6368;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px; /* Overlap the container's border */
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.cpp-ficha-tab-btn:hover {
+    color: #202124;
+}
+
+.cpp-ficha-tab-btn.active {
+    color: #1a73e8;
+    border-bottom-color: #1a73e8;
+}
+
+.cpp-ficha-tab-content {
+    display: none;
+}
+
+.cpp-ficha-tab-content.active {
+    display: block;
+}
+
+/* --- END: Ficha Alumno Tabs --- */
+
+/* --- START: Ficha Alumno Category Breakdown --- */
+
+.cpp-ficha-evaluacion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.cpp-ficha-evaluacion-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.cpp-ficha-evaluacion-item:last-child {
+    border-bottom: none;
+}
+
+.cpp-ficha-lista-categorias-desglose {
+    list-style: none;
+    padding-left: 20px;
+    margin: 10px 0 0 0;
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 10px;
+}
+
+.cpp-ficha-categoria-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+}
+
+.cpp-ficha-categoria-nombre {
+    color: #5f6368;
+}
+.cpp-ficha-categoria-nombre small {
+    color: #80868b;
+}
+
+.cpp-ficha-categoria-nota {
+    font-weight: 500;
+    color: #3c4043;
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+/* --- END: Ficha Alumno Category Breakdown --- */

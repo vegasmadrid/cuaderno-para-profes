@@ -41,7 +41,7 @@
             }
 
             const $modal = $('#cpp-modal-ficha-alumno');
-            this.resetModal(); 
+            this.resetModal();
             $modal.fadeIn();
 
             const self = this;
@@ -61,7 +61,7 @@
                         self.renderizarFicha(response.data);
                     } else {
                         alert('Error al cargar datos de la ficha: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
-                        $modal.fadeOut(); 
+                        $modal.fadeOut();
                     }
                 },
                 error: function() {
@@ -85,11 +85,25 @@
             html += '<h4>Desglose por Evaluaciones</h4>';
             html += '<ul class="cpp-ficha-lista-desglose">';
             if (resumen.desglose_evaluaciones && resumen.desglose_evaluaciones.length > 0) {
-                resumen.desglose_evaluaciones.forEach(function(eval) {
-                    html += `<li>
-                                <span class="cpp-ficha-desglose-nombre">${$('<div>').text(eval.nombre_evaluacion).html()}</span>
-                                <span class="cpp-ficha-desglose-nota">${eval.nota_final_formateada}</span>
-                             </li>`;
+                resumen.desglose_evaluaciones.forEach(function(evaluacion) {
+                    html += `<li class="cpp-ficha-evaluacion-item">
+                                <div class="cpp-ficha-evaluacion-header">
+                                    <span class="cpp-ficha-desglose-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
+                                    <span class="cpp-ficha-desglose-nota">${evaluacion.nota_final_formateada}</span>
+                                </div>`;
+
+                    if (evaluacion.desglose_categorias && evaluacion.desglose_categorias.length > 0) {
+                        html += '<ul class="cpp-ficha-lista-categorias-desglose">';
+                        evaluacion.desglose_categorias.forEach(function(categoria) {
+                            html += `<li class="cpp-ficha-categoria-item">
+                                        <span class="cpp-ficha-categoria-nombre">${$('<div>').text(categoria.nombre_categoria).html()} <small>(${categoria.porcentaje}%)</small></span>
+                                        <span class="cpp-ficha-categoria-nota">${categoria.nota_categoria_formateada}</span>
+                                     </li>`;
+                        });
+                        html += '</ul>';
+                    }
+
+                    html += `</li>`;
                 });
             } else {
                 html += '<li>No hay evaluaciones con notas.</li>';
@@ -152,18 +166,29 @@
             }
 
             const $mainContent = $modal.find('#cpp-ficha-alumno-main-content');
-            let mainHtml = '<div class="cpp-ficha-grid">';
 
-            mainHtml += '<div class="cpp-ficha-col-izq">';
-            mainHtml += this._buildResumenAcademicoHTML(data.resumen_academico, data.clase_info);
-            mainHtml += '</div>';
+            // Build tab navigation
+            let tabsHtml = '<div class="cpp-ficha-tabs">';
+            tabsHtml += '<button class="cpp-ficha-tab-btn active" data-tab="academico">Resumen Académico</button>';
+            tabsHtml += '<button class="cpp-ficha-tab-btn" data-tab="asistencia">Asistencia</button>';
+            tabsHtml += '</div>';
 
-            mainHtml += '<div class="cpp-ficha-col-der">';
-            mainHtml += this._buildResumenAsistenciaHTML(data.resumen_asistencia);
-            mainHtml += '</div>';
+            // Build tab content
+            let tabContentHtml = '<div class="cpp-ficha-tab-content-container">';
 
-            mainHtml += '</div>';
-            $mainContent.html(mainHtml);
+            // Academic tab
+            tabContentHtml += '<div id="cpp-ficha-tab-academico" class="cpp-ficha-tab-content active">';
+            tabContentHtml += this._buildResumenAcademicoHTML(data.resumen_academico, data.clase_info);
+            tabContentHtml += '</div>';
+
+            // Attendance tab
+            tabContentHtml += '<div id="cpp-ficha-tab-asistencia" class="cpp-ficha-tab-content">';
+            tabContentHtml += this._buildResumenAsistenciaHTML(data.resumen_asistencia);
+            tabContentHtml += '</div>';
+
+            tabContentHtml += '</div>';
+
+            $mainContent.html(tabsHtml + tabContentHtml);
         },
 
         toggleEditInfoAlumno: function(showForm) {
@@ -187,11 +212,11 @@
             eventForm.preventDefault();
             const $form = $(eventForm.target);
             const $btn = $form.find('button[type="submit"]');
-            const formData = new FormData(eventForm.target); 
+            const formData = new FormData(eventForm.target);
 
-            formData.append('action', 'cpp_guardar_alumno'); 
+            formData.append('action', 'cpp_guardar_alumno');
             formData.append('nonce', cppFrontendData.nonce);
-            formData.append('clase_id_form_alumno', this.currentClaseId); 
+            formData.append('clase_id_form_alumno', this.currentClaseId);
 
 
             const originalBtnHtml = $btn.html();
@@ -208,8 +233,8 @@
                 success: function(response) {
                     if (response.success) {
                         alert(response.data.message || 'Información guardada.');
-                        self.toggleEditInfoAlumno(false); 
-                        self.mostrar(self.currentAlumnoId, self.currentClaseId); 
+                        self.toggleEditInfoAlumno(false);
+                        self.mostrar(self.currentAlumnoId, self.currentClaseId);
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
                             const $claseActiva = $('.cpp-sidebar-clase-item.cpp-sidebar-item-active');
                             if ($claseActiva.length) {
@@ -233,6 +258,20 @@
             console.log("Binding Modals Ficha Alumno events...");
             const $modal = $('#cpp-modal-ficha-alumno');
             const self = this;
+
+            // Tab switching logic
+            $modal.on('click', '.cpp-ficha-tab-btn', function() {
+                const $this = $(this);
+                const tabId = $this.data('tab');
+
+                // Update active state on buttons
+                $modal.find('.cpp-ficha-tab-btn').removeClass('active');
+                $this.addClass('active');
+
+                // Update active state on content panes
+                $modal.find('.cpp-ficha-tab-content').removeClass('active');
+                $modal.find('#cpp-ficha-tab-' + tabId).addClass('active');
+            });
 
             $modal.on('click', '.cpp-edit-info-alumno-btn', function() {
                 self.toggleEditInfoAlumno(true);

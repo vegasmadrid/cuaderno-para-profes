@@ -41,12 +41,11 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $desglose_evaluaciones = [];
     foreach ($evaluaciones as $evaluacion) {
-        $nota_final_evaluacion_0_100 = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
-        $nota_final_reescalada = ($nota_final_evaluacion_0_100 / 100) * $base_nota_clase;
-        $decimales = ($base_nota_clase == floor($base_nota_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) ? 0 : 2;
+        $desglose_academico = cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_id, $evaluacion['id'], $base_nota_clase);
         $desglose_evaluaciones[] = [
             'nombre_evaluacion' => $evaluacion['nombre_evaluacion'],
-            'nota_final_formateada' => cpp_formatear_nota_display($nota_final_reescalada, $decimales)
+            'nota_final_formateada' => $desglose_academico['nota_final_formateada'],
+            'desglose_categorias' => $desglose_academico['desglose_categorias']
         ];
     }
 
