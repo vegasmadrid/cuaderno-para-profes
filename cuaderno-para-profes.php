@@ -32,6 +32,7 @@ add_action('wp_enqueue_scripts', 'cpp_cargar_assets');
 function cpp_cargar_assets() {
     $plugin_version = defined('WP_DEBUG') && WP_DEBUG ? time() : CPP_VERSION;
 
+    wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.0', true);
     wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
     wp_enqueue_style('dashicons');
     wp_enqueue_script('jquery-ui-sortable');
