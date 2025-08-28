@@ -24,6 +24,10 @@ require_once CPP_PLUGIN_DIR . 'includes/ajax.php';
 require_once CPP_PLUGIN_DIR . 'includes/excel-export.php'; 
 require_once CPP_PLUGIN_DIR . 'includes/excel-import.php';
 
+// Incluir archivos del programador
+require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+require_once CPP_PLUGIN_DIR . 'includes/programador/shortcode-programador.php';
+
 // Crear tablas al activar
 register_activation_hook(__FILE__, 'cpp_crear_tablas');
 
@@ -55,6 +59,13 @@ function cpp_cargar_assets() {
         'nonce' => wp_create_nonce('cpp_frontend_nonce'),
         'userId' => get_current_user_id()
     ]);
+
+    // Cargar assets del programador solo si el shortcode está en la página
+    global $post;
+    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'cpp_programador')) {
+        wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $plugin_version);
+        wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js'], $plugin_version, true);
+    }
 }
 
 // Acción para manejar la descarga de Excel (exportación)

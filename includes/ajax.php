@@ -20,3 +20,6 @@ require_once $ajax_handlers_dir . 'ajax-categorias.php';
 require_once $ajax_handlers_dir . 'ajax-cuaderno.php';
 require_once $ajax_handlers_dir . 'ajax-asistencia.php';
 require_once $ajax_handlers_dir . 'ajax-ficha-alumno.php';
+
+// Cargar manejadores de AJAX para el programador
+require_once CPP_PLUGIN_DIR . 'includes/programador/ajax-programador.php';
