@@ -3,138 +3,86 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
-// --- REGISTRO DE AJAX HANDLERS ---
-add_action('wp_ajax_cpp_get_programador_data', 'cpp_ajax_get_programador_data');
-add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
-add_action('wp_ajax_cpp_save_programador_sesion', 'cpp_ajax_save_programador_sesion');
-add_action('wp_ajax_cpp_delete_programador_sesion', 'cpp_ajax_delete_programador_sesion');
-add_action('wp_ajax_cpp_reorder_programador_sesiones', 'cpp_ajax_reorder_programador_sesiones');
+// --- Registro de Handlers AJAX ---
+add_action('wp_ajax_cpp_get_programador_all_data', 'cpp_ajax_get_programador_all_data');
+add_action('wp_ajax_cpp_save_programador_horario', 'cpp_ajax_save_programador_horario');
+add_action('wp_ajax_cpp_save_programador_leccion', 'cpp_ajax_save_programador_leccion');
+add_action('wp_ajax_cpp_delete_programador_leccion', 'cpp_ajax_delete_programador_leccion');
+add_action('wp_ajax_cpp_save_programador_evento', 'cpp_ajax_save_programador_evento');
+add_action('wp_ajax_cpp_delete_programador_evento', 'cpp_ajax_delete_programador_evento');
+add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_programador_example_data');
 
-/**
- * Handler para obtener todos los datos iniciales del programador.
- */
-function cpp_ajax_get_programador_data() {
+
+// --- Implementación de Handlers ---
+
+function cpp_ajax_get_programador_all_data() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     $user_id = get_current_user_id();
-
-    $config = cpp_programador_get_config($user_id);
-    $sesiones = cpp_programador_get_sesiones($user_id);
-
-    wp_send_json_success([
-        'config' => $config,
-        'sesiones' => $sesiones
-    ]);
+    $data = cpp_programador_get_all_data($user_id);
+    wp_send_json_success($data);
 }
 
-/**
- * Handler para guardar la configuración del programador.
- */
-function cpp_ajax_save_programador_config() {
+function cpp_ajax_save_programador_horario() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     $user_id = get_current_user_id();
-
-    // El frontend debe enviar un objeto JSON `config`
-    $config_data = isset($_POST['config']) ? json_decode(stripslashes($_POST['config']), true) : null;
-
-    if (empty($config_data) || !is_array($config_data)) {
-        wp_send_json_error(['message' => 'Datos de configuración no válidos.']);
-        return;
-    }
-
-    $allowed_keys = ['dias_laborables', 'dias_no_laborables', 'horario'];
-
-    foreach($config_data as $clave => $valor) {
-        if (in_array($clave, $allowed_keys)) {
-            // Aquí se podría añadir sanitización específica para cada clave
-            cpp_programador_save_config($user_id, $clave, $valor);
-        }
-    }
-
-    wp_send_json_success(['message' => 'Configuración guardada correctamente.']);
+    $horario = isset($_POST['horario']) ? json_decode(stripslashes($_POST['horario']), true) : null;
+    $time_slots = isset($_POST['time_slots']) ? json_decode(stripslashes($_POST['time_slots']), true) : null;
+    if (is_null($horario) || is_null($time_slots)) { wp_send_json_error(['message' => 'Datos de horario no válidos.']); return; }
+    cpp_programador_save_config_value($user_id, 'horario', $horario);
+    cpp_programador_save_config_value($user_id, 'time_slots', $time_slots);
+    wp_send_json_success(['message' => 'Horario guardado correctamente.']);
 }
 
-/**
- * Handler para guardar una sesión de trabajo.
- */
-function cpp_ajax_save_programador_sesion() {
+function cpp_ajax_save_programador_leccion() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $leccion_data = isset($_POST['leccion']) ? json_decode(stripslashes($_POST['leccion']), true) : null;
+    if (empty($leccion_data)) { wp_send_json_error(['message' => 'Datos de lección no válidos.']); return; }
+    $leccion_data['user_id'] = get_current_user_id();
+    $result = cpp_programador_save_leccion($leccion_data);
+    if ($result) { wp_send_json_success(['message' => 'Lección guardada.', 'leccion_id' => $result]); }
+    else { wp_send_json_error(['message' => 'Error al guardar la lección.']); }
+}
+
+function cpp_ajax_delete_programador_leccion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $leccion_id = isset($_POST['leccion_id']) ? intval($_POST['leccion_id']) : 0;
+    if (empty($leccion_id)) { wp_send_json_error(['message' => 'ID de lección no proporcionado.']); return; }
     $user_id = get_current_user_id();
+    if (cpp_programador_delete_leccion($leccion_id, $user_id)) { wp_send_json_success(['message' => 'Lección eliminada.']); }
+    else { wp_send_json_error(['message' => 'Error al eliminar la lección.']); }
+}
 
-    $sesion_data = isset($_POST['sesion']) ? json_decode(stripslashes($_POST['sesion']), true) : null;
+function cpp_ajax_save_programador_evento() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $evento_data = isset($_POST['evento']) ? json_decode(stripslashes($_POST['evento']), true) : null;
+    if (empty($evento_data)) { wp_send_json_error(['message' => 'Datos de evento no válidos.']); return; }
+    $evento_data['user_id'] = get_current_user_id();
+    if (cpp_programador_save_evento($evento_data)) { wp_send_json_success(['message' => 'Evento guardado.']); }
+    else { wp_send_json_error(['message' => 'Error al guardar el evento.']); }
+}
 
-    if (empty($sesion_data) || !is_array($sesion_data)) {
-        wp_send_json_error(['message' => 'Datos de sesión no válidos.']);
-        return;
-    }
+function cpp_ajax_delete_programador_evento() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $evento_id = isset($_POST['evento_id']) ? intval($_POST['evento_id']) : 0;
+    if (empty($evento_id)) { wp_send_json_error(['message' => 'ID de evento no proporcionado.']); return; }
+    $user_id = get_current_user_id();
+    if (cpp_programador_delete_evento($evento_id, $user_id)) { wp_send_json_success(['message' => 'Evento eliminado.']); }
+    else { wp_send_json_error(['message' => 'Error al eliminar el evento.']); }
+}
 
-    // Asegurarnos de que la sesión pertenece al usuario actual
-    $sesion_data['user_id'] = $user_id;
-
-    $id_guardado = cpp_programador_save_sesion($sesion_data);
-
-    if ($id_guardado) {
-        wp_send_json_success(['message' => 'Sesión guardada.', 'sesion_id' => $id_guardado]);
+function cpp_ajax_create_programador_example_data() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+    if (cpp_programador_create_example_data($user_id)) {
+        wp_send_json_success(['message' => 'Datos de ejemplo creados correctamente.']);
     } else {
-        wp_send_json_error(['message' => 'Error al guardar la sesión.']);
-    }
-}
-
-/**
- * Handler para eliminar una sesión de trabajo.
- */
-function cpp_ajax_delete_programador_sesion() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
-    $user_id = get_current_user_id();
-    $sesion_id = isset($_POST['sesion_id']) ? intval($_POST['sesion_id']) : 0;
-
-    if (empty($sesion_id)) {
-        wp_send_json_error(['message' => 'ID de sesión no proporcionado.']);
-        return;
-    }
-
-    if (cpp_programador_delete_sesion($sesion_id, $user_id)) {
-        wp_send_json_success(['message' => 'Sesión eliminada.']);
-    } else {
-        wp_send_json_error(['message' => 'Error al eliminar la sesión o no tienes permiso.']);
-    }
-}
-
-/**
- * Handler para reordenar las sesiones de trabajo.
- */
-function cpp_ajax_reorder_programador_sesiones() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
-    $user_id = get_current_user_id();
-    $orden = isset($_POST['orden']) ? json_decode(stripslashes($_POST['orden']), true) : [];
-
-    if (empty($orden) || !is_array($orden)) {
-        wp_send_json_error(['message' => 'Datos de orden no válidos.']);
-        return;
-    }
-
-    if (cpp_programador_reorder_sesiones($user_id, $orden)) {
-        wp_send_json_success(['message' => 'Orden actualizado.']);
-    } else {
-        wp_send_json_error(['message' => 'Error al actualizar el orden.']);
+        wp_send_json_error(['message' => 'No se pudieron crear los datos de ejemplo. Asegúrate de tener al menos una clase creada en el cuaderno.']);
     }
 }

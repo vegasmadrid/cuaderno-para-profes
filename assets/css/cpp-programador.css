@@ -1,114 +1,224 @@
 /* /assets/css/cpp-programador.css */
+/* Estilos para el nuevo programador por pestañas. */
 
-/* --- Contenedor Principal --- */
 .cpp-programador-container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 20px auto;
+    background-color: #fff;
+    border: 1px solid #e5e5e5;
     padding: 20px;
-    box-sizing: border-box;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    margin-top: 20px;
 }
 
-.cpp-programador-header {
+.cpp-programador-tabs {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.cpp-tab-link {
+    background: #f0f0f1;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 5px;
+    border-radius: 4px 4px 0 0;
+}
+
+.cpp-tab-link.active {
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    font-weight: bold;
+}
+
+.cpp-tab-content {
+    display: none;
+}
+
+.cpp-tab-content.active {
+    display: block;
+}
+
+/* --- Estilos para la Pestaña de Horario --- */
+.cpp-horario-actions {
+    margin-bottom: 20px;
+    text-align: right;
+}
+
+.cpp-horario-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.cpp-horario-table th,
+.cpp-horario-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.cpp-horario-table th {
+    background-color: #f7f7f7;
+}
+
+.cpp-horario-table td {
+    height: 60px;
+}
+
+.cpp-horario-table select {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+/* --- Estilos para la Pestaña de Clases --- */
+.cpp-clases-columns {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 15px;
+}
+
+.cpp-clase-column {
+    flex: 1;
+    min-width: 250px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+.cpp-clase-column h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    font-size: 16px;
+}
+
+.cpp-lecciones-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    min-height: 100px; /* Para que la columna no colapse si está vacía */
+}
+
+.cpp-leccion-item {
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.cpp-leccion-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+}
+.cpp-leccion-actions button:hover {
+    opacity: 1;
+}
+
+.cpp-add-leccion-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #e9e9e9;
+    border: 1px dashed #ccc;
+    cursor: pointer;
+    text-align: center;
+}
+.cpp-add-leccion-btn:hover {
+    background-color: #dcdcdc;
+}
+
+/* --- Estilos para Modales Genéricos --- */
+.cpp-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+.cpp-modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px 30px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+.cpp-modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; }
+.cpp-modal-close:hover, .cpp-modal-close:focus { color: black; }
+.cpp-form-group { margin-bottom: 15px; }
+.cpp-form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #444; }
+.cpp-form-group input[type="text"], .cpp-form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+.cpp-modal-actions { text-align: right; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+
+/* --- Estilos para la Pestaña de Semana --- */
+.cpp-semana-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
 }
-
-.cpp-programador-header h1 {
+.cpp-semana-nav h2 {
     margin: 0;
-    font-size: 24px;
-    font-weight: 500;
+    font-size: 18px;
 }
 
-/* --- Mensajes y Estados de Carga --- */
-.cpp-programador-loading,
-.cpp-programador-error,
-.cpp-programador-empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: #666;
-    background-color: #fff;
-    border-radius: 4px;
+.cpp-semana-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.cpp-semana-table th,
+.cpp-semana-table td {
     border: 1px solid #e0e0e0;
+    padding: 5px;
+    text-align: center;
+    height: 80px;
+    vertical-align: top;
 }
 
-/* --- Lista de Sesiones --- */
-.cpp-programador-list {
-    list-style: none;
-    padding: 0;
+.cpp-semana-table th {
+    background-color: #f7f7f7;
+    font-size: 14px;
+}
+.cpp-semana-table th small {
+    font-weight: normal;
+    color: #666;
+}
+
+.cpp-semana-slot {
+    background-color: #f9f9f9;
+    border-left: 4px solid #ccc;
+    padding: 8px;
+    height: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    font-size: 13px;
+}
+.cpp-semana-slot strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+.cpp-semana-slot p {
     margin: 0;
-}
-
-.cpp-programador-sesion {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    transition: box-shadow 0.2s ease-in-out;
-}
-
-.cpp-programador-sesion:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-}
-
-/* --- Placeholder para Arrastrar --- */
-.cpp-sesion-placeholder {
-    height: 60px; /* Altura aproximada de un item */
-    background-color: #eef7ff;
-    border: 2px dashed #99c7f7;
-    border-radius: 4px;
-    margin-bottom: 10px;
-}
-
-/* --- Contenido de la Sesión --- */
-.cpp-sesion-handle {
-    cursor: move;
-    color: #999;
-    margin-right: 15px;
-    font-size: 20px;
-}
-
-.cpp-sesion-date {
-    font-weight: 500;
-    color: #333;
-    width: 280px; /* Ancho fijo para alinear las fechas */
-}
-
-.cpp-sesion-title {
-    flex-grow: 1;
+    font-size: 12px;
     color: #555;
 }
-
-.cpp-sesion-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.cpp-btn-icon {
-    background: none;
-    border: none;
+.cpp-add-evento-btn {
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.02);
+    border: 1px dashed #ccc;
     cursor: pointer;
-    color: #777;
-    padding: 5px;
-    border-radius: 50%;
+    color: #888;
 }
-.cpp-btn-icon:hover {
-    color: #2271b1;
-    background-color: #f0f0f1;
+.cpp-add-evento-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: #333;
 }
 
-/* --- Botones --- */
+/* --- Botones Genéricos --- */
 .cpp-btn {
     display: inline-block;
     text-decoration: none;
@@ -124,101 +234,30 @@
     border-radius: 3px;
     white-space: nowrap;
     box-sizing: border-box;
+    background: #f0f0f1;
+    border-color: #ccc;
+    color: #333;
 }
-
+.cpp-btn:hover {
+    border-color: #999;
+}
 .cpp-btn-primary {
     background: #2271b1;
     border-color: #2271b1;
     color: #fff;
 }
-
 .cpp-btn-primary:hover {
     background: #1e639a;
     border-color: #1e639a;
 }
-
-/* --- Estilos para Modales --- */
-.cpp-modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.cpp-modal-content {
-    background-color: #fefefe;
-    margin: 10% auto;
-    padding: 20px 30px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 500px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    position: relative;
-}
-
-.cpp-modal-close {
-    color: #aaa;
+.cpp-delete-evento-btn {
+    background: none;
+    border: none;
+    color: #d63638;
+    cursor: pointer;
     float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    position: absolute;
-    top: 10px;
-    right: 20px;
+    opacity: 0.6;
 }
-
-.cpp-modal-close:hover,
-.cpp-modal-close:focus {
-    color: black;
-}
-
-/* --- Estilos para Formularios en Modales --- */
-.cpp-form-group {
-    margin-bottom: 15px;
-}
-
-.cpp-form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-    color: #444;
-}
-
-.cpp-form-group input[type="text"],
-.cpp-form-group textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-
-.cpp-modal-actions {
-    text-align: right;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #e0e0e0;
-}
-
-.cpp-checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.cpp-checkbox-group label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: normal;
-    background-color: #f0f0f1;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
+.cpp-delete-evento-btn:hover {
+    opacity: 1;
 }

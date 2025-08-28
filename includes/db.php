@@ -128,7 +128,7 @@ function cpp_crear_tablas() {
     dbDelta($sql_calificaciones_alumnos); 
     dbDelta($sql_asistencia);
 
-    // Tablas para el Programador de Trabajo
+    // --- Tablas para el Nuevo Programador ---
     $tabla_programador_config = $wpdb->prefix . 'cpp_programador_config';
     $sql_programador_config = "CREATE TABLE $tabla_programador_config (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -141,20 +141,33 @@ function cpp_crear_tablas() {
     ) $charset_collate;";
     dbDelta($sql_programador_config);
 
-    $tabla_programador_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
-    $sql_programador_sesiones = "CREATE TABLE $tabla_programador_sesiones (
+    $tabla_programador_lecciones = $wpdb->prefix . 'cpp_programador_lecciones';
+    $sql_programador_lecciones = "CREATE TABLE $tabla_programador_lecciones (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id bigint(20) UNSIGNED NOT NULL,
+        clase_id mediumint(9) UNSIGNED NOT NULL,
         titulo varchar(255) NOT NULL,
         descripcion text,
         orden int NOT NULL DEFAULT 0,
-        clase_id mediumint(9) UNSIGNED DEFAULT NULL,
-        fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY user_id (user_id),
-        KEY orden (orden)
+        KEY clase_id (clase_id)
     ) $charset_collate;";
-    dbDelta($sql_programador_sesiones);
+    dbDelta($sql_programador_lecciones);
+
+    $tabla_programador_eventos = $wpdb->prefix . 'cpp_programador_eventos';
+    $sql_programador_eventos = "CREATE TABLE $tabla_programador_eventos (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        leccion_id bigint(20) UNSIGNED NOT NULL,
+        fecha date NOT NULL,
+        hora_inicio time NOT NULL,
+        hora_fin time NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY evento_unico (user_id, fecha, hora_inicio),
+        KEY leccion_id (leccion_id)
+    ) $charset_collate;";
+    dbDelta($sql_programador_eventos);
 }
 
 // --- CARGADOR DE ARCHIVOS DE CONSULTAS A LA BBDD ---

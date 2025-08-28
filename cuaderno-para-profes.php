@@ -64,7 +64,7 @@ function cpp_cargar_assets() {
     global $post;
     if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'cpp_programador')) {
         wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $plugin_version);
-        wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js'], $plugin_version, true);
+        wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $plugin_version, true);
     }
 }
 
