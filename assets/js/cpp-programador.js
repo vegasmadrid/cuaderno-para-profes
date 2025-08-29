@@ -22,8 +22,19 @@ const CppProgramadorApp = {
         this.appElement = appElement;
         this.tabs = { semana: appElement.querySelector('.cpp-tab-link[data-tab="semana"]'), clases: appElement.querySelector('.cpp-tab-link[data-tab="clases"]'), horario: appElement.querySelector('.cpp-tab-link[data-tab="horario"]') };
         this.tabContents = { semana: appElement.querySelector('#tab-semana'), clases: appElement.querySelector('#tab-clases'), horario: appElement.querySelector('#tab-horario') };
-        this.sesionModal = { /* ... */ };
-        this.emptyStateElement = appElement.querySelector('#cpp-programador-empty-state');
+
+        // Selectores globales para elementos que pueden estar fuera del appElement
+        this.sesionModal = {
+            element: document.querySelector('#cpp-sesion-modal'),
+            form: document.querySelector('#cpp-sesion-form'),
+            title: document.querySelector('#cpp-sesion-modal-title'),
+            idInput: document.querySelector('#cpp-sesion-id'),
+            claseIdInput: document.querySelector('#cpp-sesion-clase-id'),
+            tituloInput: document.querySelector('#cpp-sesion-titulo'),
+            descripcionInput: document.querySelector('#cpp-sesion-descripcion'),
+        };
+        this.emptyStateElement = document.querySelector('#cpp-programador-empty-state');
+
         this.attachEventListeners();
         this.fetchData();
     },
