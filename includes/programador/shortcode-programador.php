@@ -27,8 +27,8 @@ function cpp_shortcode_render_programador() {
                 <p>Cargando vista semanal...</p>
             </div>
             <div id="tab-clases" class="cpp-tab-content">
-                <h2>Banco de Lecciones por Clase</h2>
-                <!-- Las columnas de clases con sus lecciones se renderizarán aquí -->
+            <h2>Banco de Sesiones por Clase</h2>
+            <!-- Las columnas de clases con sus sesiones se renderizarán aquí -->
                 <p>Cargando clases...</p>
             </div>
             <div id="tab-horario" class="cpp-tab-content">
@@ -43,24 +43,24 @@ function cpp_shortcode_render_programador() {
             <button id="cpp-programador-create-example-btn" class="cpp-btn cpp-btn-primary">Crear Programación de Ejemplo</button>
         </div>
 
-        <!-- Modal genérico para Lecciones -->
-        <div id="cpp-leccion-modal" class="cpp-modal" style="display:none;">
+    <!-- Modal genérico para Sesiones -->
+    <div id="cpp-sesion-modal" class="cpp-modal" style="display:none;">
             <div class="cpp-modal-content">
                 <span class="cpp-modal-close">&times;</span>
-                <h2 id="cpp-leccion-modal-title">Nueva Lección</h2>
-                <form id="cpp-leccion-form">
-                    <input type="hidden" id="cpp-leccion-id" name="leccion_id">
-                    <input type="hidden" id="cpp-leccion-clase-id" name="clase_id">
+            <h2 id="cpp-sesion-modal-title">Nueva Sesión</h2>
+            <form id="cpp-sesion-form">
+                <input type="hidden" id="cpp-sesion-id" name="sesion_id">
+                <input type="hidden" id="cpp-sesion-clase-id" name="clase_id">
                     <div class="cpp-form-group">
-                        <label for="cpp-leccion-titulo">Título:</label>
-                        <input type="text" id="cpp-leccion-titulo" name="titulo" required>
+                    <label for="cpp-sesion-titulo">Título:</label>
+                    <input type="text" id="cpp-sesion-titulo" name="titulo" required>
                     </div>
                     <div class="cpp-form-group">
-                        <label for="cpp-leccion-descripcion">Descripción:</label>
-                        <textarea id="cpp-leccion-descripcion" name="descripcion" rows="5"></textarea>
+                    <label for="cpp-sesion-descripcion">Descripción:</label>
+                    <textarea id="cpp-sesion-descripcion" name="descripcion" rows="5"></textarea>
                     </div>
                     <div class="cpp-modal-actions">
-                        <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Lección</button>
+                    <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Sesión</button>
                     </div>
                 </form>
             </div>

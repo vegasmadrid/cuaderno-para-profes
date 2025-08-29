@@ -98,14 +98,14 @@
     font-size: 16px;
 }
 
-.cpp-lecciones-list {
+.cpp-sesiones-list {
     list-style: none;
     padding: 0;
     margin: 0;
     min-height: 100px; /* Para que la columna no colapse si está vacía */
 }
 
-.cpp-leccion-item {
+.cpp-sesion-item {
     background-color: #fff;
     padding: 10px;
     border-radius: 4px;
@@ -117,17 +117,31 @@
     font-size: 14px;
 }
 
-.cpp-leccion-actions button {
+.cpp-sesion-actions button {
     background: none;
     border: none;
     cursor: pointer;
     opacity: 0.5;
 }
-.cpp-leccion-actions button:hover {
+.cpp-sesion-actions button:hover {
     opacity: 1;
 }
 
-.cpp-add-leccion-btn {
+.cpp-sesion-title[contenteditable="true"] {
+    cursor: text;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+.cpp-sesion-title[contenteditable="true"]:hover {
+    background-color: #f0f8ff;
+}
+.cpp-sesion-title[contenteditable="true"]:focus {
+    background-color: #fff;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+.cpp-add-sesion-btn {
     width: 100%;
     margin-top: 10px;
     padding: 8px;
@@ -136,7 +150,7 @@
     cursor: pointer;
     text-align: center;
 }
-.cpp-add-leccion-btn:hover {
+.cpp-add-sesion-btn:hover {
     background-color: #dcdcdc;
 }
 

@@ -141,8 +141,8 @@ function cpp_crear_tablas() {
     ) $charset_collate;";
     dbDelta($sql_programador_config);
 
-    $tabla_programador_lecciones = $wpdb->prefix . 'cpp_programador_lecciones';
-    $sql_programador_lecciones = "CREATE TABLE $tabla_programador_lecciones (
+    $tabla_programador_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $sql_programador_sesiones = "CREATE TABLE $tabla_programador_sesiones (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id bigint(20) UNSIGNED NOT NULL,
         clase_id mediumint(9) UNSIGNED NOT NULL,
@@ -153,19 +153,19 @@ function cpp_crear_tablas() {
         KEY user_id (user_id),
         KEY clase_id (clase_id)
     ) $charset_collate;";
-    dbDelta($sql_programador_lecciones);
+    dbDelta($sql_programador_sesiones);
 
     $tabla_programador_eventos = $wpdb->prefix . 'cpp_programador_eventos';
     $sql_programador_eventos = "CREATE TABLE $tabla_programador_eventos (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id bigint(20) UNSIGNED NOT NULL,
-        leccion_id bigint(20) UNSIGNED NOT NULL,
+        sesion_id bigint(20) UNSIGNED NOT NULL,
         fecha date NOT NULL,
         hora_inicio time NOT NULL,
         hora_fin time NOT NULL,
         PRIMARY KEY (id),
         UNIQUE KEY evento_unico (user_id, fecha, hora_inicio),
-        KEY leccion_id (leccion_id)
+        KEY sesion_id (sesion_id)
     ) $charset_collate;";
     dbDelta($sql_programador_eventos);
 }
