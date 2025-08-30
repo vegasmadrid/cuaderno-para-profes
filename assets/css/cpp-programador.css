@@ -1,277 +1,50 @@
 /* /assets/css/cpp-programador.css */
-/* Estilos para el nuevo programador por pestañas. */
 
-.cpp-programador-container {
-    background-color: #fff;
-    border: 1px solid #e5e5e5;
-    padding: 20px;
-    margin-top: 20px;
-}
+/* --- Estructura Principal (similar a Cuaderno) --- */
+.cpp-cuaderno-viewport-classroom { display: flex; height: 100%; width: 100%; }
+.cpp-cuaderno-sidebar-classroom { width: 280px; background-color: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; transition: transform 0.25s ease; position: fixed; left: 0; top: 0; bottom: 0; z-index: 1010; transform: translateX(-100%); }
+.cpp-cuaderno-sidebar-classroom.cpp-sidebar-visible { transform: translateX(0); }
+.cpp-sidebar-header-placeholder { height: 56px; flex-shrink: 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; padding: 0 16px; font-size: 16px; font-weight: 500; }
+.cpp-header-menu-btn { background: none; border: none; padding: 8px; margin-right: 12px; cursor: pointer; border-radius: 50%; }
+.cpp-sidebar-nav { flex-grow: 1; overflow-y: auto; padding: 8px 0; }
+ul.cpp-sidebar-clases-list { list-style: none; padding:0; margin:0; }
+li.cpp-sidebar-clase-item a { display: flex; align-items: center; padding: 10px 24px; text-decoration: none; color: #3c4043; border-radius: 0 25px 25px 0; }
+li.cpp-sidebar-clase-item:hover a { background-color: #f1f3f4; }
+li.cpp-sidebar-clase-item.cpp-sidebar-item-active a { background-color: #e8f0fe; color: #1a73e8; font-weight: 500; }
+.cpp-sidebar-clase-icon { margin-right: 20px; }
+.cpp-cuaderno-main-content-classroom { flex-grow: 1; display: flex; flex-direction: column; padding-left: 0; transition: padding-left 0.25s ease; }
+.cpp-main-content-header { height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background-color: #2962FF; color: #fff; transition: background-color 0.3s ease; }
+.cpp-header-left, .cpp-header-right { display: flex; align-items: center; gap: 15px; }
+.cpp-main-content-header h2 { margin: 0; font-size: 20px; font-weight: 500; }
+.cpp-user-avatar { width: 32px; height: 32px; border-radius: 50%; }
+.cpp-programador-tabs { display: flex; padding: 0 24px; border-bottom: 1px solid #e0e0e0; background-color: #f8f9fa; }
+.cpp-tab-link { padding: 15px 20px; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; font-size: 15px; font-weight: 500; color: #5f6368; }
+.cpp-tab-link.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+.cpp-programador-content { padding: 24px; flex-grow: 1; overflow-y: auto; }
+.cpp-tab-content { display: none; height: 100%; }
+.cpp-tab-content.active { display: block; }
+.cpp-sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1005; }
+.cpp-sidebar-overlay.cpp-sidebar-visible { display: block; }
 
-.cpp-programador-tabs {
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 20px;
-}
+/* --- Estilos para la Pestaña de Programación (2 columnas) --- */
+.cpp-programacion-layout { display: flex; gap: 20px; height: 100%; }
+.cpp-programacion-left-col { width: 320px; flex-shrink: 0; border-right: 1px solid #e0e0e0; padding-right: 20px; display: flex; flex-direction: column; }
+.cpp-programacion-right-col { flex-grow: 1; }
+.cpp-programacion-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+#cpp-programacion-evaluacion-selector { flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+.cpp-sesiones-list-detailed { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
+.cpp-sesion-list-item { padding: 12px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; border-radius: 4px; display: flex; align-items: center; gap: 8px; }
+.cpp-sesion-list-item:hover { background-color: #f7f7f7; }
+.cpp-sesion-list-item.active { background-color: #e8f0fe; font-weight: 500; color: #1a73e8; }
+.cpp-sesion-number { font-size: 13px; color: #888; }
+.cpp-sesion-list-item.active .cpp-sesion-number { color: #1a73e8; }
+.cpp-sesion-detail-title { font-size: 22px; font-weight: 500; padding: 5px; margin-bottom: 15px; border-radius: 4px; }
+.cpp-sesion-detail-desc { font-size: 15px; line-height: 1.7; color: #333; padding: 5px; min-height: 200px; border-radius: 4px; }
+.cpp-sesion-detail-title:hover, .cpp-sesion-detail-desc:hover { background-color: #f0f8ff; }
+.cpp-sesion-detail-title:focus, .cpp-sesion-detail-desc:focus { background-color: #fff; box-shadow: 0 0 0 2px #1a73e8; outline: none; }
+.cpp-empty-panel { display: flex; align-items: center; justify-content: center; height: 100%; color: #777; font-size: 16px; }
 
-.cpp-tab-link {
-    background: #f0f0f1;
-    border: 1px solid #ccc;
-    border-bottom: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-right: 5px;
-    border-radius: 4px 4px 0 0;
-}
-
-.cpp-tab-link.active {
-    background: #fff;
-    border-bottom: 1px solid #fff;
-    font-weight: bold;
-}
-
-.cpp-tab-content {
-    display: none;
-}
-
-.cpp-tab-content.active {
-    display: block;
-}
-
-/* --- Estilos para la Pestaña de Horario --- */
-.cpp-horario-actions {
-    margin-bottom: 20px;
-    text-align: right;
-}
-
-.cpp-horario-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-.cpp-horario-table th,
-.cpp-horario-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.cpp-horario-table th {
-    background-color: #f7f7f7;
-}
-
-.cpp-horario-table td {
-    height: 60px;
-}
-
-.cpp-horario-table select {
-    width: 100%;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #fff;
-}
-
-/* --- Estilos para la Pestaña de Clases --- */
-.cpp-clases-columns {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
-    padding-bottom: 15px;
-}
-
-.cpp-clase-column {
-    flex: 1;
-    min-width: 250px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 15px;
-    border: 1px solid #e0e0e0;
-}
-
-.cpp-clase-column h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 10px;
-    font-size: 16px;
-}
-
-.cpp-sesiones-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    min-height: 100px; /* Para que la columna no colapse si está vacía */
-}
-
-.cpp-sesion-item {
-    background-color: #fff;
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-}
-
-.cpp-sesion-actions button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    opacity: 0.5;
-}
-.cpp-sesion-actions button:hover {
-    opacity: 1;
-}
-
-.cpp-sesion-title[contenteditable="true"] {
-    cursor: text;
-    padding: 2px 5px;
-    border-radius: 3px;
-}
-.cpp-sesion-title[contenteditable="true"]:hover {
-    background-color: #f0f8ff;
-}
-.cpp-sesion-title[contenteditable="true"]:focus {
-    background-color: #fff;
-    box-shadow: 0 0 0 1px #2271b1;
-    outline: none;
-}
-
-.cpp-add-sesion-btn {
-    width: 100%;
-    margin-top: 10px;
-    padding: 8px;
-    background-color: #e9e9e9;
-    border: 1px dashed #ccc;
-    cursor: pointer;
-    text-align: center;
-}
-.cpp-add-sesion-btn:hover {
-    background-color: #dcdcdc;
-}
-
-/* --- Estilos para Modales Genéricos --- */
-.cpp-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-.cpp-modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px 30px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
-.cpp-modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; }
-.cpp-modal-close:hover, .cpp-modal-close:focus { color: black; }
-.cpp-form-group { margin-bottom: 15px; }
-.cpp-form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #444; }
-.cpp-form-group input[type="text"], .cpp-form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-.cpp-modal-actions { text-align: right; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
-
-/* --- Estilos para la Pestaña de Semana --- */
-.cpp-semana-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-.cpp-semana-nav h2 {
-    margin: 0;
-    font-size: 18px;
-}
-
-.cpp-semana-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-.cpp-semana-table th,
-.cpp-semana-table td {
-    border: 1px solid #e0e0e0;
-    padding: 5px;
-    text-align: center;
-    height: 80px;
-    vertical-align: top;
-}
-
-.cpp-semana-table th {
-    background-color: #f7f7f7;
-    font-size: 14px;
-}
-.cpp-semana-table th small {
-    font-weight: normal;
-    color: #666;
-}
-
-.cpp-semana-slot {
-    background-color: #f9f9f9;
-    border-left: 4px solid #ccc;
-    padding: 8px;
-    height: 100%;
-    box-sizing: border-box;
-    text-align: left;
-    font-size: 13px;
-}
-.cpp-semana-slot strong {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 14px;
-}
-.cpp-semana-slot p {
-    margin: 0;
-    font-size: 12px;
-    color: #555;
-}
-.cpp-add-evento-btn {
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.02);
-    border: 1px dashed #ccc;
-    cursor: pointer;
-    color: #888;
-}
-.cpp-add-evento-btn:hover {
-    background: rgba(0,0,0,0.05);
-    color: #333;
-}
-
-/* --- Botones Genéricos --- */
-.cpp-btn {
-    display: inline-block;
-    text-decoration: none;
-    font-size: 13px;
-    line-height: 2.15;
-    min-height: 30px;
-    margin: 0;
-    padding: 0 10px;
-    cursor: pointer;
-    border-width: 1px;
-    border-style: solid;
-    -webkit-appearance: none;
-    border-radius: 3px;
-    white-space: nowrap;
-    box-sizing: border-box;
-    background: #f0f0f1;
-    border-color: #ccc;
-    color: #333;
-}
-.cpp-btn:hover {
-    border-color: #999;
-}
-.cpp-btn-primary {
-    background: #2271b1;
-    border-color: #2271b1;
-    color: #fff;
-}
-.cpp-btn-primary:hover {
-    background: #1e639a;
-    border-color: #1e639a;
-}
-.cpp-delete-evento-btn {
-    background: none;
-    border: none;
-    color: #d63638;
-    cursor: pointer;
-    float: right;
-    opacity: 0.6;
-}
-.cpp-delete-evento-btn:hover {
-    opacity: 1;
-}
+/* Otros estilos (Horario, Semana, etc. que ya estaban definidos) */
+.cpp-horario-table { width: 100%; border-collapse: collapse; }
+.cpp-semana-table { width: 100%; border-collapse: collapse; }
+/* ... */

@@ -41,7 +41,10 @@ function cpp_ajax_save_programador_sesion() {
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
 
     $sesion_data = isset($_POST['sesion']) ? json_decode(stripslashes($_POST['sesion']), true) : null;
-    if (empty($sesion_data)) { wp_send_json_error(['message' => 'Datos de sesión no válidos.']); return; }
+    if (empty($sesion_data) || !isset($sesion_data['evaluacion_id'])) {
+        wp_send_json_error(['message' => 'Datos de sesión no válidos o falta la evaluación.']);
+        return;
+    }
 
     $sesion_data['user_id'] = get_current_user_id();
     $result = cpp_programador_save_sesion($sesion_data);

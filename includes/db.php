@@ -146,12 +146,14 @@ function cpp_crear_tablas() {
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id bigint(20) UNSIGNED NOT NULL,
         clase_id mediumint(9) UNSIGNED NOT NULL,
+        evaluacion_id mediumint(9) UNSIGNED NOT NULL,
         titulo varchar(255) NOT NULL,
         descripcion text,
         orden int NOT NULL DEFAULT 0,
         PRIMARY KEY (id),
         KEY user_id (user_id),
-        KEY clase_id (clase_id)
+        KEY clase_id (clase_id),
+        KEY evaluacion_id (evaluacion_id)
     ) $charset_collate;";
     dbDelta($sql_programador_sesiones);
 
