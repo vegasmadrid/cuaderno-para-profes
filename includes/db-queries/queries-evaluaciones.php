@@ -13,7 +13,7 @@ function cpp_obtener_evaluaciones_por_clase($clase_id, $user_id) {
         return [];
     }
     return $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d ORDER BY orden ASC, fecha_creacion ASC",
+        "SELECT id, clase_id, user_id, nombre_evaluacion, start_date, calculo_nota, orden, fecha_creacion FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d ORDER BY orden ASC, fecha_creacion ASC",
         $clase_id, $user_id
     ), ARRAY_A);
 }

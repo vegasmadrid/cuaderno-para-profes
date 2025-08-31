@@ -58,12 +58,42 @@
 .cpp-sesion-detail-title:focus, .cpp-sesion-detail-desc:focus { background-color: #fff; box-shadow: 0 0 0 2px #1a73e8; outline: none; }
 .cpp-empty-panel { display: flex; align-items: center; justify-content: center; height: 100%; color: #777; font-size: 16px; }
 
+.cpp-sesion-detail-section { margin-bottom: 20px; }
+.cpp-sesion-detail-section h4 { font-size: 14px; text-transform: uppercase; color: #5f6368; margin-bottom: 8px; font-weight: 500; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; }
+.cpp-sesion-detail-content[contenteditable="true"] {
+    padding: 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    line-height: 1.6;
+}
+.cpp-sesion-detail-content[contenteditable="true"]:hover {
+    border-color: #e0e0e0;
+    background-color: #f8f9fa;
+}
+.cpp-sesion-detail-content[contenteditable="true"]:focus {
+    border-color: #1a73e8;
+    background-color: #fff;
+    box-shadow: 0 0 0 1px #1a73e8;
+}
+
+.cpp-programacion-controls label { font-size: 13px; font-weight: 500; color: #555; margin-top:10px; margin-bottom: 5px; display: block; }
+#cpp-start-date-selector { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+
+.cpp-semana-timeline { list-style: none; padding: 0; margin: 0; }
+.cpp-semana-timeline li { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+.cpp-semana-timeline li strong { color: #1a73e8; }
+
 /* --- Estilos para la Pestaña de Horario --- */
 .cpp-horario-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .cpp-horario-table th, .cpp-horario-table td { border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: middle; }
 .cpp-horario-table th { background-color: #f7f7f7; }
 .cpp-horario-table td { height: 60px; }
 .cpp-horario-table select { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; }
+.cpp-horario-time-slot[contenteditable="true"] { cursor: pointer; border-radius: 4px; }
+.cpp-horario-time-slot[contenteditable="true"]:hover { background-color: #f0f8ff; }
+.cpp-horario-time-slot[contenteditable="true"]:focus { background-color: #fff; box-shadow: 0 0 0 2px #1a73e8; outline: none; }
+.cpp-delete-slot-btn { background: none; border: none; color: #a00; cursor: pointer; opacity: 0.5; font-size: 16px; }
+.cpp-delete-slot-btn:hover { opacity: 1; }
 
 /* --- Estilos para la Pestaña de Semana --- */
 .cpp-semana-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
