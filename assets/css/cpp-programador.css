@@ -14,8 +14,11 @@
 .cpp-tab-content.active { display: block; }
 
 /* --- Pestaña de Programación --- */
-.cpp-programacion-controls { display: flex; gap: 20px; align-items: center; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.cpp-programacion-controls { display: flex; gap: 20px; align-items: center; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; transition: background-color 0.3s ease, color 0.3s ease; }
 .cpp-programacion-controls label { margin-bottom: 0; display:flex; align-items:center; gap: 8px; font-size: 14px; font-weight: 500; }
+.cpp-programacion-controls.dark-bg label { color: #fff; }
+.cpp-programacion-controls.dark-bg select, .cpp-programacion-controls.dark-bg input { background-color: rgba(255,255,255,0.2); color: #fff; border-color: rgba(255,255,255,0.5); }
+.cpp-programacion-controls.dark-bg option { color: #000; }
 #cpp-programacion-clase-selector, #cpp-programacion-evaluacion-selector, #cpp-start-date-selector { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
 
 .cpp-programacion-layout { display: flex; gap: 20px; }
@@ -23,12 +26,17 @@
 .cpp-programacion-right-col { flex-grow: 1; border-left: 1px solid #e0e0e0; padding-left: 20px; }
 .cpp-sesiones-list-detailed { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; border: 1px solid #e0e0e0; border-radius: 4px; }
 .cpp-add-sesion-btn { margin-top: 15px; }
-.cpp-sesion-list-item { padding: 12px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; }
+.cpp-sesion-list-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; position: relative; }
 .cpp-sesion-list-item:hover { background-color: #f7f7f7; }
 .cpp-sesion-list-item.active { background-color: #e8f0fe; font-weight: 500; color: #1a73e8; }
+.cpp-sesion-handle { cursor: move; color: #999; padding: 0 5px; }
 .cpp-sesion-number { font-size: 13px; color: #888; }
 .cpp-sesion-list-item.active .cpp-sesion-number { color: #1a73e8; }
 .cpp-sesion-title { flex-grow: 1; }
+.cpp-delete-sesion-btn { background: none; border: none; color: #a00; cursor: pointer; opacity: 0.5; font-size: 16px; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+.cpp-delete-sesion-btn:hover { opacity: 1; }
+.cpp-sesion-placeholder { height: 45px; background-color: #f0f8ff; border: 1px dashed #a0c4e0; }
+
 .cpp-sesion-detail-title { font-size: 22px; font-weight: 500; padding: 5px; margin-bottom: 15px; border-radius: 4px; }
 .cpp-sesion-detail-desc { font-size: 15px; line-height: 1.7; color: #333; padding: 5px; min-height: 100px; border-radius: 4px; }
 .cpp-sesion-detail-title:hover, .cpp-sesion-detail-desc:hover, .cpp-sesion-detail-content:hover { background-color: #f0f8ff; }
@@ -39,6 +47,7 @@
 .cpp-sesion-detail-content { padding: 10px; border: 1px solid transparent; border-radius: 4px; line-height: 1.6; min-height: 60px; }
 
 /* --- Pestaña de Horario --- */
+.cpp-horario-actions { text-align: right; margin-bottom: 15px; }
 .cpp-horario-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .cpp-horario-table th, .cpp-horario-table td { border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: middle; }
 .cpp-horario-table th { background-color: #f7f7f7; }

@@ -72,9 +72,17 @@ function cpp_ajax_save_start_date() {
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     $user_id = get_current_user_id();
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
-    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : '';
-    if (empty($evaluacion_id) || empty($start_date)) { wp_send_json_error(['message' => 'Faltan datos.']); return; }
-    if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date)) { wp_send_json_success(['message' => 'Fecha de inicio guardada.']); }
+    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : null; // Aceptar null si está vacío
+
+    if (empty($evaluacion_id)) {
+        wp_send_json_error(['message' => 'Falta ID de evaluación.']);
+        return;
+    }
+
+    // Si la fecha está vacía, la guardamos como NULL en la BBDD
+    if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date)) {
+        wp_send_json_success(['message' => 'Fecha de inicio guardada.']);
+    }
     else { wp_send_json_error(['message' => 'Error al guardar la fecha.']); }
 }
 

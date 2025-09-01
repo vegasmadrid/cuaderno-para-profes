@@ -1,17 +1,15 @@
 // /assets/js/cpp-programador.js
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('cpp-programador-app')) {
-        CppProgramadorApp.init();
-    }
+    if (document.getElementById('cpp-programador-app')) { CppProgramadorApp.init(); }
 });
 
 const CppProgramadorApp = {
     // --- Propiedades ---
     appElement: null, tabs: {}, tabContents: {}, sesionModal: {},
     clases: [], config: { time_slots: [], horario: {} }, sesiones: [],
-    currentClase: null, currentEvaluacionId: null, currentSesion: null,
-    originalContent: '', semanaDate: new Date(),
+    currentClase: null, currentEvaluacionId: null, currentSesion: null, originalContent: '',
+    semanaDate: new Date(),
 
     // --- Inicialización ---
     init() {
@@ -43,6 +41,7 @@ const CppProgramadorApp = {
             if (e.target.id === 'cpp-start-date-selector') this.saveStartDate(e.target.value);
         });
         programacionTab.addEventListener('click', e => {
+            if (e.target.matches('.cpp-delete-sesion-btn')) { e.stopPropagation(); this.deleteSesion(e.target.dataset.sesionId); return; }
             const sesionItem = e.target.closest('.cpp-sesion-list-item');
             if (sesionItem) { this.currentSesion = this.sesiones.find(s => s.id == sesionItem.dataset.sesionId); this.renderProgramacionTab(); }
             if (e.target.matches('.cpp-add-sesion-btn')) this.openSesionModal();
@@ -76,6 +75,12 @@ const CppProgramadorApp = {
         this.currentEvaluacionId = this.currentClase.evaluaciones.length > 0 ? this.currentClase.evaluaciones[0].id : null;
         this.currentSesion = null;
         this.render();
+        const controlsBar = this.appElement.querySelector('.cpp-programacion-controls');
+        if (controlsBar) {
+            controlsBar.style.backgroundColor = this.currentClase.color;
+            const hex = this.currentClase.color.replace('#', ''), r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
+            controlsBar.classList.toggle('dark-bg', ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.5);
+        }
     },
     switchTab(tabName) { Object.values(this.tabs).forEach(tab => tab.classList.remove('active')); Object.values(this.tabContents).forEach(content => content.classList.remove('active')); this.tabs[tabName].classList.add('active'); this.tabContents[tabName].classList.add('active'); },
     addTimeSlot() {
@@ -165,37 +170,77 @@ const CppProgramadorApp = {
         });
     },
     saveStartDate(startDate) {
+        if (!this.currentEvaluacionId) return;
+        const date = new Date(`${startDate}T12:00:00`); // Use noon to avoid timezone issues
+        const dayOfWeek = date.getDay();
+        const dayMapping = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
+        const dayKey = dayMapping[dayOfWeek];
+        if (startDate && (!dayKey || !this.config.horario[dayKey] || !Object.values(this.config.horario[dayKey]).includes(String(this.currentClase.id)))) {
+            alert('La fecha de inicio debe ser un día en el que esta clase tenga horas asignadas en el horario.');
+            const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+            this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+            return;
+        }
         const data = new URLSearchParams({ action: 'cpp_save_start_date', nonce: cppFrontendData.nonce, evaluacion_id: this.currentEvaluacionId, start_date: startDate });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) this.fetchData();
             else alert('Error al guardar la fecha.');
         });
     },
+    deleteSesion(sesionId) {
+        if (!confirm('¿Seguro que quieres eliminar esta sesión?')) return;
+        const data = new URLSearchParams({ action: 'cpp_delete_programador_sesion', nonce: cppFrontendData.nonce, sesion_id: sesionId });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
+            if (result.success) { if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null; this.fetchData(); }
+            else { alert('Error al eliminar la sesión.'); }
+        });
+    },
+    saveSesionOrder(newOrder) {
+        const data = new URLSearchParams({ action: 'cpp_save_sesiones_order', nonce: cppFrontendData.nonce, clase_id: this.currentClase.id, evaluacion_id: this.currentEvaluacionId, orden: JSON.stringify(newOrder) });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
+            if (result.success) this.fetchData();
+            else { alert('Error al guardar el orden.'); this.fetchData(); }
+        });
+    },
 
-    // --- Renderizado ---
+    // --- Renderizado y UI ---
+    makeSesionesSortable() {
+        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+        if (list) {
+            jQuery(list).sortable({
+                handle: '.cpp-sesion-handle',
+                placeholder: 'cpp-sesion-placeholder',
+                update: (event, ui) => {
+                    const newOrder = jQuery(event.target).sortable('toArray', { attribute: 'data-sesion-id' });
+                    this.saveSesionOrder(newOrder);
+                }
+            }).disableSelection();
+        }
+    },
     render() {
-        if (!this.currentClase) return;
+        if (!this.currentClase) { this.tabContents.programacion.innerHTML = '<p>Cargando...</p>'; return; }
         this.renderProgramacionTab();
         this.renderSemanaTab();
         this.renderHorarioTab();
     },
     renderProgramacionTab() {
         const content = this.tabContents.programacion;
-        let claseOptions = this.clases.map(c => `<option value="${c.id}" ${this.currentClase && c.id == this.currentClase.id ? 'selected' : ''}>${c.nombre}</option>`).join('');
+        let claseOptions = this.clases.map(c => `<option value="${c.id}" ${this.currentClase.id == c.id ? 'selected' : ''}>${c.nombre}</option>`).join('');
         let evaluacionOptions = '', startDate = '';
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-        if (this.currentClase && this.currentClase.evaluaciones.length > 0) {
+        if (this.currentClase.evaluaciones.length > 0) {
             evaluacionOptions = this.currentClase.evaluaciones.map(e => `<option value="${e.id}" ${e.id == this.currentEvaluacionId ? 'selected' : ''}>${e.nombre_evaluacion}</option>`).join('');
             if (currentEval) startDate = currentEval.start_date || '';
         }
         let controlsHTML = `<div class="cpp-programacion-controls"><label>Clase: <select id="cpp-programacion-clase-selector">${claseOptions}</select></label><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
         let layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul><button class="cpp-add-sesion-btn cpp-btn cpp-btn-primary" ${!this.currentEvaluacionId ? 'disabled' : ''}>+ Añadir Sesión</button></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
         content.innerHTML = controlsHTML + layoutHTML;
+        this.makeSesionesSortable();
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
         if (sesionesFiltradas.length === 0) return '<li>No hay sesiones para esta evaluación.</li>';
-        return sesionesFiltradas.map((s, index) => `<li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}"><span class="cpp-sesion-number">${index + 1}.</span><span class="cpp-sesion-title">${s.titulo}</span></li>`).join('');
+        return sesionesFiltradas.map((s, index) => `<li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}"><span class="cpp-sesion-handle">⠿</span><span class="cpp-sesion-number">${index + 1}.</span><span class="cpp-sesion-title">${s.titulo}</span><button class="cpp-delete-sesion-btn" data-sesion-id="${s.id}">❌</button></li>`).join('');
     },
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
@@ -227,11 +272,11 @@ const CppProgramadorApp = {
         if (sesiones.length === 0) { content.innerHTML = '<p class="cpp-empty-panel">No hay sesiones para programar.</p>'; return; }
         const horario = this.config.horario;
         let schedule = [];
-        let currentDate = new Date(`${currentEval.start_date}T00:00:00Z`);
+        let currentDate = new Date(`${currentEval.start_date}T12:00:00`);
         let sessionIndex = 0;
         const dayMapping = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
         while(sessionIndex < sesiones.length && schedule.length < 500) {
-            const dayOfWeek = currentDate.getUTCDay();
+            const dayOfWeek = currentDate.getDay();
             const dayKey = dayMapping[dayOfWeek];
             if (dayKey && horario[dayKey]) {
                 const sortedSlots = Object.keys(horario[dayKey]).sort();
@@ -242,10 +287,9 @@ const CppProgramadorApp = {
                     }
                 }
             }
-            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+            currentDate.setDate(currentDate.getDate() + 1);
         }
         const weekDates = this.getWeekDates(this.semanaDate);
-        const days = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes' };
         let headerHTML = `<div class="cpp-semana-nav"><button class="cpp-semana-prev-btn cpp-btn">◄ Semana Anterior</button><h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3><button class="cpp-semana-next-btn cpp-btn">Siguiente ►</button></div>`;
         let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr><th>Hora</th>`;
         Object.keys(days).forEach((dayKey, i) => { tableHTML += `<th>${days[dayKey]}<br><small>${weekDates[i].toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`; });
@@ -272,10 +316,6 @@ const CppProgramadorApp = {
         const day = date.getDay();
         const diff = date.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(date.setDate(diff));
-        return Array.from({length: 5}, (v, i) => {
-            const weekDay = new Date(monday.getTime());
-            weekDay.setDate(monday.getDate() + i);
-            return weekDay;
-        });
+        return Array.from({length: 5}, (v, i) => { const weekDay = new Date(monday.getTime()); weekDay.setDate(monday.getDate() + i); return weekDay; });
     }
 };
