@@ -308,17 +308,34 @@ const CppProgramadorApp = {
 
         let schedule = [];
         let currentDate = new Date(`${currentEval.start_date}T12:00:00Z`);
+
+        // FIX: Prevent infinite loop if start_date is invalid
+        if (isNaN(currentDate.getTime())) {
+            content.innerHTML = '<p class="cpp-empty-panel" style="color: red;">Error: La fecha de inicio de la evaluación no es válida. Por favor, corrígela en la pestaña "Programación".</p>';
+            return;
+        }
+
         let sessionIndex = 0;
         const dayMapping = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
 
+        // Add a safety break to prevent browser crashes in unforeseen edge cases.
+        let safetyCounter = 0;
+        const MAX_ITERATIONS = 50000; // Approx 136 years of daily scheduling, a safe limit.
+
         while(sessionIndex < sesiones.length) {
+            if (++safetyCounter > MAX_ITERATIONS) {
+                console.error("Scheduler safety break triggered. Check for logic errors.");
+                content.innerHTML = '<p class="cpp-empty-panel" style="color: red;">Error: Se ha producido un error inesperado al generar el calendario. Revisa la configuración del horario y las fechas.</p>';
+                break;
+            }
+
             const dayOfWeek = currentDate.getUTCDay();
             const dayKey = dayMapping[dayOfWeek];
 
             if (dayKey && horario[dayKey]) {
                 const sortedSlots = Object.keys(horario[dayKey]).sort();
                 for (const slot of sortedSlots) {
-                    if (sessionIndex < sesiones.length && horario[dayKey][slot] == this.currentClase.id) {
+                    if (sessionIndex < sesiones.length && String(horario[dayKey][slot]) === String(this.currentClase.id)) {
                         schedule.push({ sesion: sesiones[sessionIndex], fecha: new Date(currentDate.getTime()), hora: slot });
                         sessionIndex++;
                     }
