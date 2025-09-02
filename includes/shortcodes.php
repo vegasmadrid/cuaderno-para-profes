@@ -69,64 +69,90 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         </div>
 
         <div class="cpp-cuaderno-main-content-classroom" id="cpp-cuaderno-main-content">
-            <div class="cpp-main-tabs">
-            <!-- La navegación de pestañas ahora se carga dinámicamente en la barra superior -->
-                <div class="cpp-main-tabs-content">
-                    <div id="cpp-main-tab-cuaderno" class="cpp-main-tab-content active">
-                        <div id="cpp-cuaderno-tabla-area">
-                            <div id="cpp-cuaderno-contenido">
-                                <?php if (empty($clases)): ?>
-                                    <div class="cpp-welcome-screen" id="cpp-welcome-box">
-                                        <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno de profe! 👋</h2>
-                                        <p class="cpp-welcome-subtitle">Parece que este es tu primer viaje. ¿Listo para organizar tu universo de clases?</p>
-                                        <div class="cpp-welcome-actions">
-                                            <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
-                                                <span class="dashicons dashicons-plus"></span> Crear mi primera clase
-                                            </button>
-                                            <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-btn-crear-clase-ejemplo">
-                                                <span class="dashicons dashicons-admin-plugins"></span> Crear clase de ejemplo
-                                            </button>
-                                        </div>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="cpp-cuaderno-mensaje-vacio">
-                                        <p class="cpp-cuaderno-cargando">Cargando clase...</p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+            <div class="cpp-fixed-top-bar">
+                <div class="cpp-top-bar-left">
+                    <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                    </button>
+                    <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"></span>
+                </div>
+                <div class="cpp-top-bar-center">
+                    <div class="cpp-main-tabs-nav">
+                        <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
+                        <button class="cpp-main-tab-link" data-tab="programador">Programación</button>
+                    </div>
+                </div>
+                <div class="cpp-top-bar-right">
+                    <div class="cpp-user-menu-container">
+                        <button class="cpp-user-menu-avatar-btn">
+                            <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
+                        </button>
+                        <div class="cpp-user-menu-dropdown">
+                            <ul>
+                                <li><a href="#">Mi Cuenta</a></li>
+                                <li><a href="#">Ayuda</a></li>
+                                <li><a href="#">Contacto</a></li>
+                                <li><a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>">Cerrar Sesión</a></li>
+                            </ul>
                         </div>
                     </div>
-                    <div id="cpp-main-tab-programador" class="cpp-main-tab-content">
-                        <div id="cpp-programador-app" class="cpp-programador-container">
-                            <div class="cpp-programador-tabs">
-                                <button class="cpp-tab-link active" data-tab="programacion">Programación</button>
-                                <button class="cpp-tab-link" data-tab="semana">Semana</button>
-                                <button class="cpp-tab-link" data-tab="horario">Horario</button>
+                </div>
+            </div>
+            <div class="cpp-main-tabs-content">
+                <div id="cpp-main-tab-cuaderno" class="cpp-main-tab-content active">
+                    <div id="cpp-cuaderno-tabla-area">
+                        <div id="cpp-cuaderno-contenido">
+                            <?php if (empty($clases)): ?>
+                                <div class="cpp-welcome-screen" id="cpp-welcome-box">
+                                    <h2 class="cpp-welcome-title">¡Bienvenido al Cuaderno de profe! 👋</h2>
+                                    <p class="cpp-welcome-subtitle">Parece que este es tu primer viaje. ¿Listo para organizar tu universo de clases?</p>
+                                    <div class="cpp-welcome-actions">
+                                        <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
+                                            <span class="dashicons dashicons-plus"></span> Crear mi primera clase
+                                        </button>
+                                        <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-btn-crear-clase-ejemplo">
+                                            <span class="dashicons dashicons-admin-plugins"></span> Crear clase de ejemplo
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <div class="cpp-cuaderno-mensaje-vacio">
+                                    <p class="cpp-cuaderno-cargando">Cargando clase...</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div id="cpp-main-tab-programador" class="cpp-main-tab-content">
+                    <div id="cpp-programador-app" class="cpp-programador-container">
+                        <div class="cpp-programador-tabs">
+                            <button class="cpp-tab-link active" data-tab="programacion">Programación</button>
+                            <button class="cpp-tab-link" data-tab="semana">Semana</button>
+                            <button class="cpp-tab-link" data-tab="horario">Horario</button>
+                        </div>
+                        <div id="cpp-programador-content" class="cpp-programador-content">
+                            <div id="tab-programacion" class="cpp-tab-content active">
+                                <!-- Contenido renderizado por JS -->
                             </div>
-                            <div id="cpp-programador-content" class="cpp-programador-content">
-                                <div id="tab-programacion" class="cpp-tab-content active">
-                                    <!-- Contenido renderizado por JS -->
-                                </div>
-                                <div id="tab-semana" class="cpp-tab-content">
-                                    <!-- Contenido renderizado por JS -->
-                                </div>
-                                <div id="tab-horario" class="cpp-tab-content">
-                                    <!-- Contenido renderizado por JS -->
-                                </div>
+                            <div id="tab-semana" class="cpp-tab-content">
+                                <!-- Contenido renderizado por JS -->
                             </div>
-                            <div id="cpp-sesion-modal" class="cpp-modal" style="display:none;">
-                                <div class="cpp-modal-content">
-                                    <span class="cpp-modal-close">&times;</span>
-                                    <h2 id="cpp-sesion-modal-title">Nueva Sesión</h2>
-                                    <form id="cpp-sesion-form">
-                                        <input type="hidden" id="cpp-sesion-id" name="sesion_id">
-                                        <input type="hidden" id="cpp-sesion-clase-id" name="clase_id">
-                                        <input type="hidden" id="cpp-sesion-evaluacion-id" name="evaluacion_id">
-                                        <div class="cpp-form-group"><label for="cpp-sesion-titulo">Título de la Sesión:</label><input type="text" id="cpp-sesion-titulo" name="titulo" required></div>
-                                        <div class="cpp-form-group"><label for="cpp-sesion-descripcion">Descripción:</label><textarea id="cpp-sesion-descripcion" name="descripcion" rows="3"></textarea></div>
-                                        <div class="cpp-modal-actions"><button type="submit" class="cpp-btn cpp-btn-primary">Guardar Sesión</button></div>
-                                    </form>
-                                </div>
+                            <div id="tab-horario" class="cpp-tab-content">
+                                <!-- Contenido renderizado por JS -->
+                            </div>
+                        </div>
+                        <div id="cpp-sesion-modal" class="cpp-modal" style="display:none;">
+                            <div class="cpp-modal-content">
+                                <span class="cpp-modal-close">&times;</span>
+                                <h2 id="cpp-sesion-modal-title">Nueva Sesión</h2>
+                                <form id="cpp-sesion-form">
+                                    <input type="hidden" id="cpp-sesion-id" name="sesion_id">
+                                    <input type="hidden" id="cpp-sesion-clase-id" name="clase_id">
+                                    <input type="hidden" id="cpp-sesion-evaluacion-id" name="evaluacion_id">
+                                    <div class="cpp-form-group"><label for="cpp-sesion-titulo">Título de la Sesión:</label><input type="text" id="cpp-sesion-titulo" name="titulo" required></div>
+                                    <div class="cpp-form-group"><label for="cpp-sesion-descripcion">Descripción:</label><textarea id="cpp-sesion-descripcion" name="descripcion" rows="3"></textarea></div>
+                                    <div class="cpp-modal-actions"><button type="submit" class="cpp-btn cpp-btn-primary">Guardar Sesión</button></div>
+                                </form>
                             </div>
                         </div>
                     </div>

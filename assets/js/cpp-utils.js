@@ -38,12 +38,37 @@ cpp.utils = {
         });
     },
 
-    updateTopBarClassName: function(claseNombre) {
-        const $ = jQuery; // Asegurar que $ es jQuery aquí
-        const $span = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name');
-        if ($span.length) {
-            $span.text(claseNombre || 'Cuaderno'); 
+    getContrastingTextColor: function(hexcolor) {
+        if (!hexcolor) return '#000000';
+        hexcolor = hexcolor.replace('#', '');
+        if (hexcolor.length === 3) {
+            hexcolor = hexcolor.split('').map(char => char + char).join('');
         }
+        const r = parseInt(hexcolor.substr(0, 2), 16);
+        const g = parseInt(hexcolor.substr(2, 2), 16);
+        const b = parseInt(hexcolor.substr(4, 2), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? '#000000' : '#ffffff';
+    },
+
+    updateTopBar: function(claseData) {
+        const $ = jQuery;
+        const $topBar = $('.cpp-fixed-top-bar');
+        const $classNameSpan = $('#cpp-cuaderno-nombre-clase-activa-a1');
+
+        if (!$topBar.length) return;
+
+        const nombre = claseData.nombre || 'Selecciona una clase';
+        const color = claseData.color || '#6c757d'; // Un gris por defecto
+
+        const textColor = this.getContrastingTextColor(color);
+
+        $topBar.css({
+            'background-color': color,
+            'color': textColor
+        });
+
+        $classNameSpan.text(nombre);
     }
 };
 

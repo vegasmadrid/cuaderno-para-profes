@@ -1470,37 +1470,40 @@ body.cpp-no-text-select {
     flex-grow: 1;
     display: flex;
     justify-content: center;
+    align-items: flex-end; /* Alinea las pestañas en la parte inferior de la barra */
 }
 
 .cpp-main-tabs-nav {
     display: flex;
-    align-items: stretch;
-    height: 100%;
 }
 
 .cpp-main-tab-link {
-    padding: 0 20px;
+    padding: 10px 24px;
     cursor: pointer;
-    border: none;
-    background-color: transparent;
-    font-size: 16px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background-color: rgba(0,0,0,0.05);
+    color: inherit;
+    opacity: 0.7;
+    font-size: 14px;
     font-weight: 500;
-    color: inherit; /* Hereda el color de la barra superior */
-    opacity: 0.8;
-    display: flex;
-    align-items: center;
-    border-bottom: 3px solid transparent;
+    border-radius: 8px 8px 0 0;
+    margin: 0 4px;
+    position: relative;
+    bottom: -1px; /* Para que se solape con el borde del contenido */
     transition: all 0.2s ease-in-out;
 }
 
 .cpp-main-tab-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
     opacity: 1;
+    background-color: rgba(0,0,0,0.1);
 }
 
 .cpp-main-tab-link.active {
-    border-bottom-color: currentColor; /* Usa el color del texto actual (blanco o negro) */
+    background-color: #fff; /* El color del área de contenido */
+    color: #333; /* Texto oscuro para la pestaña activa */
     opacity: 1;
+    border-color: #e0e0e0;
     font-weight: 600;
 }
 
@@ -1510,6 +1513,7 @@ body.cpp-no-text-select {
     overflow-y: auto;
     position: relative;
     background-color: #fff;
+    border-top: 1px solid #e0e0e0;
 }
 
 .cpp-main-tab-content {
