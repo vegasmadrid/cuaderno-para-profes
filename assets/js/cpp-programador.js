@@ -287,16 +287,34 @@ const CppProgramadorApp = {
         if (!this.currentClase || !this.currentEvaluacionId) { content.innerHTML = '<p class="cpp-empty-panel">Selecciona una clase y evaluación.</p>'; return; }
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         if (!currentEval || !currentEval.start_date) { content.innerHTML = '<p class="cpp-empty-panel">Establece una fecha de inicio en "Programación".</p>'; return; }
+
         const sesiones = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
         if (sesiones.length === 0) { content.innerHTML = '<p class="cpp-empty-panel">No hay sesiones para programar.</p>'; return; }
+
         const horario = this.config.horario;
+
+        // ** FIX: Pre-check to prevent infinite loop **
+        let classHasSlots = false;
+        for (const day in horario) {
+            if (Object.values(horario[day]).includes(String(this.currentClase.id))) {
+                classHasSlots = true;
+                break;
+            }
+        }
+        if (!classHasSlots) {
+            content.innerHTML = '<p class="cpp-empty-panel">Esta clase no tiene horas asignadas en el horario. Ve a la pestaña "Horario" para añadirlas.</p>';
+            return;
+        }
+
         let schedule = [];
-        let currentDate = new Date(`${currentEval.start_date}T12:00:00`);
+        let currentDate = new Date(`${currentEval.start_date}T12:00:00Z`);
         let sessionIndex = 0;
         const dayMapping = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
-        while(sessionIndex < sesiones.length && schedule.length < 500) {
-            const dayOfWeek = currentDate.getDay();
+
+        while(sessionIndex < sesiones.length) {
+            const dayOfWeek = currentDate.getUTCDay();
             const dayKey = dayMapping[dayOfWeek];
+
             if (dayKey && horario[dayKey]) {
                 const sortedSlots = Object.keys(horario[dayKey]).sort();
                 for (const slot of sortedSlots) {
@@ -306,14 +324,16 @@ const CppProgramadorApp = {
                     }
                 }
             }
-            currentDate.setDate(currentDate.getDate() + 1);
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
+
         const weekDates = this.getWeekDates(this.semanaDate);
         const days = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes' };
         let headerHTML = `<div class="cpp-semana-nav"><button class="cpp-semana-prev-btn cpp-btn">◄ Semana Anterior</button><h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3><button class="cpp-semana-next-btn cpp-btn">Siguiente ►</button></div>`;
         let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr><th>Hora</th>`;
         Object.keys(days).forEach((dayKey, i) => { tableHTML += `<th>${days[dayKey]}<br><small>${weekDates[i].toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`; });
         tableHTML += `</tr></thead><tbody>`;
+
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td>${slot}</td>`;
             Object.keys(days).forEach((dayKey, dayIndex) => {
