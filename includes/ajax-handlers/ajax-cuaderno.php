@@ -95,6 +95,12 @@ function cpp_ajax_cargar_cuaderno_clase() {
             </button>
             <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db['nombre']); ?></span>
         </div>
+        <div class="cpp-top-bar-center">
+            <div class="cpp-main-tabs-nav">
+                <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
+                <button class="cpp-main-tab-link" data-tab="programador">Programación</button>
+            </div>
+        </div>
         <div class="cpp-top-bar-right">
             <div class="cpp-user-menu-container">
                 <button class="cpp-user-menu-avatar-btn">
@@ -381,6 +387,12 @@ function cpp_ajax_cargar_vista_final() {
                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
             </button>
             <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
+        </div>
+        <div class="cpp-top-bar-center">
+            <div class="cpp-main-tabs-nav">
+                <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
+                <button class="cpp-main-tab-link" data-tab="programador">Programación</button>
+            </div>
         </div>
         <div class="cpp-top-bar-right">
             <div class="cpp-user-menu-container">

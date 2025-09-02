@@ -70,10 +70,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
 
         <div class="cpp-cuaderno-main-content-classroom" id="cpp-cuaderno-main-content">
             <div class="cpp-main-tabs">
-                <div class="cpp-main-tabs-nav">
-                    <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
-                    <button class="cpp-main-tab-link" data-tab="programador">Programación</button>
-                </div>
+            <!-- La navegación de pestañas ahora se carga dinámicamente en la barra superior -->
                 <div class="cpp-main-tabs-content">
                     <div id="cpp-main-tab-cuaderno" class="cpp-main-tab-content active">
                         <div id="cpp-cuaderno-tabla-area">

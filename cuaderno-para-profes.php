@@ -35,17 +35,35 @@ register_activation_hook(__FILE__, 'cpp_crear_tablas');
 // Cargar assets
 add_action('wp_enqueue_scripts', 'cpp_cargar_assets');
 function cpp_cargar_assets() {
+    global $post;
+    // Solo cargar los assets si el shortcode [cuaderno] está presente
+    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+        return;
+    }
+
     $plugin_version = defined('WP_DEBUG') && WP_DEBUG ? time() : CPP_VERSION;
 
-    wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.0', true);
-    wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
+    // Estilos
     wp_enqueue_style('dashicons');
-    wp_enqueue_script('jquery-ui-sortable');
+    wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
+    wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $plugin_version);
 
+    // Scripts de librerías
+    wp_enqueue_script('jquery-ui-sortable');
+    wp_enqueue_script('jquery-ui-droppable');
+    wp_enqueue_script('jquery-ui-draggable');
+    wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.0', true);
+
+    // Scripts del plugin
     wp_enqueue_script('cpp-core-js', CPP_PLUGIN_URL . 'assets/js/cpp-core.js', ['jquery', 'jquery-ui-sortable'], $plugin_version, true);
     wp_enqueue_script('cpp-utils-js', CPP_PLUGIN_URL . 'assets/js/cpp-utils.js', ['cpp-core-js'], $plugin_version, true);
     wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js'], $plugin_version, true);
+
+    // El programador ahora es una dependencia del cuaderno
+    wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $plugin_version, true);
+    wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
+
+    // Módulos de modales
     wp_enqueue_script('cpp-modales-general-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-general.js', ['cpp-core-js'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-clase-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-clase.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-alumnos.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
@@ -55,18 +73,12 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
 
+    // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('cpp_frontend_nonce'),
         'userId' => get_current_user_id()
     ]);
-
-    // Cargar assets del programador solo si el shortcode está en la página
-    global $post;
-    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'cpp_programador')) {
-        wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $plugin_version);
-        wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $plugin_version, true);
-    }
 }
 
 // Acción para manejar la descarga de Excel (exportación)
