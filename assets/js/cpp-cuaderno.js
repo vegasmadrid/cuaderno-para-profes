@@ -19,6 +19,7 @@
         finalGradeSortState: 'none', // none, desc, asc
         failedStudentsHighlighted: false,
         notaAprobado: 50, // Default, se actualiza al cargar la clase
+        programadorInicializado: false,
 
         init: function() {
             console.log("CPP Gradebook Module Initializing...");
@@ -240,10 +241,49 @@
             }
         },
 
+        handleMainTabSwitch: function($tab) {
+            const tabName = $tab.data('tab');
+            if ($tab.hasClass('active')) {
+                return; // Ya está activo
+            }
+
+            // Desactivar todas las pestañas y contenidos
+            $('.cpp-main-tab-link').removeClass('active');
+            $('.cpp-main-tab-content').removeClass('active');
+
+            // Activar la pestaña y contenido seleccionados
+            $tab.addClass('active');
+            $('#cpp-main-tab-' + tabName).addClass('active');
+
+            if (tabName === 'programador' && !this.programadorInicializado) {
+                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
+                    if (cpp.currentClaseIdCuaderno) {
+                        CppProgramadorApp.init(cpp.currentClaseIdCuaderno);
+                        this.programadorInicializado = true;
+                    } else {
+                        $('#cpp-main-tab-programador').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero para usar el programador.</p>');
+                    }
+                } else {
+                    console.error("Error: El objeto CppProgramadorApp no está disponible.");
+                    $('#cpp-main-tab-programador').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
+                }
+            } else if (tabName === 'programador' && this.programadorInicializado) {
+                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                    CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                }
+            }
+        },
+
         bindEvents: function() {
             console.log("Binding Gradebook (cuaderno) events...");
             const $document = $(document);
             const self = this;
+
+            // --- Listener para las pestañas principales (Cuaderno/Programador) ---
+            $document.on('click', '.cpp-main-tab-link', function(e) {
+                e.preventDefault();
+                self.handleMainTabSwitch($(this));
+            });
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
             // Botón para crear la primera clase desde la pantalla de bienvenida

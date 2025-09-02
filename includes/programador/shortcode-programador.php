@@ -3,7 +3,7 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
-add_shortcode('cpp_programador', 'cpp_shortcode_render_programador');
+// add_shortcode('cpp_programador', 'cpp_shortcode_render_programador'); // Shortcode obsoleto, integrado en [cuaderno]
 
 function cpp_shortcode_render_programador() {
     if (!is_user_logged_in()) {

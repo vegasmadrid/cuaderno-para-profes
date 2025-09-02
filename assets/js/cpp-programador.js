@@ -14,7 +14,7 @@ const CppProgramadorApp = {
     originalContent: '', semanaDate: new Date(),
 
     // --- Inicialización ---
-    init() {
+    init(initialClaseId) {
         this.appElement = document.getElementById('cpp-programador-app');
         this.tabs = { programacion: this.appElement.querySelector('.cpp-tab-link[data-tab="programacion"]'), semana: this.appElement.querySelector('.cpp-tab-link[data-tab="semana"]'), horario: this.appElement.querySelector('.cpp-tab-link[data-tab="horario"]') };
         this.tabContents = { programacion: this.appElement.querySelector('#tab-programacion'), semana: this.appElement.querySelector('#tab-semana'), horario: this.appElement.querySelector('#tab-horario') };
@@ -29,7 +29,7 @@ const CppProgramadorApp = {
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
         };
         this.attachEventListeners();
-        this.fetchData();
+        this.fetchData(initialClaseId);
     },
 
     attachEventListeners() {
@@ -47,7 +47,6 @@ const CppProgramadorApp = {
 
         const programacionTab = this.tabContents.programacion;
         programacionTab.addEventListener('change', e => {
-            if (e.target.id === 'cpp-programacion-clase-selector') this.selectClase(e.target.value);
             if (e.target.id === 'cpp-programacion-evaluacion-selector') { this.currentEvaluacionId = e.target.value; this.currentSesion = null; this.render(); }
             if (e.target.id === 'cpp-start-date-selector') this.saveStartDate(e.target.value);
         });
@@ -80,18 +79,15 @@ const CppProgramadorApp = {
         if (!sesion || !field) return;
         this.saveSesion(null, { ...sesion, [field]: newContent });
     },
-    selectClase(claseId) {
+    loadClass(claseId) {
         this.currentClase = this.clases.find(c => c.id == claseId);
-        if (!this.currentClase) return;
+        if (!this.currentClase) {
+            this.tabContents.programacion.innerHTML = `<p style="color:red;">Error: No se encontró la clase con ID ${claseId}.</p>`;
+            return;
+        }
         this.currentEvaluacionId = this.currentClase.evaluaciones.length > 0 ? this.currentClase.evaluaciones[0].id : null;
         this.currentSesion = null;
         this.render();
-        const controlsBar = this.appElement.querySelector('.cpp-programacion-controls');
-        if (controlsBar) {
-            controlsBar.style.backgroundColor = this.currentClase.color;
-            const hex = this.currentClase.color.replace('#', ''), r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
-            controlsBar.classList.toggle('dark-bg', ((0.299 * r + 0.587 * g + 0.114 * b) / 255) < 0.5);
-        }
     },
     switchTab(tabName) { Object.values(this.tabs).forEach(tab => tab.classList.remove('active')); Object.values(this.tabContents).forEach(content => content.classList.remove('active')); this.tabs[tabName].classList.add('active'); this.tabContents[tabName].classList.add('active'); },
     addTimeSlot() {
@@ -134,20 +130,26 @@ const CppProgramadorApp = {
     closeSesionModal() { this.sesionModal.element.style.display = 'none'; },
 
     // --- Lógica de Datos (AJAX) ---
-    fetchData() {
+    fetchData(initialClaseId) {
         const data = new URLSearchParams({ action: 'cpp_get_programador_all_data', nonce: cppFrontendData.nonce });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
                 this.clases = result.data.clases || [];
-                this.config = result.data.config;
+                this.config = result.data.config || { time_slots: [], horario: {} };
                 this.sesiones = result.data.sesiones || [];
-                if (!this.currentClase && this.clases.length > 0) {
-                    this.selectClase(this.clases[0].id);
-                } else if (this.clases.length > 0) {
-                    this.render();
+
+                if (this.clases.length > 0) {
+                    if (initialClaseId) {
+                        this.loadClass(initialClaseId);
+                    } else {
+                        // Si no se proporciona una clase inicial, no se muestra nada.
+                        this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
+                    }
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
                 }
+            } else {
+                this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
             }
         });
     },
@@ -244,14 +246,18 @@ const CppProgramadorApp = {
     },
     renderProgramacionTab() {
         const content = this.tabContents.programacion;
-        let claseOptions = this.clases.map(c => `<option value="${c.id}" ${this.currentClase.id == c.id ? 'selected' : ''}>${c.nombre}</option>`).join('');
+        if (!this.currentClase) {
+            content.innerHTML = '<p>Selecciona una clase para ver la programación.</p>';
+            return;
+        }
         let evaluacionOptions = '', startDate = '';
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         if (this.currentClase.evaluaciones.length > 0) {
             evaluacionOptions = this.currentClase.evaluaciones.map(e => `<option value="${e.id}" ${e.id == this.currentEvaluacionId ? 'selected' : ''}>${e.nombre_evaluacion}</option>`).join('');
             if (currentEval) startDate = currentEval.start_date || '';
         }
-        let controlsHTML = `<div class="cpp-programacion-controls"><label>Clase: <select id="cpp-programacion-clase-selector">${claseOptions}</select></label><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
+        // Se elimina el selector de clase. El nombre de la clase se mostrará en la barra superior principal.
+        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
         let layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul><button class="cpp-add-sesion-btn cpp-btn cpp-btn-primary" ${!this.currentEvaluacionId ? 'disabled' : ''}>+ Añadir Sesión</button></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
         content.innerHTML = controlsHTML + layoutHTML;
         this.makeSesionesSortable();
