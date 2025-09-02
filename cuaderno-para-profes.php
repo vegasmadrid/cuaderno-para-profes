@@ -27,6 +27,7 @@ require_once CPP_PLUGIN_DIR . 'includes/excel-import.php';
 // Incluir archivos del programador
 require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
 require_once CPP_PLUGIN_DIR . 'includes/programador/shortcode-programador.php';
+require_once CPP_PLUGIN_DIR . 'includes/programador/ajax-programador.php';
 
 // Crear tablas al activar
 register_activation_hook(__FILE__, 'cpp_crear_tablas');
