@@ -38,103 +38,93 @@ const CppProgramadorApp = {
     },
 
     attachEventListeners() {
-        // Listener para el contenedor principal de la app del programador
-        this.appElement.addEventListener('click', e => {
-            // Botones de borrado
-            if (e.target.matches('.cpp-delete-sesion-btn')) {
-                e.stopPropagation();
-                this.deleteSesion(e.target.dataset.sesionId);
-                return;
-            }
-            if (e.target.matches('.cpp-delete-slot-btn')) {
-                this.deleteTimeSlot(e.target.dataset.slot);
-                return;
-            }
+        const $document = jQuery(document);
+        const self = this;
 
-            // Otros botones
-            if (e.target.id === 'cpp-horario-add-slot-btn') {
-                this.addTimeSlot();
-                return;
-            }
-            if (e.target.matches('.cpp-add-sesion-btn')) {
-                this.openSesionModal();
-                return;
-            }
+        // Delegated events attached to the document for robustness
+        $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) {
+            e.stopPropagation();
+            self.deleteSesion(this.dataset.sesionId);
+        });
 
-            // Navegación y selección
-            const sesionItem = e.target.closest('.cpp-sesion-list-item');
-            if (sesionItem) {
-                this.currentSesion = this.sesiones.find(s => s.id == sesionItem.dataset.sesionId);
-                this.renderProgramacionTab();
-                return;
-            }
-            if (e.target.matches('.cpp-semana-prev-btn')) {
-                this.semanaDate.setDate(this.semanaDate.getDate() - 7);
-                this.renderSemanaTab();
-                return;
-            }
-            if (e.target.matches('.cpp-semana-next-btn')) {
-                this.semanaDate.setDate(this.semanaDate.getDate() + 7);
-                this.renderSemanaTab();
-                return;
+        $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() {
+            self.deleteTimeSlot(this.dataset.slot);
+        });
+
+        $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', function() {
+            self.addTimeSlot();
+        });
+
+        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', function() {
+            self.openSesionModal();
+        });
+
+        $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
+            self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
+            self.renderProgramacionTab();
+        });
+
+        $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', function() {
+            self.semanaDate.setDate(self.semanaDate.getDate() - 7);
+            self.renderSemanaTab();
+        });
+
+        $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', function() {
+            self.semanaDate.setDate(self.semanaDate.getDate() + 7);
+            self.renderSemanaTab();
+        });
+
+        $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() {
+            self.saveHorario(true);
+        });
+
+        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() {
+            self.currentEvaluacionId = this.value;
+            self.currentSesion = null;
+            self.render();
+        });
+
+        $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() {
+            self.saveStartDate(this.value);
+        });
+
+        $document.on('focusin', '#cpp-programador-app [contenteditable]', function() {
+            self.originalContent = this.innerHTML;
+        });
+
+        $document.on('focusin', '#cpp-programador-app .cpp-horario-time-slot', function() {
+            this.dataset.originalValue = this.textContent;
+        });
+
+        $document.on('focusout', '#cpp-programador-app [contenteditable]', function() {
+            self.handleInlineEdit(this);
+        });
+
+        $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() {
+            self.handleTimeSlotEdit(this);
+        });
+
+        $document.on('keydown', '#cpp-programador-app [contenteditable]', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.blur();
+            } else if (e.key === 'Escape') {
+                this.innerHTML = self.originalContent;
+                this.blur();
             }
         });
 
-        // Listeners para cambios y edición
-        this.appElement.addEventListener('change', e => {
-            if (e.target.tagName === 'SELECT' && e.target.closest('#cpp-horario-table')) {
-                this.saveHorario(true);
-            }
-            if (e.target.id === 'cpp-programacion-evaluacion-selector') {
-                this.currentEvaluacionId = e.target.value;
-                this.currentSesion = null;
-                this.render();
-            }
-            if (e.target.id === 'cpp-start-date-selector') {
-                this.saveStartDate(e.target.value);
+        $document.on('keydown', '#cpp-programador-app .cpp-horario-time-slot', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
+            } else if (e.key === 'Escape') {
+                this.textContent = this.dataset.originalValue;
+                this.blur();
             }
         });
 
-        this.appElement.addEventListener('focusin', e => {
-            if (e.target.matches('[contenteditable]')) {
-                this.originalContent = e.target.innerHTML;
-            }
-            if (e.target.matches('.cpp-horario-time-slot')) {
-                e.target.dataset.originalValue = e.target.textContent;
-            }
-        });
-
-        this.appElement.addEventListener('focusout', e => {
-            if (e.target.matches('[contenteditable]')) {
-                this.handleInlineEdit(e.target);
-            }
-            if (e.target.matches('.cpp-horario-time-slot')) {
-                this.handleTimeSlotEdit(e.target);
-            }
-        });
-
-        this.appElement.addEventListener('keydown', e => {
-            if (e.target.matches('[contenteditable]')) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    e.target.blur();
-                } else if (e.key === 'Escape') {
-                    e.target.innerHTML = this.originalContent;
-                    e.target.blur();
-                }
-            }
-            if (e.target.matches('.cpp-horario-time-slot')) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.target.blur();
-                } else if (e.key === 'Escape') {
-                    e.target.textContent = e.target.dataset.originalValue;
-                    e.target.blur();
-                }
-            }
-        });
-
-        // Listeners para el modal de sesión, que está fuera del flujo principal
+        // Listeners for the modal, which is outside the main app flow
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
     },
