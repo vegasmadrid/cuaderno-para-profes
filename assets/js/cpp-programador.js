@@ -182,8 +182,11 @@ const CppProgramadorApp = {
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
                 if (fromModal) this.closeSesionModal();
-                this.fetchData();
-            } else { alert('Error al guardar.'); this.fetchData(); }
+                this.fetchData(this.currentClase.id);
+            } else {
+                alert('Error al guardar.');
+                this.fetchData(this.currentClase.id);
+            }
         });
     },
     saveStartDate(startDate) {
@@ -212,15 +215,22 @@ const CppProgramadorApp = {
         if (!confirm('¿Seguro que quieres eliminar esta sesión?')) return;
         const data = new URLSearchParams({ action: 'cpp_delete_programador_sesion', nonce: cppFrontendData.nonce, sesion_id: sesionId });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) { if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null; this.fetchData(); }
+            if (result.success) {
+                if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
+                this.fetchData(this.currentClase.id);
+            }
             else { alert('Error al eliminar la sesión.'); }
         });
     },
     saveSesionOrder(newOrder) {
         const data = new URLSearchParams({ action: 'cpp_save_sesiones_order', nonce: cppFrontendData.nonce, clase_id: this.currentClase.id, evaluacion_id: this.currentEvaluacionId, orden: JSON.stringify(newOrder) });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) this.fetchData();
-            else { alert('Error al guardar el orden.'); this.fetchData(); }
+            if (result.success) {
+                this.fetchData(this.currentClase.id);
+            } else {
+                alert('Error al guardar el orden.');
+                this.fetchData(this.currentClase.id);
+            }
         });
     },
 
