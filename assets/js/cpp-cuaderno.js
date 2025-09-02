@@ -258,29 +258,34 @@
                 return; // Ya está activo
             }
 
-            // Desactivar todas las pestañas y contenidos
             $('.cpp-main-tab-link').removeClass('active');
             $('.cpp-main-tab-content').removeClass('active');
 
-            // Activar la pestaña y contenido seleccionados
             $tab.addClass('active');
             $('#cpp-main-tab-' + tabName).addClass('active');
 
-            if (tabName === 'programador' && !this.programadorInicializado) {
-                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
-                    if (cpp.currentClaseIdCuaderno) {
-                        CppProgramadorApp.init(cpp.currentClaseIdCuaderno);
-                        this.programadorInicializado = true;
+            const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
+
+            if (isProgramadorTab) {
+                // Inicializar el programador si es la primera vez que se accede a una de sus pestañas
+                if (!this.programadorInicializado) {
+                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
+                        if (cpp.currentClaseIdCuaderno) {
+                            CppProgramadorApp.init(cpp.currentClaseIdCuaderno);
+                            this.programadorInicializado = true;
+                        } else {
+                            // Mostrar mensaje en todas las pestañas del programador si no hay clase
+                            $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero.</p>');
+                        }
                     } else {
-                        $('#cpp-main-tab-programador').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero para usar el programador.</p>');
+                        console.error("Error: El objeto CppProgramadorApp no está disponible.");
+                         $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
                     }
                 } else {
-                    console.error("Error: El objeto CppProgramadorApp no está disponible.");
-                    $('#cpp-main-tab-programador').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
-                }
-            } else if (tabName === 'programador' && this.programadorInicializado) {
-                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                    CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                    // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
+                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                        CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                    }
                 }
             }
         },

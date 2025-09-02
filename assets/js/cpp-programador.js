@@ -16,8 +16,13 @@ const CppProgramadorApp = {
     // --- Inicialización ---
     init(initialClaseId) {
         this.appElement = document.getElementById('cpp-programador-app');
-        this.tabs = { programacion: this.appElement.querySelector('.cpp-tab-link[data-tab="programacion"]'), semana: this.appElement.querySelector('.cpp-tab-link[data-tab="semana"]'), horario: this.appElement.querySelector('.cpp-tab-link[data-tab="horario"]') };
-        this.tabContents = { programacion: this.appElement.querySelector('#tab-programacion'), semana: this.appElement.querySelector('#tab-semana'), horario: this.appElement.querySelector('#tab-horario') };
+        // Los selectores de pestañas y contenidos ahora son manejados por el cuaderno principal.
+        // Solo necesitamos los contenedores de contenido para renderizar.
+        this.tabContents = {
+            programacion: document.getElementById('cpp-main-tab-programacion'),
+            semana: document.getElementById('cpp-main-tab-semana'),
+            horario: document.getElementById('cpp-main-tab-horario')
+        };
         this.sesionModal = {
             element: document.querySelector('#cpp-sesion-modal'),
             form: document.querySelector('#cpp-sesion-form'),
@@ -33,39 +38,103 @@ const CppProgramadorApp = {
     },
 
     attachEventListeners() {
-        Object.values(this.tabs).forEach(tab => tab.addEventListener('click', e => this.switchTab(e.target.dataset.tab)));
+        // Listener para el contenedor principal de la app del programador
+        this.appElement.addEventListener('click', e => {
+            // Botones de borrado
+            if (e.target.matches('.cpp-delete-sesion-btn')) {
+                e.stopPropagation();
+                this.deleteSesion(e.target.dataset.sesionId);
+                return;
+            }
+            if (e.target.matches('.cpp-delete-slot-btn')) {
+                this.deleteTimeSlot(e.target.dataset.slot);
+                return;
+            }
 
-        const horarioTab = this.tabContents.horario;
-        horarioTab.addEventListener('change', e => { if (e.target.tagName === 'SELECT') this.saveHorario(true); });
-        horarioTab.addEventListener('click', e => {
-            if (e.target.id === 'cpp-horario-add-slot-btn') this.addTimeSlot();
-            if (e.target.matches('.cpp-delete-slot-btn')) this.deleteTimeSlot(e.target.dataset.slot);
-        });
-        horarioTab.addEventListener('focusin', e => { if (e.target.matches('.cpp-horario-time-slot')) e.target.dataset.originalValue = e.target.textContent; });
-        horarioTab.addEventListener('focusout', e => { if (e.target.matches('.cpp-horario-time-slot')) this.handleTimeSlotEdit(e.target); });
-        horarioTab.addEventListener('keydown', e => { if (e.target.matches('.cpp-horario-time-slot')) { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { e.target.textContent = e.target.dataset.originalValue; e.target.blur(); } } });
+            // Otros botones
+            if (e.target.id === 'cpp-horario-add-slot-btn') {
+                this.addTimeSlot();
+                return;
+            }
+            if (e.target.matches('.cpp-add-sesion-btn')) {
+                this.openSesionModal();
+                return;
+            }
 
-        const programacionTab = this.tabContents.programacion;
-        programacionTab.addEventListener('change', e => {
-            if (e.target.id === 'cpp-programacion-evaluacion-selector') { this.currentEvaluacionId = e.target.value; this.currentSesion = null; this.render(); }
-            if (e.target.id === 'cpp-start-date-selector') this.saveStartDate(e.target.value);
-        });
-        programacionTab.addEventListener('click', e => {
-            if (e.target.matches('.cpp-delete-sesion-btn')) { e.stopPropagation(); this.deleteSesion(e.target.dataset.sesionId); return; }
+            // Navegación y selección
             const sesionItem = e.target.closest('.cpp-sesion-list-item');
-            if (sesionItem) { this.currentSesion = this.sesiones.find(s => s.id == sesionItem.dataset.sesionId); this.renderProgramacionTab(); }
-            if (e.target.matches('.cpp-add-sesion-btn')) this.openSesionModal();
+            if (sesionItem) {
+                this.currentSesion = this.sesiones.find(s => s.id == sesionItem.dataset.sesionId);
+                this.renderProgramacionTab();
+                return;
+            }
+            if (e.target.matches('.cpp-semana-prev-btn')) {
+                this.semanaDate.setDate(this.semanaDate.getDate() - 7);
+                this.renderSemanaTab();
+                return;
+            }
+            if (e.target.matches('.cpp-semana-next-btn')) {
+                this.semanaDate.setDate(this.semanaDate.getDate() + 7);
+                this.renderSemanaTab();
+                return;
+            }
         });
-        programacionTab.addEventListener('focusin', e => { if (e.target.matches('[contenteditable]')) this.originalContent = e.target.innerHTML; });
-        programacionTab.addEventListener('focusout', e => { if (e.target.matches('[contenteditable]')) this.handleInlineEdit(e.target); });
-        programacionTab.addEventListener('keydown', e => { if (e.target.matches('[contenteditable]')) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.target.blur(); } else if (e.key === 'Escape') { e.target.innerHTML = this.originalContent; e.target.blur(); } } });
 
-        const semanaTab = this.tabContents.semana;
-        semanaTab.addEventListener('click', e => {
-            if (e.target.matches('.cpp-semana-prev-btn')) { this.semanaDate.setDate(this.semanaDate.getDate() - 7); this.renderSemanaTab(); }
-            if (e.target.matches('.cpp-semana-next-btn')) { this.semanaDate.setDate(this.semanaDate.getDate() + 7); this.renderSemanaTab(); }
+        // Listeners para cambios y edición
+        this.appElement.addEventListener('change', e => {
+            if (e.target.tagName === 'SELECT' && e.target.closest('#cpp-horario-table')) {
+                this.saveHorario(true);
+            }
+            if (e.target.id === 'cpp-programacion-evaluacion-selector') {
+                this.currentEvaluacionId = e.target.value;
+                this.currentSesion = null;
+                this.render();
+            }
+            if (e.target.id === 'cpp-start-date-selector') {
+                this.saveStartDate(e.target.value);
+            }
         });
 
+        this.appElement.addEventListener('focusin', e => {
+            if (e.target.matches('[contenteditable]')) {
+                this.originalContent = e.target.innerHTML;
+            }
+            if (e.target.matches('.cpp-horario-time-slot')) {
+                e.target.dataset.originalValue = e.target.textContent;
+            }
+        });
+
+        this.appElement.addEventListener('focusout', e => {
+            if (e.target.matches('[contenteditable]')) {
+                this.handleInlineEdit(e.target);
+            }
+            if (e.target.matches('.cpp-horario-time-slot')) {
+                this.handleTimeSlotEdit(e.target);
+            }
+        });
+
+        this.appElement.addEventListener('keydown', e => {
+            if (e.target.matches('[contenteditable]')) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.target.blur();
+                } else if (e.key === 'Escape') {
+                    e.target.innerHTML = this.originalContent;
+                    e.target.blur();
+                }
+            }
+            if (e.target.matches('.cpp-horario-time-slot')) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                } else if (e.key === 'Escape') {
+                    e.target.textContent = e.target.dataset.originalValue;
+                    e.target.blur();
+                }
+            }
+        });
+
+        // Listeners para el modal de sesión, que está fuera del flujo principal
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
     },
@@ -89,7 +158,7 @@ const CppProgramadorApp = {
         this.currentSesion = null;
         this.render();
     },
-    switchTab(tabName) { Object.values(this.tabs).forEach(tab => tab.classList.remove('active')); Object.values(this.tabContents).forEach(content => content.classList.remove('active')); this.tabs[tabName].classList.add('active'); this.tabContents[tabName].classList.add('active'); },
+    // La lógica de switchTab ahora es manejada por cpp-cuaderno.js
     addTimeSlot() {
         const newSlot = prompt('Nuevo tramo horario (ej: 13:00):', '13:00');
         if (newSlot && /^\d{2}:\d{2}$/.test(newSlot) && !this.config.time_slots.includes(newSlot)) {
@@ -282,10 +351,15 @@ const CppProgramadorApp = {
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}"><h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Actividades</h4><div class="cpp-sesion-detail-content" data-field="actividades" contenteditable="true">${this.currentSesion.actividades || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Seguimiento</h4><div class="cpp-sesion-detail-content" data-field="seguimiento" contenteditable="true">${this.currentSesion.seguimiento || ''}</div></div></div>`;
     },
     renderHorarioTab() {
+        if (!this.tabContents.horario) return;
         const content = this.tabContents.horario;
         const days = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes' };
         let classOptions = '<option value="">-- Vacío --</option>' + this.clases.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-        let tableHTML = `<div class="cpp-horario-actions"><button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary">+ Añadir Tramo</button></div><table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th>Hora</th>${Object.values(days).map(day => `<th>${day}</th>`).join('')}<th></th></tr></thead><tbody>`;
+
+        // El botón de añadir tramo ahora va en la cabecera
+        const addButtonHTML = '<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary" title="Añadir nuevo tramo horario">+ Añadir Tramo</button>';
+        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th>Hora</th>${Object.values(days).map(day => `<th>${day}</th>`).join('')}<th>${addButtonHTML}</th></tr></thead><tbody>`;
+
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
             Object.keys(days).forEach(dayKey => {
