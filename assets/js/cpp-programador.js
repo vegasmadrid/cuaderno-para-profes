@@ -1,10 +1,6 @@
 // /assets/js/cpp-programador.js
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('cpp-programador-app')) {
-        CppProgramadorApp.init();
-    }
-});
+// La inicialización ahora es controlada por cpp-cuaderno.js
 
 const CppProgramadorApp = {
     // --- Propiedades ---
