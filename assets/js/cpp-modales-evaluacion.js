@@ -155,8 +155,8 @@
         eliminarCategoria: function($btn) {
             const categoriaId = $btn.data('categoria-id');
             const categoriaNombre = $btn.closest('li').find('.cpp-categoria-nombre-listado').text();
-            const $mainContainer = $btn.closest('.cpp-clase-modal-ponderaciones-container');
-            const evaluacionId = $mainContainer.data('evaluacion-id');
+            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content');
+            const evaluacionId = $settingsContainer.data('evaluacion-id');
             
             if (confirm(`¿Seguro que quieres eliminar la categoría "${categoriaNombre}"?`)) {
                 const self = this;
@@ -165,7 +165,7 @@
                     data: { action: 'cpp_eliminar_categoria_evaluacion', nonce: cppFrontendData.nonce, categoria_id: categoriaId },
                     success: function(response) {
                         if (response.success) {
-                            self.refreshCategoriasList(evaluacionId, '#cpp-clase-modal-ponderaciones-container');
+                            self.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
                             cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo eliminar.'));
