@@ -7,6 +7,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 add_action('wp_ajax_cpp_get_programador_all_data', 'cpp_ajax_get_programador_all_data');
 add_action('wp_ajax_cpp_save_programador_horario', 'cpp_ajax_save_programador_horario');
 add_action('wp_ajax_cpp_save_programador_sesion', 'cpp_ajax_save_programador_sesion');
+add_action('wp_ajax_cpp_add_inline_sesion', 'cpp_ajax_add_inline_sesion');
 add_action('wp_ajax_cpp_delete_programador_sesion', 'cpp_ajax_delete_programador_sesion');
 add_action('wp_ajax_cpp_save_sesiones_order', 'cpp_ajax_save_sesiones_order');
 add_action('wp_ajax_cpp_save_start_date', 'cpp_ajax_save_start_date');
@@ -92,4 +93,28 @@ function cpp_ajax_create_programador_example_data() {
     $user_id = get_current_user_id();
     if (cpp_programador_create_example_data($user_id)) { wp_send_json_success(['message' => 'Datos de ejemplo creados.']); }
     else { wp_send_json_error(['message' => 'No se pudieron crear los datos. Asegúrate de tener clases creadas.']); }
+}
+
+function cpp_ajax_add_inline_sesion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $sesion_data = isset($_POST['sesion']) ? json_decode(stripslashes($_POST['sesion']), true) : null;
+    $after_sesion_id = isset($_POST['after_sesion_id']) ? intval($_POST['after_sesion_id']) : 0;
+
+    if (empty($sesion_data) || !isset($sesion_data['evaluacion_id']) || empty($after_sesion_id)) {
+        wp_send_json_error(['message' => 'Datos de sesión no válidos.']);
+        return;
+    }
+
+    $sesion_data['user_id'] = $user_id;
+
+    $result = cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user_id);
+
+    if ($result) {
+        wp_send_json_success(['message' => 'Sesión añadida.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al añadir la sesión.']);
+    }
 }

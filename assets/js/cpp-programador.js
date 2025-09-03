@@ -51,8 +51,12 @@ const CppProgramadorApp = {
             self.addTimeSlot();
         });
 
-        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', function() {
+        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', function() { // Para el botón principal cuando no hay sesiones
             self.openSesionModal();
+        });
+
+        $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() {
+            self.addInlineSesion(this.dataset.afterSesionId);
         });
 
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
@@ -133,6 +137,31 @@ const CppProgramadorApp = {
         const field = element.dataset.field;
         if (!sesion || !field) return;
         this.saveSesion(null, { ...sesion, [field]: newContent });
+    },
+
+    addInlineSesion(afterSesionId) {
+        const newSession = {
+            clase_id: this.currentClase.id,
+            evaluacion_id: this.currentEvaluacionId,
+            titulo: 'Nueva Sesión',
+        };
+
+        const data = new URLSearchParams({
+            action: 'cpp_add_inline_sesion',
+            nonce: cppFrontendData.nonce,
+            sesion: JSON.stringify(newSession),
+            after_sesion_id: afterSesionId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.fetchData(this.currentClase.id);
+                } else {
+                    alert('Error al añadir la sesión en línea.');
+                }
+            });
     },
     loadClass(claseId) {
         this.currentClase = this.clases.find(c => c.id == claseId);
@@ -310,6 +339,7 @@ const CppProgramadorApp = {
         this.renderHorarioTab();
     },
     renderProgramacionTab() {
+        if (!this.tabContents.programacion) return;
         const content = this.tabContents.programacion;
         if (!this.currentClase) {
             content.innerHTML = '<p>Selecciona una clase para ver la programación.</p>';
@@ -321,16 +351,26 @@ const CppProgramadorApp = {
             evaluacionOptions = this.currentClase.evaluaciones.map(e => `<option value="${e.id}" ${e.id == this.currentEvaluacionId ? 'selected' : ''}>${e.nombre_evaluacion}</option>`).join('');
             if (currentEval) startDate = currentEval.start_date || '';
         }
-        // Se elimina el selector de clase. El nombre de la clase se mostrará en la barra superior principal.
+
+        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+        const addSesionButton = sesionesFiltradas.length === 0 ? `<button class="cpp-add-sesion-btn cpp-btn cpp-btn-primary" ${!this.currentEvaluacionId ? 'disabled' : ''}>+ Añadir Primera Sesión</button>` : '';
+
         let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
-        let layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul><button class="cpp-add-sesion-btn cpp-btn cpp-btn-primary" ${!this.currentEvaluacionId ? 'disabled' : ''}>+ Añadir Sesión</button></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+        let layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul>${addSesionButton}</div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
         content.innerHTML = controlsHTML + layoutHTML;
         this.makeSesionesSortable();
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
         if (sesionesFiltradas.length === 0) return '<li>No hay sesiones para esta evaluación.</li>';
-        return sesionesFiltradas.map((s, index) => `<li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}"><span class="cpp-sesion-handle">⠿</span><span class="cpp-sesion-number">${index + 1}.</span><span class="cpp-sesion-title">${s.titulo}</span><button class="cpp-delete-sesion-btn" data-sesion-id="${s.id}">❌</button></li>`).join('');
+        return sesionesFiltradas.map((s, index) => `
+            <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
+                <span class="cpp-sesion-handle">⠿</span>
+                <span class="cpp-sesion-number">${index + 1}.</span>
+                <span class="cpp-sesion-title">${s.titulo}</span>
+                <button class="cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">+</button>
+                <button class="cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">❌</button>
+            </li>`).join('');
     },
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
@@ -342,9 +382,10 @@ const CppProgramadorApp = {
         const days = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes' };
         let classOptions = '<option value="">-- Vacío --</option>' + this.clases.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 
-        // El botón de añadir tramo ahora va en la cabecera
         const addButtonHTML = '<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary" title="Añadir nuevo tramo horario">+ Añadir Tramo</button>';
-        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th>Hora</th>${Object.values(days).map(day => `<th>${day}</th>`).join('')}<th>${addButtonHTML}</th></tr></thead><tbody>`;
+        const configButtonHTML = '<button id="cpp-horario-config-btn" class="cpp-btn cpp-btn-secondary" title="Configurar calendario">Configurar</button>';
+
+        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(days).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;

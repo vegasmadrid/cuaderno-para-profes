@@ -98,3 +98,52 @@ function cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date) 
 function cpp_programador_create_example_data($user_id) {
     // ... (función existente, se podría actualizar para añadir start_date a la evaluación de ejemplo)
 }
+
+function cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user_id) {
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+
+    $wpdb->query('START TRANSACTION');
+
+    // 1. Get the order of the session to insert after
+    $after_orden = $wpdb->get_var($wpdb->prepare(
+        "SELECT orden FROM $tabla_sesiones WHERE id = %d AND user_id = %d",
+        $after_sesion_id,
+        $user_id
+    ));
+
+    if ($after_orden === null) {
+        $wpdb->query('ROLLBACK');
+        return false; // The 'after' session doesn't exist or doesn't belong to the user
+    }
+
+    $nuevo_orden = $after_orden + 1;
+    $evaluacion_id = $sesion_data['evaluacion_id'];
+
+    // 2. Increment the order of subsequent sessions
+    $wpdb->query($wpdb->prepare(
+        "UPDATE $tabla_sesiones SET orden = orden + 1 WHERE evaluacion_id = %d AND orden >= %d AND user_id = %d",
+        $evaluacion_id,
+        $nuevo_orden,
+        $user_id
+    ));
+
+    // 3. Insert the new session
+    $insert_data = [
+        'clase_id' => $sesion_data['clase_id'],
+        'evaluacion_id' => $evaluacion_id,
+        'user_id' => $user_id,
+        'titulo' => $sesion_data['titulo'],
+        'orden' => $nuevo_orden
+    ];
+
+    $insert_result = $wpdb->insert($tabla_sesiones, $insert_data);
+
+    if ($insert_result === false) {
+        $wpdb->query('ROLLBACK');
+        return false;
+    }
+
+    $wpdb->query('COMMIT');
+    return $wpdb->insert_id;
+}
