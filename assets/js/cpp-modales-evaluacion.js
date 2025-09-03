@@ -188,7 +188,14 @@
             // Evento para el cambio en los botones de radio
             $document.on('change', `${containerSelector} input[name="metodo_calculo_evaluacion"]`, function() {
                 const nuevoMetodo = $(this).val();
-                const $categoriasWrapper = $('#cpp-gestion-categorias-wrapper');
+                const $mainContainer = $(this).closest(containerSelector);
+                const evaluacionId = $mainContainer.data('evaluacion-id');
+                const $categoriasWrapper = $mainContainer.find('#cpp-gestion-categorias-wrapper');
+
+                if (!evaluacionId) {
+                    alert('Error: No se pudo encontrar el ID de la evaluación.');
+                    return;
+                }
 
                 // Ocultar o mostrar la sección de categorías al instante
                 if (nuevoMetodo === 'ponderada') {
@@ -205,7 +212,7 @@
                     data: {
                         action: 'cpp_guardar_metodo_calculo',
                         nonce: cppFrontendData.nonce,
-                        evaluacion_id: self.currentEvaluacionId,
+                        evaluacion_id: evaluacionId,
                         metodo: nuevoMetodo
                     },
                     success: function(response) {
@@ -213,7 +220,7 @@
                             alert('Error al guardar el método de cálculo.');
                         }
                         // Recargar el cuaderno para que la nota final se actualice con el nuevo método
-                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, self.currentEvaluacionId);
+                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                     }
                 });
             });

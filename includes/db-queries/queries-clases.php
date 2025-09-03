@@ -408,3 +408,92 @@ function cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase = 'Clase Ej
 
     return $clase_id;
 }
+
+function cpp_duplicar_clase_completa($clase_id_origen, $user_id) {
+    global $wpdb;
+
+    // Iniciar transacción
+    $wpdb->query('START TRANSACTION');
+
+    // 1. Obtener los datos de la clase original
+    $clase_origen = $wpdb->get_row(
+        $wpdb->prepare("SELECT * FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id_origen, $user_id),
+        ARRAY_A
+    );
+
+    if (!$clase_origen) {
+        $wpdb->query('ROLLBACK');
+        return false; // La clase no existe o no pertenece al usuario
+    }
+
+    // 2. Crear la nueva clase
+    $nuevo_nombre_clase = $clase_origen['nombre'] . ' (copia)';
+    $resultado_insert_clase = $wpdb->insert(
+        $wpdb->prefix . 'cpp_clases',
+        [
+            'user_id' => $user_id,
+            'nombre' => $nuevo_nombre_clase,
+            'color' => $clase_origen['color'],
+            'base_nota_final' => $clase_origen['base_nota_final'],
+            'nota_aprobado' => $clase_origen['nota_aprobado']
+        ],
+        ['%d', '%s', '%s', '%f', '%f']
+    );
+
+    if (!$resultado_insert_clase) {
+        $wpdb->query('ROLLBACK');
+        return false;
+    }
+    $nueva_clase_id = $wpdb->insert_id;
+
+    // 3. Obtener todas las evaluaciones de la clase original
+    $evaluaciones_origen = $wpdb->get_results(
+        $wpdb->prepare("SELECT * FROM {$wpdb->prefix}cpp_evaluaciones WHERE clase_id = %d", $clase_id_origen),
+        ARRAY_A
+    );
+
+    // 4. Duplicar cada evaluación y sus categorías
+    foreach ($evaluaciones_origen as $evaluacion_origen) {
+        $id_evaluacion_origen = $evaluacion_origen['id'];
+
+        // a. Crear la nueva evaluación
+        $wpdb->insert(
+            $wpdb->prefix . 'cpp_evaluaciones',
+            [
+                'clase_id' => $nueva_clase_id,
+                'user_id' => $user_id,
+                'nombre_evaluacion' => $evaluacion_origen['nombre_evaluacion'],
+                'calculo_nota' => $evaluacion_origen['calculo_nota'],
+                'orden' => $evaluacion_origen['orden']
+            ],
+            ['%d', '%d', '%s', '%s', '%d']
+        );
+        $nuevo_id_evaluacion = $wpdb->insert_id;
+
+        // b. Obtener las categorías de la evaluación original
+        $categorias_origen = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE evaluacion_id = %d", $id_evaluacion_origen),
+            ARRAY_A
+        );
+
+        // c. Duplicar cada categoría
+        foreach ($categorias_origen as $categoria_origen) {
+            $wpdb->insert(
+                $wpdb->prefix . 'cpp_categorias_evaluacion',
+                [
+                    'evaluacion_id' => $nuevo_id_evaluacion,
+                    'user_id' => $user_id,
+                    'nombre_categoria' => $categoria_origen['nombre_categoria'],
+                    'porcentaje' => $categoria_origen['porcentaje'],
+                    'color' => $categoria_origen['color']
+                ],
+                ['%d', '%d', '%s', '%f', '%s']
+            );
+        }
+    }
+
+    // Finalizar transacción
+    $wpdb->query('COMMIT');
+
+    return $nueva_clase_id;
+}

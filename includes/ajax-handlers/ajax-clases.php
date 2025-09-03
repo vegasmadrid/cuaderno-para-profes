@@ -145,3 +145,28 @@ function cpp_ajax_crear_clase_ejemplo() {
         wp_send_json_error(['message' => 'Error al crear la clase de ejemplo.']);
     }
 }
+
+add_action('wp_ajax_cpp_duplicar_clase', 'cpp_ajax_duplicar_clase');
+function cpp_ajax_duplicar_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $clase_id_origen = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+
+    if (empty($clase_id_origen)) {
+        wp_send_json_error(['message' => 'ID de clase de origen no proporcionado.']);
+        return;
+    }
+
+    $nueva_clase_id = cpp_duplicar_clase_completa($clase_id_origen, $user_id);
+
+    if ($nueva_clase_id) {
+        wp_send_json_success(['message' => 'Clase duplicada correctamente.', 'nueva_clase_id' => $nueva_clase_id]);
+    } else {
+        wp_send_json_error(['message' => 'Error al duplicar la clase.']);
+    }
+}

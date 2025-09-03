@@ -126,6 +126,7 @@
                         $modal.find('#cpp-modal-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
                         $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
+                        $('#cpp-duplicar-clase-modal-btn').show();
                         $('#cpp-eliminar-clase-modal-btn').show();
                         
                         this.handleTabClick(null, 'cpp-tab-general', $modal);
@@ -271,6 +272,50 @@
                         alert('Error de conexión al eliminar.');
                         $btnEliminar.prop('disabled', false).html(originalBtnHtml);
                         $('#cpp-submit-clase-btn-modal').prop('disabled', false);
+                    }
+                });
+            }
+        },
+
+        duplicarClase: function(eventButton) {
+            eventButton.preventDefault();
+            const $btnDuplicar = $(eventButton.currentTarget);
+            const claseId = $('#cpp-form-clase #clase_id_editar').val();
+            const claseNombre = $('#cpp-form-clase #nombre_clase_modal').val().trim() || 'esta clase';
+
+            if (!claseId) {
+                alert('Error: No se pudo identificar la clase para duplicar.');
+                return;
+            }
+
+            if (confirm(`¿Quieres crear una copia de la clase "${claseNombre}"?`)) {
+                const originalBtnHtml = $btnDuplicar.html();
+                $btnDuplicar.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Duplicando...');
+                $('#cpp-submit-clase-btn-modal, #cpp-eliminar-clase-modal-btn').prop('disabled', true);
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_duplicar_clase',
+                        nonce: cppFrontendData.nonce,
+                        clase_id: claseId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Clase duplicada correctamente.');
+                            window.location.reload(); // Recargar para ver la nueva clase en la lista
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo duplicar la clase.'));
+                            $btnDuplicar.prop('disabled', false).html(originalBtnHtml);
+                            $('#cpp-submit-clase-btn-modal, #cpp-eliminar-clase-modal-btn').prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión al duplicar.');
+                        $btnDuplicar.prop('disabled', false).html(originalBtnHtml);
+                        $('#cpp-submit-clase-btn-modal, #cpp-eliminar-clase-modal-btn').prop('disabled', false);
                     }
                 });
             }
@@ -460,6 +505,7 @@
             });
 
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
+            $modalClase.on('click', '#cpp-duplicar-clase-modal-btn', (e) => { this.duplicarClase(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
             $modalClase.on('click', '.cpp-tab-link', (e) => { this.handleTabClick(e, null, $modalClase); });
 
