@@ -363,13 +363,19 @@ const CppProgramadorApp = {
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
         if (sesionesFiltradas.length === 0) return '<li>No hay sesiones para esta evaluación.</li>';
+
+        const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
+        const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
+
         return sesionesFiltradas.map((s, index) => `
             <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
                 <span class="cpp-sesion-handle">⠿</span>
                 <span class="cpp-sesion-number">${index + 1}.</span>
                 <span class="cpp-sesion-title">${s.titulo}</span>
-                <button class="cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">+</button>
-                <button class="cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">❌</button>
+                <div class="cpp-sesion-actions">
+                    <button class="cpp-sesion-action-btn cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">${addIconSVG}</button>
+                    <button class="cpp-sesion-action-btn cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">${deleteIconSVG}</button>
+                </div>
             </li>`).join('');
     },
     renderProgramacionTabRightColumn() {
