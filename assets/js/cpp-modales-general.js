@@ -33,7 +33,7 @@
                 cpp.modals.excel.resetImportForm();
             }
             
-            $visibleModal.fadeOut();
+            $visibleModal.removeClass('cpp-modal-visible');
         },
 
         bindEvents: function() {
