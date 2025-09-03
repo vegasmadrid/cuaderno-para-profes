@@ -232,7 +232,7 @@
             });
 
             $document.on('click', `${containerSelector} .cpp-btn-editar-categoria`, function() {
-                self.cargarParaEditar($(this).data('categoria-id'));
+                self.cargarParaEditar(this);
             });
 
             $document.on('click', `${containerSelector} #cpp-cancelar-edicion-categoria-btn`, function() {
