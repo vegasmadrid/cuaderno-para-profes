@@ -25,11 +25,16 @@ function cpp_ajax_obtener_categorias_evaluacion() {
         return;
     }
     
-    $categorias = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);
+    $categorias_raw = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);
+    $categorias = [];
     $total_porcentaje = 0;
-    if (is_array($categorias)) {
-        foreach ($categorias as $categoria) {
-            $total_porcentaje += $categoria['porcentaje'];
+
+    if (is_array($categorias_raw)) {
+        foreach ($categorias_raw as $categoria) {
+            if ($categoria['nombre_categoria'] !== 'Sin categoría') {
+                $categorias[] = $categoria;
+                $total_porcentaje += $categoria['porcentaje'];
+            }
         }
     }
 
