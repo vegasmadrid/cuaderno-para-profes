@@ -1,0 +1,117 @@
+/* /assets/css/cpp-programador.css */
+
+/* --- Contenedor Principal --- */
+.cpp-programador-container { background-color: #fff; border: 1px solid #e0e0e0; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+
+/* Pestañas */
+.cpp-programador-tabs { display: flex; border-bottom: 1px solid #e0e0e0; background-color: #f8f9fa; }
+.cpp-tab-link { padding: 15px 25px; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; font-size: 15px; font-weight: 500; color: #5f6368; margin: 0; }
+.cpp-tab-link.active { color: #1a73e8; border-bottom-color: #1a73e8; background-color: #fff; }
+
+/* Contenido de Pestañas */
+.cpp-programador-content { padding: 24px; overflow-y: auto; }
+.cpp-tab-content { display: none; }
+.cpp-tab-content.active { display: block; }
+
+/* --- Pestaña de Programación --- */
+.cpp-programacion-controls { display: flex; gap: 20px; align-items: center; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; transition: background-color 0.3s ease, color 0.3s ease; }
+.cpp-programacion-controls label { margin-bottom: 0; display:flex; align-items:center; gap: 8px; font-size: 14px; font-weight: 500; }
+.cpp-programacion-controls.dark-bg label { color: #fff; }
+.cpp-programacion-controls.dark-bg select, .cpp-programacion-controls.dark-bg input { background-color: rgba(255,255,255,0.2); color: #fff; border-color: rgba(255,255,255,0.5); }
+.cpp-programacion-controls.dark-bg option { color: #000; }
+#cpp-programacion-clase-selector, #cpp-programacion-evaluacion-selector, #cpp-start-date-selector { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+
+.cpp-programacion-layout { display: flex; gap: 20px; }
+.cpp-programacion-left-col { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; }
+.cpp-programacion-right-col { flex-grow: 1; border-left: 1px solid #e0e0e0; padding-left: 20px; }
+.cpp-sesiones-list-detailed { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; border: 1px solid #e0e0e0; border-radius: 4px; }
+.cpp-add-sesion-btn { margin-top: 15px; }
+.cpp-sesion-list-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; position: relative; }
+.cpp-sesion-list-item:hover { background-color: #f7f7f7; }
+.cpp-sesion-list-item.active { background-color: #e8f0fe; font-weight: 500; color: #1a73e8; }
+.cpp-sesion-handle { cursor: move; color: #999; padding: 0 5px; }
+.cpp-sesion-number { font-size: 13px; color: #888; }
+.cpp-sesion-list-item.active .cpp-sesion-number { color: #1a73e8; }
+.cpp-sesion-title { flex-grow: 1; }
+.cpp-sesion-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto; /* Pushes the actions to the right */
+}
+.cpp-sesion-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.6;
+    padding: 4px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+.cpp-sesion-action-btn:hover {
+    opacity: 1;
+    background-color: #e0e0e0;
+}
+.cpp-sesion-action-btn svg {
+    display: block;
+}
+.cpp-add-inline-sesion-btn {
+    color: #006621;
+}
+.cpp-delete-sesion-btn {
+    color: #a00;
+}
+.cpp-sesion-placeholder { height: 45px; background-color: #f0f8ff; border: 1px dashed #a0c4e0; }
+
+.cpp-sesion-detail-title { font-size: 22px; font-weight: 500; padding: 5px; margin-bottom: 15px; border-radius: 4px; }
+.cpp-sesion-detail-desc { font-size: 15px; line-height: 1.7; color: #333; padding: 5px; min-height: 100px; border-radius: 4px; }
+.cpp-sesion-detail-title:hover, .cpp-sesion-detail-desc:hover, .cpp-sesion-detail-content:hover { background-color: #f0f8ff; }
+.cpp-sesion-detail-title:focus, .cpp-sesion-detail-desc:focus, .cpp-sesion-detail-content:focus { background-color: #fff; box-shadow: 0 0 0 2px #1a73e8; outline: none; }
+.cpp-empty-panel { display: flex; align-items: center; justify-content: center; height: 100%; color: #777; font-size: 16px; padding: 40px; }
+.cpp-sesion-detail-section { margin-bottom: 20px; }
+.cpp-sesion-detail-section h4 { font-size: 14px; text-transform: uppercase; color: #5f6368; margin-bottom: 8px; font-weight: 500; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; }
+.cpp-sesion-detail-content { padding: 10px; border: 1px solid transparent; border-radius: 4px; line-height: 1.6; min-height: 60px; }
+
+/* --- Pestaña de Horario --- */
+.cpp-horario-actions { text-align: right; margin-bottom: 15px; }
+.cpp-horario-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cpp-horario-table th, .cpp-horario-table td { border: 1px solid #ddd; padding: 8px; text-align: center; vertical-align: middle; }
+.cpp-horario-table th { background-color: #f7f7f7; }
+.cpp-horario-table td { height: 60px; }
+.cpp-horario-table select { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; }
+.cpp-horario-time-slot[contenteditable="true"] { cursor: pointer; border-radius: 4px; padding: 5px; }
+.cpp-horario-time-slot[contenteditable="true"]:hover { background-color: #f0f8ff; }
+.cpp-horario-time-slot[contenteditable="true"]:focus { background-color: #fff; box-shadow: 0 0 0 2px #1a73e8; outline: none; }
+.cpp-delete-slot-btn { background: none; border: none; color: #a00; cursor: pointer; opacity: 0.5; font-size: 16px; }
+.cpp-delete-slot-btn:hover { opacity: 1; }
+
+/* --- Pestaña de Semana --- */
+.cpp-semana-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.cpp-semana-nav h3 { margin: 0; font-size: 18px; }
+.cpp-semana-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cpp-semana-table th, .cpp-semana-table td { border: 1px solid #e0e0e0; padding: 5px; text-align: left; height: 90px; vertical-align: top; }
+.cpp-semana-table th { background-color: #f7f7f7; font-size: 14px; text-align: center;}
+.cpp-semana-table th small { font-weight: normal; color: #666; }
+.cpp-semana-slot { background-color: #f9f9f9; border-left: 4px solid #ccc; padding: 8px; height: 100%; box-sizing: border-box; font-size: 13px; }
+.cpp-semana-slot strong { display: block; margin-bottom: 5px; font-size: 14px; }
+.cpp-semana-slot p { margin: 0; font-size: 12px; color: #555; }
+
+/* Modales */
+.cpp-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+.cpp-modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px 30px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+.cpp-modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; }
+.cpp-modal-close:hover, .cpp-modal-close:focus { color: black; }
+.cpp-form-group { margin-bottom: 15px; }
+.cpp-form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #444; }
+.cpp-form-group input[type="text"], .cpp-form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+.cpp-modal-actions { text-align: right; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
+
+/* Botones */
+.cpp-btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; font-size: 13px; line-height: 2.15; min-height: 30px; margin: 0; padding: 0 10px; cursor: pointer; border-width: 1px; border-style: solid; border-radius: 3px; white-space: nowrap; box-sizing: border-box; background: #f0f0f1; border-color: #ccc; color: #333; }
+.cpp-btn:hover { border-color: #999; }
+.cpp-btn-primary { background: #2271b1; border-color: #2271b1; color: #fff; }
+.cpp-btn-primary:hover { background: #1e639a; border-color: #1e639a; }
+.cpp-btn[disabled] { opacity: 0.6; cursor: not-allowed; }

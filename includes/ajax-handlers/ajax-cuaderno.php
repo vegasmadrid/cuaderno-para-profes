@@ -88,29 +88,6 @@ function cpp_ajax_cargar_cuaderno_clase() {
 
     ob_start();
     ?>
-    <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
-        <div class="cpp-top-bar-left">
-            <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-            </button>
-            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db['nombre']); ?></span>
-        </div>
-        <div class="cpp-top-bar-right">
-            <div class="cpp-user-menu-container">
-                <button class="cpp-user-menu-avatar-btn">
-                    <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
-                </button>
-                <div class="cpp-user-menu-dropdown">
-                    <ul>
-                        <li><a href="/my-account">Mi Cuenta</a></li>
-                        <li><a href="/ayuda">Ayuda</a></li>
-                        <li><a href="/contacto">Contacto</a></li>
-                        <li><a href="/member-logout">Cerrar Sesión</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
             <thead>
@@ -213,7 +190,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     <?php
     $html_cuaderno = ob_get_clean();
     wp_send_json_success([
-        'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db['nombre'], 'evaluaciones' => $evaluaciones,
+        'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db['nombre'], 'color_clase' => $clase_color_actual, 'evaluaciones' => $evaluaciones,
         'evaluacion_activa_id' => $evaluacion_activa_id, 'calculo_nota' => $metodo_calculo,
         'base_nota_final' => $base_nota_final_clase, 'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'sort_order' => $sort_order
@@ -375,29 +352,6 @@ function cpp_ajax_cargar_vista_final() {
 
     ob_start();
     ?>
-    <div class="cpp-fixed-top-bar" style="background-color: <?php echo esc_attr($clase_color_actual); ?>; color: <?php echo esc_attr($texto_color_barra_fija); ?>;">
-        <div class="cpp-top-bar-left">
-            <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-            </button>
-            <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"><?php echo esc_html($clase_db->nombre); ?></span>
-        </div>
-        <div class="cpp-top-bar-right">
-            <div class="cpp-user-menu-container">
-                <button class="cpp-user-menu-avatar-btn">
-                    <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
-                </button>
-                <div class="cpp-user-menu-dropdown">
-                    <ul>
-                        <li><a href="/my-account">Mi Cuenta</a></li>
-                        <li><a href="/ayuda">Ayuda</a></li>
-                        <li><a href="/contacto">Contacto</a></li>
-                        <li><a href="/member-logout">Cerrar Sesión</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
             <thead>
@@ -494,6 +448,7 @@ function cpp_ajax_cargar_vista_final() {
         'evaluaciones' => $evaluaciones_con_final,
         'evaluacion_activa_id' => 'final',
         'nombre_clase' => $clase_db->nombre,
+        'color_clase' => $clase_color_actual,
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
         'nota_aprobado' => floatval($clase_db->nota_aprobado)

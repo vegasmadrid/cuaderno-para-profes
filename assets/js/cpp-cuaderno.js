@@ -19,6 +19,7 @@
         finalGradeSortState: 'none', // none, desc, asc
         failedStudentsHighlighted: false,
         notaAprobado: 50, // Default, se actualiza al cargar la clase
+        programadorInicializado: false,
 
         init: function() {
             console.log("CPP Gradebook Module Initializing...");
@@ -88,9 +89,10 @@
             cpp.currentClaseIdCuaderno = claseId;
 
             const isFinalView = evaluacionId === 'final';
-            $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
-            $('#cpp-a1-import-students-btn').toggle(!isFinalView);
-            $('#cpp-a1-take-attendance-btn').toggle(!isFinalView);
+            // Estos botones ahora están en la barra superior, pero podemos mantener la lógica de visibilidad aquí
+            // $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
+            // $('#cpp-a1-import-students-btn').toggle(!isFinalView);
+            // $('#cpp-a1-take-attendance-btn').toggle(!isFinalView);
 
             if (claseId && typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId) {
                 try { localStorage.setItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId, claseId); } catch (e) { console.warn("No se pudo guardar la última clase abierta en localStorage:", e); }
@@ -101,7 +103,6 @@
 
             if (claseId) {
                 $contenidoCuaderno.html('<p class="cpp-cuaderno-cargando">Cargando cuaderno...</p>');
-                if (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function') { cpp.utils.updateTopBarClassName(claseNombre); }
                 const self = this;
 
                 const ajaxAction = isFinalView ? 'cpp_cargar_vista_final' : 'cpp_cargar_cuaderno_clase';
@@ -114,6 +115,16 @@
                     url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: { ...ajaxData, action: ajaxAction },
                     success: function(response) {
                         if (response && response.success && response.data && typeof response.data.html_cuaderno !== 'undefined') {
+
+                            // Actualizar la barra superior estática con los datos recibidos
+                            if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
+                                cpp.utils.updateTopBar({
+                                    nombre: response.data.nombre_clase,
+                                    color: response.data.color_clase
+                                });
+                            }
+
+                            // Cargar solo el contenido de la tabla en su contenedor
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
 
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
@@ -128,7 +139,6 @@
                             if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
 
-                            if (response.data.nombre_clase && (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function')) { cpp.utils.updateTopBarClassName(response.data.nombre_clase); }
                             self.updateSortButton(response.data.sort_order);
                             self.updateEnterDirectionButton();
                             self.clearCellSelection();
@@ -148,7 +158,9 @@
                 $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p>Selecciona una clase para ver el cuaderno.</p></div>');
                 if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') { cpp.gradebook.actualizarSelectCategoriasActividad(0, null); }
                 $('#clase_id_actividad_cuaderno_form').val('');
-                if (cpp.utils && typeof cpp.utils.updateTopBarClassName === 'function') { cpp.utils.updateTopBarClassName('Selecciona clase'); }
+                if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
+                    cpp.utils.updateTopBar({ nombre: 'Selecciona una clase', color: '#6c757d' });
+                }
             }
         },
 
@@ -240,10 +252,54 @@
             }
         },
 
+        handleMainTabSwitch: function($tab) {
+            const tabName = $tab.data('tab');
+            if ($tab.hasClass('active')) {
+                return; // Ya está activo
+            }
+
+            $('.cpp-main-tab-link').removeClass('active');
+            $('.cpp-main-tab-content').removeClass('active');
+
+            $tab.addClass('active');
+            $('#cpp-main-tab-' + tabName).addClass('active');
+
+            const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
+
+            if (isProgramadorTab) {
+                // Inicializar el programador si es la primera vez que se accede a una de sus pestañas
+                if (!this.programadorInicializado) {
+                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
+                        if (cpp.currentClaseIdCuaderno) {
+                            CppProgramadorApp.init(cpp.currentClaseIdCuaderno);
+                            this.programadorInicializado = true;
+                        } else {
+                            // Mostrar mensaje en todas las pestañas del programador si no hay clase
+                            $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero.</p>');
+                        }
+                    } else {
+                        console.error("Error: El objeto CppProgramadorApp no está disponible.");
+                         $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
+                    }
+                } else {
+                    // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
+                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                        CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                    }
+                }
+            }
+        },
+
         bindEvents: function() {
             console.log("Binding Gradebook (cuaderno) events...");
             const $document = $(document);
             const self = this;
+
+            // --- Listener para las pestañas principales (Cuaderno/Programador) ---
+            $document.on('click', '.cpp-main-tab-link', function(e) {
+                e.preventDefault();
+                self.handleMainTabSwitch($(this));
+            });
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
             // Botón para crear la primera clase desde la pantalla de bienvenida

@@ -1463,3 +1463,76 @@ body.cpp-no-text-select {
     font-style: italic;
 }
 /* --- END: Ficha Alumno Attendance List --- */
+
+
+/* --- Estilos para las Pestañas Principales (Cuaderno / Programador) --- */
+.cpp-top-bar-center {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Alinea las pestañas en la parte inferior de la barra */
+}
+
+.cpp-main-tabs-nav {
+    display: flex;
+}
+
+.cpp-main-tab-link {
+    padding: 10px 24px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background-color: rgba(0,0,0,0.05);
+    color: inherit;
+    opacity: 0.7;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px 8px 0 0;
+    margin: 0 4px;
+    position: relative;
+    bottom: -1px; /* Para que se solape con el borde del contenido */
+    transition: all 0.2s ease-in-out;
+}
+
+.cpp-main-tab-link:hover {
+    opacity: 1;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.cpp-main-tab-link.active {
+    background-color: #fff; /* El color del área de contenido */
+    color: #333; /* Texto oscuro para la pestaña activa */
+    opacity: 1;
+    border-color: #e0e0e0;
+    font-weight: 600;
+}
+
+/* Contenedor principal de los contenidos de las pestañas */
+.cpp-main-tabs-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    position: relative;
+    background-color: #fff;
+    border-top: 1px solid #e0e0e0;
+}
+
+.cpp-main-tab-content {
+    display: none;
+    height: 100%;
+}
+
+.cpp-main-tab-content.active {
+    display: flex; /* Usar flex para que el contenido se expanda */
+    flex-direction: column;
+}
+
+/* Ajustes para que el programador y el cuaderno encajen bien */
+#cpp-main-tab-programador, #cpp-main-tab-cuaderno {
+    padding: 0; /* Los componentes internos ya tienen sus propios paddings */
+}
+
+#cpp-programador-app, #cpp-cuaderno-tabla-area {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
