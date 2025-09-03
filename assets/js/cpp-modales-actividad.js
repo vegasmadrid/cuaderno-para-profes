@@ -51,9 +51,10 @@
                 $selectCategoriasGroup.hide();
             }
 
-            $('#cpp-modal-actividad-evaluable-cuaderno').fadeIn(function() {
-                $(this).find('#nombre_actividad_cuaderno_input').focus();
-                if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 8) {
+            const $modal = $('#cpp-modal-actividad-evaluable-cuaderno');
+            $modal.addClass('cpp-modal-visible');
+            $modal.find('#nombre_actividad_cuaderno_input').focus();
+            if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 8) {
                     cpp.tutorial.nextStep();
                 }
             });
@@ -110,7 +111,7 @@
             $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Editar Actividad Evaluable'); 
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad'); 
             $form.find('#cpp-eliminar-actividad-btn-modal').show();
-            $modal.fadeIn(); 
+            $modal.addClass('cpp-modal-visible');
             $form.find('#nombre_actividad_cuaderno_input').focus();
         },
 
@@ -170,7 +171,7 @@
                                 cpp.tutorial.nextStep();
                             }, 500);
                         }
-                        $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut(); 
+                        $('#cpp-modal-actividad-evaluable-cuaderno').removeClass('cpp-modal-visible');
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = "Cuaderno";
                             const $classNameSpan = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name');
@@ -200,7 +201,7 @@
                     data: { action: 'cpp_eliminar_actividad', nonce: cppFrontendData.nonce, actividad_id: actividadId },
                     success: function(response) {
                         if (response.success) {
-                            $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
+                            $('#cpp-modal-actividad-evaluable-cuaderno').removeClass('cpp-modal-visible');
                             if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                                 let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
                                 cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);

@@ -27,7 +27,7 @@
             if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
                 cpp.modals.general.hideAll(); 
             }
-            $('#cpp-modal-excel-options').fadeIn();
+            $('#cpp-modal-excel-options').addClass('cpp-modal-visible');
         },
 
         triggerDownload: function(event, downloadType) {
@@ -87,7 +87,7 @@
                 cpp.modals.general.hideAll(); 
             }
             this.resetImportForm(); 
-            $('#cpp-modal-import-students').fadeIn();
+            $('#cpp-modal-import-students').addClass('cpp-modal-visible');
         },
 
         downloadStudentTemplate: function(event) {

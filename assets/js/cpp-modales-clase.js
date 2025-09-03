@@ -76,7 +76,7 @@
             $('#cpp-opcion-clase-ejemplo-container').show();
             $('#rellenar_clase_ejemplo').prop('checked', false);
             
-            $modal.fadeIn().find('#nombre_clase_modal').focus();
+            $modal.addClass('cpp-modal-visible').find('#nombre_clase_modal').focus();
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
@@ -131,7 +131,7 @@
                         
                         this.handleTabClick(null, 'cpp-tab-general', $modal);
                         
-                        $modal.fadeIn();
+                        $modal.addClass('cpp-modal-visible');
                         $form.find('#nombre_clase_modal').focus();
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
@@ -174,7 +174,7 @@
 
             $('#cpp-welcome-box').hide();
 
-            $('#cpp-modal-clase').fadeOut();
+            $('#cpp-modal-clase').removeClass('cpp-modal-visible');
 
             $sidebarList.find(`li[data-clase-id="${claseData.id}"] a`).first().trigger('click');
         },

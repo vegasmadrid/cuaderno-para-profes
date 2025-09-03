@@ -188,7 +188,7 @@
             // Evento para el cambio en los botones de radio
             $document.on('change', `${containerSelector} input[name="metodo_calculo_evaluacion"]`, function() {
                 const nuevoMetodo = $(this).val();
-                const $mainContainer = $(this).closest(containerSelector); // #cpp-clase-modal-ponderaciones-container
+                const $mainContainer = $(this).closest(containerSelector);
                 const $settingsContainer = $mainContainer.find('#cpp-ponderaciones-settings-content');
                 const evaluacionId = $settingsContainer.data('evaluacion-id');
                 const $categoriasWrapper = $settingsContainer.find('#cpp-gestion-categorias-wrapper');
