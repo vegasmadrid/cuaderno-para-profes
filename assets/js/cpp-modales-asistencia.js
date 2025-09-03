@@ -63,7 +63,7 @@
             }
             $modal.find('#cpp-modal-asistencia-titulo').text(`Pasar Lista: ${claseNombre}`);
 
-            $modal.addClass('cpp-modal-visible');
+            $modal.fadeIn();
             this.cargarAlumnosyAsistencia(); // Carga para la fecha por defecto (hoy)
         },
 

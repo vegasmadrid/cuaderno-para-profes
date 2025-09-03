@@ -71,7 +71,8 @@
         },
 
         cargarParaEditar: function(button) {
-            const $formContainer = $(button).closest('.cpp-clase-modal-ponderaciones-container').find('.cpp-form-categoria-container');
+            const $settingsContainer = $(button).closest('#cpp-ponderaciones-settings-content');
+            const $formContainer = $settingsContainer.find('.cpp-form-categoria-container');
             const categoriaId = $(button).data('categoria-id');
             
             $.ajax({
@@ -101,8 +102,8 @@
         
         submitCategoriaForm: function($btn) {
             const $formContainer = $btn.closest('.cpp-form-categoria-container');
-            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content');
-            const evaluacionId = $settingsContainer.data('evaluacion-id');
+            const $mainContainer = $btn.closest('.cpp-clase-modal-ponderaciones-container');
+            const evaluacionId = $mainContainer.data('evaluacion-id');
 
             const categoriaId = $formContainer.find('#categoria_id_editar_modal').val();
             const nombre = $formContainer.find('#nombre_nueva_categoria_modal').val().trim();
@@ -137,7 +138,7 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        self.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
+                        self.refreshCategoriasList(evaluacionId, '#cpp-clase-modal-ponderaciones-container');
                         cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                     } else {
                         $errorContainer.text(response.data.message || 'Error desconocido').show();
@@ -155,8 +156,8 @@
         eliminarCategoria: function($btn) {
             const categoriaId = $btn.data('categoria-id');
             const categoriaNombre = $btn.closest('li').find('.cpp-categoria-nombre-listado').text();
-            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content');
-            const evaluacionId = $settingsContainer.data('evaluacion-id');
+            const $mainContainer = $btn.closest('.cpp-clase-modal-ponderaciones-container');
+            const evaluacionId = $mainContainer.data('evaluacion-id');
             
             if (confirm(`¿Seguro que quieres eliminar la categoría "${categoriaNombre}"?`)) {
                 const self = this;
@@ -165,7 +166,7 @@
                     data: { action: 'cpp_eliminar_categoria_evaluacion', nonce: cppFrontendData.nonce, categoria_id: categoriaId },
                     success: function(response) {
                         if (response.success) {
-                            self.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
+                            self.refreshCategoriasList(evaluacionId, '#cpp-clase-modal-ponderaciones-container');
                             cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo eliminar.'));
@@ -188,15 +189,7 @@
             // Evento para el cambio en los botones de radio
             $document.on('change', `${containerSelector} input[name="metodo_calculo_evaluacion"]`, function() {
                 const nuevoMetodo = $(this).val();
-                const $mainContainer = $(this).closest(containerSelector);
-                const $settingsContainer = $mainContainer.find('#cpp-ponderaciones-settings-content');
-                const evaluacionId = $settingsContainer.data('evaluacion-id');
-                const $categoriasWrapper = $settingsContainer.find('#cpp-gestion-categorias-wrapper');
-
-                if (!evaluacionId) {
-                    alert('Error: No se pudo encontrar el ID de la evaluación.');
-                    return;
-                }
+                const $categoriasWrapper = $('#cpp-gestion-categorias-wrapper');
 
                 // Ocultar o mostrar la sección de categorías al instante
                 if (nuevoMetodo === 'ponderada') {
@@ -213,7 +206,7 @@
                     data: {
                         action: 'cpp_guardar_metodo_calculo',
                         nonce: cppFrontendData.nonce,
-                        evaluacion_id: evaluacionId,
+                        evaluacion_id: self.currentEvaluacionId,
                         metodo: nuevoMetodo
                     },
                     success: function(response) {
@@ -221,7 +214,7 @@
                             alert('Error al guardar el método de cálculo.');
                         }
                         // Recargar el cuaderno para que la nota final se actualice con el nuevo método
-                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, self.currentEvaluacionId);
                     }
                 });
             });
@@ -231,7 +224,8 @@
                 self.submitCategoriaForm($(this));
             });
 
-            $document.on('click', `${containerSelector} .cpp-btn-editar-categoria`, function() {
+            $document.on('click', `${containerSelector} .cpp-btn-editar-categoria`, function(e) {
+                e.stopPropagation();
                 self.cargarParaEditar(this);
             });
 

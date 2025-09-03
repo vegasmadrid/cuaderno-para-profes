@@ -42,7 +42,7 @@
 
             const $modal = $('#cpp-modal-ficha-alumno');
             this.resetModal();
-            $modal.addClass('cpp-modal-visible');
+            $modal.fadeIn();
 
             const self = this;
 
@@ -61,12 +61,12 @@
                         self.renderizarFicha(response.data);
                     } else {
                         alert('Error al cargar datos de la ficha: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
-                        $modal.removeClass('cpp-modal-visible');
+                        $modal.fadeOut();
                     }
                 },
                 error: function() {
                     alert('Error de conexión al cargar datos de la ficha.');
-                    $modal.removeClass('cpp-modal-visible');
+                    $modal.fadeOut();
                 }
             });
         },

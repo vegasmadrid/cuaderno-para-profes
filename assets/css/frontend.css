@@ -414,36 +414,8 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-sidebar-overlay.cpp-sidebar-visible { display: block; }
 
 /* Estilos Generales de Modales */
-.cpp-modal {
-    display: none; /* Hidden by default */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
-    z-index: 1050;
-    overflow-y: auto;
-    padding: 20px;
-    align-items: center;
-    justify-content: center;
-}
-
-.cpp-modal.cpp-modal-visible {
-    display: flex;
-}
-
-.cpp-modal-content {
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 23px 5px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
-    max-width: 560px;
-    margin: auto;
-    padding: 24px;
-    position: relative;
-    font-size: 14px;
-    flex-shrink: 0;
-}
+.cpp-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1050; overflow-y: auto; padding: 30px 15px; }
+.cpp-modal-content { background: #fff; border-radius: 8px; box-shadow: 0 4px 23px 5px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15); max-width: 560px; margin: 0 auto; padding: 24px; position: relative; font-size: 14px; }
 .cpp-modal-close { position: absolute; top: 12px; right: 12px; font-size: 24px; color: #5f6368; cursor: pointer; line-height: 1; padding: 4px; border-radius: 50%; }
 .cpp-modal-close:hover { color: #202124; background-color: rgba(0,0,0,0.05); }
 .cpp-modal-content h2 { margin-top: 0; margin-bottom: 24px; font-size: 20px; font-weight: 500; color: #202124; }

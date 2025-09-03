@@ -4,8 +4,8 @@
 
 const CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {},
-    clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {},
+    clases: [], config: { time_slots: [], horario: {} }, sesiones: [],
     currentClase: null, currentEvaluacionId: null, currentSesion: null,
     originalContent: '', semanaDate: new Date(),
 
@@ -29,10 +29,6 @@ const CppProgramadorApp = {
             tituloInput: document.querySelector('#cpp-sesion-titulo'),
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
         };
-        this.configModal = {
-            element: document.querySelector('#cpp-config-modal'),
-            form: document.querySelector('#cpp-config-form')
-        };
         this.attachEventListeners();
         this.fetchData(initialClaseId);
     },
@@ -53,20 +49,6 @@ const CppProgramadorApp = {
 
         $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', function() {
             self.addTimeSlot();
-        });
-
-        $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            self.openConfigModal();
-        });
-
-        // Listeners for config modal
-        $document.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
-        $document.on('click', '.cpp-remove-holiday-btn', function() {
-            self.removeHoliday(this.closest('.cpp-list-item').dataset.index);
-        });
-        $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
-        $document.on('click', '.cpp-remove-vacation-btn', function() {
-            self.removeVacation(this.closest('.cpp-list-item').dataset.index);
         });
 
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', function() { // Para el botón principal cuando no hay sesiones
@@ -145,10 +127,6 @@ const CppProgramadorApp = {
         // Listeners for the modal, which is outside the main app flow
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
-        if (this.configModal.element) {
-            this.configModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeConfigModal());
-            this.configModal.form.addEventListener('submit', e => this.saveConfig(e));
-        }
     },
 
     // --- Lógica de la App ---
@@ -235,116 +213,7 @@ const CppProgramadorApp = {
     },
     closeSesionModal() { this.sesionModal.element.style.display = 'none'; },
 
-    openConfigModal() {
-        this.populateConfigModal();
-        this.configModal.element.style.display = 'block';
-    },
-    closeConfigModal() {
-        this.configModal.element.style.display = 'none';
-    },
-
-    addHoliday() {
-        const dateInput = document.getElementById('cpp-new-holiday-date');
-        const date = dateInput.value;
-        if (date && !this.config.calendar_config.holidays.includes(date)) {
-            this.config.calendar_config.holidays.push(date);
-            this.config.calendar_config.holidays.sort();
-            this.renderHolidaysList();
-            dateInput.value = '';
-        } else {
-            alert('Por favor, selecciona una fecha válida que no esté ya en la lista.');
-        }
-    },
-
-    removeHoliday(index) {
-        this.config.calendar_config.holidays.splice(index, 1);
-        this.renderHolidaysList();
-    },
-
-    addVacation() {
-        const startInput = document.getElementById('cpp-new-vacation-start');
-        const endInput = document.getElementById('cpp-new-vacation-end');
-        const start = startInput.value;
-        const end = endInput.value;
-
-        if (start && end && new Date(start) <= new Date(end)) {
-            this.config.calendar_config.vacations.push({ start, end });
-            this.renderVacationsList();
-        } else {
-            alert('Por favor, selecciona un periodo de vacaciones válido.');
-        }
-    },
-
-    removeVacation(index) {
-        this.config.calendar_config.vacations.splice(index, 1);
-        this.renderVacationsList();
-    },
-
     // --- Lógica de Datos (AJAX) ---
-    populateConfigModal() {
-        const config = this.config.calendar_config;
-        if (!config) return;
-
-        this.configModal.form.querySelectorAll('input[name="working_days"]').forEach(checkbox => {
-            checkbox.checked = config.working_days.includes(checkbox.value);
-        });
-
-        this.renderHolidaysList();
-        this.renderVacationsList();
-    },
-
-    renderHolidaysList() {
-        const list = document.getElementById('cpp-holidays-list');
-        const holidays = this.config.calendar_config.holidays || [];
-        list.innerHTML = holidays.map((holiday, index) => `
-            <div class="cpp-list-item" data-index="${index}">
-                <span>${holiday}</span>
-                <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn">&times;</button>
-            </div>
-        `).join('');
-    },
-
-    renderVacationsList() {
-        const list = document.getElementById('cpp-vacations-list');
-        const vacations = this.config.calendar_config.vacations || [];
-        list.innerHTML = vacations.map((vac, index) => `
-            <div class="cpp-list-item" data-index="${index}">
-                <span>${vac.start} al ${vac.end}</span>
-                <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn">&times;</button>
-            </div>
-        `).join('');
-    },
-
-    saveConfig(e) {
-        e.preventDefault();
-        const workingDays = Array.from(this.configModal.form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
-        const newConfig = {
-            working_days: workingDays,
-            holidays: this.config.calendar_config.holidays,
-            vacations: this.config.calendar_config.vacations
-        };
-
-        this.config.calendar_config = newConfig;
-
-        const data = new URLSearchParams({
-            action: 'cpp_save_programador_config',
-            nonce: cppFrontendData.nonce,
-            calendar_config: JSON.stringify(newConfig)
-        });
-
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success) {
-                    alert('Configuración guardada.');
-                    this.closeConfigModal();
-                    this.render();
-                } else {
-                    alert('Error al guardar la configuración.');
-                }
-            });
-    },
-
     fetchData(initialClaseId) {
         const data = new URLSearchParams({ action: 'cpp_get_programador_all_data', nonce: cppFrontendData.nonce });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
@@ -408,14 +277,11 @@ const CppProgramadorApp = {
         if (!this.currentEvaluacionId) return;
         const date = new Date(`${startDate}T12:00:00`);
         const dayOfWeek = date.getUTCDay();
-        const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
+        const dayMapping = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
         const dayKey = dayMapping[dayOfWeek];
-
-        const isWorkingDay = this.config.calendar_config.working_days.includes(dayKey);
         const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).includes(String(this.currentClase.id));
-
-        if (startDate && (!isWorkingDay || !classIdInHorario)) {
-            alert('La fecha de inicio debe ser un día lectivo en el que esta clase tenga horas asignadas en el horario.');
+        if (startDate && (!dayKey || !this.config.horario[dayKey] || !classIdInHorario)) {
+            alert('La fecha de inicio debe ser un día en el que esta clase tenga horas asignadas en el horario.');
             const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
             this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
             return;
@@ -519,25 +385,17 @@ const CppProgramadorApp = {
     renderHorarioTab() {
         if (!this.tabContents.horario) return;
         const content = this.tabContents.horario;
-        const allDays = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo' };
-        const workingDays = (this.config.calendar_config && this.config.calendar_config.working_days) ? this.config.calendar_config.working_days : ['mon', 'tue', 'wed', 'thu', 'fri'];
-        const daysToRender = workingDays.reduce((acc, dayKey) => {
-            if (allDays[dayKey]) {
-                acc[dayKey] = allDays[dayKey];
-            }
-            return acc;
-        }, {});
-
+        const days = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes' };
         let classOptions = '<option value="">-- Vacío --</option>' + this.clases.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 
         const addButtonHTML = '<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary" title="Añadir nuevo tramo horario">+ Añadir Tramo</button>';
         const configButtonHTML = '<button id="cpp-horario-config-btn" class="cpp-btn cpp-btn-secondary" title="Configurar calendario">Configurar</button>';
 
-        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(daysToRender).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
+        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(days).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
-            Object.keys(daysToRender).forEach(dayKey => {
+            Object.keys(days).forEach(dayKey => {
                 const claseId = this.config.horario?.[dayKey]?.[slot] || '';
                 tableHTML += `<td data-day="${dayKey}" data-slot="${slot}"><select data-clase-id="${claseId}">${classOptions}</select></td>`;
             });
@@ -581,11 +439,11 @@ const CppProgramadorApp = {
         }
 
         let sessionIndex = 0;
-        const calendarConfig = this.config.calendar_config || { working_days: ['mon', 'tue', 'wed', 'thu', 'fri'], holidays: [], vacations: [] };
-        const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
+        const dayMapping = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
 
+        // Add a safety break to prevent browser crashes in unforeseen edge cases.
         let safetyCounter = 0;
-        const MAX_ITERATIONS = 50000;
+        const MAX_ITERATIONS = 50000; // Approx 136 years of daily scheduling, a safe limit.
 
         while(sessionIndex < sesiones.length) {
             if (++safetyCounter > MAX_ITERATIONS) {
@@ -596,13 +454,8 @@ const CppProgramadorApp = {
 
             const dayOfWeek = currentDate.getUTCDay();
             const dayKey = dayMapping[dayOfWeek];
-            const ymd = currentDate.toISOString().slice(0, 10);
 
-            const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-            const isHoliday = calendarConfig.holidays.includes(ymd);
-            const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
-
-            if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
+            if (dayKey && horario[dayKey]) {
                 const sortedSlots = Object.keys(horario[dayKey]).sort();
                 for (const slot of sortedSlots) {
                     if (sessionIndex < sesiones.length && String(horario[dayKey][slot]) === String(this.currentClase.id)) {
@@ -615,32 +468,16 @@ const CppProgramadorApp = {
         }
 
         const weekDates = this.getWeekDates(this.semanaDate);
-        const allDays = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo' };
-        const daysToRender = calendarConfig.working_days.reduce((acc, dayKey) => {
-            if (allDays[dayKey]) {
-                acc[dayKey] = allDays[dayKey];
-            }
-            return acc;
-        }, {});
-
+        const days = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes' };
         let headerHTML = `<div class="cpp-semana-nav"><button class="cpp-semana-prev-btn cpp-btn">◄ Semana Anterior</button><h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3><button class="cpp-semana-next-btn cpp-btn">Siguiente ►</button></div>`;
         let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr><th>Hora</th>`;
-
-        const renderedHeaders = [];
-        Object.keys(daysToRender).forEach((dayKey) => {
-            const date = weekDates.find(d => this.getDayKey(d) === dayKey);
-            if(date) {
-                tableHTML += `<th>${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
-                renderedHeaders.push(dayKey);
-            }
-        });
+        Object.keys(days).forEach((dayKey, i) => { tableHTML += `<th>${days[dayKey]}<br><small>${weekDates[i].toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`; });
         tableHTML += `</tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td>${slot}</td>`;
-            renderedHeaders.forEach(dayKey => {
-                const date = weekDates.find(d => this.getDayKey(d) === dayKey);
-                const ymd = date.toISOString().slice(0, 10);
+            Object.keys(days).forEach((dayKey, dayIndex) => {
+                const ymd = weekDates[dayIndex].toISOString().slice(0, 10);
                 const evento = schedule.find(e => e.fecha.toISOString().slice(0,10) === ymd && e.hora === slot);
                 let cellContent = '';
                 if (evento) {
@@ -657,12 +494,8 @@ const CppProgramadorApp = {
     getWeekDates(d) {
         const date = new Date(d.getTime());
         const day = date.getDay();
-        const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Asume que la semana empieza en Lunes
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(date.setDate(diff));
-        return Array.from({length: 7}, (v, i) => { const weekDay = new Date(monday.getTime()); weekDay.setDate(monday.getDate() + i); return weekDay; });
-    },
-    getDayKey(date) {
-        const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
-        return dayMapping[date.getDay()];
+        return Array.from({length: 5}, (v, i) => { const weekDay = new Date(monday.getTime()); weekDay.setDate(monday.getDate() + i); return weekDay; });
     }
 };
