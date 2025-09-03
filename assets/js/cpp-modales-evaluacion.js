@@ -101,8 +101,8 @@
         
         submitCategoriaForm: function($btn) {
             const $formContainer = $btn.closest('.cpp-form-categoria-container');
-            const $mainContainer = $btn.closest('.cpp-clase-modal-ponderaciones-container');
-            const evaluacionId = $mainContainer.data('evaluacion-id');
+            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content');
+            const evaluacionId = $settingsContainer.data('evaluacion-id');
 
             const categoriaId = $formContainer.find('#categoria_id_editar_modal').val();
             const nombre = $formContainer.find('#nombre_nueva_categoria_modal').val().trim();
