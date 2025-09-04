@@ -12,8 +12,29 @@ add_action('wp_ajax_cpp_delete_programador_sesion', 'cpp_ajax_delete_programador
 add_action('wp_ajax_cpp_save_sesiones_order', 'cpp_ajax_save_sesiones_order');
 add_action('wp_ajax_cpp_save_start_date', 'cpp_ajax_save_start_date');
 add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_programador_example_data');
+add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
 
 // --- Implementación de Handlers ---
+
+function cpp_ajax_save_programador_config() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $calendar_config = isset($_POST['calendar_config']) ? json_decode(stripslashes($_POST['calendar_config']), true) : null;
+
+    if (is_null($calendar_config)) {
+        wp_send_json_error(['message' => 'Datos de configuración no válidos.']);
+        return;
+    }
+
+    // Aquí podrías añadir validación extra para el formato de calendar_config si es necesario
+
+    cpp_programador_save_config_value($user_id, 'calendar_config', $calendar_config);
+    wp_send_json_success(['message' => 'Configuración del calendario guardada correctamente.']);
+}
 
 function cpp_ajax_get_programador_all_data() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');

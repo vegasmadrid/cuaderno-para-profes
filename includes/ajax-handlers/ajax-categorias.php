@@ -66,8 +66,8 @@ function cpp_ajax_obtener_categorias_evaluacion() {
                             <span class="cpp-categoria-nombre-listado"><?php echo esc_html($categoria['nombre_categoria']); ?></span>:
                             <strong class="cpp-categoria-porcentaje-listado"><?php echo esc_html($categoria['porcentaje']); ?>%</strong>
                             <div class="cpp-categoria-actions">
-                                <button class="cpp-btn cpp-btn-icon cpp-btn-editar-categoria" data-categoria-id="<?php echo esc_attr($categoria['id']); ?>" title="Editar categoría"><span class="dashicons dashicons-edit"></span></button>
-                                <button class="cpp-btn cpp-btn-icon cpp-btn-eliminar-categoria" data-categoria-id="<?php echo esc_attr($categoria['id']); ?>" title="Eliminar categoría"><span class="dashicons dashicons-trash"></span></button>
+                                <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-categoria" data-categoria-id="<?php echo esc_attr($categoria['id']); ?>" title="Editar categoría"><span class="dashicons dashicons-edit"></span></button>
+                                <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-categoria" data-categoria-id="<?php echo esc_attr($categoria['id']); ?>" title="Eliminar categoría"><span class="dashicons dashicons-trash"></span></button>
                             </div>
                         </li>
                     <?php endforeach; ?>

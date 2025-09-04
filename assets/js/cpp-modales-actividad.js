@@ -110,7 +110,7 @@
             $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Editar Actividad Evaluable'); 
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad'); 
             $form.find('#cpp-eliminar-actividad-btn-modal').show();
-            $modal.fadeIn(); 
+            $modal.fadeIn();
             $form.find('#nombre_actividad_cuaderno_input').focus();
         },
 
@@ -170,7 +170,7 @@
                                 cpp.tutorial.nextStep();
                             }, 500);
                         }
-                        $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut(); 
+                        $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = "Cuaderno";
                             const $classNameSpan = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name');

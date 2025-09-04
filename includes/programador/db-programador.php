@@ -30,8 +30,21 @@ function cpp_programador_get_all_data($user_id) {
         $config[$resultado['clave']] = (json_last_error() === JSON_ERROR_NONE) ? $valor : $resultado['valor'];
     }
 
-    $defaults = ['time_slots' => ['09:00', '10:00', '11:00', '12:00'], 'horario' => new stdClass()];
+    $defaults = [
+        'time_slots' => ['09:00', '10:00', '11:00', '12:00'],
+        'horario' => new stdClass(),
+        'calendar_config' => [
+            'working_days' => ['mon', 'tue', 'wed', 'thu', 'fri'],
+            'holidays' => [],
+            'vacations' => []
+        ]
+    ];
     $config = array_merge($defaults, $config);
+
+    // Asegurarse de que las subclaves de calendar_config existan
+    if (isset($config['calendar_config'])) {
+        $config['calendar_config'] = array_merge($defaults['calendar_config'], $config['calendar_config']);
+    }
 
     $sesiones = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_sesiones WHERE user_id = %d ORDER BY clase_id, evaluacion_id, orden ASC", $user_id));
 
