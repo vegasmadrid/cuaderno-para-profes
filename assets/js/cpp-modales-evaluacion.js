@@ -15,6 +15,7 @@
 
         init: function() {
             console.log("CPP Modals Evaluacion Module Initializing...");
+            this.bindEvents();
         },
 
         refreshCategoriasList: function(evaluacionId, containerSelector) {
