@@ -26,7 +26,7 @@ const cpp = {
         console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
         const modulesToInitialize = [
-            'utils', 'sidebar', 'gradebook', 'programador',
+            'utils', 'sidebar', 'gradebook',
             'modals.general', 'config', 'modals.alumnos',
             'modals.actividades', 'modals.excel', 'modals.asistencia',
             'modals.fichaAlumno', 'modals.evaluacion'
@@ -63,6 +63,7 @@ const cpp = {
     },
 
     bindCoreEvents: function() {
+        const $ = jQuery;
         const $document = $(document);
 
         $document.on('click', '.cpp-main-tab-link', function(e) {
