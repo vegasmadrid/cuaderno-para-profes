@@ -59,6 +59,13 @@ const cpp = {
         this.bindCoreEvents();
         this.initializeCuadernoView();
 
+        // El módulo programador se inicializa de forma independiente si existe
+        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
+            console.log(`CPP Core: Initializing CppProgramadorApp...`);
+            const initialClaseId = this.getInitialClaseId();
+            CppProgramadorApp.init(initialClaseId);
+        }
+
         console.log("CPP Core: init() completado.");
     },
 
@@ -95,6 +102,24 @@ const cpp = {
                 cpp.config.showParaCrear(e);
             }
         });
+    },
+
+    getInitialClaseId: function() {
+        const $clasesSidebarItems = jQuery('.cpp-sidebar-clases-list .cpp-sidebar-clase-item');
+        let claseIdToLoad = null;
+
+        if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') {
+            const lastOpenedClaseId = localStorage.getItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId);
+            if (lastOpenedClaseId && $clasesSidebarItems.filter(`[data-clase-id="${lastOpenedClaseId}"]`).length > 0) {
+                claseIdToLoad = lastOpenedClaseId;
+            }
+        }
+
+        if (!claseIdToLoad && $clasesSidebarItems.length > 0) {
+            claseIdToLoad = $clasesSidebarItems.first().data('clase-id');
+        }
+
+        return claseIdToLoad;
     },
 
     initializeCuadernoView: function() {
