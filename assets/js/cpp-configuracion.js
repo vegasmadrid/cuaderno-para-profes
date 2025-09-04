@@ -53,24 +53,79 @@
             this.currentClaseIdForConfig = null;
         },
 
-        showParaCrear: function(e) {
+        showModalParaCrear: function(e) {
             if (e) e.preventDefault();
-            
-            // Cambiar a la pestaña de configuración
-            $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
+            const $modal = $('#cpp-modal-crear-clase');
+            const $form = $modal.find('#cpp-form-crear-clase');
 
-            this.resetForm(); 
+            $form.trigger('reset');
+            // Reset color swatches
+            const $swatches = $modal.find('.cpp-color-swatches-container .cpp-color-swatch');
+            $swatches.removeClass('selected');
+            const defaultColor = '#2962FF';
+            $swatches.filter(`[data-color="${defaultColor.toUpperCase()}"]`).addClass('selected');
+            $modal.find('#color_clase_hidden_modal_crear').val(defaultColor);
 
-            $('#cpp-config-clase-titulo').text('Crear Nueva Clase');
-            $('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
-            $('#cpp-eliminar-clase-config-btn').hide();
-            
-            $('#cpp-opcion-clase-ejemplo-container').show();
-            $('#rellenar_clase_ejemplo').prop('checked', false);
-            
-            // Cambiar a la sub-pestaña de clase
-            this.handleConfigTabClick(null, 'clase');
-            $('#nombre_clase_config').focus();
+            $modal.fadeIn();
+            $modal.find('#nombre_clase_modal_crear').focus();
+        },
+
+        guardarDesdeModal: function(eventForm) {
+            eventForm.preventDefault();
+            const self = this;
+            const $form = $(eventForm.target);
+            const $btn = $form.find('button[type="submit"]');
+            const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
+            const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
+            const notaAprobadoClase = $form.find('[name="nota_aprobado_clase"]').val().trim();
+            const colorClase = $form.find('[name="color_clase"]').val();
+            const rellenarConEjemplo = $form.find('[name="rellenar_clase_ejemplo"]').is(':checked');
+
+            if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
+            if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
+
+            if (rellenarConEjemplo) {
+                this.crearClaseEjemplo(eventForm, nombreClase, colorClase);
+                return;
+            }
+
+            const baseNotaNumerica = parseFloat(baseNotaFinalClase.replace(',', '.'));
+            if (baseNotaFinalClase === '' || isNaN(baseNotaNumerica) || baseNotaNumerica <= 0) {
+                alert('Por favor, introduce un valor numérico positivo para la Base de Nota Final.'); return;
+            }
+            const notaAprobadoNumerica = parseFloat(notaAprobadoClase.replace(',', '.'));
+            if (notaAprobadoClase === '' || isNaN(notaAprobadoNumerica) || notaAprobadoNumerica < 0) {
+                alert('Por favor, introduce un valor numérico positivo para la Nota Mínima para Aprobar.'); return;
+            }
+            if (notaAprobadoNumerica >= baseNotaNumerica) {
+                alert('La nota mínima para aprobar debe ser menor que la base de la nota final.');
+                return;
+            }
+
+            const btnTextOriginal = $btn.html();
+            $btn.prop('disabled', true).html(`<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...`);
+
+            const ajaxData = {
+                action: 'cpp_crear_clase', nonce: cppFrontendData.nonce,
+                nombre_clase: nombreClase,
+                color_clase: colorClase,
+                base_nota_final_clase: baseNotaNumerica.toFixed(2),
+                nota_aprobado_clase: notaAprobadoNumerica.toFixed(2)
+            };
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,
+                success: function(response) {
+                    if (response.success) {
+                        $('#cpp-modal-crear-clase').fadeOut();
+                        self._handleSuccessfulClassCreation(response.data.clase);
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
+                    }
+                },
+                error: function() { alert('Error de conexión.'); },
+                complete: function() { $btn.prop('disabled', false).html(btnTextOriginal); }
+            });
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
@@ -89,6 +144,11 @@
             
             // Cambiar a la pestaña de configuración
             $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
+
+            // Cerrar el sidebar si está abierto
+            if (cpp.sidebar && cpp.sidebar.isSidebarVisible) {
+                cpp.sidebar.toggle();
+            }
 
             const $configTab = $('#cpp-main-tab-configuracion');
             const $form = $configTab.find('#cpp-form-clase');
@@ -441,13 +501,27 @@
 
         bindEvents: function() {
             const $mainContent = $('#cpp-cuaderno-main-content');
+            const $body = $('body');
 
+            // --- Eventos de la Pestaña de Configuración ---
             $mainContent.on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
             $mainContent.on('click', '#cpp-config-tab-evaluaciones .cpp-tab-link', (e) => { this.handleInnerTabClick(e); });
 
+            // Guardar/Eliminar desde la pestaña de configuración
             $mainContent.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $mainContent.on('click', '#cpp-eliminar-clase-config-btn', (e) => { this.eliminarDesdeConfig(e); });
 
+            // --- Eventos del Modal de Crear Clase ---
+            $body.on('submit', '#cpp-form-crear-clase', (e) => { this.guardarDesdeModal(e); });
+            $body.on('click', '#cpp-modal-crear-clase .cpp-color-swatch', function() {
+                const $swatch = $(this);
+                $swatch.closest('.cpp-color-swatches-container').find('.cpp-color-swatch').removeClass('selected');
+                $swatch.addClass('selected');
+                $swatch.closest('.cpp-form-group').find('input[type="hidden"]').val($swatch.data('color'));
+            });
+            $body.on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
+
+            // --- Eventos Comunes de Evaluaciones / Ponderaciones (dentro de la pestaña de config) ---
             $mainContent.on('change', '#cpp-ponderaciones-eval-selector', (e) => {
                 const evaluacionId = $(e.currentTarget).val();
                 const $settingsContainer = $('#cpp-ponderaciones-settings-content');

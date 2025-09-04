@@ -270,7 +270,53 @@ function cpp_shortcode_cuaderno_notas_classroom() {
 
         <?php
         // --- INICIO DE LA SECCIÓN DE MODALES ---
-        
+
+        if (empty(did_action('cpp_modal_crear_clase_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-crear-clase">
+                <div class="cpp-modal-content">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2 id="cpp-modal-crear-clase-titulo">Crear Nueva Clase</h2>
+                    <form id="cpp-form-crear-clase" novalidate>
+                        <div class="cpp-form-group">
+                            <label for="nombre_clase_modal_crear">Nombre de la clase (máx. 16 caracteres):</label>
+                            <input type="text" id="nombre_clase_modal_crear" name="nombre_clase" required maxlength="16">
+                        </div>
+                        <div class="cpp-form-group">
+                            <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="rellenar_clase_ejemplo_modal_crear" name="rellenar_clase_ejemplo">
+                                Rellenar la clase con datos de ejemplo
+                            </label>
+                        </div>
+                        <div class="cpp-form-group">
+                            <label>Color de la clase:</label>
+                            <div class="cpp-color-swatches-container">
+                                <?php foreach ($milan_vivid_colors as $hex => $name): ?>
+                                    <span class="cpp-color-swatch <?php echo (strtoupper($hex) === strtoupper($default_class_color_hex)) ? 'selected' : ''; ?>" data-color="<?php echo esc_attr($hex); ?>" style="background-color: <?php echo esc_attr($hex); ?>;" title="<?php echo esc_attr($name); ?>"></span>
+                                <?php endforeach; ?>
+                            </div>
+                            <input type="hidden" id="color_clase_hidden_modal_crear" name="color_clase" value="<?php echo esc_attr($default_class_color_hex); ?>">
+                        </div>
+                        <div class="cpp-form-group">
+                            <label for="base_nota_final_clase_modal_crear">Base Nota Final (ej: 10, 100):</label>
+                            <input type="number" id="base_nota_final_clase_modal_crear" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
+                            <small>La nota final de los alumnos se calculará sobre esta base.</small>
+                        </div>
+                        <div class="cpp-form-group">
+                            <label for="nota_aprobado_clase_modal_crear">Nota mínima para aprobar (ej: 5, 50):</label>
+                            <input type="number" id="nota_aprobado_clase_modal_crear" name="nota_aprobado_clase" value="50" step="0.01" min="0" required>
+                            <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
+                        </div>
+                        <div class="cpp-modal-actions">
+                            <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_crear_clase_outputted');
+        }
+
         if (empty(did_action('cpp_modal_alumnos_outputted'))) {
             ?>
             <div class="cpp-modal" id="cpp-modal-alumnos"><div class="cpp-modal-content"><span class="cpp-modal-close">&times;</span><h2 id="cpp-modal-alumnos-title">Gestión de Alumnos</h2><div id="cpp-alumnos-container"></div></div></div>

@@ -171,10 +171,10 @@
                 }
             });
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){ 
-                if (cpp.config && typeof cpp.config.showParaCrear === 'function') {
-                    cpp.config.showParaCrear(e);
+                if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
+                    cpp.config.showModalParaCrear(e);
                 } else {
-                    console.error("Función cpp.config.showParaCrear no encontrada.");
+                    console.error("Función cpp.config.showModalParaCrear no encontrada.");
                 }
             });
         }
