@@ -15,7 +15,7 @@
         init: function() {
             console.log("CPP Sidebar Module Initializing...");
             this.initSortableClases();
-            // bindEvents se llamará desde cpp.core.js
+            this.bindEvents();
         },
 
         initSortableClases: function() {
