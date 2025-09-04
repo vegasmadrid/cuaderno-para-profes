@@ -488,9 +488,18 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-categorias-list { margin-bottom: 20px; }
 .cpp-categorias-list h4, .cpp-form-categoria-container h4 { font-size: 16px; margin-bottom: 10px; font-weight: 500; }
 .cpp-categorias-list ul { list-style: none; padding: 0; margin: 0; }
-.cpp-categorias-list li { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: normal; }
+.cpp-categorias-list li { padding: 12px 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: normal; }
 .cpp-categorias-list li:last-child { border-bottom: none; }
-.cpp-categorias-list li strong { margin-left: 5px; font-weight: 500; }
+.cpp-categorias-list li strong { margin-left: 8px; font-weight: 500; }
+
+#cpp-gestion-categorias-wrapper .cpp-form-group {
+    margin-bottom: 24px;
+}
+
+#cpp-gestion-categorias-wrapper .cpp-form-group label {
+    font-size: 15px;
+    margin-bottom: 10px;
+}
 
 .cpp-categoria-actions { display: flex; align-items: center; gap: 5px; margin-left: auto; }
 .cpp-btn-editar-categoria .dashicons, .cpp-btn-eliminar-categoria .dashicons { font-size: 18px !important; }
@@ -1246,6 +1255,7 @@ body.cpp-no-text-select {
     flex-grow: 1;
     padding: 30px;
     overflow-y: auto;
+    padding-bottom: 60px; /* Añadir espacio en la parte inferior */
 }
 .cpp-config-tab-content {
     display: none;
