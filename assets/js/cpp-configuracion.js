@@ -1,30 +1,29 @@
-// assets/js/cpp-modales-clase.js (v1.5.2 - FINAL)
+// assets/js/cpp-configuracion.js
 
 (function($) {
     'use strict';
 
     if (typeof cpp === 'undefined') {
-        console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-modales-clase.js no puede inicializarse.");
+        console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-configuracion.js no puede inicializarse.");
         return;
     }
-    cpp.modals = cpp.modals || {};
-
-    cpp.modals.clase = {
-        currentClaseIdForModal: null,
+    cpp.config = {
+        currentClaseIdForConfig: null,
 
         init: function() {
-            console.log("CPP Modals Clase Module Initializing...");
+            console.log("CPP Configuracion Module Initializing...");
+            this.bindEvents();
         },
 
         resetForm: function() {
-            const $modal = $('#cpp-modal-clase');
-            const $form = $modal.find('#cpp-form-clase');
+            const $configTab = $('#cpp-main-tab-configuracion');
+            const $form = $configTab.find('#cpp-form-clase');
 
             if ($form.length) {
                 $form.trigger('reset');
                 $form.find('#clase_id_editar').val('');
                 
-                const $classSwatchesContainer = $modal.find('.cpp-color-swatches-container:not(.cpp-category-color-swatches)');
+                const $classSwatchesContainer = $configTab.find('.cpp-color-swatches-container:not(.cpp-category-color-swatches)');
                 let defaultColor = '#2962FF'; 
                 const firstSwatch = $classSwatchesContainer.find('.cpp-color-swatch:first');
                 if (firstSwatch.length) {
@@ -36,47 +35,42 @@
                 $classSwatchesContainer.find('.cpp-color-swatch').removeClass('selected');
                 if ($defaultClassColorSwatch.length) {
                     $defaultClassColorSwatch.addClass('selected');
-                    $('#color_clase_hidden_modal').val($defaultClassColorSwatch.data('color'));
+                    $('#color_clase_hidden_config').val($defaultClassColorSwatch.data('color'));
                 } else if (firstSwatch.length) {
                     firstSwatch.addClass('selected');
-                    $('#color_clase_hidden_modal').val(firstSwatch.data('color'));
+                    $('#color_clase_hidden_config').val(firstSwatch.data('color'));
                 }
                 
-                $form.find('#base_nota_final_clase_modal').val('100.00');
-                $form.find('#nota_aprobado_clase_modal').val('50.00');
-                $modal.find('#cpp-modal-clase-titulo').text('Crear Nueva Clase');
-                $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
-                $modal.find('#cpp-eliminar-clase-modal-btn').hide();
+                $form.find('#base_nota_final_clase_config').val('100.00');
+                $form.find('#nota_aprobado_clase_config').val('50.00');
+                $configTab.find('#cpp-config-clase-titulo').text('Crear Nueva Clase');
+                $configTab.find('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
+                $configTab.find('#cpp-eliminar-clase-config-btn').hide();
                 
-                $modal.find('.cpp-tab-nav').show(); 
-                $modal.find('.cpp-tab-link').removeClass('active').show();
-                $modal.find('.cpp-tab-content').removeClass('active').hide();
-                $modal.find('.cpp-tab-link[data-tab="cpp-tab-general"]').addClass('active');
-                $modal.find('#cpp-tab-general').addClass('active').show();
-                
-                $('#cpp-clase-modal-evaluaciones-container').html('<p>Abre una clase existente para gestionar sus evaluaciones.</p>');
-                $('#cpp-clase-modal-ponderaciones-container').html('<p>Abre una clase existente para gestionar sus ponderaciones.</p>');
+                $('#cpp-config-evaluaciones-container').html('<p>Abre una clase existente para gestionar sus evaluaciones.</p>');
+                $('#cpp-config-ponderaciones-container').html('<p>Abre una clase existente para gestionar sus ponderaciones.</p>');
             }
-            this.currentClaseIdForModal = null;
+            this.currentClaseIdForConfig = null;
         },
 
         showParaCrear: function(e) {
             if (e) e.preventDefault();
             
-            const $modal = $('#cpp-modal-clase');
+            // Cambiar a la pestaña de configuración
+            $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
+
             this.resetForm(); 
 
-            $('#cpp-modal-clase-titulo').text('Crear Nueva Clase');
-            $('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
-            $('#cpp-eliminar-clase-modal-btn').hide();
+            $('#cpp-config-clase-titulo').text('Crear Nueva Clase');
+            $('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
+            $('#cpp-eliminar-clase-config-btn').hide();
             
-            $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
-            $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
-
             $('#cpp-opcion-clase-ejemplo-container').show();
             $('#rellenar_clase_ejemplo').prop('checked', false);
             
-            $modal.fadeIn().find('#nombre_clase_modal').focus();
+            // Cambiar a la sub-pestaña de clase
+            this.handleConfigTabClick(null, 'clase');
+            $('#nombre_clase_config').focus();
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
@@ -93,15 +87,16 @@
             
             if (!claseId) { alert('Error: No se pudo identificar la clase para editar.'); return; }
             
-            const $modal = $('#cpp-modal-clase');
-            const $form = $modal.find('#cpp-form-clase');
+            // Cambiar a la pestaña de configuración
+            $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
+
+            const $configTab = $('#cpp-main-tab-configuracion');
+            const $form = $configTab.find('#cpp-form-clase');
             
             this.resetForm();
-            this.currentClaseIdForModal = claseId; 
+            this.currentClaseIdForConfig = claseId;
 
             $('#cpp-opcion-clase-ejemplo-container').hide();
-
-            $modal.find('.cpp-tab-link').show();
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
@@ -109,29 +104,32 @@
                 success: (response) => {
                     if (response.success && response.data.clase) {
                         const clase = response.data.clase;
-                        if (!$modal.length || !$form.length) { return; }
+                        if (!$configTab.length || !$form.length) { return; }
                         
                         $form.find('#clase_id_editar').val(clase.id);
-                        $form.find('#nombre_clase_modal').val(clase.nombre);
+                        $form.find('#nombre_clase_config').val(clase.nombre);
                         
-                        const $classSwatchesContainer = $modal.find('.cpp-color-swatches-container:not(.cpp-category-color-swatches)');
+                        const $classSwatchesContainer = $configTab.find('.cpp-color-swatches-container:not(.cpp-category-color-swatches)');
                         let colorParaSeleccionar = clase.color || $classSwatchesContainer.find('.cpp-color-swatch:first').data('color') || '#2962FF';
                         
-                        $('#color_clase_hidden_modal').val(colorParaSeleccionar);
+                        $('#color_clase_hidden_config').val(colorParaSeleccionar);
                         $classSwatchesContainer.find('.cpp-color-swatch').removeClass('selected');
                         $classSwatchesContainer.find(`.cpp-color-swatch[data-color="${colorParaSeleccionar.toUpperCase()}"]`).addClass('selected');
 
-                        $form.find('#base_nota_final_clase_modal').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
-                        $form.find('#nota_aprobado_clase_modal').val(clase.nota_aprobado ? parseFloat(clase.nota_aprobado).toFixed(2) : '50.00');
-                        $modal.find('#cpp-modal-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
-                        $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
+                        $form.find('#base_nota_final_clase_config').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
+                        $form.find('#nota_aprobado_clase_config').val(clase.nota_aprobado ? parseFloat(clase.nota_aprobado).toFixed(2) : '50.00');
+                        $configTab.find('#cpp-config-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
+                        $configTab.find('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
-                        $('#cpp-eliminar-clase-modal-btn').show();
+                        $('#cpp-eliminar-clase-config-btn').show();
                         
-                        this.handleTabClick(null, 'cpp-tab-general', $modal);
-                        
-                        $modal.fadeIn();
-                        $form.find('#nombre_clase_modal').focus();
+                        this.handleConfigTabClick(null, 'clase');
+                        $form.find('#nombre_clase_config').focus();
+
+                        // Cargar datos en las otras pestañas
+                        this.refreshEvaluacionesList(claseId);
+                        this.loadPonderacionesTab(claseId);
+
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
                         this.resetForm();
@@ -173,8 +171,8 @@
 
             $('#cpp-welcome-box').hide();
 
-            $('#cpp-modal-clase').fadeOut();
-
+            // Cambiar a la pestaña de cuaderno y seleccionar la nueva clase
+            $('.cpp-main-tab-link[data-tab="cuaderno"]').trigger('click');
             $sidebarList.find(`li[data-clase-id="${claseData.id}"] a`).first().trigger('click');
         },
 
@@ -188,7 +186,7 @@
             const nombreClase = $form.find('[name="nombre_clase"]').val().trim();
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
             const notaAprobadoClase = $form.find('[name="nota_aprobado_clase"]').val().trim();
-            const colorClase = $form.find('#color_clase_hidden_modal').val();
+            const colorClase = $form.find('#color_clase_hidden_config').val();
             const rellenarConEjemplo = $('#rellenar_clase_ejemplo').is(':checked');
 
             if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
@@ -245,16 +243,16 @@
             });
         },
         
-        eliminarDesdeModal: function(eventButton) { 
+        eliminarDesdeConfig: function(eventButton) {
             eventButton.preventDefault();
             const $btnEliminar = $(eventButton.currentTarget);
             const claseId = $('#cpp-form-clase #clase_id_editar').val();
-            const claseNombre = $('#cpp-form-clase #nombre_clase_modal').val().trim() || 'esta clase';
+            const claseNombre = $('#cpp-form-clase #nombre_clase_config').val().trim() || 'esta clase';
             if (!claseId) { alert('Error: No se pudo identificar la clase para eliminar.'); return; }
             if (confirm(`¿Estás SEGURO de que quieres eliminar la clase "${claseNombre}"?\n\nATENCIÓN: Esta acción es permanente y no se puede deshacer.`)) {
                 const originalBtnHtml = $btnEliminar.html();
                 $btnEliminar.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Eliminando...');
-                $('#cpp-submit-clase-btn-modal').prop('disabled', true); 
+                $('#cpp-submit-clase-btn-config').prop('disabled', true);
                 $.ajax({
                     url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
                     data: { action: 'cpp_eliminar_clase', nonce: cppFrontendData.nonce, clase_id: claseId },
@@ -264,13 +262,13 @@
                         } else {
                             alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo eliminar.'));
                             $btnEliminar.prop('disabled', false).html(originalBtnHtml);
-                            $('#cpp-submit-clase-btn-modal').prop('disabled', false);
+                            $('#cpp-submit-clase-btn-config').prop('disabled', false);
                         }
                     },
                     error: function() {
                         alert('Error de conexión al eliminar.');
                         $btnEliminar.prop('disabled', false).html(originalBtnHtml);
-                        $('#cpp-submit-clase-btn-modal').prop('disabled', false);
+                        $('#cpp-submit-clase-btn-config').prop('disabled', false);
                     }
                 });
             }
@@ -311,38 +309,33 @@
             });
         },
 
-        handleTabClick: function(event, targetTabId = null, modalContext = null) { 
+        handleConfigTabClick: function(event, targetTabId = null) {
             if (event) event.preventDefault();
-            const $clickedLink = event ? $(event.currentTarget).closest('.cpp-tab-link') : null;
-            const $modal = modalContext || ($clickedLink ? $clickedLink.closest('.cpp-modal') : $('#cpp-modal-clase'));
-            const tabId = targetTabId || ($clickedLink ? $clickedLink.data('tab') : 'cpp-tab-general');
-            const $targetLink = $modal.find(`.cpp-tab-link[data-tab="${tabId}"]`);
+            const $clickedLink = event ? $(event.currentTarget) : null;
+            const tabId = targetTabId || ($clickedLink ? $clickedLink.data('config-tab') : 'clase');
             
-            $modal.find('.cpp-tab-content').removeClass('active').hide();
-            $modal.find('.cpp-tab-nav .cpp-tab-link').removeClass('active');
-            
-            $modal.find('#' + tabId).addClass('active').show();
-            $targetLink.addClass('active');
-            
-            const claseIdActualEnModal = this.currentClaseIdForModal || $modal.find('#clase_id_editar').val();
+            $('.cpp-config-tab-link').removeClass('active');
+            $('.cpp-config-tab-content').removeClass('active');
 
-            if (tabId === 'cpp-tab-evaluaciones') {
-                if (claseIdActualEnModal && claseIdActualEnModal !== '0') {
-                    this.refreshEvaluacionesList(claseIdActualEnModal);
-                } else {
-                     $('#cpp-clase-modal-evaluaciones-container').html('<p>Guarda la información general de la clase primero para añadir evaluaciones.</p>');
-                }
-            } else if (tabId === 'cpp-tab-ponderaciones') {
-                if (claseIdActualEnModal && claseIdActualEnModal !== '0') {
-                    this.loadPonderacionesTab(claseIdActualEnModal);
-                } else {
-                    $('#cpp-clase-modal-ponderaciones-container').html('<p>Guarda la información general de la clase primero para gestionar las ponderaciones.</p>');
-                }
-            }
+            $(`.cpp-config-tab-link[data-config-tab="${tabId}"]`).addClass('active');
+            $(`#cpp-config-tab-${tabId}`).addClass('active');
+        },
+
+        handleInnerTabClick: function(event) {
+            if (event) event.preventDefault();
+            const $clickedLink = $(event.currentTarget);
+            const $tabsContainer = $clickedLink.closest('.cpp-tabs-container');
+            const tabId = $clickedLink.data('tab');
+
+            $tabsContainer.find('.cpp-tab-link').removeClass('active');
+            $tabsContainer.find('.cpp-tab-content').removeClass('active');
+
+            $clickedLink.addClass('active');
+            $tabsContainer.find('#' + tabId).addClass('active');
         },
 
         loadPonderacionesTab: function(claseId) {
-            const $container = $('#cpp-clase-modal-ponderaciones-container');
+            const $container = $('#cpp-config-ponderaciones-container');
             $container.html('<p class="cpp-cuaderno-cargando">Cargando evaluaciones...</p>');
 
             $.ajax({
@@ -372,7 +365,7 @@
         },
         
         refreshEvaluacionesList: function(claseId) {
-            const $container = $('#cpp-clase-modal-evaluaciones-container');
+            const $container = $('#cpp-config-evaluaciones-container');
             $container.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
             const self = this;
             $.ajax({
@@ -382,7 +375,7 @@
                 data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: function(response) {
                     if (response.success) {
-                        self.renderEvaluacionesList(response.data.evaluaciones);
+                        self.renderEvaluacionesList(response.data.evaluaciones, claseId);
                     } else {
                         $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
                     }
@@ -393,8 +386,8 @@
             });
         },
         
-        renderEvaluacionesList: function(evaluaciones) {
-            const $container = $('#cpp-clase-modal-evaluaciones-container');
+        renderEvaluacionesList: function(evaluaciones, claseId) {
+            const $container = $('#cpp-config-evaluaciones-container');
             let html = '<h4>Gestionar Evaluaciones</h4>';
             html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
             html += '<ul class="cpp-evaluaciones-list">';
@@ -429,7 +422,7 @@
                          </div>`;
             }
             
-            html += `<button type="button" id="cpp-btn-add-evaluacion" class="cpp-btn cpp-btn-primary">Añadir</button>
+            html += `<button type="button" id="cpp-btn-add-evaluacion" class="cpp-btn cpp-btn-primary" data-clase-id="${claseId}">Añadir</button>
                      </div>`;
             
             $container.html(html);
@@ -447,24 +440,16 @@
         },
 
         bindEvents: function() {
-            console.log("Binding Modals Clase events...");
-            const $modalClase = $('#cpp-modal-clase'); 
+            const $mainContent = $('#cpp-cuaderno-main-content');
 
-            // Manejo del Enter en el formulario de la clase
-            $modalClase.on('keydown', '#cpp-form-clase', (e) => {
-                if (e.key === 'Enter' && $(e.target).is('#nombre_clase_modal')) {
-                    if (typeof cpp.tutorial !== 'undefined' && cpp.tutorial.isActive && cpp.tutorial.currentStep === 1) {
-                        e.preventDefault();
-                    }
-                }
-            });
+            $mainContent.on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
+            $mainContent.on('click', '#cpp-config-tab-evaluaciones .cpp-tab-link', (e) => { this.handleInnerTabClick(e); });
 
-            $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
-            $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
-            $modalClase.on('click', '.cpp-tab-link', (e) => { this.handleTabClick(e, null, $modalClase); });
+            $mainContent.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
+            $mainContent.on('click', '#cpp-eliminar-clase-config-btn', (e) => { this.eliminarDesdeConfig(e); });
 
-            $modalClase.on('change', '#cpp-ponderaciones-eval-selector', function() {
-                const evaluacionId = $(this).val();
+            $mainContent.on('change', '#cpp-ponderaciones-eval-selector', (e) => {
+                const evaluacionId = $(e.currentTarget).val();
                 const $settingsContainer = $('#cpp-ponderaciones-settings-content');
                 if (evaluacionId) {
                     $settingsContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
@@ -478,12 +463,13 @@
 
             $('body').on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
 
-            const evaluacionContainerSelector = '#cpp-clase-modal-evaluaciones-container';
+            const evaluacionContainerSelector = '#cpp-config-evaluaciones-container';
 
-            $modalClase.on('click', `${evaluacionContainerSelector} #cpp-btn-add-evaluacion`, () => {
+            $mainContent.on('click', `${evaluacionContainerSelector} #cpp-btn-add-evaluacion`, (e) => {
+                const $button = $(e.currentTarget);
                 const $input = $('#cpp-nombre-nueva-evaluacion');
                 const nombre = $input.val().trim();
-                const claseId = this.currentClaseIdForModal;
+                const claseId = $button.data('clase-id') || this.currentClaseIdForConfig;
                 const sourceEvalId = $('#cpp-copy-from-eval-select').val() || '0';
 
                 if (!nombre) { alert('El nombre de la evaluación no puede estar vacío.'); $input.focus(); return; }
@@ -501,6 +487,7 @@
                     success: (response) => {
                         if(response.success) {
                             this.refreshEvaluacionesList(claseId);
+                            this.loadPonderacionesTab(claseId); // Recargar también las ponderaciones
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
                         }
@@ -508,12 +495,12 @@
                 });
             });
 
-            $modalClase.on('click', `${evaluacionContainerSelector} .cpp-btn-eliminar-evaluacion`, (e) => {
+            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-eliminar-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 const evaluacionId = $li.data('evaluacion-id');
                 const evaluacionNombre = $li.find('.cpp-evaluacion-nombre').text();
-                const claseId = this.currentClaseIdForModal;
+                const claseId = this.currentClaseIdForConfig;
                 if (confirm(`¿Estás SEGURO de que quieres eliminar la evaluación "${evaluacionNombre}"?\n\n¡Se borrarán TODAS las actividades y notas asociadas a ella!`)) {
                     $.ajax({
                         url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
@@ -521,6 +508,7 @@
                         success: (response) => {
                             if(response.success) {
                                 this.refreshEvaluacionesList(claseId);
+                                this.loadPonderacionesTab(claseId);
                             } else {
                                 alert('Error: ' + (response.data.message || 'No se pudo eliminar la evaluación.'));
                             }
@@ -529,7 +517,7 @@
                 }
             });
             
-            $modalClase.on('click', `${evaluacionContainerSelector} .cpp-btn-editar-evaluacion`, (e) => {
+            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-editar-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 $li.find('.cpp-evaluacion-nombre, .cpp-evaluacion-actions').hide();
@@ -543,19 +531,19 @@
                 $li.find('input[type="text"]').focus().select();
             });
 
-            $modalClase.on('click', `${evaluacionContainerSelector} .cpp-btn-cancel-edit-evaluacion`, (e) => {
+            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-cancel-edit-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 $li.find('.cpp-evaluacion-edit-form').remove();
                 $li.find('.cpp-evaluacion-nombre, .cpp-evaluacion-actions').show();
             });
 
-            $modalClase.on('click', `${evaluacionContainerSelector} .cpp-btn-save-evaluacion`, (e) => {
+            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-save-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 const evaluacionId = $li.data('evaluacion-id');
                 const nuevoNombre = $li.find('input[type="text"]').val().trim();
-                const claseId = this.currentClaseIdForModal;
+                const claseId = this.currentClaseIdForConfig;
                 if (!nuevoNombre) { alert('El nombre no puede estar vacío.'); return; }
                 
                 $.ajax({
@@ -564,6 +552,7 @@
                     success: (response) => {
                         if(response.success) {
                             this.refreshEvaluacionesList(claseId);
+                            this.loadPonderacionesTab(claseId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo actualizar.'));
                         }

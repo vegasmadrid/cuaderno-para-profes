@@ -414,11 +414,36 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-sidebar-overlay.cpp-sidebar-visible { display: block; }
 
 /* Estilos Generales de Modales */
-.cpp-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1050; overflow-y: auto; padding: 30px 15px; }
-.cpp-modal-content { background: #fff; border-radius: 8px; box-shadow: 0 4px 23px 5px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15); max-width: 560px; margin: 0 auto; padding: 24px; position: relative; font-size: 14px; }
+.cpp-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cpp-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 23px 5px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
+    max-width: 560px;
+    width: 90%;
+    padding: 24px;
+    position: relative;
+    font-size: 14px;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
 .cpp-modal-close { position: absolute; top: 12px; right: 12px; font-size: 24px; color: #5f6368; cursor: pointer; line-height: 1; padding: 4px; border-radius: 50%; }
 .cpp-modal-close:hover { color: #202124; background-color: rgba(0,0,0,0.05); }
-.cpp-modal-content h2 { margin-top: 0; margin-bottom: 24px; font-size: 20px; font-weight: 500; color: #202124; }
+.cpp-modal-content h2 { margin-top: 0; margin-bottom: 24px; font-size: 20px; font-weight: 500; color: #202124; flex-shrink: 0; }
 .cpp-form-group { margin-bottom: 20px; }
 .cpp-form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #3c4043; }
 .cpp-form-group input[type="text"], .cpp-form-group input[type="number"], .cpp-form-group input[type="date"], .cpp-form-group input[type="color"], .cpp-form-group textarea, .cpp-form-group select {
@@ -1182,6 +1207,79 @@ body.cpp-no-text-select {
 }
 
 /* --- FIN: Estilos para Menú de Usuario --- */
+
+/* --- INICIO: Estilos para la Pestaña de Configuración --- */
+.cpp-config-container {
+    display: flex;
+    height: 100%;
+}
+.cpp-config-sidebar {
+    width: 220px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px 0;
+    flex-shrink: 0;
+}
+.cpp-config-tab-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    text-decoration: none;
+    color: #3c4043;
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+.cpp-config-tab-link:hover {
+    background-color: #f1f3f4;
+}
+.cpp-config-tab-link.active {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border-left-color: #1a73e8;
+}
+.cpp-config-tab-link .dashicons {
+    margin-right: 16px;
+    font-size: 20px;
+}
+.cpp-config-content-area {
+    flex-grow: 1;
+    padding: 30px;
+    overflow-y: auto;
+}
+.cpp-config-tab-content {
+    display: none;
+}
+.cpp-config-tab-content.active {
+    display: block;
+}
+.cpp-config-content-area h2 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #202124;
+    margin-top: 0;
+    margin-bottom: 24px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.cpp-config-content-area h3 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 24px;
+    margin-bottom: 16px;
+}
+.cpp-config-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+#cpp-config-tab-evaluaciones .cpp-tabs-container {
+    margin-top: 20px;
+}
+/* --- FIN: Estilos para la Pestaña de Configuración --- */
 
 /* --- INICIO: Rediseño Celda A1 --- */
 

@@ -56,7 +56,12 @@ const CppProgramadorApp = {
         });
 
         $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            self.openConfigModal();
+            // Cambiar a la pestaña principal de Configuración
+            $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
+            // Activar la sub-pestaña de Calendario
+            if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
+                cpp.config.handleConfigTabClick(null, 'calendario');
+            }
         });
 
         // Listeners for config modal
