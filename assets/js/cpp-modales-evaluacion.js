@@ -179,7 +179,7 @@
             const $document = $(document);
             const self = this;
 
-            const containerSelector = '#cpp-clase-modal-ponderaciones-container';
+            const containerSelector = '#cpp-config-ponderaciones-container';
             
             $document.on('change', `${containerSelector} input[name="metodo_calculo_evaluacion"]`, function() {
                 const nuevoMetodo = $(this).val();
