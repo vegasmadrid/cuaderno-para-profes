@@ -381,19 +381,6 @@
             $(`#cpp-config-tab-${tabId}`).addClass('active');
         },
 
-        handleInnerTabClick: function(event) {
-            if (event) event.preventDefault();
-            const $clickedLink = $(event.currentTarget);
-            const $tabsContainer = $clickedLink.closest('.cpp-tabs-container');
-            const tabId = $clickedLink.data('tab');
-
-            $tabsContainer.find('.cpp-tab-link').removeClass('active');
-            $tabsContainer.find('.cpp-tab-content').removeClass('active');
-
-            $clickedLink.addClass('active');
-            $tabsContainer.find('#' + tabId).addClass('active');
-        },
-
         loadPonderacionesTab: function(claseId) {
             const $container = $('#cpp-config-ponderaciones-container');
             $container.html('<p class="cpp-cuaderno-cargando">Cargando evaluaciones...</p>');

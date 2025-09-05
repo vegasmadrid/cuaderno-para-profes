@@ -27,6 +27,7 @@
                 const savedDirection = localStorage.getItem(this.localStorageKey_enterDirection + cppFrontendData.userId);
                 if (savedDirection === 'right' || savedDirection === 'down') { this.enterKeyDirection = savedDirection; }
             }
+            this.bindEvents();
         },
 
         updateSortButton: function(sortOrder) {
