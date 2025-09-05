@@ -162,7 +162,6 @@
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
                 data: { action: 'cpp_obtener_datos_clase_completa', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: (response) => {
-                    alert('Debug 1: Success callback started.');
                     if (response.success && response.data.clase) {
                         const clase = response.data.clase;
                         if (!$configTab.length || !$form.length) { return; }
@@ -188,7 +187,6 @@
                         $form.find('#nombre_clase_config').focus();
 
                         // Cargar datos en las otras pestañas
-                        alert('Debug 2: Calling refreshEvaluacionesList.');
                         self.refreshEvaluacionesList(clase.id, clase.evaluaciones);
                         self.loadPonderacionesTab(clase.id, clase.evaluaciones);
 
@@ -402,12 +400,10 @@
         },
         
         refreshEvaluacionesList: function(claseId, evaluaciones) {
-            alert('Debug 3: Inside refreshEvaluacionesList.');
             this.renderEvaluacionesList(evaluaciones, claseId);
         },
 
         renderEvaluacionesList: function(evaluaciones, claseId) {
-            alert('Debug 4: Inside renderEvaluacionesList.');
             const $container = $('#cpp-config-evaluaciones-container');
             let html = '<h4>Gestionar Evaluaciones</h4>';
             html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
@@ -446,7 +442,6 @@
             html += `<button type="button" id="cpp-btn-add-evaluacion" class="cpp-btn cpp-btn-primary" data-clase-id="${claseId}">Añadir</button>
                      </div>`;
 
-            alert('Debug 5: About to set HTML.');
             $container.html(html);
 
             $container.find('.cpp-evaluaciones-list').sortable({
@@ -594,6 +589,14 @@
                         }
                     }
                 });
+            });
+
+            // Mover el event handler aquí desde cpp-sidebar.js
+            const $document = $(document);
+            $document.on('click', '.cpp-sidebar-clase-settings-btn', (e) => {
+                if (typeof this.showParaEditar === 'function') {
+                    this.showParaEditar(e);
+                }
             });
         }
     };

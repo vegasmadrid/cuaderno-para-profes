@@ -163,13 +163,6 @@
                 }
             });
 
-            $document.on('click', '.cpp-sidebar-clase-settings-btn', function(e){ 
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    cpp.config.showParaEditar(e);
-                } else {
-                    console.error("Función cpp.config.showParaEditar no encontrada.");
-                }
-            });
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){ 
                 if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
                     cpp.config.showModalParaCrear(e);
