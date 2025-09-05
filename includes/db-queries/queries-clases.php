@@ -44,7 +44,7 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
     }
     if (isset($datos['base_nota_final'])) { 
         $base_nota = floatval(str_replace(',', '.', $datos['base_nota_final']));
-        if ($base_nota > 0) {
+        if ($base_nota > .0) {
             $update_data['base_nota_final'] = $base_nota;
             $update_formats[] = '%f';
         }
