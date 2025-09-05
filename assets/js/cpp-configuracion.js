@@ -162,6 +162,7 @@
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
                 data: { action: 'cpp_obtener_datos_clase_completa', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: (response) => {
+                    alert('Debug 1: Success callback started.');
                     if (response.success && response.data.clase) {
                         const clase = response.data.clase;
                         if (!$configTab.length || !$form.length) { return; }
@@ -187,6 +188,7 @@
                         $form.find('#nombre_clase_config').focus();
 
                         // Cargar datos en las otras pestañas
+                        alert('Debug 2: Calling refreshEvaluacionesList.');
                         self.refreshEvaluacionesList(clase.id, clase.evaluaciones);
                         self.loadPonderacionesTab(clase.id, clase.evaluaciones);
 
@@ -400,12 +402,63 @@
         },
         
         refreshEvaluacionesList: function(claseId, evaluaciones) {
+            alert('Debug 3: Inside refreshEvaluacionesList.');
             this.renderEvaluacionesList(evaluaciones, claseId);
         },
 
         renderEvaluacionesList: function(evaluaciones, claseId) {
+            alert('Debug 4: Inside renderEvaluacionesList.');
             const $container = $('#cpp-config-evaluaciones-container');
-            $container.html('<h1>Test</h1>');
+            let html = '<h4>Gestionar Evaluaciones</h4>';
+            html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
+            html += '<ul class="cpp-evaluaciones-list">';
+
+            if (evaluaciones && evaluaciones.length > 0) {
+                evaluaciones.forEach(function(evaluacion) {
+                    html += `<li data-evaluacion-id="${evaluacion.id}">
+                                <span class="cpp-drag-handle dashicons dashicons-menu"></span>
+                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
+                                <div class="cpp-evaluacion-actions">
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="Renombrar"><span class="dashicons dashicons-edit"></span></button>
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
+                                </div>
+                             </li>`;
+                });
+            } else {
+                html += '<li class="cpp-no-evaluaciones">No hay evaluaciones creadas.</li>';
+            }
+            html += '</ul>';
+
+            html += `<div class="cpp-form-add-evaluacion">
+                        <input type="text" id="cpp-nombre-nueva-evaluacion" placeholder="Nombre de la nueva evaluación" style="flex-grow:1;">`;
+
+            if (evaluaciones && evaluaciones.length > 0) {
+                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-basis: 200px;">
+                            <select id="cpp-copy-from-eval-select">
+                                <option value="0">No copiar ponderaciones</option>`;
+                evaluaciones.forEach(function(evaluacion_origen) {
+                    html += `<option value="${evaluacion_origen.id}">Copiar de: ${$('<div>').text(evaluacion_origen.nombre_evaluacion).html()}</option>`;
+                });
+                html += `</select>
+                         </div>`;
+            }
+
+            html += `<button type="button" id="cpp-btn-add-evaluacion" class="cpp-btn cpp-btn-primary" data-clase-id="${claseId}">Añadir</button>
+                     </div>`;
+
+            alert('Debug 5: About to set HTML.');
+            $container.html(html);
+
+            $container.find('.cpp-evaluaciones-list').sortable({
+                handle: '.cpp-drag-handle', axis: 'y', placeholder: 'cpp-sortable-placeholder',
+                update: function(event, ui) {
+                    const orderedIds = $(this).find('li').map(function() { return $(this).data('evaluacion-id'); }).get();
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                        data: { action: 'cpp_guardar_orden_evaluaciones', nonce: cppFrontendData.nonce, orden_evaluaciones: orderedIds }
+                    });
+                }
+            });
         },
 
         bindEvents: function() {
