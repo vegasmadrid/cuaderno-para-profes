@@ -8,7 +8,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    return $wpdb->get_row(
+    $clase_data = $wpdb->get_row(
         $wpdb->prepare(
             "SELECT id, user_id, nombre, color, base_nota_final, nota_aprobado, orden, fecha_creacion FROM $tabla_clases WHERE id = %d AND user_id = %d",
             $clase_id,
@@ -16,6 +16,13 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
         ),
         ARRAY_A 
     );
+
+    if ($clase_data) {
+        // Incluir las evaluaciones directamente en los datos de la clase
+        $clase_data['evaluaciones'] = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    }
+
+    return $clase_data;
 }
 
 function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
