@@ -187,8 +187,7 @@
                         $form.find('#nombre_clase_config').focus();
 
                         // Cargar datos en las otras pestañas
-                        this.refreshEvaluacionesList(claseId);
-                        this.loadPonderacionesTab(claseId);
+                        this.cargarContenidoEvaluaciones(claseId);
 
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
@@ -381,9 +380,13 @@
             $(`#cpp-config-tab-${tabId}`).addClass('active');
         },
 
-        loadPonderacionesTab: function(claseId) {
-            const $container = $('#cpp-config-ponderaciones-container');
-            $container.html('<p class="cpp-cuaderno-cargando">Cargando evaluaciones...</p>');
+        cargarContenidoEvaluaciones: function(claseId) {
+            const self = this;
+            const $evaluacionesContainer = $('#cpp-config-evaluaciones-container');
+            const $ponderacionesContainer = $('#cpp-config-ponderaciones-container');
+
+            $evaluacionesContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
+            $ponderacionesContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -391,44 +394,34 @@
                 dataType: 'json',
                 data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: function(response) {
-                    if (response.success && response.data.evaluaciones && response.data.evaluaciones.length > 0) {
-                        let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
-                        contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
-                        contentHtml += '<option value="">-- Selecciona --</option>';
-                        response.data.evaluaciones.forEach(function(evaluacion) {
-                            contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
-                        });
-                        contentHtml += '</select></div><hr>';
-                        contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
-                        $container.html(contentHtml);
-                    } else {
-                        $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la pestaña "Evaluaciones".</p>');
-                    }
-                },
-                error: function() {
-                    $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
-                }
-            });
-        },
-        
-        refreshEvaluacionesList: function(claseId) {
-            const $container = $('#cpp-config-evaluaciones-container');
-            $container.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
-            const self = this;
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
-                success: function(response) {
                     if (response.success) {
+                        // Renderizar lista de evaluaciones
                         self.renderEvaluacionesList(response.data.evaluaciones, claseId);
+
+                        // Renderizar sección de ponderaciones
+                        if (response.data.evaluaciones && response.data.evaluaciones.length > 0) {
+                            let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
+                            contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
+                            contentHtml += '<option value="">-- Selecciona --</option>';
+                            response.data.evaluaciones.forEach(function(evaluacion) {
+                                contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
+                            });
+                            contentHtml += '</select></div><hr>';
+                            contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
+                            $ponderacionesContainer.html(contentHtml);
+                        } else {
+                            $ponderacionesContainer.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la sección de arriba.</p>');
+                        }
                     } else {
-                        $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
+                        const errorMsg = '<p class="cpp-error-message">Error al cargar las evaluaciones.</p>';
+                        $evaluacionesContainer.html(errorMsg);
+                        $ponderacionesContainer.html(errorMsg);
                     }
                 },
                 error: function() {
-                    $container.html('<p class="cpp-error-message">Error de conexión.</p>');
+                    const errorMsg = '<p class="cpp-error-message">Error de conexión.</p>';
+                    $evaluacionesContainer.html(errorMsg);
+                    $ponderacionesContainer.html(errorMsg);
                 }
             });
         },
