@@ -405,46 +405,7 @@
 
         renderEvaluacionesList: function(evaluaciones, claseId) {
             const $container = $('#cpp-config-evaluaciones-container');
-            let html = '<h4>Gestionar Evaluaciones</h4>';
-            html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
-            html += '<ul class="cpp-evaluaciones-list">';
-
-            if (evaluaciones && evaluaciones.length > 0) {
-                evaluaciones.forEach(function(evaluacion) {
-                    html += `<li data-evaluacion-id="${evaluacion.id}">
-                                <span class="cpp-drag-handle dashicons dashicons-menu"></span>
-                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
-                                <div class="cpp-evaluacion-actions">
-                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="Renombrar"><span class="dashicons dashicons-edit"></span></button>
-                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
-                                </div>
-                             </li>`;
-                });
-            } else {
-                html += '<li class="cpp-no-evaluaciones">No hay evaluaciones creadas.</li>';
-            }
-            html += '</ul>';
-
-            html += `<div class="cpp-form-add-evaluacion">
-                        <input type="text" id="cpp-nombre-nueva-evaluacion" placeholder="Nombre de la nueva evaluación" style="flex-grow:1;">`;
-
-            if (evaluaciones && evaluaciones.length > 0) {
-                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-basis: 200px;">
-                            <select id="cpp-copy-from-eval-select">
-                                <option value="0">No copiar ponderaciones</option>`;
-                evaluaciones.forEach(function(evaluacion_origen) {
-                    html += `<option value="${evaluacion_origen.id}">Copiar de: ${$('<div>').text(evaluacion_origen.nombre_evaluacion).html()}</option>`;
-                });
-                html += `</select>
-                         </div>`;
-            }
-            
-            html += `<button type="button" id="cpp-btn-add-evaluacion" class="cpp-btn cpp-btn-primary" data-clase-id="${claseId}">Añadir</button>
-                     </div>`;
-            
-            $container.html(html);
-
-    // La inicialización de sortable se moverá a handleConfigTabClick
+            $container.html('<h1>Test</h1>');
         },
 
         bindEvents: function() {
