@@ -187,8 +187,8 @@
                         $form.find('#nombre_clase_config').focus();
 
                         // Cargar datos en las otras pestañas
-                        self.refreshEvaluacionesList();
-                        self.loadPonderacionesTab();
+                        self.refreshEvaluacionesList(clase.id, clase.evaluaciones);
+                        self.loadPonderacionesTab(clase.id, clase.evaluaciones);
 
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
@@ -382,89 +382,25 @@
         },
 
 
-        loadPonderacionesTab: function(claseId) {
-            const self = this;
-            if (!claseId) {
-                claseId = this.currentClaseIdForConfig;
-            }
-            if (!claseId) {
-                console.error("loadPonderacionesTab: No se pudo determinar el claseId.");
-                return;
-            }
-
+        loadPonderacionesTab: function(claseId, evaluaciones) {
             const $container = $('#cpp-config-ponderaciones-container');
-            $container.html('<p>Cargando...</p>');
-
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_obtener_evaluaciones',
-                    nonce: cppFrontendData.nonce,
-                    clase_id: claseId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        const evaluaciones = response.data.evaluaciones;
-                        if (evaluaciones && evaluaciones.length > 0) {
-                            let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
-                            contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
-                            contentHtml += '<option value="">-- Selecciona --</option>';
-                            evaluaciones.forEach(function(evaluacion) {
-                                contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
-                            });
-                            contentHtml += '</select></div><hr>';
-                            contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
-                            $container.html(contentHtml);
-                        } else {
-                            $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la sección de arriba.</p>');
-                        }
-                    } else {
-                        $container.html('<p>Error al cargar ponderaciones.</p>');
-                    }
-                },
-                error: function() {
-                    $container.html('<p>Error de red al cargar ponderaciones.</p>');
-                }
-            });
+            if (evaluaciones && evaluaciones.length > 0) {
+                let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
+                contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
+                contentHtml += '<option value="">-- Selecciona --</option>';
+                evaluaciones.forEach(function(evaluacion) {
+                    contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
+                });
+                contentHtml += '</select></div><hr>';
+                contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
+                $container.html(contentHtml);
+            } else {
+                $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la sección de arriba.</p>');
+            }
         },
         
-        refreshEvaluacionesList: function(claseId) {
-            const self = this;
-            if (!claseId) {
-                claseId = this.currentClaseIdForConfig;
-            }
-            if (!claseId) {
-                console.error("refreshEvaluacionesList: No se pudo determinar el claseId.");
-                $('#cpp-config-evaluaciones-container').html('<p>Error: No se pudo identificar la clase para cargar las evaluaciones.</p>');
-                return;
-            }
-
-            $('#cpp-config-evaluaciones-container').html('<p>Cargando evaluaciones...</p>');
-
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_obtener_evaluaciones',
-                    nonce: cppFrontendData.nonce,
-                    clase_id: claseId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        self.renderEvaluacionesList(response.data.evaluaciones, claseId);
-                    } else {
-                        console.error('Error al obtener evaluaciones:', response.data ? response.data.message : 'Respuesta no exitosa');
-                        $('#cpp-config-evaluaciones-container').html('<p>Error al cargar las evaluaciones.</p>');
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.error('Error de red al obtener evaluaciones:', textStatus, errorThrown);
-                    $('#cpp-config-evaluaciones-container').html('<p>Error de red al cargar las evaluaciones.</p>');
-                }
-            });
+        refreshEvaluacionesList: function(claseId, evaluaciones) {
+            this.renderEvaluacionesList(evaluaciones, claseId);
         },
 
         renderEvaluacionesList: function(evaluaciones, claseId) {
@@ -508,16 +444,7 @@
             
             $container.html(html);
 
-            $container.find('.cpp-evaluaciones-list').sortable({
-                handle: '.cpp-drag-handle', axis: 'y', placeholder: 'cpp-sortable-placeholder',
-                update: function(event, ui) {
-                    const orderedIds = $(this).find('li').map(function() { return $(this).data('evaluacion-id'); }).get();
-                    $.ajax({
-                        url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
-                        data: { action: 'cpp_guardar_orden_evaluaciones', nonce: cppFrontendData.nonce, orden_evaluaciones: orderedIds }
-                    });
-                }
-            });
+    // La inicialización de sortable se moverá a handleConfigTabClick
         },
 
         bindEvents: function() {
@@ -581,8 +508,8 @@
                     },
                     success: (response) => {
                         if(response.success) {
-                            this.refreshEvaluacionesList();
-                            this.loadPonderacionesTab(); // Recargar también las ponderaciones
+                            this.refreshEvaluacionesList(claseId);
+                            this.loadPonderacionesTab(claseId); // Recargar también las ponderaciones
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
                         }
@@ -602,8 +529,8 @@
                         data: { action: 'cpp_eliminar_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId },
                         success: (response) => {
                             if(response.success) {
-                                this.refreshEvaluacionesList();
-                                this.loadPonderacionesTab();
+                                this.refreshEvaluacionesList(claseId);
+                                this.loadPonderacionesTab(claseId);
                             } else {
                                 alert('Error: ' + (response.data.message || 'No se pudo eliminar la evaluación.'));
                             }
@@ -646,8 +573,8 @@
                     data: { action: 'cpp_actualizar_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, nombre_evaluacion: nuevoNombre },
                     success: (response) => {
                         if(response.success) {
-                            this.refreshEvaluacionesList();
-                            this.loadPonderacionesTab();
+                            this.refreshEvaluacionesList(claseId);
+                            this.loadPonderacionesTab(claseId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo actualizar.'));
                         }
