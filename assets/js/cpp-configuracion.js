@@ -142,10 +142,8 @@
             
             if (!claseId) { alert('Error: No se pudo identificar la clase para editar.'); return; }
             
-            // Cambiar a la pestaña de configuración
             $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
 
-            // Cerrar el sidebar si está abierto
             if (cpp.sidebar && cpp.sidebar.isSidebarVisible) {
                 cpp.sidebar.toggle();
             }
@@ -157,6 +155,8 @@
             this.currentClaseIdForConfig = claseId;
 
             $('#cpp-opcion-clase-ejemplo-container').hide();
+
+            const self = this;
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
@@ -186,9 +186,9 @@
                         this.handleConfigTabClick(null, 'clase');
                         $form.find('#nombre_clase_config').focus();
 
-                        // Cargar datos en las otras pestañas, usando los datos de la respuesta principal
-                        this.renderEvaluacionesList(clase.evaluaciones, clase.id);
-                        this.renderPonderacionesContainer(clase.evaluaciones);
+                        // Cargar datos en las otras pestañas
+                        self.refreshEvaluacionesList(clase.id, clase.evaluaciones);
+                        self.loadPonderacionesTab(clase.id, clase.evaluaciones);
 
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
@@ -381,8 +381,9 @@
             $(`#cpp-config-tab-${tabId}`).addClass('active');
         },
 
-        renderPonderacionesContainer: function(evaluaciones) {
-            const $ponderacionesContainer = $('#cpp-config-ponderaciones-container');
+
+        loadPonderacionesTab: function(claseId, evaluaciones) {
+            const $container = $('#cpp-config-ponderaciones-container');
             if (evaluaciones && evaluaciones.length > 0) {
                 let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
                 contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
@@ -392,12 +393,16 @@
                 });
                 contentHtml += '</select></div><hr>';
                 contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
-                $ponderacionesContainer.html(contentHtml);
+                $container.html(contentHtml);
             } else {
-                $ponderacionesContainer.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la sección de arriba.</p>');
+                $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la sección de arriba.</p>');
             }
         },
         
+        refreshEvaluacionesList: function(claseId, evaluaciones) {
+            this.renderEvaluacionesList(evaluaciones, claseId);
+        },
+
         renderEvaluacionesList: function(evaluaciones, claseId) {
             const $container = $('#cpp-config-evaluaciones-container');
             let html = '<h4>Gestionar Evaluaciones</h4>';
