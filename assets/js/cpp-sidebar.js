@@ -163,12 +163,18 @@
                 }
             });
 
-            $document.on('click', '.cpp-sidebar-clase-settings-btn', function(e){
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    cpp.config.showParaEditar(e);
-                } else {
-                    console.error("Función cpp.config.showParaEditar no encontrada.");
-                }
+            // Final attempt: Direct binding.
+            $('.cpp-sidebar-clase-settings-btn').each(function() {
+                $(this).off('click').on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Direct click handler fired for settings button.');
+                    if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                        cpp.config.showParaEditar(e);
+                    } else {
+                        console.error("Función cpp.config.showParaEditar no encontrada.");
+                    }
+                });
             });
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){
                 if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
