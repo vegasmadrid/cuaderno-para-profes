@@ -192,7 +192,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <div id="cpp-config-tab-evaluaciones" class="cpp-config-tab-content">
                                     <h2>Evaluaciones de la Clase</h2>
                                     <div id="cpp-config-evaluaciones-container">
-                                        <p>Cargando evaluaciones...</p>
+                                        <p>TEST Cargando evaluaciones...</p>
                                     </div>
                                     <hr style="margin: 40px 0;">
                                     <h2>Ponderaciones y Categorías</h2>
