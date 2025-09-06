@@ -163,14 +163,23 @@
                 }
             });
 
-            $document.on('click', '.cpp-sidebar-clase-settings-btn', function(e){
-                console.log('FINAL DEBUG: Settings button click handler has been triggered.');
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    cpp.config.showParaEditar(e);
-                } else {
-                    console.error("FINAL DEBUG: cpp.config.showParaEditar function not found!");
+            // Usamos addEventListener nativo en la fase de captura para máxima prioridad.
+            document.addEventListener('click', function(e) {
+                // Delegación manual del evento.
+                let targetElement = e.target.closest('.cpp-sidebar-clase-settings-btn');
+
+                if (targetElement) {
+                    // Prevenimos que el click en el botón dispare otros handlers (como el de seleccionar clase)
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                        cpp.config.showParaEditar(e);
+                    } else {
+                        console.error("Función cpp.config.showParaEditar no encontrada.");
+                    }
                 }
-            });
+            }, true); // El 'true' activa la fase de captura.
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){
                 if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
                     cpp.config.showModalParaCrear(e);
