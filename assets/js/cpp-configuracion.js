@@ -591,13 +591,6 @@
                 });
             });
 
-            // Mover el event handler aquí desde cpp-sidebar.js
-            const $document = $(document);
-            $document.on('click', '.cpp-sidebar-clase-settings-btn', (e) => {
-                if (typeof this.showParaEditar === 'function') {
-                    this.showParaEditar(e);
-                }
-            });
         }
     };
 

@@ -129,24 +129,14 @@
         bindEvents: function() {
             console.log("Binding Sidebar events...");
             const $document = $(document);
+            const $sidebar = $('#cpp-cuaderno-sidebar');
 
+            // Estos eventos se quedan en $document porque los elementos están fuera del sidebar
             $document.on('click', '#cpp-a1-menu-btn-toggle', function(e) {
                 console.log("Botón Menú Clases (#cpp-a1-menu-btn-toggle) CLICADO.");
                 e.preventDefault();
-                e.stopPropagation();
+                // e.stopPropagation(); // Eliminado para evitar problemas
                 cpp.sidebar.toggle(); 
-            });
-            
-            $document.on('click', '#cpp-sidebar-close-btn', function(e) { 
-                console.log("Botón Cerrar Sidebar (#cpp-sidebar-close-btn) CLICADO.");
-                e.stopPropagation();
-                if (cpp.sidebar.isSidebarVisible) {
-                    cpp.sidebar.toggle(); 
-                }
-            });
-
-            $document.on('click', '.cpp-sidebar-clases-list .cpp-sidebar-clase-item > a', function(e){ 
-                cpp.sidebar.seleccionarClase.call(this, e); // Mantenemos .call(this, e) para que 'this' sea <a> dentro de seleccionarClase si es necesario
             });
 
             $document.on('click', '#cpp-sidebar-overlay', function(event) { 
@@ -155,21 +145,46 @@
                 }
             });
 
-            $document.on('click', '.cpp-sidebar-clase-alumnos-btn', function(e){
-                if (cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.mostrar === 'function') {
-                    cpp.modals.alumnos.mostrar(e); 
-                } else {
-                    console.error("Función cpp.modals.alumnos.mostrar no encontrada.");
-                }
-            });
+            // Estos eventos se delegan desde el contenedor del sidebar para mayor eficiencia y especificidad
+            if ($sidebar.length) {
+                $sidebar.on('click', '#cpp-sidebar-close-btn', function(e) {
+                    console.log("Botón Cerrar Sidebar (#cpp-sidebar-close-btn) CLICADO.");
+                    // e.stopPropagation(); // Eliminado para evitar problemas
+                    if (cpp.sidebar.isSidebarVisible) {
+                        cpp.sidebar.toggle();
+                    }
+                });
 
-            $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){ 
-                if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
-                    cpp.config.showModalParaCrear(e);
-                } else {
-                    console.error("Función cpp.config.showModalParaCrear no encontrada.");
-                }
-            });
+                $sidebar.on('click', '.cpp-sidebar-clases-list .cpp-sidebar-clase-item > a', function(e){
+                    cpp.sidebar.seleccionarClase.call(this, e);
+                });
+
+                $sidebar.on('click', '.cpp-sidebar-clase-alumnos-btn', function(e){
+                    e.stopPropagation(); // Detener aquí para que no se dispare el click en 'a'
+                    if (cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.mostrar === 'function') {
+                        cpp.modals.alumnos.mostrar(e);
+                    } else {
+                        console.error("Función cpp.modals.alumnos.mostrar no encontrada.");
+                    }
+                });
+
+                $sidebar.on('click', '.cpp-sidebar-clase-settings-btn', function(e){
+                    e.stopPropagation(); // Detener aquí para que no se dispare el click en 'a'
+                    if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                        cpp.config.showParaEditar(e);
+                    } else {
+                        console.error("Función cpp.config.showParaEditar no encontrada.");
+                    }
+                });
+
+                $sidebar.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){
+                    if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
+                        cpp.config.showModalParaCrear(e);
+                    } else {
+                        console.error("Función cpp.config.showModalParaCrear no encontrada.");
+                    }
+                });
+            }
         }
     };
 
