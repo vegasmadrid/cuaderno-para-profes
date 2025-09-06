@@ -472,6 +472,17 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-config-content-area p, .cpp-config-content-area small {
     line-height: 1.6;
 }
+
+.cpp-radio-group label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 16px !important;
+}
+
+.cpp-radio-group input[type="radio"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
 .cpp-modal-close { position: absolute; top: 12px; right: 12px; font-size: 24px; color: #5f6368; cursor: pointer; line-height: 1; padding: 4px; border-radius: 50%; }
 .cpp-modal-close:hover { color: #202124; background-color: rgba(0,0,0,0.05); }
 .cpp-modal-content h2 { margin-top: 0; margin-bottom: 24px; font-size: 20px; font-weight: 500; color: #202124; flex-shrink: 0; }

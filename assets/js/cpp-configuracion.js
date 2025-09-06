@@ -456,10 +456,10 @@
             html += '</ul>';
 
             html += `<div class="cpp-form-add-evaluacion">
-                        <input type="text" id="cpp-nombre-nueva-evaluacion" placeholder="Nombre de la nueva evaluación" style="flex-grow:1;">`;
+                        <input type="text" id="cpp-nombre-nueva-evaluacion" placeholder="Nombre de la nueva evaluación" style="flex-basis: 250px;">`;
 
             if (evaluaciones && evaluaciones.length > 0) {
-                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-basis: 200px;">
+                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-grow: 1;">
                             <select id="cpp-copy-from-eval-select">
                                 <option value="0">No copiar ponderaciones</option>`;
                 evaluaciones.forEach(function(evaluacion_origen) {
