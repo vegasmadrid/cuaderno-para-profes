@@ -26,22 +26,15 @@ const cpp = {
         console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
         const modulesToInitialize = [
-            { name: 'utils', objRef: 'utils' },
-            { name: 'sidebar', objRef: 'sidebar' },
-            { name: 'gradebook', objRef: 'gradebook' }, // cpp-cuaderno.js
-            { name: 'modalsGeneral', objRef: 'modals.general' },
-            { name: 'modalsClase', objRef: 'modals.clase' },
-            { name: 'modalsAlumnos', objRef: 'modals.alumnos' },
-            { name: 'modalsActividades', objRef: 'modals.actividades' },
-            { name: 'modalsExcel', objRef: 'modals.excel' },
-            { name: 'modalsAsistencia', objRef: 'modals.asistencia' },
-            { name: 'modalsFichaAlumno', objRef: 'modals.fichaAlumno' },
-            { name: 'modalsEvaluacion', objRef: 'modals.evaluacion' }
+            'utils', 'sidebar', 'gradebook',
+            'modals.general', 'config', 'modals.alumnos',
+            'modals.actividades', 'modals.excel', 'modals.asistencia',
+            'modals.fichaAlumno', 'modals.evaluacion'
         ];
         
-        modulesToInitialize.forEach(moduleInfo => {
-            let moduleObject = cpp; 
-            const parts = moduleInfo.objRef.split('.'); 
+        modulesToInitialize.forEach(modulePath => {
+            let moduleObject = cpp;
+            const parts = modulePath.split('.');
             let found = true;
             for (const part of parts) {
                 if (moduleObject && typeof moduleObject[part] !== 'undefined') {
@@ -53,35 +46,81 @@ const cpp = {
             }
 
             if (found && moduleObject) {
-                console.log(`CPP Core: Módulo '${moduleInfo.name}' encontrado.`);
                 if (typeof moduleObject.init === 'function') {
-                    console.log(`CPP Core: Llamando a init() de '${moduleInfo.name}'...`);
+                    console.log(`CPP Core: Initializing ${modulePath}...`);
                     moduleObject.init();
                 }
+                // bindEvents se llama ahora desde el init de cada módulo
             } else {
-                console.warn(`CPP Core: Módulo '${moduleInfo.name}' (cpp.${moduleInfo.objRef}) NO encontrado o no tiene estructura esperada.`);
+                console.warn(`CPP Core: Module '${modulePath}' not found.`);
             }
         });
         
-        modulesToInitialize.forEach(moduleInfo => {
-            let moduleObject = cpp;
-            const parts = moduleInfo.objRef.split('.');
-            let found = true;
-            for (const part of parts) {
-                if (moduleObject && typeof moduleObject[part] !== 'undefined') {
-                    moduleObject = moduleObject[part];
-                } else { found = false; break; }
-            }
-            if (found && moduleObject && typeof moduleObject.bindEvents === 'function') {
-                console.log(`CPP Core: Llamando a bindEvents() de '${moduleInfo.name}'...`);
-                moduleObject.bindEvents();
-            }
-        });
-        
+        this.bindCoreEvents();
         this.initializeCuadernoView();
 
+        // El módulo programador se inicializa de forma independiente si existe
+        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
+            console.log(`CPP Core: Initializing CppProgramadorApp...`);
+            const initialClaseId = this.getInitialClaseId();
+            CppProgramadorApp.init(initialClaseId);
+        }
+
         console.log("CPP Core: init() completado.");
-    }, 
+    },
+
+    bindCoreEvents: function() {
+        const $ = jQuery;
+        const $document = $(document);
+
+        $document.on('click', '.cpp-main-tab-link', function(e) {
+            e.preventDefault();
+            const $tab = $(this);
+            const tabId = $tab.data('tab');
+
+            if ($tab.hasClass('active')) {
+                return;
+            }
+
+            $('.cpp-main-tab-link').removeClass('active');
+            $tab.addClass('active');
+
+            $('.cpp-main-tab-content').removeClass('active');
+            $('#cpp-main-tab-' + tabId).addClass('active');
+
+            // Si se activa la pestaña de configuración y hay una clase seleccionada, cargar sus datos
+            if (tabId === 'configuracion' && cpp.currentClaseIdCuaderno) {
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
+                }
+            }
+        });
+
+        // Botón de crear primera clase desde el welcome screen
+        $document.on('click', '#cpp-btn-crear-primera-clase', function(e) {
+            if (cpp.config && typeof cpp.config.showParaCrear === 'function') {
+                cpp.config.showParaCrear(e);
+            }
+        });
+    },
+
+    getInitialClaseId: function() {
+        const $clasesSidebarItems = jQuery('.cpp-sidebar-clases-list .cpp-sidebar-clase-item');
+        let claseIdToLoad = null;
+
+        if (typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId && cppFrontendData.userId !== '0') {
+            const lastOpenedClaseId = localStorage.getItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId);
+            if (lastOpenedClaseId && $clasesSidebarItems.filter(`[data-clase-id="${lastOpenedClaseId}"]`).length > 0) {
+                claseIdToLoad = lastOpenedClaseId;
+            }
+        }
+
+        if (!claseIdToLoad && $clasesSidebarItems.length > 0) {
+            claseIdToLoad = $clasesSidebarItems.first().data('clase-id');
+        }
+
+        return claseIdToLoad;
+    },
 
     initializeCuadernoView: function() {
         const $ = jQuery; 

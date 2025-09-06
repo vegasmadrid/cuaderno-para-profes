@@ -15,7 +15,7 @@
         init: function() {
             console.log("CPP Sidebar Module Initializing...");
             this.initSortableClases();
-            // bindEvents se llamará desde cpp.core.js
+            this.bindEvents();
         },
 
         initSortableClases: function() {
@@ -164,17 +164,17 @@
             });
 
             $document.on('click', '.cpp-sidebar-clase-settings-btn', function(e){ 
-                if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaEditar === 'function') {
-                    cpp.modals.clase.showParaEditar(e); 
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    cpp.config.showParaEditar(e);
                 } else {
-                    console.error("Función cpp.modals.clase.showParaEditar no encontrada.");
+                    console.error("Función cpp.config.showParaEditar no encontrada.");
                 }
             });
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){ 
-                if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaCrear === 'function') {
-                    cpp.modals.clase.showParaCrear(e);
+                if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
+                    cpp.config.showModalParaCrear(e);
                 } else {
-                    console.error("Función cpp.modals.clase.showParaCrear no encontrada.");
+                    console.error("Función cpp.config.showModalParaCrear no encontrada.");
                 }
             });
         }
