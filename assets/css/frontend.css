@@ -441,6 +441,48 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     display: flex;
     flex-direction: column;
 }
+
+.cpp-config-section {
+    padding: 10px 0;
+    background-color: #fff;
+    border: none;
+    margin-bottom: 25px;
+}
+
+.cpp-config-divider {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: 30px 0;
+}
+
+#cpp-ponderaciones-eval-selector {
+    max-width: 400px;
+}
+
+.cpp-config-content-area, .cpp-config-content-area h4, .cpp-config-content-area p, .cpp-config-content-area small, .cpp-config-content-area select, .cpp-config-content-area input {
+    font-size: 15px !important;
+}
+
+.cpp-config-content-area h4 {
+    font-size: 18px !important;
+    font-weight: 500;
+    margin-bottom: 15px;
+}
+
+.cpp-config-content-area p, .cpp-config-content-area small {
+    line-height: 1.6;
+}
+
+.cpp-radio-group label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 16px !important;
+}
+
+.cpp-radio-group input[type="radio"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
 .cpp-modal-close { position: absolute; top: 12px; right: 12px; font-size: 24px; color: #5f6368; cursor: pointer; line-height: 1; padding: 4px; border-radius: 50%; }
 .cpp-modal-close:hover { color: #202124; background-color: rgba(0,0,0,0.05); }
 .cpp-modal-content h2 { margin-top: 0; margin-bottom: 24px; font-size: 20px; font-weight: 500; color: #202124; flex-shrink: 0; }
@@ -504,15 +546,15 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-categoria-actions { display: flex; align-items: center; gap: 5px; margin-left: auto; }
 .cpp-btn-editar-categoria .dashicons, .cpp-btn-eliminar-categoria .dashicons { font-size: 18px !important; }
 
-.cpp-modal-content .cpp-categorias-list li span.cpp-category-color-indicator { 
-    display: inline-block !important; 
-    width: 16px !important; 
-    height: 16px !important; 
-    border: 1px solid #ccc !important; 
-    border-radius: 3px !important; 
-    margin-right: 8px !important; 
-    vertical-align: middle !important; 
-    flex-shrink: 0 !important; 
+.cpp-category-color-indicator {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
 }
 
 .cpp-categoria-form-actions {

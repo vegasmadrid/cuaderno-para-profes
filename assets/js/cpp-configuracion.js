@@ -381,22 +381,9 @@
             $(`#cpp-config-tab-${tabId}`).addClass('active');
         },
 
-        handleInnerTabClick: function(event) {
-            if (event) event.preventDefault();
-            const $clickedLink = $(event.currentTarget);
-            const $tabsContainer = $clickedLink.closest('.cpp-tabs-container');
-            const tabId = $clickedLink.data('tab');
-
-            $tabsContainer.find('.cpp-tab-link').removeClass('active');
-            $tabsContainer.find('.cpp-tab-content').removeClass('active');
-
-            $clickedLink.addClass('active');
-            $tabsContainer.find('#' + tabId).addClass('active');
-        },
-
         loadPonderacionesTab: function(claseId) {
             const $container = $('#cpp-config-ponderaciones-container');
-            $container.html('<p class="cpp-cuaderno-cargando">Cargando evaluaciones...</p>');
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando tipos de ponderación y categorías...</p>');
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -405,7 +392,7 @@
                 data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: function(response) {
                     if (response.success && response.data.evaluaciones && response.data.evaluaciones.length > 0) {
-                        let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
+                        let contentHtml = '<h4>Tipos de ponderación y categorías</h4>';
                         contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
                         contentHtml += '<option value="">-- Selecciona --</option>';
                         response.data.evaluaciones.forEach(function(evaluacion) {
@@ -415,7 +402,7 @@
                         contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
                         $container.html(contentHtml);
                     } else {
-                        $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la pestaña "Evaluaciones".</p>');
+                        $container.html('<h4>Tipos de ponderación y categorías</h4><p>No hay evaluaciones creadas para esta clase. Añade una evaluación primero para poder gestionar sus ponderaciones y categorías.</p>');
                     }
                 },
                 error: function() {
@@ -469,10 +456,10 @@
             html += '</ul>';
 
             html += `<div class="cpp-form-add-evaluacion">
-                        <input type="text" id="cpp-nombre-nueva-evaluacion" placeholder="Nombre de la nueva evaluación" style="flex-grow:1;">`;
+                        <input type="text" id="cpp-nombre-nueva-evaluacion" placeholder="Nombre de la nueva evaluación" style="flex-basis: 250px;">`;
 
             if (evaluaciones && evaluaciones.length > 0) {
-                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-basis: 200px;">
+                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-grow: 1;">
                             <select id="cpp-copy-from-eval-select">
                                 <option value="0">No copiar ponderaciones</option>`;
                 evaluaciones.forEach(function(evaluacion_origen) {
@@ -505,7 +492,6 @@
 
             // --- Eventos de la Pestaña de Configuración ---
             $mainContent.on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
-            $mainContent.on('click', '#cpp-config-tab-evaluaciones .cpp-tab-link', (e) => { this.handleInnerTabClick(e); });
 
             // Guardar/Eliminar desde la pestaña de configuración
             $mainContent.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });

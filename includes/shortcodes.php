@@ -190,22 +190,12 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     </form>
                                 </div>
                                 <div id="cpp-config-tab-evaluaciones" class="cpp-config-tab-content">
-                                    <h2>Evaluaciones y Ponderaciones</h2>
-                                    <div class="cpp-tabs-container">
-                                        <div class="cpp-tab-nav">
-                                            <button type="button" class="cpp-tab-link active" data-tab="cpp-tab-evaluaciones-config">Evaluaciones de la clase</button>
-                                            <button type="button" class="cpp-tab-link" data-tab="cpp-tab-ponderaciones-config">Tipo de ponderación y categorías</button>
-                                        </div>
-                                        <div id="cpp-tab-evaluaciones-config" class="cpp-tab-content active">
-                                            <div id="cpp-config-evaluaciones-container">
-                                                <p>Cargando evaluaciones...</p>
-                                            </div>
-                                        </div>
-                                        <div id="cpp-tab-ponderaciones-config" class="cpp-tab-content">
-                                            <div id="cpp-config-ponderaciones-container">
-                                                <p>Selecciona una evaluación para ver sus ponderaciones.</p>
-                                            </div>
-                                        </div>
+                                    <div id="cpp-config-evaluaciones-container" class="cpp-config-section">
+                                        <p>Cargando evaluaciones...</p>
+                                    </div>
+                                    <hr class="cpp-config-divider">
+                                    <div id="cpp-config-ponderaciones-container" class="cpp-config-section">
+                                        <p>Selecciona una evaluación para ver sus ponderaciones.</p>
                                     </div>
                                 </div>
                                 <div id="cpp-config-tab-calendario" class="cpp-config-tab-content">
