@@ -163,14 +163,11 @@
                 }
             });
 
-            console.log('[DEBUG] Binding .cpp-sidebar-clase-settings-btn click handler.');
             $document.on('click', '.cpp-sidebar-clase-settings-btn', function(e){
-                console.log('[DEBUG] .cpp-sidebar-clase-settings-btn CLICKED.');
                 if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    console.log('[DEBUG] Found cpp.config.showParaEditar, calling it.');
                     cpp.config.showParaEditar(e);
                 } else {
-                    console.error("[DEBUG] Función cpp.config.showParaEditar no encontrada.");
+                    console.error("Función cpp.config.showParaEditar no encontrada.");
                 }
             });
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){

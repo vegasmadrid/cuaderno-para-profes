@@ -112,13 +112,14 @@ li.cpp-sidebar-clase-item a {
     text-decoration: none; color: #3c4043; font-size: 14px; font-weight: normal;
     flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     border-radius: 0 25px 25px 0; transition: background-color 0.15s ease, color 0.15s ease;
+    position: relative; z-index: 1;
 }
 .cpp-sidebar-clase-icon { margin-right: 20px; font-size: 20px; color: #5f6368; transition: color 0.15s ease; }
 li.cpp-sidebar-clase-item:hover a { background-color: #f1f3f4; } 
 li.cpp-sidebar-clase-item.cpp-sidebar-item-active a { background-color: #e8f0fe; color: #1a73e8; font-weight: 500; }
 li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-icon { color: #1a73e8; }
 
-.cpp-sidebar-item-actions { display: flex; align-items: center; flex-shrink: 0; }
+.cpp-sidebar-item-actions { display: flex; align-items: center; flex-shrink: 0; position: relative; z-index: 2; }
 .cpp-sidebar-clase-alumnos-btn, .cpp-sidebar-clase-settings-btn {
     background: none; border: none; padding: 8px; cursor: pointer;
     color: #5f6368; border-radius: 50%;

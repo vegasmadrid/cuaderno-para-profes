@@ -129,7 +129,6 @@
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
-            console.log('[DEBUG] showParaEditar called.', e);
             if (e && typeof e.preventDefault === 'function') {
                 e.preventDefault(); e.stopPropagation();
             }
@@ -163,7 +162,6 @@
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
                 data: { action: 'cpp_obtener_datos_clase_completa', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: (response) => {
-                    console.log('[DEBUG] AJAX success for cpp_obtener_datos_clase_completa. Response:', response);
                     if (response.success && response.data.clase) {
                         const clase = response.data.clase;
                         if (!$configTab.length || !$form.length) { return; }
@@ -189,7 +187,6 @@
                         $form.find('#nombre_clase_config').focus();
 
                         // Cargar datos en las otras pestañas
-                        console.log('[DEBUG] Calling refreshEvaluacionesList with clase.evaluaciones:', clase.evaluaciones);
                         self.refreshEvaluacionesList(clase.id, clase.evaluaciones);
                         self.loadPonderacionesTab(clase.id, clase.evaluaciones);
 
@@ -403,14 +400,11 @@
         },
         
         refreshEvaluacionesList: function(claseId, evaluaciones) {
-            console.log('[DEBUG] refreshEvaluacionesList called with:', evaluaciones);
             this.renderEvaluacionesList(evaluaciones, claseId);
         },
 
         renderEvaluacionesList: function(evaluaciones, claseId) {
-            console.log('[DEBUG] renderEvaluacionesList called with:', evaluaciones);
             const $container = $('#cpp-config-evaluaciones-container');
-            console.log('[DEBUG] $container element is:', $container);
             let html = '<h4>Gestionar Evaluaciones</h4>';
             html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
             html += '<ul class="cpp-evaluaciones-list">';
@@ -448,9 +442,7 @@
             html += `<button type="button" id="cpp-btn-add-evaluacion" class="cpp-btn cpp-btn-primary" data-clase-id="${claseId}">Añadir</button>
                      </div>`;
 
-            console.log('[DEBUG] About to set HTML for container:', $container);
             $container.html(html);
-            console.log('[DEBUG] HTML has been set.');
 
             $container.find('.cpp-evaluaciones-list').sortable({
                 handle: '.cpp-drag-handle', axis: 'y', placeholder: 'cpp-sortable-placeholder',
