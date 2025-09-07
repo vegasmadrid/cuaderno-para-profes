@@ -11,7 +11,7 @@
     cpp.modals.general = {
         init: function() {
             console.log("CPP Modals General Module Initializing...");
-            // bindEvents se llamará desde cpp.core.js si es necesario
+            this.bindEvents();
         },
 
         hideAll: function() {
