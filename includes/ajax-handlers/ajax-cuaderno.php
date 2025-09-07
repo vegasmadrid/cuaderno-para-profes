@@ -166,7 +166,17 @@ function cpp_ajax_cargar_cuaderno_clase() {
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($alumnos)): ?> <tr><td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>">No hay alumnos. Añade alumnos a esta clase para empezar.</td></tr>
+                <?php if (empty($alumnos)): ?>
+                    <tr>
+                        <td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>" class="cpp-no-alumnos-mensaje">
+                            <p><strong>No hay alumnos en esta clase.</strong></p>
+                            <p>Puedes añadirlos de dos formas:</p>
+                            <ul>
+                                <li><strong>Manualmente:</strong> Ve al menú de clases (arriba a la izquierda), y pulsa en el icono de "gestionar alumnos" de esta clase.</li>
+                                <li><strong>Desde Excel:</strong> Pulsa el botón "Importar Alumnos desde Excel" que aparece en la cabecera de esta tabla.</li>
+                            </ul>
+                        </td>
+                    </tr>
                 <?php else: foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
                         $decimales_nota_final = 2;

@@ -13,7 +13,7 @@
 
         init: function() {
             console.log("CPP Modals Alumnos Module Initializing...");
-            // No se necesita inicialización específica aquí más allá de bindEvents.
+            this.bindEvents();
         },
 
         // Llamado por cpp.modals.general.hideAll() y al mostrar/refrescar el modal
