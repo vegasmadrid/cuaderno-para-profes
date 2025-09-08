@@ -40,7 +40,7 @@ function cpp_ajax_obtener_alumnos() {
         <?php else: ?>
             <?php foreach ($alumnos as $alumno): ?>
                 <div class="cpp-alumno-card" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>">
-                    <div class="cpp-alumno-avatar"><?php if (!empty($alumno['foto'])): ?><img src="<?php echo esc_url($alumno['foto']); ?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else: ?><div class="cpp-avatar-inicial"><?php echo strtoupper(substr(esc_html($alumno['nombre']), 0, 1)); ?></div><?php endif; ?></div>
+                    <div class="cpp-alumno-avatar"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div>
                     <div class="cpp-alumno-info"><h4><?php echo esc_html($alumno['nombre'] . ' ' . $alumno['apellidos']); ?></h4></div>
                     <div class="cpp-alumno-actions">
                         <button class="cpp-btn cpp-btn-editar" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" title="Editar Alumno"><span class="dashicons dashicons-edit"></span></button>

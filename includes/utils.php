@@ -71,3 +71,15 @@ if (!function_exists('cpp_formatear_nota_display')) {
         }
     }
 }
+
+if (!function_exists('cpp_get_avatar_url')) {
+    function cpp_get_avatar_url($alumno) {
+        if (!empty($alumno['foto'])) {
+            return esc_url($alumno['foto']);
+        } else {
+            // Usa el ID del alumno para que el avatar sea siempre el mismo para ese alumno
+            $seed = !empty($alumno['id']) ? $alumno['id'] : sanitize_title($alumno['nombre'] . ' ' . $alumno['apellidos']);
+            return 'https://api.dicebear.com/8.x/adventurer/svg?seed=' . $seed;
+        }
+    }
+}
