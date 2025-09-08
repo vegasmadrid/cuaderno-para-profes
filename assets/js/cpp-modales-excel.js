@@ -14,7 +14,7 @@
 
         init: function() {
             console.log("CPP Modals Excel Module Initializing...");
-            // No se necesita inicialización específica aquí más allá de bindEvents.
+            this.bindEvents();
         },
 
         // --- Funciones para Descarga de Excel ---

@@ -168,13 +168,16 @@ function cpp_ajax_cargar_cuaderno_clase() {
             <tbody>
                 <?php if (empty($alumnos)): ?>
                     <tr>
-                        <td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>" class="cpp-no-alumnos-mensaje">
-                            <p><strong>No hay alumnos en esta clase.</strong></p>
-                            <p>Puedes añadirlos de dos formas:</p>
-                            <ul>
-                                <li><strong>Manualmente:</strong> Ve al menú de clases (arriba a la izquierda), y pulsa en el icono de "gestionar alumnos" de esta clase.</li>
-                                <li><strong>Desde Excel:</strong> Pulsa el botón "Importar Alumnos desde Excel" que aparece en la cabecera de esta tabla.</li>
-                            </ul>
+                        <td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>">
+                            <div class="cpp-no-alumnos-container">
+                                <div class="cpp-no-alumnos-emoji">🚀</div>
+                                <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
+                                <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
+                                <div class="cpp-no-alumnos-instrucciones">
+                                    <p>Puedes hacerlo de dos maneras:</p>
+                                    <p>Pulsa en <span class="dashicons dashicons-admin-users"></span> en el menú de clases para añadirlos uno a uno, o usa el botón de <span class="dashicons dashicons-database-import"></span> para importarlos desde un archivo Excel.</p>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 <?php else: foreach ($alumnos as $index => $alumno):

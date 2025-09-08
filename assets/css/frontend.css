@@ -921,6 +921,59 @@ body.cpp-no-text-select {
     padding: 20px;
 }
 
+/* Estilos para el nuevo mensaje de "No hay alumnos" */
+.cpp-no-alumnos-container {
+    text-align: center;
+    padding: 40px 20px;
+    margin: 20px;
+    border: 2px dashed #dce1e6;
+    border-radius: 12px;
+    background-color: #f9fafb;
+}
+
+.cpp-no-alumnos-emoji {
+    font-size: 48px;
+    line-height: 1.2;
+    margin-bottom: 16px;
+}
+
+.cpp-no-alumnos-titulo {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 12px 0;
+}
+
+.cpp-no-alumnos-texto {
+    font-size: 16px;
+    color: #555;
+    max-width: 600px;
+    margin: 0 auto 24px auto;
+    line-height: 1.6;
+}
+
+.cpp-no-alumnos-instrucciones {
+    font-size: 14px;
+    color: #666;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    padding: 16px;
+    border-radius: 8px;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.cpp-no-alumnos-instrucciones p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.cpp-no-alumnos-instrucciones .dashicons {
+    vertical-align: middle;
+    margin: 0 4px;
+    color: #4a5568;
+}
+
 /* --- FIN: Estilos para Selector de Evaluación y Tabla --- */
 
 
