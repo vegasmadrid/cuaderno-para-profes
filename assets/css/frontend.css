@@ -442,6 +442,16 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
+/* --- Mejora de Espaciado en Modal de Importación --- */
+#cpp-import-step-2-options p {
+    margin-bottom: 15px;
+}
+
+#cpp-import-step-2-options .cpp-form-group {
+    margin-top: 20px;
+    margin-bottom: 25px;
+}
+
 .cpp-config-section {
     padding: 10px 0;
     background-color: #fff;
