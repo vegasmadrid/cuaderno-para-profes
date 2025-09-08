@@ -255,6 +255,9 @@
 
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
+            if (tabName === 'cuaderno' || tabName === 'configuracion') {
+                return;
+            }
             if ($tab.hasClass('active')) {
                 return; // Ya está activo
             }
