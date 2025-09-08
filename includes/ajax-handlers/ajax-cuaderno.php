@@ -95,7 +95,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
             <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
             <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
             <div class="cpp-no-alumnos-actions">
-                <button class="cpp-btn cpp-btn-primary" id="cpp-btn-agregar-alumnos-mano">
+                <button class="cpp-btn cpp-btn-primary" id="cpp-btn-agregar-alumnos-mano" data-clase-id="<?php echo esc_attr($clase_id); ?>" data-clase-nombre="<?php echo esc_attr($clase_db['nombre']); ?>">
                     <span class="dashicons dashicons-admin-users"></span> Ingresar alumnos a mano
                 </button>
                 <button class="cpp-btn cpp-btn-secondary" id="cpp-btn-importar-alumnos-excel">

@@ -496,16 +496,35 @@ const CppProgramadorApp = {
         }
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-        const addSesionButton = sesionesFiltradas.length === 0 ? `<button class="cpp-add-sesion-btn cpp-btn cpp-btn-primary" ${!this.currentEvaluacionId ? 'disabled' : ''}>+ Añadir Primera Sesión</button>` : '';
 
         let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
-        let layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul>${addSesionButton}</div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+        let layoutHTML;
+
+        if (sesionesFiltradas.length === 0) {
+            layoutHTML = `
+                <div class="cpp-no-alumnos-container cpp-no-sesiones-container">
+                    <div class="cpp-no-alumnos-emoji">📅</div>
+                    <h3 class="cpp-no-alumnos-titulo">Planifica tu curso</h3>
+                    <p class="cpp-no-alumnos-texto">Aún no has añadido ninguna sesión a esta evaluación. Crea tu primera sesión para empezar a organizar tus clases.</p>
+                    <div class="cpp-no-alumnos-actions">
+                        <button class="cpp-btn cpp-btn-primary cpp-add-sesion-btn" ${!this.currentEvaluacionId ? 'disabled' : ''}>
+                            <span class="dashicons dashicons-plus"></span> Añadir primera sesión
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+        }
+
         content.innerHTML = controlsHTML + layoutHTML;
-        this.makeSesionesSortable();
+        if (sesionesFiltradas.length > 0) {
+            this.makeSesionesSortable();
+        }
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-        if (sesionesFiltradas.length === 0) return '<li>No hay sesiones para esta evaluación.</li>';
+        if (sesionesFiltradas.length === 0) return ''; // Ya no se maneja aquí
 
         const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
         const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
