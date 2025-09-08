@@ -40,11 +40,12 @@
             // El nombre del archivo ('filename') se genera y maneja completamente en el backend (PHP)
 
             if (downloadType === 'single_class') {
-                if (!cpp.currentClaseIdCuaderno) {
-                    alert('Por favor, selecciona una clase primero para descargarla.');
+                if (!cpp.currentClaseIdCuaderno || !cpp.currentEvaluacionId) {
+                    alert('Por favor, selecciona una clase y una evaluación para descargar.');
                     return;
                 }
                 url += '&clase_id=' + cpp.currentClaseIdCuaderno;
+                url += '&evaluacion_id=' + cpp.currentEvaluacionId;
             }
             
             window.location.href = url;
