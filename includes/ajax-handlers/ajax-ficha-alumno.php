@@ -33,6 +33,8 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
         wp_send_json_error(['message' => 'Alumno no encontrado o no pertenece a esta clase.']);
         return;
     }
+
+    $alumno_info['avatar_url'] = cpp_get_avatar_url($alumno_info);
     
     $base_nota_clase = floatval($clase_info['base_nota_final']);
     if ($base_nota_clase <= 0) $base_nota_clase = 100.0;
