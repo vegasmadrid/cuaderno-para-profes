@@ -1,8 +1,10 @@
 // /assets/js/cpp-programador.js
 
-// La inicialización ahora es controlada por cpp-cuaderno.js
+(function($) {
+    'use strict';
 
-const CppProgramadorApp = {
+    // La inicialización ahora es controlada por cpp-cuaderno.js
+    window.CppProgramadorApp = {
     // --- Propiedades ---
     appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
@@ -38,7 +40,7 @@ const CppProgramadorApp = {
     },
 
     attachEventListeners() {
-        const $document = jQuery(document);
+        const $document = $(document);
         const self = this;
 
         // Delegated events attached to the document for robustness
@@ -287,7 +289,7 @@ const CppProgramadorApp = {
     },
 
     // --- Lógica de Datos (AJAX) ---
-    populateConfigModal() {
+    populateConfigModal: function() {
         const config = this.config.calendar_config;
         if (!config) return;
         const form = document.querySelector('#cpp-config-form');
@@ -466,11 +468,11 @@ const CppProgramadorApp = {
     makeSesionesSortable() {
         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
         if (list) {
-            jQuery(list).sortable({
+            $(list).sortable({
                 handle: '.cpp-sesion-handle',
                 placeholder: 'cpp-sesion-placeholder',
                 update: (event, ui) => {
-                    const newOrder = jQuery(event.target).sortable('toArray', { attribute: 'data-sesion-id' });
+                    const newOrder = $(event.target).sortable('toArray', { attribute: 'data-sesion-id' });
                     this.saveSesionOrder(newOrder);
                 }
             }).disableSelection();
@@ -562,7 +564,7 @@ const CppProgramadorApp = {
         const addButtonHTML = '<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary" title="Añadir nuevo tramo horario">+ Añadir Tramo</button>';
         const configButtonHTML = '<button id="cpp-horario-config-btn" class="cpp-btn cpp-btn-secondary" title="Configurar calendario">Configurar</button>';
 
-        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(daysToRender).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
+        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr class="cpp-horario-header-row"><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(daysToRender).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
@@ -694,4 +696,5 @@ const CppProgramadorApp = {
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
         return dayMapping[date.getDay()];
     }
-};
+    };
+})(jQuery);
