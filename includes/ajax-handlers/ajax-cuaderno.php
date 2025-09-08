@@ -430,7 +430,7 @@ function cpp_ajax_cargar_vista_final() {
                     <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($nota_promediada_reescalada); ?>" <?php echo $row_style_attr; ?>>
                         <td class="cpp-cuaderno-td-alumno">
                             <div class="cpp-alumno-avatar-cuaderno">
-                                <?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?>
+                                <img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>">
                             </div>
                             <span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span>
                         </td>

@@ -379,6 +379,12 @@
 
             $(`.cpp-config-tab-link[data-config-tab="${tabId}"]`).addClass('active');
             $(`#cpp-config-tab-${tabId}`).addClass('active');
+
+            if (tabId === 'calendario') {
+                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.populateConfigModal === 'function') {
+                    CppProgramadorApp.populateConfigModal();
+                }
+            }
         },
 
         loadPonderacionesTab: function(claseId) {

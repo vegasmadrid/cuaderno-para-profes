@@ -56,13 +56,10 @@ const CppProgramadorApp = {
         });
 
         $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            // Manually switch main tab
-            $('.cpp-main-tab-link').removeClass('active');
-            $('.cpp-main-tab-link[data-tab="configuracion"]').addClass('active');
-            $('.cpp-main-tab-content').removeClass('active');
-            $('#cpp-main-tab-configuracion').addClass('active');
+            if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
+                cpp.gradebook.handleMainTabSwitch($('.cpp-main-tab-link[data-tab="configuracion"]'));
+            }
 
-            // Manually switch sub-tab
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
                 cpp.config.handleConfigTabClick(null, 'calendario');
             }
@@ -293,9 +290,13 @@ const CppProgramadorApp = {
     populateConfigModal() {
         const config = this.config.calendar_config;
         if (!config) return;
+        const form = document.querySelector('#cpp-config-form');
+        if (!form) return;
 
-        this.configModal.form.querySelectorAll('input[name="working_days"]').forEach(checkbox => {
-            checkbox.checked = config.working_days.includes(checkbox.value);
+        form.querySelectorAll('input[name="working_days"]').forEach(checkbox => {
+            if (config.working_days) {
+                checkbox.checked = config.working_days.includes(checkbox.value);
+            }
         });
 
         this.renderHolidaysList();
@@ -652,20 +653,20 @@ const CppProgramadorApp = {
         }, {});
 
         let headerHTML = `<div class="cpp-semana-nav"><button class="cpp-semana-prev-btn cpp-btn">◄ Semana Anterior</button><h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3><button class="cpp-semana-next-btn cpp-btn">Siguiente ►</button></div>`;
-        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr><th>Hora</th>`;
+        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora">Hora</th>`;
 
         const renderedHeaders = [];
         Object.keys(daysToRender).forEach((dayKey) => {
             const date = weekDates.find(d => this.getDayKey(d) === dayKey);
             if(date) {
-                tableHTML += `<th>${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
+                tableHTML += `<th class="cpp-semana-th-dia">${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
                 renderedHeaders.push(dayKey);
             }
         });
         tableHTML += `</tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
-            tableHTML += `<tr><td>${slot}</td>`;
+            tableHTML += `<tr><td class="cpp-semana-td-hora">${slot}</td>`;
             renderedHeaders.forEach(dayKey => {
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
