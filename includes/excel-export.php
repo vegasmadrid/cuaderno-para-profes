@@ -43,9 +43,10 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
         if (!$clase_actual_info) {
             wp_die('Clase no encontrada o no tienes permiso sobre ella.');
         }
-        cpp_populate_sheet_with_class_data($sheet, $clase_info, $user_id, $id_curso, $id_evaluacion);
+        $sheet = $spreadsheet->getActiveSheet();
+        cpp_populate_sheet_with_class_data($sheet, $clase_actual_info, $user_id, $evaluacion_id);
         $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_actual_info['nombre']), 0, 31);
-        $spreadsheet->getActiveSheet()->setTitle($sheet_name ?: 'Clase');
+        $sheet->setTitle($sheet_name ?: 'Clase');
         // El filename ya viene como parámetro, generado en el manejador de la acción.
 
     } elseif ($download_type === 'all_classes') {
@@ -59,7 +60,7 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
                 $spreadsheet->createSheet();
             }
             $sheet = $spreadsheet->getSheet($sheet_index);
-            cpp_populate_sheet_with_class_data($sheet, $clase_info_loop, $user_id, $evaluacion_id);
+            cpp_populate_sheet_with_class_data($sheet, $clase_info_loop, $user_id, null);
             $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_info_loop['nombre']), 0, 31);
             $sheet->setTitle($sheet_name ?: ('Clase ' . ($sheet_index + 1)));
             $sheet_index++;
@@ -70,44 +71,19 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
         wp_die('Tipo de descarga no válido.');
     }
 
+    // Limpiar cualquier salida de buffer anterior para evitar errores
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment;filename="' . $filename . '"');
     header('Cache-Control: max-age=0');
-    header('Cache-Control: cache, must-revalidate');
-    header('Pragma: public');
 
-    // --- INICIA CÓDIGO CORREGIDO ---
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('php://output');
 
-// Limpiar cualquier salida de buffer anterior para evitar errores
-if (ob_get_level()) {
-    ob_end_clean();
-}
-
-// Preparar el nombre del archivo
-$filename = 'calificaciones-' . sanitize_title($clase_info['nombre']) . '.xlsx';
-
-// Enviar las cabeceras HTTP para forzar la descarga en el navegador
-header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment;filename="' . $filename . '"');
-header('Cache-Control: max-age=0');
-
-// Crear el "escritor" de Excel y enviarlo directamente a la salida del navegador
-$writer = new Xlsx($spreadsheet);
-$writer->save('php://output');
-
-// Terminar la ejecución del script inmediatamente.
-// Esto es CRUCIAL para evitar que WordPress añada el "-1" o cualquier otro contenido al archivo.
-exit;
-
-// --- FIN CÓDIGO CORREGIDO ---
-
-    if (!empty($excel_output)) {
-        echo $excel_output;
-    } else {
-        status_header(500);
-        echo "Error al generar el archivo Excel (sin salida)."; // Mensaje genérico
-    }
-    wp_die();
+    exit;
 }
 
 /**
@@ -115,14 +91,15 @@ exit;
  * (Esta función es usada por cpp_generate_excel_for_download)
  */
 
-function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $id_curso, $id_evaluacion) {
+function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $evaluacion_id) {
 
     $clase_id = $clase_info_array['id'];
     $nombre_clase = $clase_info_array['nombre'];
     $base_nota_final_clase = isset($clase_info_array['base_nota_final']) ? floatval($clase_info_array['base_nota_final']) : 100.00;
     if ($base_nota_final_clase <= 0) $base_nota_final_clase = 100.00;
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id); 
+    // Usamos el user_id para asegurar que solo obtenemos los datos del usuario correcto.
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, 'apellidos', $user_id);
     $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_id);
 
@@ -180,7 +157,9 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
                 $sheet->getStyle(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }
 
-            $nota_final_0_100 = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id);
+            // Se pasa el $evaluacion_id para que la función de cálculo sepa si debe calcular
+            // la nota de una evaluación concreta o la media de todas.
+            $nota_final_0_100 = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
             $nota_final_reescalada = ($nota_final_0_100 / 100) * $base_nota_final_clase;
             
             $sheet->setCellValue($col_final_nota_char . $current_row_excel, $nota_final_reescalada);

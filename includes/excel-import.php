@@ -304,3 +304,8 @@ function cpp_process_student_excel_import($file_path, $clase_id, $user_id, $impo
         return ['status' => 'error', 'message' => 'Ocurrió un error inesperado durante la importación: ' . $e->getMessage()];
     }
 }
+
+// Registrar los manejadores de AJAX
+add_action('wp_ajax_cpp_download_student_template', 'cpp_handle_student_template_download');
+add_action('wp_ajax_cpp_upload_student_excel', 'cpp_handle_student_excel_upload');
+add_action('wp_ajax_cpp_import_students_from_file', 'cpp_handle_process_students_import');

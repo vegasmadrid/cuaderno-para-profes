@@ -27,6 +27,7 @@
                 const savedDirection = localStorage.getItem(this.localStorageKey_enterDirection + cppFrontendData.userId);
                 if (savedDirection === 'right' || savedDirection === 'down') { this.enterKeyDirection = savedDirection; }
             }
+            this.bindEvents();
         },
 
         updateSortButton: function(sortOrder) {
@@ -254,6 +255,9 @@
 
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
+            if (tabName === 'cuaderno' || tabName === 'configuracion') {
+                return;
+            }
             if ($tab.hasClass('active')) {
                 return; // Ya está activo
             }

@@ -12,6 +12,7 @@
     cpp.modals.actividades = {
         init: function() {
             console.log("CPP Modals Actividades Module Initializing...");
+            this.bindEvents();
         },
 
         resetForm: function() {

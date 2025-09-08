@@ -166,7 +166,20 @@ function cpp_ajax_cargar_cuaderno_clase() {
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($alumnos)): ?> <tr><td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>">No hay alumnos. Añade alumnos a esta clase para empezar.</td></tr>
+                <?php if (empty($alumnos)): ?>
+                    <tr>
+                        <td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>">
+                            <div class="cpp-no-alumnos-container">
+                                <div class="cpp-no-alumnos-emoji">🚀</div>
+                                <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
+                                <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
+                                <div class="cpp-no-alumnos-instrucciones">
+                                    <p>Puedes hacerlo de dos maneras:</p>
+                                    <p>Pulsa en <span class="dashicons dashicons-admin-users"></span> en el menú de clases para añadirlos uno a uno, o usa el botón de <span class="dashicons dashicons-database-import"></span> para importarlos desde un archivo Excel.</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                 <?php else: foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
                         $decimales_nota_final = 2;
