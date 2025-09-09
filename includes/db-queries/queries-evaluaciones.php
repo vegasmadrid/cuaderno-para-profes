@@ -51,15 +51,15 @@ function cpp_actualizar_evaluacion($evaluacion_id, $user_id, $nuevo_nombre) {
         "SELECT user_id FROM $tabla_evaluaciones WHERE id = %d",
         $evaluacion_id
     ));
-    if ($owner_check != $user_id) {
+    if ((int)$owner_check !== (int)$user_id) {
         return false;
     }
     return $wpdb->update(
         $tabla_evaluaciones,
         ['nombre_evaluacion' => sanitize_text_field($nuevo_nombre)],
-        ['id' => $evaluacion_id],
+        ['id' => $evaluacion_id, 'user_id' => $user_id],
         ['%s'],
-        ['%d']
+        ['%d', '%d']
     );
 }
 
