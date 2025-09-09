@@ -25,6 +25,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $metodo_calculo = 'total';
 
     if (count($evaluaciones) > 1) {
+        // Añadir la opción de Evaluación Final si hay más de una evaluación real
         $evaluaciones[] = [ 'id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)', 'calculo_nota' => 'total' ];
     }
 
