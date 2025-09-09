@@ -187,8 +187,7 @@
                         $form.find('#nombre_clase_config').focus();
 
                         // Cargar datos en las otras pestañas
-                        this.refreshEvaluacionesList(claseId);
-                        this.loadPonderacionesTab(claseId);
+                        this.loadEvaluacionesData(claseId);
 
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
@@ -387,9 +386,13 @@
             }
         },
 
-        loadPonderacionesTab: function(claseId) {
-            const $container = $('#cpp-config-ponderaciones-container');
-            $container.html('<p class="cpp-cuaderno-cargando">Cargando tipos de ponderación y categorías...</p>');
+        loadEvaluacionesData: function(claseId) {
+            const self = this;
+            const $evaluacionesContainer = $('#cpp-config-evaluaciones-container');
+            const $ponderacionesContainer = $('#cpp-config-ponderaciones-container');
+
+            $evaluacionesContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
+            $ponderacionesContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -397,44 +400,34 @@
                 dataType: 'json',
                 data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: function(response) {
-                    if (response.success && response.data.evaluaciones && response.data.evaluaciones.length > 0) {
-                        let contentHtml = '<h4>Tipos de ponderación y categorías</h4>';
-                        contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
-                        contentHtml += '<option value="">-- Selecciona --</option>';
-                        response.data.evaluaciones.forEach(function(evaluacion) {
-                            contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
-                        });
-                        contentHtml += '</select></div><hr>';
-                        contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
-                        $container.html(contentHtml);
+                    if (response.success && response.data && Array.isArray(response.data.evaluaciones)) {
+                        const evaluaciones = response.data.evaluaciones;
+
+                        // Renderizar la lista de evaluaciones
+                        self.renderEvaluacionesList(evaluaciones, claseId);
+
+                        // Renderizar el tab de ponderaciones
+                        if (evaluaciones.length > 0) {
+                            let contentHtml = '<h4>Tipos de ponderación y categorías</h4>';
+                            contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector" class="cpp-evaluacion-selector">';
+                            contentHtml += '<option value="">-- Selecciona --</option>';
+                            evaluaciones.forEach(function(evaluacion) {
+                                contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
+                            });
+                            contentHtml += '</select></div><hr>';
+                            contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
+                            $ponderacionesContainer.html(contentHtml);
+                        } else {
+                            $ponderacionesContainer.html('<h4>Tipos de ponderación y categorías</h4><p>No hay evaluaciones creadas para esta clase. Añade una evaluación primero para poder gestionar sus ponderaciones y categorías.</p>');
+                        }
                     } else {
-                        $container.html('<h4>Tipos de ponderación y categorías</h4><p>No hay evaluaciones creadas para esta clase. Añade una evaluación primero para poder gestionar sus ponderaciones y categorías.</p>');
+                        $evaluacionesContainer.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
+                        $ponderacionesContainer.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
                     }
                 },
                 error: function() {
-                    $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
-                }
-            });
-        },
-        
-        refreshEvaluacionesList: function(claseId) {
-            const $container = $('#cpp-config-evaluaciones-container');
-            $container.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
-            const self = this;
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
-                success: function(response) {
-                    if (response.success) {
-                        self.renderEvaluacionesList(response.data.evaluaciones, claseId);
-                    } else {
-                        $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
-                    }
-                },
-                error: function() {
-                    $container.html('<p class="cpp-error-message">Error de conexión.</p>');
+                    $evaluacionesContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
+                    $ponderacionesContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
                 }
             });
         },
@@ -552,8 +545,7 @@
                     },
                     success: (response) => {
                         if(response.success) {
-                            this.refreshEvaluacionesList(claseId);
-                            this.loadPonderacionesTab(claseId); // Recargar también las ponderaciones
+                            this.loadEvaluacionesData(claseId); // Recargar todo
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
                         }
@@ -573,8 +565,7 @@
                         data: { action: 'cpp_eliminar_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId },
                         success: (response) => {
                             if(response.success) {
-                                this.refreshEvaluacionesList(claseId);
-                                this.loadPonderacionesTab(claseId);
+                                this.loadEvaluacionesData(claseId);
                             } else {
                                 alert('Error: ' + (response.data.message || 'No se pudo eliminar la evaluación.'));
                             }
