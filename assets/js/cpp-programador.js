@@ -418,22 +418,43 @@
     },
     saveSesion(e, fromModal = false) {
         if (e) e.preventDefault();
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
         let sesionData;
+        const $btn = this.sesionModal.form.querySelector('button[type="submit"]');
+        const originalBtnHtml = $btn ? $btn.innerHTML : '';
+        if ($btn) {
+            $btn.disabled = true;
+            $btn.innerHTML = '<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...';
+        }
+
         if (fromModal) {
             sesionData = { id: this.sesionModal.idInput.value, clase_id: this.sesionModal.claseIdInput.value, evaluacion_id: this.sesionModal.evaluacionIdInput.value, titulo: this.sesionModal.tituloInput.value, descripcion: this.sesionModal.descripcionInput.value };
         } else {
             sesionData = arguments[1];
         }
+
         const data = new URLSearchParams({ action: 'cpp_save_programador_sesion', nonce: cppFrontendData.nonce, sesion: JSON.stringify(sesionData) });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                if (fromModal) this.closeSesionModal();
-                this.fetchData(this.currentClase.id);
-            } else {
-                alert('Error al guardar.');
-                this.fetchData(this.currentClase.id);
-            }
-        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    if (fromModal) this.closeSesionModal();
+                    this.fetchData(this.currentClase.id);
+                } else {
+                    alert('Error al guardar.');
+                    this.fetchData(this.currentClase.id);
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+                if ($btn) {
+                    $btn.disabled = false;
+                    $btn.innerHTML = originalBtnHtml;
+                }
+            });
     },
     saveStartDate(startDate) {
         if (!this.currentEvaluacionId) return;
