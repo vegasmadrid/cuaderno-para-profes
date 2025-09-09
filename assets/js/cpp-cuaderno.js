@@ -255,11 +255,7 @@
 
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
-            if (tabName === 'cuaderno') {
-                $('.cpp-main-tab-link').removeClass('active');
-                $('.cpp-main-tab-content').removeClass('active');
-                $tab.addClass('active');
-                $('#cpp-main-tab-cuaderno').addClass('active');
+            if (tabName === 'cuaderno' || tabName === 'configuracion') {
                 return;
             }
             if ($tab.hasClass('active')) {

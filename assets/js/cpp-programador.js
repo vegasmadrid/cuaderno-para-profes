@@ -62,10 +62,16 @@
         });
 
         $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
-                cpp.gradebook.handleMainTabSwitch($('.cpp-main-tab-link[data-tab="configuracion"]'));
-            }
+            // Manually switch main tab visuals
+            $('.cpp-main-tab-link').removeClass('active');
+            $('.cpp-main-tab-link[data-tab="configuracion"]').addClass('active');
+            $('.cpp-main-tab-content').removeClass('active');
+            $('#cpp-main-tab-configuracion').addClass('active');
 
+            // Manually trigger the data loading and sub-tab selection
+            if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                cpp.config.showParaEditar(null, false, self.currentClase.id);
+            }
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
                 cpp.config.handleConfigTabClick(null, 'calendario');
             }
