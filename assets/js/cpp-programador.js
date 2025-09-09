@@ -153,10 +153,9 @@
         // Listeners for the modal, which is outside the main app flow
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
-        if (this.configModal.element) {
-            this.configModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeConfigModal());
-            this.configModal.form.addEventListener('submit', e => this.saveConfig(e));
-        }
+
+        // Listener for the config form, attached to the document
+        $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
     },
 
     // --- Lógica de la App ---
@@ -329,7 +328,8 @@
 
     saveConfig(e) {
         e.preventDefault();
-        const workingDays = Array.from(this.configModal.form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
+        const form = e.target;
+        const workingDays = Array.from(form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
         const newConfig = {
             working_days: workingDays,
             holidays: this.config.calendar_config.holidays,
