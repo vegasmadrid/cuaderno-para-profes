@@ -10,6 +10,7 @@
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
     currentClase: null, currentEvaluacionId: null, currentSesion: null,
     originalContent: '', semanaDate: new Date(),
+    isProcessing: false,
 
     // --- Inicialización ---
     init(initialClaseId) {
@@ -251,6 +252,8 @@
     },
 
     addHoliday() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
         const dateInput = document.getElementById('cpp-new-holiday-date');
         const date = dateInput.value;
         if (date && !this.config.calendar_config.holidays.includes(date)) {
@@ -261,6 +264,7 @@
         } else {
             alert('Por favor, selecciona una fecha válida que no esté ya en la lista.');
         }
+        this.isProcessing = false;
     },
 
     removeHoliday(index) {
@@ -269,17 +273,26 @@
     },
 
     addVacation() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
         const startInput = document.getElementById('cpp-new-vacation-start');
         const endInput = document.getElementById('cpp-new-vacation-end');
+        const addButton = document.getElementById('cpp-add-vacation-btn');
         const start = startInput.value;
         const end = endInput.value;
 
         if (start && end && new Date(start) <= new Date(end)) {
             this.config.calendar_config.vacations.push({ start, end });
             this.renderVacationsList();
+            startInput.value = '';
+            endInput.value = '';
+            if (addButton) {
+                addButton.blur();
+            }
         } else {
             alert('Por favor, selecciona un periodo de vacaciones válido.');
         }
+        this.isProcessing = false;
     },
 
     removeVacation(index) {
@@ -328,6 +341,9 @@
 
     saveConfig(e) {
         e.preventDefault();
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
         const form = e.target;
         const workingDays = Array.from(form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
         const newConfig = {
@@ -354,6 +370,9 @@
                 } else {
                     alert('Error al guardar la configuración.');
                 }
+            })
+            .finally(() => {
+                this.isProcessing = false;
             });
     },
 
