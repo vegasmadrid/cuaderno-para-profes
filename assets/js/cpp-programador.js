@@ -2,6 +2,7 @@
 
 (function($) {
     'use strict';
+    let listenersAttached = false;
 
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
@@ -41,6 +42,8 @@
     },
 
     attachEventListeners() {
+        if (listenersAttached) return;
+        listenersAttached = true;
         const $document = $(document);
         const self = this;
 
@@ -483,14 +486,23 @@
     },
     deleteSesion(sesionId) {
         if (!confirm('¿Seguro que quieres eliminar esta sesión?')) return;
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
         const data = new URLSearchParams({ action: 'cpp_delete_programador_sesion', nonce: cppFrontendData.nonce, sesion_id: sesionId });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
-                this.fetchData(this.currentClase.id);
-            }
-            else { alert('Error al eliminar la sesión.'); }
-        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
+                    this.fetchData(this.currentClase.id);
+                }
+                else { alert('Error al eliminar la sesión.'); }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+            });
     },
     saveSesionOrder(newOrder) {
         const data = new URLSearchParams({ action: 'cpp_save_sesiones_order', nonce: cppFrontendData.nonce, clase_id: this.currentClase.id, evaluacion_id: this.currentEvaluacionId, orden: JSON.stringify(newOrder) });
