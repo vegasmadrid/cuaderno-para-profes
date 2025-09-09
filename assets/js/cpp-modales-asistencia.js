@@ -21,7 +21,7 @@
 
         init: function() {
             console.log("CPP Modals Asistencia Module Initializing...");
-            // bindEvents se llamará desde cpp.core.js
+            this.bindEvents();
         },
 
         resetForm: function() {
