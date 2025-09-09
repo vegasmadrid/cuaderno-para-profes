@@ -175,7 +175,7 @@
         const sesion = this.currentSesion;
         const field = element.dataset.field;
         if (!sesion || !field) return;
-        this.saveSesion(null, { ...sesion, [field]: newContent });
+        this.saveSesion(null, false, { ...sesion, [field]: newContent });
     },
 
     addInlineSesion(afterSesionId) {
@@ -425,7 +425,7 @@
             } else { alert('Error al guardar el horario.'); }
         });
     },
-    saveSesion(e, fromModal = false) {
+    saveSesion(e, fromModal = false, inlineData = null) {
         if (e) e.preventDefault();
         if (this.isProcessing) return;
         this.isProcessing = true;
@@ -441,7 +441,7 @@
         if (fromModal) {
             sesionData = { id: this.sesionModal.idInput.value, clase_id: this.sesionModal.claseIdInput.value, evaluacion_id: this.sesionModal.evaluacionIdInput.value, titulo: this.sesionModal.tituloInput.value, descripcion: this.sesionModal.descripcionInput.value };
         } else {
-            sesionData = arguments[1];
+            sesionData = inlineData;
         }
 
         const data = new URLSearchParams({ action: 'cpp_save_programador_sesion', nonce: cppFrontendData.nonce, sesion: JSON.stringify(sesionData) });
