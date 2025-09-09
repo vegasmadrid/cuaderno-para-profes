@@ -608,8 +608,7 @@
                     data: { action: 'cpp_actualizar_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, nombre_evaluacion: nuevoNombre },
                     success: (response) => {
                         if(response.success) {
-                            this.refreshEvaluacionesList(claseId);
-                            this.loadPonderacionesTab(claseId);
+                            this.loadEvaluacionesData(claseId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo actualizar.'));
                         }
