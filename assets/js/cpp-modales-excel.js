@@ -189,6 +189,7 @@
                     import_mode: importMode
                 },
                 success: function(response) {
+                    $('#cpp-import-step-2-options').hide();
                     $('#cpp-import-results').show();
                     let resultHtml = '';
                     if (response.success || (response.data && response.data.status === 'warning')) { 

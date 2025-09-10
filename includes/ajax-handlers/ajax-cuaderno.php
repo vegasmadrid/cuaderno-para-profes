@@ -25,6 +25,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $metodo_calculo = 'total';
 
     if (count($evaluaciones) > 1) {
+        // Añadir la opción de Evaluación Final si hay más de una evaluación real
         $evaluaciones[] = [ 'id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)', 'calculo_nota' => 'total' ];
     }
 
@@ -87,6 +88,24 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $soft_class_color = cpp_lighten_hex_color($clase_color_actual, 0.92);
 
     ob_start();
+
+    if (empty($alumnos)) {
+        ?>
+        <div class="cpp-no-alumnos-container">
+            <div class="cpp-no-alumnos-emoji">🚀</div>
+            <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
+            <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
+            <div class="cpp-no-alumnos-actions">
+                <button class="cpp-btn cpp-btn-primary" id="cpp-btn-agregar-alumnos-mano" data-clase-id="<?php echo esc_attr($clase_id); ?>" data-clase-nombre="<?php echo esc_attr($clase_db['nombre']); ?>">
+                    <span class="dashicons dashicons-admin-users"></span> Ingresar alumnos a mano
+                </button>
+                <button class="cpp-btn cpp-btn-secondary" id="cpp-btn-importar-alumnos-excel">
+                    <span class="dashicons dashicons-database-import"></span> Importar alumnos desde un archivo
+                </button>
+            </div>
+        </div>
+        <?php
+    } else {
     ?>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
@@ -166,21 +185,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($alumnos)): ?>
-                    <tr>
-                        <td colspan="<?php echo count($actividades_raw) > 0 ? count($actividades_raw) + 2 : 3; ?>">
-                            <div class="cpp-no-alumnos-container">
-                                <div class="cpp-no-alumnos-emoji">🚀</div>
-                                <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
-                                <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
-                                <div class="cpp-no-alumnos-instrucciones">
-                                    <p>Puedes hacerlo de dos maneras:</p>
-                                    <p>Pulsa en <span class="dashicons dashicons-admin-users"></span> en el menú de clases para añadirlos uno a uno, o usa el botón de <span class="dashicons dashicons-database-import"></span> para importarlos desde un archivo Excel.</p>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                <?php else: foreach ($alumnos as $index => $alumno):
+                <?php foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
                         $decimales_nota_final = 2;
                         if ($base_nota_final_clase == floor($base_nota_final_clase)) { if (isset($notas_finales_alumnos[$alumno['id']]) && $notas_finales_alumnos[$alumno['id']] == floor($notas_finales_alumnos[$alumno['id']])) { $decimales_nota_final = 0; } }
@@ -189,18 +194,18 @@ function cpp_ajax_cargar_cuaderno_clase() {
                         <?php
                             $nombre_completo_display = (in_array($sort_order, ['nombre'])) ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
                         ?>
-                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($notas_finales_alumnos[$alumno['id']]); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
+                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($notas_finales_alumnos[$alumno['id']]); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
                             <?php else: foreach ($actividades_raw as $actividad):
                                     $nota_alumno_actividad_raw = isset($calificaciones_raw[$alumno['id']][$actividad['id']]) ? $calificaciones_raw[$alumno['id']][$actividad['id']] : '';
                                     $nota_alumno_actividad_display = cpp_formatear_nota_display($nota_alumno_actividad_raw);
                                     ?><td class="cpp-cuaderno-td-nota" data-actividad-id="<?php echo esc_attr($actividad['id']); ?>"><input type="text" class="cpp-input-nota" value="<?php echo esc_attr($nota_alumno_actividad_display); ?>" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-actividad-id="<?php echo esc_attr($actividad['id']); ?>" data-nota-maxima="<?php echo esc_attr($actividad['nota_maxima']); ?>" placeholder="-"><span class="cpp-nota-validation-message cpp-error-message" style="display:none;"></span></td><?php endforeach; ?>
                             <?php endif; ?><td class="cpp-cuaderno-td-final" id="cpp-nota-final-alumno-<?php echo esc_attr($alumno['id']); ?>"><?php echo esc_html($nota_final_display); ?></td></tr>
                     <?php endforeach; ?>
-                <?php endif; ?>
             </tbody>
         </table>
     </div>
     <?php
+    }
     $html_cuaderno = ob_get_clean();
     wp_send_json_success([
         'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db['nombre'], 'color_clase' => $clase_color_actual, 'evaluaciones' => $evaluaciones,
@@ -426,7 +431,7 @@ function cpp_ajax_cargar_vista_final() {
                     <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($nota_promediada_reescalada); ?>" <?php echo $row_style_attr; ?>>
                         <td class="cpp-cuaderno-td-alumno">
                             <div class="cpp-alumno-avatar-cuaderno">
-                                <?php if(!empty($alumno['foto'])):?><img src="<?php echo esc_url($alumno['foto']);?>" alt="Foto <?php echo esc_attr($alumno['nombre']); ?>"><?php else:?><span><?php echo strtoupper(substr(esc_html($alumno['nombre']),0,1));?></span><?php endif;?>
+                                <img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>">
                             </div>
                             <span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span>
                         </td>

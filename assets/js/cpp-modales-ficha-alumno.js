@@ -244,14 +244,16 @@
             if (data.alumno_info) {
                 $nombreEl.text(`${data.alumno_info.nombre} ${data.alumno_info.apellidos}`);
 
-                if (data.alumno_info.foto) {
-                    $header.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.foto).show();
+                if (data.alumno_info.avatar_url) {
+                    $header.find('#cpp-ficha-alumno-foto').attr('src', data.alumno_info.avatar_url).show();
                     $header.find('#cpp-ficha-alumno-avatar-inicial').hide();
                 } else {
+                    // Fallback por si acaso avatar_url no viniera en la respuesta
                     $header.find('#cpp-ficha-alumno-foto').hide();
                     const inicial = data.alumno_info.nombre ? data.alumno_info.nombre.charAt(0).toUpperCase() : '';
                     $header.find('#cpp-ficha-alumno-avatar-inicial').text(inicial).show();
                 }
+
                 $modal.find('#ficha_alumno_id_editar').val(data.alumno_info.id);
                 $modal.find('#ficha_nombre_alumno').val(data.alumno_info.nombre);
                 $modal.find('#ficha_apellidos_alumno').val(data.alumno_info.apellidos);

@@ -442,6 +442,47 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
+/* --- Mejora de Espaciado en Modal de Importación --- */
+#cpp-import-step-2-options p {
+    margin-bottom: 15px;
+}
+
+#cpp-import-step-2-options .cpp-form-group {
+    margin-top: 20px;
+    margin-bottom: 25px;
+}
+
+/* --- Mejoras de Estilo en Pestaña Semana --- */
+.cpp-semana-table {
+    width: 100%;
+    table-layout: fixed; /* Importante para que los anchos funcionen bien */
+}
+
+.cpp-semana-header-row {
+    height: 50px; /* Reducir la altura de la cabecera */
+}
+
+.cpp-semana-th-hora, .cpp-semana-td-hora {
+    width: 80px; /* Ancho fijo y más estrecho para la columna de la hora */
+    text-align: center;
+}
+
+.cpp-semana-th-dia {
+    text-align: center;
+    vertical-align: middle; /* Centrado vertical */
+    padding: 4px 8px; /* Reducir padding vertical */
+}
+
+.cpp-semana-table td {
+    vertical-align: top;
+    padding: 8px;
+}
+
+.cpp-horario-header-row th {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
 .cpp-config-section {
     padding: 10px 0;
     background-color: #fff;

@@ -1,13 +1,17 @@
 // /assets/js/cpp-programador.js
 
-// La inicialización ahora es controlada por cpp-cuaderno.js
+(function($) {
+    'use strict';
+    let listenersAttached = false;
 
-const CppProgramadorApp = {
+    // La inicialización ahora es controlada por cpp-cuaderno.js
+    window.CppProgramadorApp = {
     // --- Propiedades ---
     appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
     currentClase: null, currentEvaluacionId: null, currentSesion: null,
     originalContent: '', semanaDate: new Date(),
+    isProcessing: false,
 
     // --- Inicialización ---
     init(initialClaseId) {
@@ -38,7 +42,9 @@ const CppProgramadorApp = {
     },
 
     attachEventListeners() {
-        const $document = jQuery(document);
+        if (listenersAttached) return;
+        listenersAttached = true;
+        const $document = $(document);
         const self = this;
 
         // Delegated events attached to the document for robustness
@@ -56,13 +62,16 @@ const CppProgramadorApp = {
         });
 
         $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            // Manually switch main tab
+            // Manually switch main tab visuals
             $('.cpp-main-tab-link').removeClass('active');
             $('.cpp-main-tab-link[data-tab="configuracion"]').addClass('active');
             $('.cpp-main-tab-content').removeClass('active');
             $('#cpp-main-tab-configuracion').addClass('active');
 
-            // Manually switch sub-tab
+            // Manually trigger the data loading and sub-tab selection
+            if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                cpp.config.showParaEditar(null, false, self.currentClase.id);
+            }
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
                 cpp.config.handleConfigTabClick(null, 'calendario');
             }
@@ -154,10 +163,9 @@ const CppProgramadorApp = {
         // Listeners for the modal, which is outside the main app flow
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
-        if (this.configModal.element) {
-            this.configModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeConfigModal());
-            this.configModal.form.addEventListener('submit', e => this.saveConfig(e));
-        }
+
+        // Listener for the config form, attached to the document
+        $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
     },
 
     // --- Lógica de la App ---
@@ -167,7 +175,7 @@ const CppProgramadorApp = {
         const sesion = this.currentSesion;
         const field = element.dataset.field;
         if (!sesion || !field) return;
-        this.saveSesion(null, { ...sesion, [field]: newContent });
+        this.saveSesion(null, false, { ...sesion, [field]: newContent });
     },
 
     addInlineSesion(afterSesionId) {
@@ -253,6 +261,8 @@ const CppProgramadorApp = {
     },
 
     addHoliday() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
         const dateInput = document.getElementById('cpp-new-holiday-date');
         const date = dateInput.value;
         if (date && !this.config.calendar_config.holidays.includes(date)) {
@@ -263,6 +273,7 @@ const CppProgramadorApp = {
         } else {
             alert('Por favor, selecciona una fecha válida que no esté ya en la lista.');
         }
+        this.isProcessing = false;
     },
 
     removeHoliday(index) {
@@ -271,17 +282,26 @@ const CppProgramadorApp = {
     },
 
     addVacation() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
         const startInput = document.getElementById('cpp-new-vacation-start');
         const endInput = document.getElementById('cpp-new-vacation-end');
+        const addButton = document.getElementById('cpp-add-vacation-btn');
         const start = startInput.value;
         const end = endInput.value;
 
         if (start && end && new Date(start) <= new Date(end)) {
             this.config.calendar_config.vacations.push({ start, end });
             this.renderVacationsList();
+            startInput.value = '';
+            endInput.value = '';
+            if (addButton) {
+                addButton.blur();
+            }
         } else {
             alert('Por favor, selecciona un periodo de vacaciones válido.');
         }
+        this.isProcessing = false;
     },
 
     removeVacation(index) {
@@ -290,12 +310,16 @@ const CppProgramadorApp = {
     },
 
     // --- Lógica de Datos (AJAX) ---
-    populateConfigModal() {
+    populateConfigModal: function() {
         const config = this.config.calendar_config;
         if (!config) return;
+        const form = document.querySelector('#cpp-config-form');
+        if (!form) return;
 
-        this.configModal.form.querySelectorAll('input[name="working_days"]').forEach(checkbox => {
-            checkbox.checked = config.working_days.includes(checkbox.value);
+        form.querySelectorAll('input[name="working_days"]').forEach(checkbox => {
+            if (config.working_days) {
+                checkbox.checked = config.working_days.includes(checkbox.value);
+            }
         });
 
         this.renderHolidaysList();
@@ -326,7 +350,11 @@ const CppProgramadorApp = {
 
     saveConfig(e) {
         e.preventDefault();
-        const workingDays = Array.from(this.configModal.form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const form = e.target;
+        const workingDays = Array.from(form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
         const newConfig = {
             working_days: workingDays,
             holidays: this.config.calendar_config.holidays,
@@ -351,6 +379,9 @@ const CppProgramadorApp = {
                 } else {
                     alert('Error al guardar la configuración.');
                 }
+            })
+            .finally(() => {
+                this.isProcessing = false;
             });
     },
 
@@ -394,24 +425,45 @@ const CppProgramadorApp = {
             } else { alert('Error al guardar el horario.'); }
         });
     },
-    saveSesion(e, fromModal = false) {
+    saveSesion(e, fromModal = false, inlineData = null) {
         if (e) e.preventDefault();
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
         let sesionData;
+        const $btn = this.sesionModal.form.querySelector('button[type="submit"]');
+        const originalBtnHtml = $btn ? $btn.innerHTML : '';
+        if ($btn) {
+            $btn.disabled = true;
+            $btn.innerHTML = '<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...';
+        }
+
         if (fromModal) {
             sesionData = { id: this.sesionModal.idInput.value, clase_id: this.sesionModal.claseIdInput.value, evaluacion_id: this.sesionModal.evaluacionIdInput.value, titulo: this.sesionModal.tituloInput.value, descripcion: this.sesionModal.descripcionInput.value };
         } else {
-            sesionData = arguments[1];
+            sesionData = inlineData;
         }
+
         const data = new URLSearchParams({ action: 'cpp_save_programador_sesion', nonce: cppFrontendData.nonce, sesion: JSON.stringify(sesionData) });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                if (fromModal) this.closeSesionModal();
-                this.fetchData(this.currentClase.id);
-            } else {
-                alert('Error al guardar.');
-                this.fetchData(this.currentClase.id);
-            }
-        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    if (fromModal) this.closeSesionModal();
+                    this.fetchData(this.currentClase.id);
+                } else {
+                    alert('Error al guardar.');
+                    this.fetchData(this.currentClase.id);
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+                if ($btn) {
+                    $btn.disabled = false;
+                    $btn.innerHTML = originalBtnHtml;
+                }
+            });
     },
     saveStartDate(startDate) {
         if (!this.currentEvaluacionId) return;
@@ -440,14 +492,23 @@ const CppProgramadorApp = {
     },
     deleteSesion(sesionId) {
         if (!confirm('¿Seguro que quieres eliminar esta sesión?')) return;
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
         const data = new URLSearchParams({ action: 'cpp_delete_programador_sesion', nonce: cppFrontendData.nonce, sesion_id: sesionId });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
-                this.fetchData(this.currentClase.id);
-            }
-            else { alert('Error al eliminar la sesión.'); }
-        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
+                    this.fetchData(this.currentClase.id);
+                }
+                else { alert('Error al eliminar la sesión.'); }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+            });
     },
     saveSesionOrder(newOrder) {
         const data = new URLSearchParams({ action: 'cpp_save_sesiones_order', nonce: cppFrontendData.nonce, clase_id: this.currentClase.id, evaluacion_id: this.currentEvaluacionId, orden: JSON.stringify(newOrder) });
@@ -465,11 +526,11 @@ const CppProgramadorApp = {
     makeSesionesSortable() {
         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
         if (list) {
-            jQuery(list).sortable({
+            $(list).sortable({
                 handle: '.cpp-sesion-handle',
                 placeholder: 'cpp-sesion-placeholder',
                 update: (event, ui) => {
-                    const newOrder = jQuery(event.target).sortable('toArray', { attribute: 'data-sesion-id' });
+                    const newOrder = $(event.target).sortable('toArray', { attribute: 'data-sesion-id' });
                     this.saveSesionOrder(newOrder);
                 }
             }).disableSelection();
@@ -496,16 +557,35 @@ const CppProgramadorApp = {
         }
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-        const addSesionButton = sesionesFiltradas.length === 0 ? `<button class="cpp-add-sesion-btn cpp-btn cpp-btn-primary" ${!this.currentEvaluacionId ? 'disabled' : ''}>+ Añadir Primera Sesión</button>` : '';
 
         let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
-        let layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul>${addSesionButton}</div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+        let layoutHTML;
+
+        if (sesionesFiltradas.length === 0) {
+            layoutHTML = `
+                <div class="cpp-no-alumnos-container cpp-no-sesiones-container">
+                    <div class="cpp-no-alumnos-emoji">📅</div>
+                    <h3 class="cpp-no-alumnos-titulo">Planifica tu curso</h3>
+                    <p class="cpp-no-alumnos-texto">Aún no has añadido ninguna sesión a esta evaluación. Crea tu primera sesión para empezar a organizar tus clases.</p>
+                    <div class="cpp-no-alumnos-actions">
+                        <button class="cpp-btn cpp-btn-primary cpp-add-sesion-btn" ${!this.currentEvaluacionId ? 'disabled' : ''}>
+                            <span class="dashicons dashicons-plus"></span> Añadir primera sesión
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+        }
+
         content.innerHTML = controlsHTML + layoutHTML;
-        this.makeSesionesSortable();
+        if (sesionesFiltradas.length > 0) {
+            this.makeSesionesSortable();
+        }
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-        if (sesionesFiltradas.length === 0) return '<li>No hay sesiones para esta evaluación.</li>';
+        if (sesionesFiltradas.length === 0) return ''; // Ya no se maneja aquí
 
         const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
         const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
@@ -542,7 +622,7 @@ const CppProgramadorApp = {
         const addButtonHTML = '<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary" title="Añadir nuevo tramo horario">+ Añadir Tramo</button>';
         const configButtonHTML = '<button id="cpp-horario-config-btn" class="cpp-btn cpp-btn-secondary" title="Configurar calendario">Configurar</button>';
 
-        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(daysToRender).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
+        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr class="cpp-horario-header-row"><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(daysToRender).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
@@ -633,20 +713,20 @@ const CppProgramadorApp = {
         }, {});
 
         let headerHTML = `<div class="cpp-semana-nav"><button class="cpp-semana-prev-btn cpp-btn">◄ Semana Anterior</button><h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3><button class="cpp-semana-next-btn cpp-btn">Siguiente ►</button></div>`;
-        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr><th>Hora</th>`;
+        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora">Hora</th>`;
 
         const renderedHeaders = [];
         Object.keys(daysToRender).forEach((dayKey) => {
             const date = weekDates.find(d => this.getDayKey(d) === dayKey);
             if(date) {
-                tableHTML += `<th>${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
+                tableHTML += `<th class="cpp-semana-th-dia">${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
                 renderedHeaders.push(dayKey);
             }
         });
         tableHTML += `</tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
-            tableHTML += `<tr><td>${slot}</td>`;
+            tableHTML += `<tr><td class="cpp-semana-td-hora">${slot}</td>`;
             renderedHeaders.forEach(dayKey => {
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
@@ -674,4 +754,5 @@ const CppProgramadorApp = {
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
         return dayMapping[date.getDay()];
     }
-};
+    };
+})(jQuery);
