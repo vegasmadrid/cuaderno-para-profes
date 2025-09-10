@@ -339,7 +339,6 @@ function cpp_programador_toggle_evaluable($actividad_id, $user_id, $es_evaluable
                  }
                  cpp_actualizar_actividad_evaluable($actividad_programada->actividad_cuaderno_id, $datos_cuaderno);
             }
-            }
             $updated_activity = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $actividad_id));
             return ['success' => true, 'actividad' => $updated_activity];
         }
