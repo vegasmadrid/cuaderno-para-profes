@@ -232,14 +232,37 @@
         const originalValue = element.dataset.originalValue;
         const newValue = element.textContent.trim();
         const index = this.config.time_slots.indexOf(originalValue);
+
         if (newValue === originalValue) return;
-        if (!/^\d{2}:\d{2}$/.test(newValue) || this.config.time_slots.includes(newValue)) { alert('Formato no válido o el tramo ya existe.'); element.textContent = originalValue; return; }
+
+        if (!/^\d{2}:\d{2}$/.test(newValue) || this.config.time_slots.includes(newValue)) {
+            this.showNotification('Formato no válido o el tramo ya existe. Usa HH:MM.', 'error');
+            element.textContent = originalValue;
+            return;
+        }
+
         if (index > -1) {
+            // Actualizar el array de time_slots en la configuración
             this.config.time_slots[index] = newValue;
-            Object.keys(this.config.horario).forEach(day => {
-                if (this.config.horario[day][originalValue]) { this.config.horario[day][newValue] = this.config.horario[day][originalValue]; delete this.config.horario[day][originalValue]; }
-            });
             this.config.time_slots.sort();
+
+            // Actualizar el objeto de horario en la configuración
+            Object.keys(this.config.horario).forEach(day => {
+                if (this.config.horario[day] && this.config.horario[day][originalValue]) {
+                    this.config.horario[day][newValue] = this.config.horario[day][originalValue];
+                    delete this.config.horario[day][originalValue];
+                }
+            });
+
+            // Actualizar los atributos data-slot en el DOM antes de guardar
+            const row = element.closest('tr');
+            if (row) {
+                row.querySelectorAll(`td[data-slot="${originalValue}"]`).forEach(td => {
+                    td.dataset.slot = newValue;
+                });
+            }
+
+            // Guardar el horario. La función saveHorario ahora leerá los datos actualizados del DOM.
             this.saveHorario(true);
         }
     },
