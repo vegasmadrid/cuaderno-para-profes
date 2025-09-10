@@ -304,6 +304,16 @@
                 e.preventDefault();
                 self.handleMainTabSwitch($(this));
             });
+
+            // Listener for custom event from Programador to force a reload
+            $document.on('cpp:forceGradebookReload', function() {
+                console.log('Event cpp:forceGradebookReload received. Reloading gradebook...');
+                if (cpp.currentClaseIdCuaderno) {
+                    // Find the active evaluation to reload it
+                    const evaluacionActivaId = $('#cpp-evaluacion-selector').val() || cpp.currentEvaluacionId;
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionActivaId);
+                }
+            });
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
             // Botón para crear la primera clase desde la pantalla de bienvenida

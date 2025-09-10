@@ -315,12 +315,36 @@ add_action('wp_ajax_cpp_eliminar_actividad', 'cpp_ajax_eliminar_actividad');
 function cpp_ajax_eliminar_actividad() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
     $user_id = get_current_user_id();
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
-    if (empty($actividad_id)) { wp_send_json_error(['message' => 'ID de actividad no proporcionado.']); return; }
+    $force_delete = isset($_POST['force_delete']) ? rest_sanitize_boolean($_POST['force_delete']) : false;
+
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+        return;
+    }
+
+    // Comprobar si la actividad está vinculada a una actividad del programador
+    require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+    $programador_actividad_id = cpp_programador_get_linked_programmer_activity($actividad_id, $user_id);
+
+    if ($programador_actividad_id && !$force_delete) {
+        wp_send_json_success([
+            'is_linked' => true,
+            'programador_actividad_id' => $programador_actividad_id,
+            'message' => 'Esta actividad está vinculada a una sesión de la programación.'
+        ]);
+        return;
+    }
+
     $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
-    if ($resultado) { wp_send_json_success(['message' => 'Actividad eliminada correctamente.']); } 
-    else { wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']); }
+
+    if ($resultado) {
+        wp_send_json_success(['message' => 'Actividad eliminada correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);
+    }
 }
 
 add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');

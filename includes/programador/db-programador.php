@@ -196,19 +196,43 @@ function cpp_programador_save_actividad($data) {
 
     if ($actividad_id > 0) {
         $resultado = $wpdb->update($tabla_actividades, $datos_a_guardar, ['id' => $actividad_id, 'user_id' => $user_id], $format, ['%d', '%d']);
-        return $resultado !== false ? $actividad_id : false;
+        if ($resultado === false) {
+            return false;
+        }
+        $id_final = $actividad_id;
     } else {
         $max_orden = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_actividades WHERE user_id = %d AND sesion_id = %d", $user_id, $datos_a_guardar['sesion_id']));
         $datos_a_guardar['orden'] = is_null($max_orden) ? 0 : $max_orden + 1;
         $format[] = '%d';
         $resultado = $wpdb->insert($tabla_actividades, $datos_a_guardar, $format);
-        return $resultado ? $wpdb->insert_id : false;
+        if ($resultado === false) {
+            return false;
+        }
+        $id_final = $wpdb->insert_id;
     }
+
+    // Devolver el objeto completo de la actividad guardada
+    return $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $id_final));
 }
 
 function cpp_programador_delete_actividad($actividad_id, $user_id) {
     global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+
+    // Primero, obtener la actividad para saber si está vinculada a una del cuaderno
+    $actividad_programada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d AND user_id = %d", $actividad_id, $user_id));
+
+    if (!$actividad_programada) {
+        return false; // No se encontró la actividad o no pertenece al usuario
+    }
+
+    // Si está vinculada, eliminar también la del cuaderno y sus calificaciones
+    if (!empty($actividad_programada->actividad_cuaderno_id)) {
+        // La función cpp_eliminar_actividad_y_calificaciones ya se encarga de esto
+        cpp_eliminar_actividad_y_calificaciones($actividad_programada->actividad_cuaderno_id, $user_id);
+    }
+
+    // Finalmente, eliminar la actividad de la programación
     return $wpdb->delete($tabla_actividades, ['id' => $actividad_id, 'user_id' => $user_id], ['%d', '%d']) !== false;
 }
 
@@ -315,7 +339,9 @@ function cpp_programador_toggle_evaluable($actividad_id, $user_id, $es_evaluable
                  }
                  cpp_actualizar_actividad_evaluable($actividad_programada->actividad_cuaderno_id, $datos_cuaderno);
             }
-            return ['success' => true, 'actividad_cuaderno_id' => $actividad_programada->actividad_cuaderno_id];
+            }
+            $updated_activity = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $actividad_id));
+            return ['success' => true, 'actividad' => $updated_activity];
         }
 
         // Obtener datos necesarios para crear la actividad en el cuaderno
@@ -339,7 +365,8 @@ function cpp_programador_toggle_evaluable($actividad_id, $user_id, $es_evaluable
                 ['es_evaluable' => 1, 'categoria_id' => $categoria_id, 'actividad_cuaderno_id' => $actividad_cuaderno_id],
                 ['id' => $actividad_id]
             );
-            return ['success' => true, 'actividad_cuaderno_id' => $actividad_cuaderno_id, 'fecha_actividad' => $fecha_actividad];
+            $updated_activity = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $actividad_id));
+            return ['success' => true, 'actividad' => $updated_activity];
         } else {
             return ['success' => false, 'message' => 'Error al crear la actividad en el cuaderno.'];
         }
@@ -353,6 +380,18 @@ function cpp_programador_toggle_evaluable($actividad_id, $user_id, $es_evaluable
             ['es_evaluable' => 0, 'categoria_id' => null, 'actividad_cuaderno_id' => null],
             ['id' => $actividad_id]
         );
-        return ['success' => true];
+        $updated_activity = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $actividad_id));
+        return ['success' => true, 'actividad' => $updated_activity];
     }
+}
+
+function cpp_programador_get_linked_programmer_activity($actividad_cuaderno_id, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+    $actividad_programada_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $tabla_actividades WHERE actividad_cuaderno_id = %d AND user_id = %d",
+        $actividad_cuaderno_id,
+        $user_id
+    ));
+    return $actividad_programada_id;
 }

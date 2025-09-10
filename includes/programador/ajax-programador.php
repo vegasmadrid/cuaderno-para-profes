@@ -157,7 +157,7 @@ function cpp_ajax_save_programador_actividad() {
     $actividad_data['user_id'] = get_current_user_id();
     $result = cpp_programador_save_actividad($actividad_data);
     if ($result) {
-        wp_send_json_success(['message' => 'Actividad guardada.', 'actividad_id' => $result]);
+        wp_send_json_success(['message' => 'Actividad guardada.', 'actividad' => $result]);
     } else {
         wp_send_json_error(['message' => 'Error al guardar la actividad.']);
     }
@@ -202,8 +202,10 @@ function cpp_ajax_toggle_actividad_evaluable() {
     $result = cpp_programador_toggle_evaluable($actividad_id, $user_id, $es_evaluable, $categoria_id);
 
     if ($result['success']) {
-        unset($result['success']); // No es necesario enviarlo al frontend
-        wp_send_json_success($result);
+        wp_send_json_success([
+            'message' => 'Estado de la actividad actualizado.',
+            'actividad' => $result['actividad']
+        ]);
     } else {
         wp_send_json_error(['message' => $result['message']]);
     }

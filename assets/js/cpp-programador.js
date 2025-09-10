@@ -188,6 +188,13 @@
 
         // Listener for the config form, attached to the document
         $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
+
+        // Listener for custom event from Cuaderno to force a reload
+        $document.on('cpp:forceProgramadorReload', function() {
+            if (self.currentClase) {
+                self.fetchData(self.currentClase.id);
+            }
+        });
     },
 
     // --- Lógica de la App ---
@@ -699,9 +706,15 @@
         const isEvaluable = toggle.checked;
         let categoriaId = null;
 
+        if (!isEvaluable) {
+            if (!confirm('¿Estás seguro?\n\nLa actividad se eliminará del cuaderno de evaluación y todas las notas asociadas se borrarán permanentemente. Esta acción no se puede deshacer.')) {
+                toggle.checked = true; // Revertir el cambio si el usuario cancela
+                return;
+            }
+        }
+
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
-            // Si es ponderada, tomar la primera categoría por defecto o la que ya estuviera seleccionada
             const row = toggle.closest('.cpp-actividad-item');
             const selector = row.querySelector('.cpp-actividad-categoria-selector');
             if (selector) {
@@ -722,13 +735,21 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
+                if (result.success && result.actividad) {
                     this.showNotification(`Actividad marcada como ${isEvaluable ? 'evaluable' : 'no evaluable'}.`);
-                    // Recargar datos para asegurar consistencia
-                    this.fetchData(this.currentClase.id);
+                    const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
+                    if (index > -1) {
+                        this.currentSesion.actividades_programadas[index] = result.actividad;
+                    }
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+                    // Disparar evento para que el cuaderno se recargue
+                    document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                 } else {
                     this.showNotification(result.message || 'Error al actualizar la actividad.', 'error');
-                    toggle.checked = !isEvaluable; // Revertir el toggle en caso de error
+                    toggle.checked = !isEvaluable;
                 }
             });
     },
@@ -747,8 +768,15 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
-                    this.fetchData(this.currentClase.id);
+                if (result.success && result.actividad) {
+                    if (!this.currentSesion.actividades_programadas) {
+                        this.currentSesion.actividades_programadas = [];
+                    }
+                    this.currentSesion.actividades_programadas.push(result.actividad);
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
                 } else {
                     this.showNotification('Error al añadir actividad.', 'error');
                 }
@@ -756,7 +784,14 @@
     },
 
     deleteActividad(actividadId) {
-        if (!confirm('¿Seguro que quieres eliminar esta actividad?')) return;
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        let confirmMessage = '¿Seguro que quieres eliminar esta actividad?';
+        if (actividad && parseInt(actividad.es_evaluable, 10) === 1) {
+            confirmMessage += '\n\nEsta actividad es evaluable. También se eliminará del cuaderno de evaluación junto con todas sus notas. Esta acción no se puede deshacer.';
+        }
+
+        if (!confirm(confirmMessage)) return;
+
         const data = new URLSearchParams({
             action: 'cpp_delete_programador_actividad',
             nonce: cppFrontendData.nonce,
@@ -766,7 +801,11 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.fetchData(this.currentClase.id);
+                    this.currentSesion.actividades_programadas = this.currentSesion.actividades_programadas.filter(a => a.id != actividadId);
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
                 } else {
                     this.showNotification('Error al eliminar actividad.', 'error');
                 }
