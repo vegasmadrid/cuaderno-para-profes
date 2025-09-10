@@ -13,6 +13,9 @@ add_action('wp_ajax_cpp_save_sesiones_order', 'cpp_ajax_save_sesiones_order');
 add_action('wp_ajax_cpp_save_start_date', 'cpp_ajax_save_start_date');
 add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_programador_example_data');
 add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
+add_action('wp_ajax_cpp_save_programador_actividad', 'cpp_ajax_save_programador_actividad');
+add_action('wp_ajax_cpp_delete_programador_actividad', 'cpp_ajax_delete_programador_actividad');
+add_action('wp_ajax_cpp_toggle_actividad_evaluable', 'cpp_ajax_toggle_actividad_evaluable');
 
 // --- Implementación de Handlers ---
 
@@ -137,5 +140,71 @@ function cpp_ajax_add_inline_sesion() {
         wp_send_json_success(['message' => 'Sesión añadida.']);
     } else {
         wp_send_json_error(['message' => 'Error al añadir la sesión.']);
+    }
+}
+
+function cpp_ajax_save_programador_actividad() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $actividad_data = isset($_POST['actividad']) ? json_decode(stripslashes($_POST['actividad']), true) : null;
+    if (empty($actividad_data)) {
+        wp_send_json_error(['message' => 'Datos de actividad no válidos.']);
+        return;
+    }
+    $actividad_data['user_id'] = get_current_user_id();
+    $result = cpp_programador_save_actividad($actividad_data);
+    if ($result) {
+        wp_send_json_success(['message' => 'Actividad guardada.', 'actividad_id' => $result]);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar la actividad.']);
+    }
+}
+
+function cpp_ajax_delete_programador_actividad() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    if (cpp_programador_delete_actividad($actividad_id, $user_id)) {
+        wp_send_json_success(['message' => 'Actividad eliminada.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la actividad.']);
+    }
+}
+
+function cpp_ajax_toggle_actividad_evaluable() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+    $es_evaluable = isset($_POST['es_evaluable']) ? intval($_POST['es_evaluable']) : 0;
+    $categoria_id = isset($_POST['categoria_id']) ? intval($_POST['categoria_id']) : null;
+
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+        return;
+    }
+
+    $result = cpp_programador_toggle_evaluable($actividad_id, $user_id, $es_evaluable, $categoria_id);
+
+    if ($result['success']) {
+        unset($result['success']); // No es necesario enviarlo al frontend
+        wp_send_json_success($result);
+    } else {
+        wp_send_json_error(['message' => $result['message']]);
     }
 }

@@ -162,6 +162,23 @@ function cpp_crear_tablas() {
     ) $charset_collate;";
     dbDelta($sql_programador_sesiones);
 
+    $tabla_programador_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+    $sql_programador_actividades = "CREATE TABLE $tabla_programador_actividades (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        sesion_id bigint(20) UNSIGNED NOT NULL,
+        titulo varchar(255) NOT NULL,
+        es_evaluable tinyint(1) NOT NULL DEFAULT 0,
+        categoria_id mediumint(9) UNSIGNED DEFAULT NULL,
+        actividad_cuaderno_id mediumint(9) UNSIGNED DEFAULT NULL,
+        orden int NOT NULL DEFAULT 0,
+        PRIMARY KEY (id),
+        KEY user_id (user_id),
+        KEY sesion_id (sesion_id),
+        KEY actividad_cuaderno_id (actividad_cuaderno_id)
+    ) $charset_collate;";
+    dbDelta($sql_programador_actividades);
+
     $tabla_programador_eventos = $wpdb->prefix . 'cpp_programador_eventos';
     $sql_programador_eventos = "CREATE TABLE $tabla_programador_eventos (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
