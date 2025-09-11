@@ -735,11 +735,11 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success && result.actividad) {
+                if (result.success && result.data.actividad) {
                     this.showNotification(`Actividad marcada como ${isEvaluable ? 'evaluable' : 'no evaluable'}.`);
                     const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
                     if (index > -1) {
-                        this.currentSesion.actividades_programadas[index] = result.actividad;
+                        this.currentSesion.actividades_programadas[index] = result.data.actividad;
                     }
                     const rightCol = document.getElementById('cpp-programacion-right-col');
                     if (rightCol) {
@@ -748,7 +748,7 @@
                     // Disparar evento para que el cuaderno se recargue
                     document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                 } else {
-                    this.showNotification(result.message || 'Error al actualizar la actividad.', 'error');
+                    this.showNotification(result.data.message || 'Error al actualizar la actividad.', 'error');
                     toggle.checked = !isEvaluable;
                 }
             });
@@ -768,11 +768,11 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success && result.actividad) {
+                if (result.success && result.data.actividad) {
                     if (!this.currentSesion.actividades_programadas) {
                         this.currentSesion.actividades_programadas = [];
                     }
-                    this.currentSesion.actividades_programadas.push(result.actividad);
+                    this.currentSesion.actividades_programadas.push(result.data.actividad);
                     const rightCol = document.getElementById('cpp-programacion-right-col');
                     if (rightCol) {
                         rightCol.innerHTML = this.renderProgramacionTabRightColumn();
