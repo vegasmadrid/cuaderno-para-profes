@@ -288,7 +288,10 @@
                 } else {
                     // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                        CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        // Solo cargar la clase si es diferente a la actual para no perder el estado
+                        if (!CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno) {
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        }
                     }
                 }
             }
@@ -303,16 +306,6 @@
             $document.on('click', '.cpp-main-tab-link', function(e) {
                 e.preventDefault();
                 self.handleMainTabSwitch($(this));
-            });
-
-            // Listener for custom event from Programador to force a reload
-            $document.on('cpp:forceGradebookReload', function() {
-                console.log('Event cpp:forceGradebookReload received. Reloading gradebook...');
-                if (cpp.currentClaseIdCuaderno) {
-                    // Find the active evaluation to reload it
-                    const evaluacionActivaId = $('#cpp-evaluacion-selector').val() || cpp.currentEvaluacionId;
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionActivaId);
-                }
             });
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 

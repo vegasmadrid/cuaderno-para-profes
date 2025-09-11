@@ -188,121 +188,31 @@
         },
 
         eliminar: function() {
-            const self = this;
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const actividadId = $form.find('#actividad_id_editar_cuaderno').val();
             const actividadNombre = $form.find('#nombre_actividad_cuaderno_input').val();
-
-            if (!actividadId) {
-                alert('No se ha podido identificar la actividad a eliminar.');
-                return;
-            }
-
-            if (!confirm(`¿Estás SEGURO de que quieres eliminar la actividad "${actividadNombre}"?\n\n¡Esta acción borrará también TODAS las calificaciones asociadas y no se puede deshacer!`)) {
-                return;
-            }
-
-            const $btnEliminar = $('#cpp-eliminar-actividad-btn-modal');
-            const originalBtnHtml = $btnEliminar.html();
-            $btnEliminar.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span>');
-
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_eliminar_actividad',
-                    nonce: cppFrontendData.nonce,
-                    actividad_id: actividadId
-                },
-                success: function(response) {
-                    if (response.success) {
-                        if (response.data && response.data.is_linked) {
-                            // Es una actividad vinculada, preguntar al usuario
-                            if (confirm('Esta actividad está vinculada a una sesión de la programación.\n\n¿Quieres eliminarla también de la programación?')) {
-                                // Eliminar de la programación y luego del cuaderno
-                                self.eliminarActividadProgramador(response.data.programador_actividad_id, () => {
-                                    self.forzarEliminacionCuaderno(actividadId, $btnEliminar, originalBtnHtml);
-                                });
-                            } else {
-                                // Solo desvincular (eliminar del cuaderno pero mantener en programación)
-                                self.forzarEliminacionCuaderno(actividadId, $btnEliminar, originalBtnHtml);
+            if (!actividadId) { alert('No se ha podido identificar la actividad a eliminar.'); return; }
+            if (confirm(`¿Estás SEGURO de que quieres eliminar la actividad "${actividadNombre}"?\n\n¡Esta acción borrará también TODAS las calificaciones asociadas y no se puede deshacer!`)) {
+                const $btnEliminar = $('#cpp-eliminar-actividad-btn-modal');
+                const originalBtnHtml = $btnEliminar.html();
+                $btnEliminar.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span>');
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_eliminar_actividad', nonce: cppFrontendData.nonce, actividad_id: actividadId },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
+                            if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                                let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
+                                cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
                             }
                         } else {
-                            // No está vinculada, eliminar directamente
-                            self.finalizarEliminacion();
+                            alert('Error al eliminar: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
                         }
-                    } else {
-                        alert('Error al eliminar: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
-                        $btnEliminar.prop('disabled', false).html(originalBtnHtml);
-                    }
-                },
-                error: function() {
-                    alert('Error de conexión al intentar eliminar la actividad.');
-                    $btnEliminar.prop('disabled', false).html(originalBtnHtml);
-                }
-            });
-        },
-
-        eliminarActividadProgramador: function(programadorActividadId, callback) {
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_delete_programador_actividad',
-                    nonce: cppFrontendData.nonce,
-                    actividad_id: programadorActividadId
-                },
-                success: function(response) {
-                    if(response.success) {
-                        console.log("Actividad de la programación eliminada.");
-                        if(typeof callback === 'function') callback();
-                    } else {
-                        alert('No se pudo eliminar la actividad de la programación.');
-                    }
-                },
-                error: function() {
-                    alert('Error de conexión al eliminar la actividad de la programación.');
-                }
-            });
-        },
-
-        forzarEliminacionCuaderno: function(actividadId, $btnEliminar, originalBtnHtml) {
-            const self = this;
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_eliminar_actividad',
-                    nonce: cppFrontendData.nonce,
-                    actividad_id: actividadId,
-                    force_delete: true
-                },
-                success: function(response) {
-                    if(response.success) {
-                        self.finalizarEliminacion();
-                    } else {
-                        alert('Error al forzar la eliminación de la actividad del cuaderno.');
-                    }
-                },
-                error: function() {
-                    alert('Error de conexión al forzar la eliminación.');
-                },
-                complete: function() {
-                    $btnEliminar.prop('disabled', false).html(originalBtnHtml);
-                }
-            });
-        },
-
-        finalizarEliminacion: function() {
-            $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
-            if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
-                let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
-                cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
-                // Disparar evento para que el programador también se recargue si está visible
-                document.dispatchEvent(new CustomEvent('cpp:forceProgramadorReload'));
+                    },
+                    error: function() { alert('Error de conexión al intentar eliminar la actividad.'); },
+                    complete: function() { $btnEliminar.prop('disabled', false).html(originalBtnHtml); }
+                });
             }
         },
 
