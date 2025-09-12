@@ -603,8 +603,212 @@
     },
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
-        return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}"><h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Actividades</h4><div class="cpp-sesion-detail-content" data-field="actividades" contenteditable="true">${this.currentSesion.actividades || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Seguimiento</h4><div class="cpp-sesion-detail-content" data-field="seguimiento" contenteditable="true">${this.currentSesion.seguimiento || ''}</div></div></div>`;
+        return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
+                    <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
+                    <div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div>
+                    <div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div>
+                    <div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div>
+                    ${this.renderActividadesSection(this.currentSesion)}
+                    <div class="cpp-sesion-detail-section"><h4>Seguimiento</h4><div class="cpp-sesion-detail-content" data-field="seguimiento" contenteditable="true">${this.currentSesion.seguimiento || ''}</div></div>
+                </div>`;
     },
+
+    renderActividadesSection(sesion) {
+        const actividades = sesion.actividades_programadas || [];
+        let listItems = actividades.map(act => this.renderActividadItem(act)).join('');
+        return `
+            <div class="cpp-sesion-detail-section">
+                <h4>Actividades</h4>
+                <ul class="cpp-actividades-list">${listItems}</ul>
+                <button id="cpp-add-actividad-btn" class="cpp-btn" data-sesion-id="${sesion.id}">+ Añadir Actividad</button>
+            </div>
+        `;
+    },
+
+    renderActividadItem(actividad) {
+        const isEvaluable = parseInt(actividad.es_evaluable, 10) === 1;
+        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+        let categorySelector = '';
+
+        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
+            const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
+            categorySelector = `<select class="cpp-actividad-categoria-selector" data-actividad-id="${actividad.id}">${options}</select>`;
+        }
+
+        return `
+            <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : ''}" data-actividad-id="${actividad.id}">
+                <span class="cpp-actividad-titulo" contenteditable="true" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
+                <div class="cpp-actividad-actions">
+                    <div class="cpp-toggle-switch">
+                        <input type="checkbox" id="evaluable-toggle-${actividad.id}" class="cpp-actividad-evaluable-toggle" data-actividad-id="${actividad.id}" ${isEvaluable ? 'checked' : ''}>
+                        <label for="evaluable-toggle-${actividad.id}"></label>
+                    </div>
+                    ${categorySelector}
+                    <button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}">❌</button>
+                </div>
+            </li>
+        `;
+    },
+
+    toggleActividadEvaluable(toggle, actividadId) {
+        const isEvaluable = toggle.checked;
+        let categoriaId = null;
+
+        if (!isEvaluable) {
+            if (!confirm('¿Estás seguro?\n\nLa actividad se eliminará del cuaderno de evaluación y todas las notas asociadas se borrarán permanentemente. Esta acción no se puede deshacer.')) {
+                toggle.checked = true; // Revertir el cambio si el usuario cancela
+                return;
+            }
+        }
+
+        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
+            const row = toggle.closest('.cpp-actividad-item');
+            const selector = row.querySelector('.cpp-actividad-categoria-selector');
+            if (selector) {
+                categoriaId = selector.value;
+            } else {
+                categoriaId = currentEval.categorias[0].id;
+            }
+        }
+
+        const data = new URLSearchParams({
+            action: 'cpp_toggle_actividad_evaluable',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId,
+            es_evaluable: isEvaluable ? 1 : 0,
+            categoria_id: categoriaId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data.actividad) {
+                    this.showNotification(`Actividad marcada como ${isEvaluable ? 'evaluable' : 'no evaluable'}.`);
+                    const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
+                    if (index > -1) {
+                        this.currentSesion.actividades_programadas[index] = result.data.actividad;
+                    }
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+                    document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                } else {
+                    this.showNotification(result.data.message || 'Error al actualizar la actividad.', 'error');
+                    toggle.checked = !isEvaluable;
+                }
+            });
+    },
+
+    addActividad(sesionId) {
+        const newActividad = {
+            sesion_id: sesionId,
+            titulo: 'Nueva actividad',
+            es_evaluable: 0,
+        };
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_actividad',
+            nonce: cppFrontendData.nonce,
+            actividad: JSON.stringify(newActividad)
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data.actividad) {
+                    if (!this.currentSesion.actividades_programadas) {
+                        this.currentSesion.actividades_programadas = [];
+                    }
+                    this.currentSesion.actividades_programadas.push(result.data.actividad);
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+                } else {
+                    this.showNotification('Error al añadir actividad.', 'error');
+                }
+            });
+    },
+
+    deleteActividad(actividadId) {
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        let confirmMessage = '¿Seguro que quieres eliminar esta actividad?';
+        if (actividad && parseInt(actividad.es_evaluable, 10) === 1) {
+            confirmMessage += '\n\nEsta actividad es evaluable. También se eliminará del cuaderno de evaluación junto con todas sus notas. Esta acción no se puede deshacer.';
+        }
+
+        if (!confirm(confirmMessage)) return;
+
+        const data = new URLSearchParams({
+            action: 'cpp_delete_programador_actividad',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.currentSesion.actividades_programadas = this.currentSesion.actividades_programadas.filter(a => a.id != actividadId);
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+                } else {
+                    this.showNotification('Error al eliminar actividad.', 'error');
+                }
+            });
+    },
+
+    updateActividadTitle(element, actividadId) {
+        const newTitle = element.textContent.trim();
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        if (!actividad || newTitle === actividad.titulo) return;
+
+        const updatedActividad = { ...actividad, titulo: newTitle };
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_actividad',
+            nonce: cppFrontendData.nonce,
+            actividad: JSON.stringify(updatedActividad)
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    actividad.titulo = newTitle;
+                    this.showNotification('Título guardado.');
+                } else {
+                    this.showNotification('Error al guardar.', 'error');
+                    element.textContent = actividad.titulo;
+                }
+            });
+    },
+
+    updateActividadCategoria(selector, actividadId) {
+        const newCategoriaId = selector.value;
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        if (!actividad || newCategoriaId == actividad.categoria_id) return;
+
+        const data = new URLSearchParams({
+            action: 'cpp_toggle_actividad_evaluable',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId,
+            es_evaluable: 1,
+            categoria_id: newCategoriaId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    actividad.categoria_id = newCategoriaId;
+                    this.showNotification('Categoría actualizada.');
+                } else {
+                    this.showNotification('Error al actualizar categoría.', 'error');
+                    selector.value = actividad.categoria_id;
+                }
+            });
+    },
+
     renderHorarioTab() {
         if (!this.tabContents.horario) return;
         const content = this.tabContents.horario;
