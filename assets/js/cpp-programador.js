@@ -111,6 +111,7 @@
         });
 
         $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() {
+            self.updateHorarioCellColor(this);
             self.saveHorario(true);
         });
 
@@ -420,9 +421,9 @@
         const data = new URLSearchParams({ action: 'cpp_save_programador_horario', nonce: cppFrontendData.nonce, horario: JSON.stringify(this.config.horario), time_slots: JSON.stringify(this.config.time_slots) });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
-                if (showNotification) alert('Horario guardado.');
+                if (showNotification) this.showNotification('Horario guardado.');
                 this.render();
-            } else { alert('Error al guardar el horario.'); }
+            } else { this.showNotification('Error al guardar el horario.', 'error'); }
         });
     },
     saveSesion(e, fromModal = false, inlineData = null) {
@@ -838,8 +839,42 @@
         });
         tableHTML += `</tbody></table>`;
         content.innerHTML = tableHTML;
-        this.appElement.querySelectorAll('#cpp-horario-table select').forEach(s => { s.value = s.dataset.claseId; });
+        this.appElement.querySelectorAll('#cpp-horario-table select').forEach(s => {
+            s.value = s.dataset.claseId;
+            this.updateHorarioCellColor(s);
+        });
     },
+
+    updateHorarioCellColor(selectElement) {
+        const claseId = selectElement.value;
+        const cell = selectElement.closest('td');
+        if (!cell) return;
+
+        if (claseId) {
+            const clase = this.clases.find(c => c.id == claseId);
+            if (clase && clase.color) {
+                cell.style.backgroundColor = clase.color;
+            } else {
+                cell.style.backgroundColor = ''; // Color por defecto si no se encuentra
+            }
+        } else {
+            cell.style.backgroundColor = ''; // Sin color si no hay clase seleccionada
+        }
+    },
+
+    showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `cpp-notification ${type}`;
+        notification.textContent = message;
+        this.appElement.appendChild(notification);
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, 3000);
+    },
+
     renderSemanaTab() {
         const content = this.tabContents.semana;
         if (!this.currentClase || !this.currentEvaluacionId) { content.innerHTML = '<p class="cpp-empty-panel">Selecciona una clase y evaluación.</p>'; return; }
