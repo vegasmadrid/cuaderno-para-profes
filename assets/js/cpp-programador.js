@@ -613,21 +613,7 @@
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         let categorySelector = '';
 
-        if (isEvaluable) {
-            const debugInfo = `
-            DEBUG INFO: State when rendering evaluable activity.
-            - Is Evaluable: ${isEvaluable}
-            - Current Eval Found: ${!!currentEval}
-            - Calculo Nota: ${currentEval ? currentEval.calculo_nota : 'N/A'}
-            - Es Ponderado: ${currentEval ? currentEval.calculo_nota === 'ponderado' : 'N/A'}
-            - Num Categorias: ${currentEval && currentEval.categorias ? currentEval.categorias.length : 'N/A'}
-            - Categorias Object: ${currentEval && currentEval.categorias ? JSON.stringify(currentEval.categorias, null, 2) : 'N/A'}
-            - Full Current Eval Object: ${JSON.stringify(currentEval, null, 2)}
-            `;
-            this.showDebugModal(debugInfo);
-        }
-
-        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias && currentEval.categorias.length > 0) {
+        if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias && currentEval.categorias.length > 0) {
             const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
             categorySelector = `<select class="cpp-actividad-categoria-selector" data-actividad-id="${actividad.id}">${options}</select>`;
         }
@@ -1000,36 +986,6 @@
     getDayKey(date) {
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
         return dayMapping[date.getDay()];
-    },
-
-    showDebugModal(text) {
-        const modalId = 'cpp-debug-modal';
-        if (document.getElementById(modalId)) {
-            document.getElementById(modalId).remove();
-        }
-
-        const modalHTML = `
-            <div id="${modalId}" style="position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
-                <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;">
-                    <span id="cpp-debug-modal-close" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
-                    <h2>Debug Information</h2>
-                    <textarea style="width: 100%; height: 200px; white-space: pre; font-family: monospace;"></textarea>
-                    <button id="cpp-debug-modal-copy-btn" style="margin-top: 10px;">Copy to Clipboard</button>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        const modal = document.getElementById(modalId);
-        const textarea = modal.querySelector('textarea');
-        textarea.value = text.trim();
-
-        document.getElementById('cpp-debug-modal-close').onclick = () => modal.remove();
-        document.getElementById('cpp-debug-modal-copy-btn').onclick = () => {
-            textarea.select();
-            document.execCommand('copy');
-            this.showNotification('Debug info copied to clipboard.');
-        };
     }
     };
 })(jQuery);
