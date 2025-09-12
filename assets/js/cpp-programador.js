@@ -613,9 +613,9 @@
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         let categorySelector = '';
 
-        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && (!currentEval.categorias || currentEval.categorias.length === 0)) {
+        if (isEvaluable) {
             const debugInfo = `
-            DEBUG INFO: The category selector is not showing. Here's the state:
+            DEBUG INFO: State when rendering evaluable activity.
             - Is Evaluable: ${isEvaluable}
             - Current Eval Found: ${!!currentEval}
             - Calculo Nota: ${currentEval ? currentEval.calculo_nota : 'N/A'}
