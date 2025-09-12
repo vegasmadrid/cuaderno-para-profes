@@ -324,27 +324,35 @@
             });
     },
 
-    fetchData(initialClaseId) {
+    fetchDataFromServer() {
         const data = new URLSearchParams({ action: 'cpp_get_programador_all_data', nonce: cppFrontendData.nonce });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                this.clases = result.data.clases || [];
-                this.config = result.data.config || { time_slots: [], horario: {} };
-                this.sesiones = result.data.sesiones || [];
+        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json());
+    },
 
-                if (this.clases.length > 0) {
-                    if (initialClaseId) {
-                        this.loadClass(initialClaseId);
-                    } else {
-                        // Si no se proporciona una clase inicial, no se muestra nada.
-                        this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
-                    }
+    processInitialData(result, initialClaseId) {
+        if (result.success) {
+            this.clases = result.data.clases || [];
+            this.config = result.data.config || { time_slots: [], horario: {} };
+            this.sesiones = result.data.sesiones || [];
+
+            if (this.clases.length > 0) {
+                if (initialClaseId) {
+                    this.loadClass(initialClaseId);
                 } else {
-                    this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
+                    this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
             } else {
-                this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
+                this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
             }
+        } else {
+            this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
+        }
+    },
+
+    fetchData(initialClaseId) {
+        this.fetchDataFromServer().then(result => {
+            this.processInitialData(result, initialClaseId);
         });
     },
 
@@ -643,6 +651,7 @@
             if (selector) {
                 categoriaId = selector.value;
             } else {
+                // Si no hay selector, es la primera vez que se activa, se asigna la primera categoría por defecto
                 categoriaId = currentEval.categorias[0].id;
             }
         }
@@ -660,8 +669,25 @@
             .then(result => {
                 if (result.success && result.data.actividad) {
                     this.showNotification(`Actividad marcada como ${isEvaluable ? 'evaluable' : 'no evaluable'}.`);
-                    // Fetch all data again to ensure UI consistency, especially with categories.
-                    this.fetchData(this.currentClase.id);
+
+                    // --- Targeted DOM Update ---
+                    const listItem = toggle.closest('.cpp-actividad-item');
+                    const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
+
+                    if (index > -1 && listItem) {
+                        // 1. Update local data
+                        this.currentSesion.actividades_programadas[index] = result.data.actividad;
+
+                        // 2. Rerender just the item
+                        const newItemHTML = this.renderActividadItem(result.data.actividad);
+
+                        // 3. Replace the old item with the new one
+                        listItem.outerHTML = newItemHTML;
+                    } else {
+                        // Fallback to full refresh if something went wrong
+                        this.refreshCurrentView();
+                    }
+
                     document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                 } else {
                     this.showNotification(result.data.message || 'Error al actualizar la actividad.', 'error');
