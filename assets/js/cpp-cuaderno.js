@@ -288,7 +288,10 @@
                 } else {
                     // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                        CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        // Solo cargar la clase si es diferente a la actual para no perder el estado
+                        if (!CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno) {
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        }
                     }
                 }
             }
@@ -386,6 +389,23 @@
             $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); });
             $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } });
             $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); });
+
+            // Listeners for cross-component updates
+            $document.on('cpp:forceGradebookReload', function() {
+                console.log('Event detected: cpp:forceGradebookReload. Reloading gradebook...');
+                if (cpp.currentClaseIdCuaderno) {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    // Usar cpp.currentEvaluacionId que ya debería estar actualizado
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
+                }
+            });
+
+            $document.on('cpp:forceProgramadorReload', function() {
+                console.log('Event detected: cpp:forceProgramadorReload. Reloading scheduler...');
+                if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.programadorInicializado && CppProgramadorApp.currentClase) {
+                    CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
+                }
+            });
         }
     };
 

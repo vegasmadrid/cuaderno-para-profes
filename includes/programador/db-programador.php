@@ -14,6 +14,7 @@ function cpp_programador_get_all_data($user_id) {
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
 
     $clases = cpp_obtener_clases_usuario($user_id);
 
@@ -41,15 +42,30 @@ function cpp_programador_get_all_data($user_id) {
     ];
     $config = array_merge($defaults, $config);
 
-    // Asegurarse de que las subclaves de calendar_config existan
     if (isset($config['calendar_config'])) {
         $config['calendar_config'] = array_merge($defaults['calendar_config'], $config['calendar_config']);
     }
 
-    $sesiones = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_sesiones WHERE user_id = %d ORDER BY clase_id, evaluacion_id, orden ASC", $user_id));
+    $sesiones = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_sesiones WHERE user_id = %d ORDER BY clase_id, evaluacion_id, orden ASC", $user_id), OBJECT_K);
 
-    return ['clases' => $clases, 'config' => $config, 'sesiones' => $sesiones];
+    if (!empty($sesiones)) {
+        $sesiones_ids = array_keys($sesiones);
+        $placeholders = implode(',', array_fill(0, count($sesiones_ids), '%d'));
+        $actividades_results = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE sesion_id IN ($placeholders) ORDER BY orden ASC", $sesiones_ids));
+
+        foreach ($actividades_results as $actividad) {
+            if (isset($sesiones[$actividad->sesion_id])) {
+                if (!isset($sesiones[$actividad->sesion_id]->actividades_programadas)) {
+                    $sesiones[$actividad->sesion_id]->actividades_programadas = [];
+                }
+                $sesiones[$actividad->sesion_id]->actividades_programadas[] = $actividad;
+            }
+        }
+    }
+
+    return ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones)];
 }
+
 
 function cpp_programador_save_sesion($data) {
     global $wpdb;
@@ -65,10 +81,9 @@ function cpp_programador_save_sesion($data) {
         'descripcion' => isset($data['descripcion']) ? wp_kses_post($data['descripcion']) : '',
         'objetivos' => isset($data['objetivos']) ? wp_kses_post($data['objetivos']) : '',
         'recursos' => isset($data['recursos']) ? wp_kses_post($data['recursos']) : '',
-        'actividades' => isset($data['actividades']) ? wp_kses_post($data['actividades']) : '',
         'seguimiento' => isset($data['seguimiento']) ? wp_kses_post($data['seguimiento']) : '',
     ];
-    $format = ['%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s'];
+    $format = ['%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s'];
     if ($sesion_id > 0) {
         $resultado = $wpdb->update($tabla_sesiones, $datos_a_guardar, ['id' => $sesion_id, 'user_id' => $user_id], $format, ['%d', '%d']);
         return $resultado !== false ? $sesion_id : false;
@@ -159,4 +174,117 @@ function cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user
 
     $wpdb->query('COMMIT');
     return $wpdb->insert_id;
+}
+
+// --- Funciones CRUD para Actividades del Programador ---
+
+function cpp_programador_get_actividades_by_sesion_id($sesion_id, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+
+    // Verificar que el usuario es el dueño de la sesión
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+    if ($owner_id != $user_id) {
+        return false;
+    }
+
+    return $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $tabla_actividades WHERE sesion_id = %d ORDER BY orden ASC",
+        $sesion_id
+    ), ARRAY_A);
+}
+
+function cpp_programador_get_sesion_owner($sesion_id) {
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    return $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+}
+
+function cpp_programador_save_actividad($actividad_data, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+
+    $actividad_id = isset($actividad_data['id']) ? intval($actividad_data['id']) : 0;
+    $sesion_id = isset($actividad_data['sesion_id']) ? intval($actividad_data['sesion_id']) : 0;
+
+    // Security check: ensure the user owns the session this activity belongs to
+    $sesion_owner_id = cpp_programador_get_sesion_owner($sesion_id);
+    if ($sesion_owner_id != $user_id) {
+        return false;
+    }
+
+    $data_to_save = [
+        'sesion_id' => $sesion_id,
+        'titulo' => isset($actividad_data['titulo']) ? sanitize_text_field($actividad_data['titulo']) : 'Nueva actividad',
+        'es_evaluable' => isset($actividad_data['es_evaluable']) ? intval($actividad_data['es_evaluable']) : 0,
+        'actividad_calificable_id' => isset($actividad_data['actividad_calificable_id']) && !empty($actividad_data['actividad_calificable_id']) ? intval($actividad_data['actividad_calificable_id']) : null,
+    ];
+    $format = ['%d', '%s', '%d', '%d'];
+
+    if ($actividad_id > 0) {
+        // Update existing activity
+        $result = $wpdb->update($tabla_actividades, $data_to_save, ['id' => $actividad_id], $format, ['%d']);
+        return $result !== false ? $actividad_id : false;
+    } else {
+        // Insert new activity
+        $max_orden = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_actividades WHERE sesion_id = %d", $sesion_id));
+        $data_to_save['orden'] = is_null($max_orden) ? 0 : $max_orden + 1;
+        $format[] = '%d';
+
+        $result = $wpdb->insert($tabla_actividades, $data_to_save, $format);
+        return $result ? $wpdb->insert_id : false;
+    }
+}
+
+function cpp_programador_delete_actividad($actividad_id, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+
+    // Security check: Get sesion_id from the activity to verify ownership
+    $sesion_id = $wpdb->get_var($wpdb->prepare("SELECT sesion_id FROM $tabla_actividades WHERE id = %d", $actividad_id));
+    if (!$sesion_id) {
+        return false; // Activity doesn't exist
+    }
+    $sesion_owner_id = cpp_programador_get_sesion_owner($sesion_id);
+    if ($sesion_owner_id != $user_id) {
+        return false; // User doesn't own this session
+    }
+
+    // Also delete the associated gradebook item if it exists
+    $actividad_calificable_id = $wpdb->get_var($wpdb->prepare("SELECT actividad_calificable_id FROM $tabla_actividades WHERE id = %d", $actividad_id));
+    if ($actividad_calificable_id) {
+        cpp_eliminar_actividad_y_calificaciones($actividad_calificable_id, $user_id);
+    }
+
+
+    return $wpdb->delete($tabla_actividades, ['id' => $actividad_id], ['%d']) !== false;
+}
+
+function cpp_programador_save_actividades_order($sesion_id, $orden_actividades, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
+
+    // Security check
+    $sesion_owner_id = cpp_programador_get_sesion_owner($sesion_id);
+    if ($sesion_owner_id != $user_id) {
+        return false;
+    }
+
+    if (!is_array($orden_actividades)) return false;
+
+    $wpdb->query('START TRANSACTION');
+    foreach ($orden_actividades as $index => $actividad_id) {
+        $result = $wpdb->update(
+            $tabla_actividades,
+            ['orden' => $index],
+            ['id' => intval($actividad_id), 'sesion_id' => $sesion_id]
+        );
+        if ($result === false) {
+            $wpdb->query('ROLLBACK');
+            return false;
+        }
+    }
+    $wpdb->query('COMMIT');
+    return true;
 }

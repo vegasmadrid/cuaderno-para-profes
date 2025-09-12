@@ -319,7 +319,7 @@ function cpp_ajax_eliminar_actividad() {
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
     if (empty($actividad_id)) { wp_send_json_error(['message' => 'ID de actividad no proporcionado.']); return; }
     $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
-    if ($resultado) { wp_send_json_success(['message' => 'Actividad eliminada correctamente.']); } 
+    if ($resultado) { wp_send_json_success(['message' => 'Actividad eliminada correctamente.']); }
     else { wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']); }
 }
 

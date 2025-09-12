@@ -47,126 +47,61 @@
         const $document = $(document);
         const self = this;
 
-        // Delegated events attached to the document for robustness
-        $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) {
-            e.stopPropagation();
-            self.deleteSesion(this.dataset.sesionId);
-        });
+        // --- Delegated events for robustness ---
 
-        $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() {
-            self.deleteTimeSlot(this.dataset.slot);
-        });
-
-        $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', function() {
-            self.addTimeSlot();
-        });
-
-        $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            // Manually switch main tab visuals
-            $('.cpp-main-tab-link').removeClass('active');
-            $('.cpp-main-tab-link[data-tab="configuracion"]').addClass('active');
-            $('.cpp-main-tab-content').removeClass('active');
-            $('#cpp-main-tab-configuracion').addClass('active');
-
-            // Manually trigger the data loading and sub-tab selection
-            if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                cpp.config.showParaEditar(null, false, self.currentClase.id);
-            }
-            if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
-                cpp.config.handleConfigTabClick(null, 'calendario');
-            }
-        });
-
-        // Listeners for config modal
-        $document.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
-        $document.on('click', '.cpp-remove-holiday-btn', function() {
-            self.removeHoliday(this.closest('.cpp-list-item').dataset.index);
-        });
-        $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
-        $document.on('click', '.cpp-remove-vacation-btn', function() {
-            self.removeVacation(this.closest('.cpp-list-item').dataset.index);
-        });
-
-        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', function() { // Para el botón principal cuando no hay sesiones
-            self.openSesionModal();
-        });
-
-        $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() {
-            self.addInlineSesion(this.dataset.afterSesionId);
-        });
-
+        // Sesiones
+        $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) { e.stopPropagation(); self.deleteSesion(this.dataset.sesionId); });
+        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
+        $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
             self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
             self.renderProgramacionTab();
         });
 
-        $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', function() {
-            self.semanaDate.setDate(self.semanaDate.getDate() - 7);
-            self.renderSemanaTab();
-        });
+        // Actividades
+        $document.on('click', '#cpp-programador-app #cpp-add-actividad-btn', function() { self.addActividad(this.dataset.sesionId); });
+        $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId); });
+        $document.on('change', '#cpp-programador-app .cpp-actividad-evaluable-toggle', function() { self.toggleActividadEvaluable(this, this.dataset.actividadId); });
+        $document.on('change', '#cpp-programador-app .cpp-actividad-categoria-selector', function() { self.updateActividadCategoria(this, this.dataset.actividadId); });
+        $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
 
-        $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', function() {
-            self.semanaDate.setDate(self.semanaDate.getDate() + 7);
-            self.renderSemanaTab();
-        });
 
-        $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() {
-            self.saveHorario(true);
-        });
+        // Horario
+        $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() { self.deleteTimeSlot(this.dataset.slot); });
+        $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', () => self.addTimeSlot());
+        $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() { self.updateHorarioCellColor(this); self.saveHorario(true); });
+        $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
-        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() {
-            self.currentEvaluacionId = this.value;
-            self.currentSesion = null;
-            self.render();
+        // Navegación y Controles Generales
+        $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
+            $('.cpp-main-tab-link[data-tab="configuracion"]').click();
+            if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
+                cpp.config.handleConfigTabClick(null, 'calendario');
+            }
         });
+        $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
+        $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
+        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() { self.currentEvaluacionId = this.value; self.currentSesion = null; self.render(); });
+        $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
-        $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() {
-            self.saveStartDate(this.value);
-        });
-
-        $document.on('focusin', '#cpp-programador-app [contenteditable]', function() {
-            self.originalContent = this.innerHTML;
-        });
-
-        $document.on('focusin', '#cpp-programador-app .cpp-horario-time-slot', function() {
-            this.dataset.originalValue = this.textContent;
-        });
-
-        $document.on('focusout', '#cpp-programador-app [contenteditable]', function() {
-            self.handleInlineEdit(this);
-        });
-
-        $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() {
-            self.handleTimeSlotEdit(this);
-        });
-
+        // Edición Inline
+        $document.on('focusin', '#cpp-programador-app [contenteditable]', function() { self.originalContent = this.innerHTML; });
+        $document.on('focusout', '#cpp-programador-app [data-field]', function() { self.handleInlineEdit(this); });
         $document.on('keydown', '#cpp-programador-app [contenteditable]', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.blur();
-            } else if (e.key === 'Escape') {
-                this.innerHTML = self.originalContent;
-                this.blur();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.blur(); }
+            else if (e.key === 'Escape') { this.innerHTML = self.originalContent; this.blur(); }
         });
 
-        $document.on('keydown', '#cpp-programador-app .cpp-horario-time-slot', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.blur();
-            } else if (e.key === 'Escape') {
-                this.textContent = this.dataset.originalValue;
-                this.blur();
-            }
-        });
-
-        // Listeners for the modal, which is outside the main app flow
+        // Modales
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
-
-        // Listener for the config form, attached to the document
+        $document.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
+        $document.on('click', '.cpp-remove-holiday-btn', function() { self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
+        $document.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
         $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
     },
+
 
     // --- Lógica de la App ---
     handleInlineEdit(element) {
@@ -175,7 +110,11 @@
         const sesion = this.currentSesion;
         const field = element.dataset.field;
         if (!sesion || !field) return;
-        this.saveSesion(null, false, { ...sesion, [field]: newContent });
+
+        // Guardamos una copia sin las actividades para no enviar datos innecesarios
+        const { actividades_programadas, ...sesionToSave } = sesion;
+
+        this.saveSesion(null, false, { ...sesionToSave, [field]: newContent });
     },
 
     addInlineSesion(afterSesionId) {
@@ -385,28 +324,57 @@
             });
     },
 
-    fetchData(initialClaseId) {
+    fetchDataFromServer() {
         const data = new URLSearchParams({ action: 'cpp_get_programador_all_data', nonce: cppFrontendData.nonce });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                this.clases = result.data.clases || [];
-                this.config = result.data.config || { time_slots: [], horario: {} };
-                this.sesiones = result.data.sesiones || [];
+        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json());
+    },
 
-                if (this.clases.length > 0) {
-                    if (initialClaseId) {
-                        this.loadClass(initialClaseId);
-                    } else {
-                        // Si no se proporciona una clase inicial, no se muestra nada.
-                        this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
-                    }
+    processInitialData(result, initialClaseId) {
+        if (result.success) {
+            this.clases = result.data.clases || [];
+            this.config = result.data.config || { time_slots: [], horario: {} };
+            this.sesiones = result.data.sesiones || [];
+
+            if (this.clases.length > 0) {
+                if (initialClaseId) {
+                    this.loadClass(initialClaseId);
                 } else {
-                    this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
+                    this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
             } else {
-                this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
+                this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
             }
+        } else {
+            this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
+        }
+    },
+
+    fetchData(initialClaseId) {
+        this.fetchDataFromServer().then(result => {
+            this.processInitialData(result, initialClaseId);
         });
+    },
+
+    saveActividadesOrder(sesionId, newOrder) {
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_actividades_order',
+            nonce: cppFrontendData.nonce,
+            sesion_id: sesionId,
+            orden: JSON.stringify(newOrder)
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification('Orden de actividades guardado.');
+                    // No es necesario un fetch completo, solo reordenar localmente si se quisiera optimizar
+                    this.fetchData(this.currentClase.id);
+                } else {
+                    this.showNotification('Error al guardar el orden de las actividades.', 'error');
+                    this.fetchData(this.currentClase.id);
+                }
+            });
     },
     saveHorario(showNotification = false) {
         const newHorario = {};
@@ -420,9 +388,9 @@
         const data = new URLSearchParams({ action: 'cpp_save_programador_horario', nonce: cppFrontendData.nonce, horario: JSON.stringify(this.config.horario), time_slots: JSON.stringify(this.config.time_slots) });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
-                if (showNotification) alert('Horario guardado.');
+                if (showNotification) this.showNotification('Horario guardado.');
                 this.render();
-            } else { alert('Error al guardar el horario.'); }
+            } else { this.showNotification('Error al guardar el horario.', 'error'); }
         });
     },
     saveSesion(e, fromModal = false, inlineData = null) {
@@ -536,6 +504,18 @@
             }).disableSelection();
         }
     },
+    makeActividadesSortable() {
+        const list = this.appElement.querySelector('.cpp-actividades-list');
+        if (list) {
+            $(list).sortable({
+                placeholder: 'cpp-actividad-placeholder',
+                update: (event, ui) => {
+                    const newOrder = $(event.target).sortable('toArray', { attribute: 'data-actividad-id' });
+                    this.saveActividadesOrder(this.currentSesion.id, newOrder);
+                }
+            }).disableSelection();
+        }
+    },
     render() {
         if (!this.currentClase) { this.tabContents.programacion.innerHTML = '<p class="cpp-empty-panel">Cargando...</p>'; return; }
         this.renderProgramacionTab();
@@ -582,6 +562,9 @@
         if (sesionesFiltradas.length > 0) {
             this.makeSesionesSortable();
         }
+        if (this.currentSesion) {
+            this.makeActividadesSortable();
+        }
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
@@ -603,8 +586,224 @@
     },
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
-        return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}"><h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Actividades</h4><div class="cpp-sesion-detail-content" data-field="actividades" contenteditable="true">${this.currentSesion.actividades || ''}</div></div><div class="cpp-sesion-detail-section"><h4>Seguimiento</h4><div class="cpp-sesion-detail-content" data-field="seguimiento" contenteditable="true">${this.currentSesion.seguimiento || ''}</div></div></div>`;
+        return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
+                    <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
+                    <div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div>
+                    <div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div>
+                    <div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div>
+                    ${this.renderActividadesSection(this.currentSesion)}
+                    <div class="cpp-sesion-detail-section"><h4>Seguimiento</h4><div class="cpp-sesion-detail-content" data-field="seguimiento" contenteditable="true">${this.currentSesion.seguimiento || ''}</div></div>
+                </div>`;
     },
+
+    renderActividadesSection(sesion) {
+        const actividades = sesion.actividades_programadas || [];
+        let listItems = actividades.map(act => this.renderActividadItem(act)).join('');
+        return `
+            <div class="cpp-sesion-detail-section">
+                <h4>Actividades</h4>
+                <ul class="cpp-actividades-list">${listItems}</ul>
+                <button id="cpp-add-actividad-btn" class="cpp-btn" data-sesion-id="${sesion.id}">+ Añadir Actividad</button>
+            </div>
+        `;
+    },
+
+    renderActividadItem(actividad) {
+        const isEvaluable = parseInt(actividad.es_evaluable, 10) === 1;
+        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+        let categorySelector = '';
+
+        if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias && currentEval.categorias.length > 0) {
+            const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
+            categorySelector = `<select class="cpp-actividad-categoria-selector" data-actividad-id="${actividad.id}">${options}</select>`;
+        }
+
+        return `
+            <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : ''}" data-actividad-id="${actividad.id}">
+                <span class="cpp-actividad-titulo" contenteditable="true" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
+                <div class="cpp-actividad-actions">
+                    <div class="cpp-toggle-switch">
+                        <input type="checkbox" id="evaluable-toggle-${actividad.id}" class="cpp-actividad-evaluable-toggle" data-actividad-id="${actividad.id}" ${isEvaluable ? 'checked' : ''}>
+                        <label for="evaluable-toggle-${actividad.id}"></label>
+                    </div>
+                    ${categorySelector}
+                    <button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}">❌</button>
+                </div>
+            </li>
+        `;
+    },
+
+    toggleActividadEvaluable(toggle, actividadId) {
+        const isEvaluable = toggle.checked;
+        let categoriaId = null;
+
+        if (!isEvaluable) {
+            if (!confirm('¿Estás seguro?\n\nLa actividad se eliminará del cuaderno de evaluación y todas las notas asociadas se borrarán permanentemente. Esta acción no se puede deshacer.')) {
+                toggle.checked = true; // Revertir el cambio si el usuario cancela
+                return;
+            }
+        }
+
+        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
+            const row = toggle.closest('.cpp-actividad-item');
+            const selector = row.querySelector('.cpp-actividad-categoria-selector');
+            if (selector) {
+                categoriaId = selector.value;
+            } else {
+                // Si no hay selector, es la primera vez que se activa, se asigna la primera categoría por defecto
+                categoriaId = currentEval.categorias[0].id;
+            }
+        }
+
+        const data = new URLSearchParams({
+            action: 'cpp_toggle_actividad_evaluable',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId,
+            es_evaluable: isEvaluable ? 1 : 0,
+            categoria_id: categoriaId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data.actividad) {
+                    this.showNotification(`Actividad marcada como ${isEvaluable ? 'evaluable' : 'no evaluable'}.`);
+
+                    // --- Targeted DOM Update ---
+                    const listItem = toggle.closest('.cpp-actividad-item');
+                    const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
+
+                    if (index > -1 && listItem) {
+                        // 1. Update local data
+                        this.currentSesion.actividades_programadas[index] = result.data.actividad;
+
+                        // 2. Rerender just the item
+                        const newItemHTML = this.renderActividadItem(result.data.actividad);
+
+                        // 3. Replace the old item with the new one
+                        listItem.outerHTML = newItemHTML;
+                    } else {
+                        // Fallback to full refresh if something went wrong
+                        this.refreshCurrentView();
+                    }
+
+                    document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                } else {
+                    this.showNotification(result.data.message || 'Error al actualizar la actividad.', 'error');
+                    toggle.checked = !isEvaluable; // Revert visual change on failure
+                }
+            });
+    },
+
+    addActividad(sesionId) {
+        const newActividad = {
+            sesion_id: sesionId,
+            titulo: 'Nueva actividad',
+            es_evaluable: 0,
+        };
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_actividad',
+            nonce: cppFrontendData.nonce,
+            actividad: JSON.stringify(newActividad)
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data.actividad) {
+                    if (!this.currentSesion.actividades_programadas) {
+                        this.currentSesion.actividades_programadas = [];
+                    }
+                    this.currentSesion.actividades_programadas.push(result.data.actividad);
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+                } else {
+                    this.showNotification('Error al añadir actividad.', 'error');
+                }
+            });
+    },
+
+    deleteActividad(actividadId) {
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        let confirmMessage = '¿Seguro que quieres eliminar esta actividad?';
+        if (actividad && parseInt(actividad.es_evaluable, 10) === 1) {
+            confirmMessage += '\n\nEsta actividad es evaluable. También se eliminará del cuaderno de evaluación junto con todas sus notas. Esta acción no se puede deshacer.';
+        }
+
+        if (!confirm(confirmMessage)) return;
+
+        const data = new URLSearchParams({
+            action: 'cpp_delete_programador_actividad',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.currentSesion.actividades_programadas = this.currentSesion.actividades_programadas.filter(a => a.id != actividadId);
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+                } else {
+                    this.showNotification('Error al eliminar actividad.', 'error');
+                }
+            });
+    },
+
+    updateActividadTitle(element, actividadId) {
+        const newTitle = element.textContent.trim();
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        if (!actividad || newTitle === actividad.titulo) return;
+
+        const updatedActividad = { ...actividad, titulo: newTitle };
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_actividad',
+            nonce: cppFrontendData.nonce,
+            actividad: JSON.stringify(updatedActividad)
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    actividad.titulo = newTitle;
+                    this.showNotification('Título guardado.');
+                } else {
+                    this.showNotification('Error al guardar.', 'error');
+                    element.textContent = actividad.titulo;
+                }
+            });
+    },
+
+    updateActividadCategoria(selector, actividadId) {
+        const newCategoriaId = selector.value;
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+        if (!actividad || newCategoriaId == actividad.categoria_id) return;
+
+        const data = new URLSearchParams({
+            action: 'cpp_toggle_actividad_evaluable',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId,
+            es_evaluable: 1,
+            categoria_id: newCategoriaId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    actividad.categoria_id = newCategoriaId;
+                    this.showNotification('Categoría actualizada.');
+                } else {
+                    this.showNotification('Error al actualizar categoría.', 'error');
+                    selector.value = actividad.categoria_id;
+                }
+            });
+    },
+
     renderHorarioTab() {
         if (!this.tabContents.horario) return;
         const content = this.tabContents.horario;
@@ -634,8 +833,42 @@
         });
         tableHTML += `</tbody></table>`;
         content.innerHTML = tableHTML;
-        this.appElement.querySelectorAll('#cpp-horario-table select').forEach(s => { s.value = s.dataset.claseId; });
+        this.appElement.querySelectorAll('#cpp-horario-table select').forEach(s => {
+            s.value = s.dataset.claseId;
+            this.updateHorarioCellColor(s);
+        });
     },
+
+    updateHorarioCellColor(selectElement) {
+        const claseId = selectElement.value;
+        const cell = selectElement.closest('td');
+        if (!cell) return;
+
+        if (claseId) {
+            const clase = this.clases.find(c => c.id == claseId);
+            if (clase && clase.color) {
+                cell.style.backgroundColor = clase.color;
+            } else {
+                cell.style.backgroundColor = ''; // Color por defecto si no se encuentra
+            }
+        } else {
+            cell.style.backgroundColor = ''; // Sin color si no hay clase seleccionada
+        }
+    },
+
+    showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `cpp-notification ${type}`;
+        notification.textContent = message;
+        this.appElement.appendChild(notification);
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, 3000);
+    },
+
     renderSemanaTab() {
         const content = this.tabContents.semana;
         if (!this.currentClase || !this.currentEvaluacionId) { content.innerHTML = '<p class="cpp-empty-panel">Selecciona una clase y evaluación.</p>'; return; }
