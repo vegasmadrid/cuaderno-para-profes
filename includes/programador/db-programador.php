@@ -3,6 +3,7 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+
 function cpp_programador_save_config_value($user_id, $clave, $valor) {
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';

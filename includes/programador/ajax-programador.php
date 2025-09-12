@@ -303,7 +303,14 @@ function cpp_ajax_toggle_actividad_evaluable() {
         $wpdb->update($tabla_programador_actividades, $update_data, ['id' => $actividad_id]);
     }
 
-    $actividad_actualizada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id));
+    $actividad_actualizada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id), ARRAY_A);
+
+    if ($actividad_actualizada) {
+        // FIX: Devolver la categoría ID para que el frontend pueda renderizar el selector correctamente.
+        // Si se está marcando como evaluable, $categoria_id tendrá un valor. Si no, será null, lo cual es correcto.
+        $actividad_actualizada['categoria_id'] = $categoria_id;
+    }
+
     wp_send_json_success(['message' => 'Estado actualizado.', 'actividad' => $actividad_actualizada]);
 }
 
