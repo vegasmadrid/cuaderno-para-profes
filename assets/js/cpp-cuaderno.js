@@ -307,16 +307,6 @@
                 e.preventDefault();
                 self.handleMainTabSwitch($(this));
             });
-
-            // Listener for custom event from Programador to force a reload
-            $document.on('cpp:forceGradebookReload', function() {
-                console.log('Event cpp:forceGradebookReload received. Reloading gradebook...');
-                if (cpp.currentClaseIdCuaderno) {
-                    // Find the active evaluation to reload it
-                    const evaluacionActivaId = $('#cpp-evaluacion-selector').val() || cpp.currentEvaluacionId;
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionActivaId);
-                }
-            });
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
             // Botón para crear la primera clase desde la pantalla de bienvenida
@@ -399,6 +389,23 @@
             $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); });
             $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } });
             $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); });
+
+            // Listeners for cross-component updates
+            $document.on('cpp:forceGradebookReload', function() {
+                console.log('Event detected: cpp:forceGradebookReload. Reloading gradebook...');
+                if (cpp.currentClaseIdCuaderno) {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    // Usar cpp.currentEvaluacionId que ya debería estar actualizado
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
+                }
+            });
+
+            $document.on('cpp:forceProgramadorReload', function() {
+                console.log('Event detected: cpp:forceProgramadorReload. Reloading scheduler...');
+                if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.programadorInicializado && CppProgramadorApp.currentClase) {
+                    CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
+                }
+            });
         }
     };
 

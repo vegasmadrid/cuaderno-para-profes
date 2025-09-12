@@ -47,127 +47,61 @@
         const $document = $(document);
         const self = this;
 
-        // Delegated events attached to the document for robustness
-        $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) {
-            e.stopPropagation();
-            self.deleteSesion(this.dataset.sesionId);
-        });
+        // --- Delegated events for robustness ---
 
-        $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() {
-            self.deleteTimeSlot(this.dataset.slot);
-        });
-
-        $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', function() {
-            self.addTimeSlot();
-        });
-
-        $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
-            // Manually switch main tab visuals
-            $('.cpp-main-tab-link').removeClass('active');
-            $('.cpp-main-tab-link[data-tab="configuracion"]').addClass('active');
-            $('.cpp-main-tab-content').removeClass('active');
-            $('#cpp-main-tab-configuracion').addClass('active');
-
-            // Manually trigger the data loading and sub-tab selection
-            if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                cpp.config.showParaEditar(null, false, self.currentClase.id);
-            }
-            if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
-                cpp.config.handleConfigTabClick(null, 'calendario');
-            }
-        });
-
-        // Listeners for config modal
-        $document.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
-        $document.on('click', '.cpp-remove-holiday-btn', function() {
-            self.removeHoliday(this.closest('.cpp-list-item').dataset.index);
-        });
-        $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
-        $document.on('click', '.cpp-remove-vacation-btn', function() {
-            self.removeVacation(this.closest('.cpp-list-item').dataset.index);
-        });
-
-        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', function() { // Para el botón principal cuando no hay sesiones
-            self.openSesionModal();
-        });
-
-        $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() {
-            self.addInlineSesion(this.dataset.afterSesionId);
-        });
-
+        // Sesiones
+        $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) { e.stopPropagation(); self.deleteSesion(this.dataset.sesionId); });
+        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
+        $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
             self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
             self.renderProgramacionTab();
         });
 
-        $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', function() {
-            self.semanaDate.setDate(self.semanaDate.getDate() - 7);
-            self.renderSemanaTab();
-        });
+        // Actividades
+        $document.on('click', '#cpp-programador-app #cpp-add-actividad-btn', function() { self.addActividad(this.dataset.sesionId); });
+        $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId); });
+        $document.on('change', '#cpp-programador-app .cpp-actividad-evaluable-toggle', function() { self.toggleActividadEvaluable(this, this.dataset.actividadId); });
+        $document.on('change', '#cpp-programador-app .cpp-actividad-categoria-selector', function() { self.updateActividadCategoria(this, this.dataset.actividadId); });
+        $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
 
-        $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', function() {
-            self.semanaDate.setDate(self.semanaDate.getDate() + 7);
-            self.renderSemanaTab();
-        });
 
-        $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() {
-            self.updateHorarioCellColor(this);
-            self.saveHorario(true);
-        });
+        // Horario
+        $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() { self.deleteTimeSlot(this.dataset.slot); });
+        $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', () => self.addTimeSlot());
+        $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() { self.updateHorarioCellColor(this); self.saveHorario(true); });
+        $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
-        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() {
-            self.currentEvaluacionId = this.value;
-            self.currentSesion = null;
-            self.render();
+        // Navegación y Controles Generales
+        $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
+            $('.cpp-main-tab-link[data-tab="configuracion"]').click();
+            if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
+                cpp.config.handleConfigTabClick(null, 'calendario');
+            }
         });
+        $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
+        $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
+        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() { self.currentEvaluacionId = this.value; self.currentSesion = null; self.render(); });
+        $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
-        $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() {
-            self.saveStartDate(this.value);
-        });
-
-        $document.on('focusin', '#cpp-programador-app [contenteditable]', function() {
-            self.originalContent = this.innerHTML;
-        });
-
-        $document.on('focusin', '#cpp-programador-app .cpp-horario-time-slot', function() {
-            this.dataset.originalValue = this.textContent;
-        });
-
-        $document.on('focusout', '#cpp-programador-app [contenteditable]', function() {
-            self.handleInlineEdit(this);
-        });
-
-        $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() {
-            self.handleTimeSlotEdit(this);
-        });
-
+        // Edición Inline
+        $document.on('focusin', '#cpp-programador-app [contenteditable]', function() { self.originalContent = this.innerHTML; });
+        $document.on('focusout', '#cpp-programador-app [data-field]', function() { self.handleInlineEdit(this); });
         $document.on('keydown', '#cpp-programador-app [contenteditable]', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.blur();
-            } else if (e.key === 'Escape') {
-                this.innerHTML = self.originalContent;
-                this.blur();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.blur(); }
+            else if (e.key === 'Escape') { this.innerHTML = self.originalContent; this.blur(); }
         });
 
-        $document.on('keydown', '#cpp-programador-app .cpp-horario-time-slot', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.blur();
-            } else if (e.key === 'Escape') {
-                this.textContent = this.dataset.originalValue;
-                this.blur();
-            }
-        });
-
-        // Listeners for the modal, which is outside the main app flow
+        // Modales
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
-
-        // Listener for the config form, attached to the document
+        $document.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
+        $document.on('click', '.cpp-remove-holiday-btn', function() { self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
+        $document.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
         $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
     },
+
 
     // --- Lógica de la App ---
     handleInlineEdit(element) {
@@ -176,7 +110,11 @@
         const sesion = this.currentSesion;
         const field = element.dataset.field;
         if (!sesion || !field) return;
-        this.saveSesion(null, false, { ...sesion, [field]: newContent });
+
+        // Guardamos una copia sin las actividades para no enviar datos innecesarios
+        const { actividades_programadas, ...sesionToSave } = sesion;
+
+        this.saveSesion(null, false, { ...sesionToSave, [field]: newContent });
     },
 
     addInlineSesion(afterSesionId) {
@@ -409,6 +347,27 @@
             }
         });
     },
+
+    saveActividadesOrder(sesionId, newOrder) {
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_actividades_order',
+            nonce: cppFrontendData.nonce,
+            sesion_id: sesionId,
+            orden: JSON.stringify(newOrder)
+        });
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification('Orden de actividades guardado.');
+                    // No es necesario un fetch completo, solo reordenar localmente si se quisiera optimizar
+                    this.fetchData(this.currentClase.id);
+                } else {
+                    this.showNotification('Error al guardar el orden de las actividades.', 'error');
+                    this.fetchData(this.currentClase.id);
+                }
+            });
+    },
     saveHorario(showNotification = false) {
         const newHorario = {};
         this.appElement.querySelectorAll('#cpp-horario-table tbody tr').forEach(tr => {
@@ -537,6 +496,18 @@
             }).disableSelection();
         }
     },
+    makeActividadesSortable() {
+        const list = this.appElement.querySelector('.cpp-actividades-list');
+        if (list) {
+            $(list).sortable({
+                placeholder: 'cpp-actividad-placeholder',
+                update: (event, ui) => {
+                    const newOrder = $(event.target).sortable('toArray', { attribute: 'data-actividad-id' });
+                    this.saveActividadesOrder(this.currentSesion.id, newOrder);
+                }
+            }).disableSelection();
+        }
+    },
     render() {
         if (!this.currentClase) { this.tabContents.programacion.innerHTML = '<p class="cpp-empty-panel">Cargando...</p>'; return; }
         this.renderProgramacionTab();
@@ -582,6 +553,9 @@
         content.innerHTML = controlsHTML + layoutHTML;
         if (sesionesFiltradas.length > 0) {
             this.makeSesionesSortable();
+        }
+        if (this.currentSesion) {
+            this.makeActividadesSortable();
         }
     },
     renderSesionList() {
