@@ -613,6 +613,19 @@
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         let categorySelector = '';
 
+        if (isEvaluable) {
+            const debugInfo = `
+            DEBUG INFO:
+            - Is Evaluable: ${isEvaluable}
+            - Current Eval Found: ${!!currentEval}
+            - Calculo Nota: ${currentEval ? currentEval.calculo_nota : 'N/A'}
+            - Es Ponderado: ${currentEval ? currentEval.calculo_nota === 'ponderado' : 'N/A'}
+            - Num Categorias: ${currentEval && currentEval.categorias ? currentEval.categorias.length : 'N/A'}
+            - Categorias: ${currentEval && currentEval.categorias ? JSON.stringify(currentEval.categorias) : 'N/A'}
+            `;
+            alert(debugInfo);
+        }
+
         if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
             const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
             categorySelector = `<select class="cpp-actividad-categoria-selector" data-actividad-id="${actividad.id}">${options}</select>`;
