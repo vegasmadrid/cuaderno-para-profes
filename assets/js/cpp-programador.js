@@ -660,18 +660,12 @@
             .then(result => {
                 if (result.success && result.data.actividad) {
                     this.showNotification(`Actividad marcada como ${isEvaluable ? 'evaluable' : 'no evaluable'}.`);
-                    const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
-                    if (index > -1) {
-                        this.currentSesion.actividades_programadas[index] = result.data.actividad;
-                    }
-                    const rightCol = document.getElementById('cpp-programacion-right-col');
-                    if (rightCol) {
-                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                    }
+                    // Fetch all data again to ensure UI consistency, especially with categories.
+                    this.fetchData(this.currentClase.id);
                     document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                 } else {
                     this.showNotification(result.data.message || 'Error al actualizar la actividad.', 'error');
-                    toggle.checked = !isEvaluable;
+                    toggle.checked = !isEvaluable; // Revert visual change on failure
                 }
             });
     },
