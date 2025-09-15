@@ -303,11 +303,12 @@ function cpp_ajax_guardar_actividad_evaluable() {
                 $tabla_actividades_programadas,
                 [
                     'es_evaluable' => 1,
+                    'titulo' => $nombre_actividad,
                     'categoria_id' => $categoria_id,
                     'actividad_calificable_id' => $actividad_evaluable_id
                 ],
                 ['id' => $id_actividad_programada], // No necesitamos user_id aquí, la propiedad se verifica en otro punto.
-                ['%d', '%d', '%d'],
+                ['%d', '%s', '%d', '%d'],
                 ['%d']
             );
         }

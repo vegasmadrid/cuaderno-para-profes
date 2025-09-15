@@ -791,6 +791,9 @@
                 if (result.success) {
                     actividad.titulo = newTitle;
                     this.showNotification('Título guardado.');
+                    if (result.data.needs_gradebook_reload) {
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    }
                 } else {
                     this.showNotification('Error al guardar.', 'error');
                     element.textContent = actividad.titulo;
