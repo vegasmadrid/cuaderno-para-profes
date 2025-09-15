@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 1.5.1
+Version: 1.7
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.6');
+define('CPP_VERSION', '1.7');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -264,11 +264,28 @@ function cpp_migrate_add_passing_grade_v1_6() {
 }
 // --- FIN: SCRIPT DE MIGRACIÓN DE DATOS ---
 
+function cpp_migrate_add_link_column_v1_7() {
+    global $wpdb;
+    $tabla_actividades_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_actividades_programadas = $wpdb->prefix . 'cpp_programador_actividades';
+
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_actividades_evaluables` LIKE 'id_actividad_programada'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_actividades_evaluables` ADD `id_actividad_programada` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `user_id`, ADD KEY `id_actividad_programada` (`id_actividad_programada`);");
+    }
+
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_actividades_programadas` LIKE 'categoria_id'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_actividades_programadas` ADD `categoria_id` MEDIUMINT(9) UNSIGNED NULL DEFAULT NULL AFTER `es_evaluable`;");
+    }
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
     if (version_compare($current_version, '1.6', '<')) {
         cpp_migrate_add_passing_grade_v1_6();
+    }
+    if (version_compare($current_version, '1.7', '<')) {
+        cpp_migrate_add_link_column_v1_7();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 

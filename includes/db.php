@@ -88,7 +88,9 @@ function cpp_crear_tablas() {
         KEY clase_id (clase_id),
         KEY evaluacion_id (evaluacion_id),
         KEY categoria_id (categoria_id),
-        KEY user_id (user_id)
+        KEY user_id (user_id),
+        id_actividad_programada bigint(20) UNSIGNED DEFAULT NULL,
+        KEY id_actividad_programada (id_actividad_programada)
     ) $charset_collate;";
 
     $tabla_calificaciones_alumnos = $wpdb->prefix . 'cpp_calificaciones_alumnos';
