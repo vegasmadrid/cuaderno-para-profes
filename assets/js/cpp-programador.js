@@ -613,18 +613,6 @@
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         let categorySelector = '';
 
-        // --- DEBUGGING CODE ---
-        console.log('--- [DEBUG] In renderActividadItem ---');
-        console.log('[DEBUG] Actividad object:', actividad);
-        console.log('[DEBUG] isEvaluable:', isEvaluable);
-        console.log('[DEBUG] currentEvaluacionId:', this.currentEvaluacionId);
-        console.log('[DEBUG] currentEval object:', currentEval);
-        if (currentEval) {
-            console.log('[DEBUG] currentEval.calculo_nota:', currentEval.calculo_nota);
-            console.log('[DEBUG] currentEval.categorias:', currentEval.categorias);
-        }
-        console.log('--- [DEBUG] End of debug info ---');
-        // --- END DEBUGGING CODE ---
 
         if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias && currentEval.categorias.length > 0) {
             const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
@@ -658,7 +646,7 @@
         }
 
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
+        if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias.length > 0) {
             const row = toggle.closest('.cpp-actividad-item');
             const selector = row.querySelector('.cpp-actividad-categoria-selector');
             if (selector) {
