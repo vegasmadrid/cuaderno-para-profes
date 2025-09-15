@@ -23,12 +23,13 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
         return [];
     }
     
-    return $wpdb->get_results( $wpdb->prepare( 
-        "SELECT a.*, cat.nombre_categoria, cat.color AS categoria_color 
-         FROM $tabla_actividades a 
-         LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id 
+    // Se añade `a.id_actividad_programada` a la consulta
+    return $wpdb->get_results( $wpdb->prepare(
+        "SELECT a.*, cat.nombre_categoria, cat.color AS categoria_color
+         FROM $tabla_actividades a
+         LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id
          WHERE a.clase_id = %d AND a.user_id = %d AND a.evaluacion_id = %d
-         ORDER BY a.fecha_actividad DESC, a.nombre_actividad ASC", 
+         ORDER BY a.orden ASC, a.id ASC",
         $clase_id, $user_id, $evaluacion_id
     ), ARRAY_A );
 }
@@ -37,18 +38,19 @@ function cpp_guardar_actividad_evaluable($datos) {
     global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
     if (empty($datos['clase_id']) || empty($datos['user_id']) || !isset($datos['categoria_id']) || empty(trim($datos['nombre_actividad'])) || empty($datos['evaluacion_id'])) { return false; }
-    $nota_maxima = isset($datos['nota_maxima']) ? floatval($datos['nota_maxima']) : 10.00; 
+    $nota_maxima = isset($datos['nota_maxima']) ? floatval($datos['nota_maxima']) : 10.00;
     if ($nota_maxima <= 0) { $nota_maxima = 10.00; }
     $data_to_insert = [
         'clase_id' => intval($datos['clase_id']), 'evaluacion_id' => intval($datos['evaluacion_id']), 'user_id' => intval($datos['user_id']), 'categoria_id' => intval($datos['categoria_id']),
         'nombre_actividad' => sanitize_text_field($datos['nombre_actividad']),
         'descripcion_actividad' => isset($datos['descripcion_actividad']) ? sanitize_textarea_field($datos['descripcion_actividad']) : '',
-        'nota_maxima' => $nota_maxima, 
+        'nota_maxima' => $nota_maxima,
+        'id_actividad_programada' => isset($datos['id_actividad_programada']) ? intval($datos['id_actividad_programada']) : null,
     ];
-    $formats = ['%d', '%d', '%d', '%d', '%s', '%s', '%f']; 
+    $formats = ['%d', '%d', '%d', '%d', '%s', '%s', '%f', '%d'];
     if (!empty($datos['fecha_actividad'])) {
         if (preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) {
-            $data_to_insert['fecha_actividad'] = $datos['fecha_actividad']; $formats[] = '%s'; 
+            $data_to_insert['fecha_actividad'] = $datos['fecha_actividad']; $formats[] = '%s';
         } else { $data_to_insert['fecha_actividad'] = null; $formats[] = '%s'; }
     } else { $data_to_insert['fecha_actividad'] = null; $formats[] = '%s'; }
     $resultado = $wpdb->insert($tabla_actividades, $data_to_insert, $formats);
@@ -73,12 +75,14 @@ function cpp_actualizar_actividad_evaluable($actividad_id, $datos) {
         $formats_update[] = '%d';
     }
     if (isset($datos['nota_maxima'])) { $nota_maxima = floatval($datos['nota_maxima']); $data_to_update['nota_maxima'] = ($nota_maxima > 0) ? $nota_maxima : 10.00; $formats_update[] = '%f'; }
-    if (array_key_exists('fecha_actividad', $datos)) { 
-        if (!empty($datos['fecha_actividad']) && preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) { $data_to_update['fecha_actividad'] = $datos['fecha_actividad']; } 
+    if (array_key_exists('fecha_actividad', $datos)) {
+        if (!empty($datos['fecha_actividad']) && preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) { $data_to_update['fecha_actividad'] = $datos['fecha_actividad']; }
         else { $data_to_update['fecha_actividad'] = null; }
         $formats_update[] = '%s';
     }
     if (isset($datos['descripcion_actividad'])) { $data_to_update['descripcion_actividad'] = sanitize_textarea_field($datos['descripcion_actividad']); $formats_update[] = '%s'; }
+    if (isset($datos['id_actividad_programada'])) { $data_to_update['id_actividad_programada'] = intval($datos['id_actividad_programada']); $formats_update[] = '%d'; }
+
     if (empty($data_to_update)) { return 0; }
     $where = ['id' => $actividad_id, 'user_id' => $user_id_actual]; $where_formats = ['%d', '%d'];
     $resultado = $wpdb->update($tabla_actividades, $data_to_update, $where, $formats_update, $where_formats);
