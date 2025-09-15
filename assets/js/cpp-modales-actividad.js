@@ -175,7 +175,7 @@
 
                         // Recargar Programador si existe en la página
                         if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
-                           CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
+                           CppProgramadorApp.refreshCurrentView();
                         }
 
                         // Compatibilidad con tutorial

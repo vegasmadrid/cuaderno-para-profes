@@ -801,6 +801,24 @@
             });
     },
 
+    refreshCurrentView() {
+        const currentSesionId = this.currentSesion ? this.currentSesion.id : null;
+        this.fetchDataFromServer().then(result => {
+            if (result.success) {
+                this.clases = result.data.clases || [];
+                this.config = result.data.config || { time_slots: [], horario: {} };
+                this.sesiones = result.data.sesiones || [];
+
+                if (currentSesionId) {
+                    this.currentSesion = this.sesiones.find(s => s.id == currentSesionId) || null;
+                }
+                this.render();
+            } else {
+                this.showNotification('Error al refrescar los datos.', 'error');
+            }
+        });
+    },
+
     updateActividadCategoria(selector, actividadId) {
         const newCategoriaId = selector.value;
         const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
