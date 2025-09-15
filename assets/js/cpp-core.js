@@ -66,6 +66,27 @@ const cpp = {
             CppProgramadorApp.init(initialClaseId);
         }
 
+        // Restaurar la última pestaña abierta al final de toda la inicialización
+        try {
+            const lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
+            if (lastOpenedTab && lastOpenedTab !== 'cuaderno') { // No reclicar si es la de por defecto
+                const $targetTab = $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`);
+                if ($targetTab.length) {
+                    console.log(`CPP Core: Restaurando la pestaña ${lastOpenedTab}.`);
+                    // El click debe ser manejado por el listener en cuaderno.js para inicializar el programador
+                    if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
+                        cpp.gradebook.handleMainTabSwitch($targetTab);
+                    } else {
+                        // Fallback si el gradebook no está listo, aunque no debería pasar.
+                        $targetTab.trigger('click');
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("No se pudo restaurar la última pestaña abierta desde localStorage:", e);
+        }
+
+
         console.log("CPP Core: init() completado.");
     },
 
@@ -193,16 +214,8 @@ const cpp = {
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');
         }
 
-        // Restaurar la última pestaña abierta
-        try {
-            const lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
-            if (lastOpenedTab) {
-                // Usamos .trigger('click') para que se ejecute toda la lógica asociada al cambio de pestaña
-                $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`).trigger('click');
-            }
-        } catch (e) {
-            console.warn("No se pudo restaurar la última pestaña abierta desde localStorage:", e);
-        }
+        // La restauración de la pestaña se ha movido al final de la función init()
+        // para asegurar que todos los módulos estén cargados.
     }
 };
 
