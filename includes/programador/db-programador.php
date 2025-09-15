@@ -3,6 +3,7 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+
 function cpp_programador_save_config_value($user_id, $clave, $valor) {
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';
@@ -21,6 +22,13 @@ function cpp_programador_get_all_data($user_id) {
     if (!empty($clases)) {
         for ($i = 0; $i < count($clases); $i++) {
             $clases[$i]['evaluaciones'] = cpp_obtener_evaluaciones_por_clase($clases[$i]['id'], $user_id);
+            // FIX: Añadir las categorías a cada evaluación para que estén disponibles en el frontend del programador.
+            if (!empty($clases[$i]['evaluaciones'])) {
+                for ($j = 0; $j < count($clases[$i]['evaluaciones']); $j++) {
+                    $evaluacion_id = $clases[$i]['evaluaciones'][$j]['id'];
+                    $clases[$i]['evaluaciones'][$j]['categorias'] = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);
+                }
+            }
         }
     }
 

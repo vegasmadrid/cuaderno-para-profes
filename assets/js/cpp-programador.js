@@ -613,6 +613,7 @@
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         let categorySelector = '';
 
+
         if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias && currentEval.categorias.length > 0) {
             const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
             categorySelector = `<select class="cpp-actividad-categoria-selector" data-actividad-id="${actividad.id}">${options}</select>`;
@@ -645,7 +646,7 @@
         }
 
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-        if (isEvaluable && currentEval && currentEval.calculo_nota === 'ponderado' && currentEval.categorias.length > 0) {
+        if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias.length > 0) {
             const row = toggle.closest('.cpp-actividad-item');
             const selector = row.querySelector('.cpp-actividad-categoria-selector');
             if (selector) {
