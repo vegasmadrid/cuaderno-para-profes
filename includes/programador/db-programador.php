@@ -234,13 +234,12 @@ function cpp_programador_save_actividad($actividad_data, $user_id) {
         return false;
     }
 
+    // This table now only stores non-evaluable activities.
     $data_to_save = [
         'sesion_id' => $sesion_id,
-        'titulo' => isset($actividad_data['titulo']) ? sanitize_text_field($actividad_data['titulo']) : 'Nueva actividad',
-        'es_evaluable' => isset($actividad_data['es_evaluable']) ? intval($actividad_data['es_evaluable']) : 0,
-        'actividad_calificable_id' => isset($actividad_data['actividad_calificable_id']) && !empty($actividad_data['actividad_calificable_id']) ? intval($actividad_data['actividad_calificable_id']) : null,
+        'titulo' => isset($actividad_data['titulo']) ? sanitize_text_field($actividad_data['titulo']) : 'Nueva tarea...',
     ];
-    $format = ['%d', '%s', '%d', '%d'];
+    $format = ['%d', '%s'];
 
     if ($actividad_id > 0) {
         // Update existing activity
@@ -248,8 +247,12 @@ function cpp_programador_save_actividad($actividad_data, $user_id) {
         return $result !== false ? $actividad_id : false;
     } else {
         // Insert new activity
-        $max_orden = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_actividades WHERE sesion_id = %d", $sesion_id));
-        $data_to_save['orden'] = is_null($max_orden) ? 0 : $max_orden + 1;
+        $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+        $max_orden_evaluable = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_act_evaluables WHERE sesion_id = %d", $sesion_id));
+        $max_orden_programada = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_actividades WHERE sesion_id = %d", $sesion_id));
+        $max_orden = max((is_null($max_orden_evaluable) ? -1 : $max_orden_evaluable), (is_null($max_orden_programada) ? -1 : $max_orden_programada));
+
+        $data_to_save['orden'] = $max_orden + 1;
         $format[] = '%d';
 
         $result = $wpdb->insert($tabla_actividades, $data_to_save, $format);

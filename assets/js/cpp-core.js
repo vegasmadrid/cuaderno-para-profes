@@ -88,6 +88,12 @@ const cpp = {
             $('.cpp-main-tab-content').removeClass('active');
             $('#cpp-main-tab-' + tabId).addClass('active');
 
+            try {
+                localStorage.setItem('cpp_last_opened_tab', tabId);
+            } catch (e) {
+                console.warn("No se pudo guardar la última pestaña abierta en localStorage:", e);
+            }
+
             // Si se activa la pestaña de configuración y hay una clase seleccionada, cargar sus datos
             if (tabId === 'configuracion' && cpp.currentClaseIdCuaderno) {
                 if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
@@ -185,6 +191,17 @@ const cpp = {
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');
+        }
+
+        // Restaurar la última pestaña abierta
+        try {
+            const lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
+            if (lastOpenedTab) {
+                // Usamos .trigger('click') para que se ejecute toda la lógica asociada al cambio de pestaña
+                $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`).trigger('click');
+            }
+        } catch (e) {
+            console.warn("No se pudo restaurar la última pestaña abierta desde localStorage:", e);
         }
     }
 };

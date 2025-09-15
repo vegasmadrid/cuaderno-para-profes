@@ -70,6 +70,7 @@
         $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() { self.deleteTimeSlot(this.dataset.slot); });
         $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', () => self.addTimeSlot());
         $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() { self.updateHorarioCellColor(this); self.saveHorario(true); });
+        $document.on('focusout', '#cpp-programador-app .cpp-horario-notas-input', function() { self.saveHorario(true); });
         $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
         // Navegación y Controles Generales
@@ -676,14 +677,8 @@
             return;
         }
 
-        // Abrimos el modal de actividad del cuaderno, pero en modo creación y pasándole la sesión
-        if (cpp.modals && cpp.modals.actividades) {
-            cpp.modals.actividades.resetForm();
-            $('#clase_id_actividad_cuaderno_form').val(this.currentClase.id);
-            // Rellenamos el campo hidden de sesion_id que ya existe en el formulario
-            $('#sesion_id_cuaderno').val(sesionId);
-
-            cpp.modals.actividades.mostrarAnadir();
+        if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') {
+            cpp.modals.actividades.mostrarAnadir(sesionId);
         } else {
             this.showNotification('Error: El módulo de modales no está disponible.', 'error');
         }

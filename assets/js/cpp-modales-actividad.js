@@ -28,7 +28,7 @@
             }
         },
 
-        mostrarAnadir: function() { 
+        mostrarAnadir: function(sesionId = null) {
             if (!cpp.currentClaseIdCuaderno || !cpp.currentEvaluacionId) {
                 alert('Por favor, selecciona una clase y una evaluación válidas para añadir la actividad.');
                 return;
@@ -36,6 +36,10 @@
             
             this.resetForm(); 
             $('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
+            if (sesionId) {
+                $('#sesion_id_cuaderno').val(sesionId);
+            }
+
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
