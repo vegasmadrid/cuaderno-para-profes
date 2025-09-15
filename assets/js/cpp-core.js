@@ -69,23 +69,17 @@ const cpp = {
         // Restaurar la última pestaña abierta al final de toda la inicialización
         try {
             const lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
-            if (lastOpenedTab && lastOpenedTab !== 'cuaderno') { // No reclicar si es la de por defecto
+            if (lastOpenedTab) {
                 const $targetTab = $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`);
-                if ($targetTab.length) {
+                if ($targetTab.length && !$targetTab.hasClass('active')) {
                     console.log(`CPP Core: Restaurando la pestaña ${lastOpenedTab}.`);
-                    // El click debe ser manejado por el listener en cuaderno.js para inicializar el programador
-                    if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
-                        cpp.gradebook.handleMainTabSwitch($targetTab);
-                    } else {
-                        // Fallback si el gradebook no está listo, aunque no debería pasar.
-                        $targetTab.trigger('click');
-                    }
+                    // El click ahora se maneja de forma centralizada, por lo que un simple trigger es suficiente y más limpio.
+                    $targetTab.trigger('click');
                 }
             }
         } catch (e) {
             console.warn("No se pudo restaurar la última pestaña abierta desde localStorage:", e);
         }
-
 
         console.log("CPP Core: init() completado.");
     },
@@ -94,32 +88,11 @@ const cpp = {
         const $ = jQuery;
         const $document = $(document);
 
+        // Este listener ahora solo delega al manejador centralizado en el módulo del cuaderno
         $document.on('click', '.cpp-main-tab-link', function(e) {
             e.preventDefault();
-            const $tab = $(this);
-            const tabId = $tab.data('tab');
-
-            if ($tab.hasClass('active')) {
-                return;
-            }
-
-            $('.cpp-main-tab-link').removeClass('active');
-            $tab.addClass('active');
-
-            $('.cpp-main-tab-content').removeClass('active');
-            $('#cpp-main-tab-' + tabId).addClass('active');
-
-            try {
-                localStorage.setItem('cpp_last_opened_tab', tabId);
-            } catch (e) {
-                console.warn("No se pudo guardar la última pestaña abierta en localStorage:", e);
-            }
-
-            // Si se activa la pestaña de configuración y hay una clase seleccionada, cargar sus datos
-            if (tabId === 'configuracion' && cpp.currentClaseIdCuaderno) {
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
-                }
+            if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
+                cpp.gradebook.handleMainTabSwitch(jQuery(this));
             }
         });
 

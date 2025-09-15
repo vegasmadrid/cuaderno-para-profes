@@ -156,8 +156,7 @@
                 nota_maxima_actividad: notaMaxima,
                 fecha_actividad: $form.find('[name="fecha_actividad"]').val(),
                 descripcion_actividad: $form.find('[name="descripcion_actividad"]').val(),
-                id_actividad_programada: actividadIdEditar, // Aseguramos que se envía el ID de la actividad de programación
-                es_evaluable: 1 // Marcamos explícitamente como evaluable
+                sesion_id: $form.find('[name="sesion_id"]').val()
             };
             if (actividadIdEditar) {
                 ajaxData.actividad_id_editar = actividadIdEditar;

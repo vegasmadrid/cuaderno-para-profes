@@ -83,7 +83,7 @@ function cpp_programador_get_all_data($user_id) {
         }
     }
 
-    return ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones)];
+    return ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones), 'debug_evaluables' => $actividades_evaluables];
 }
 
 

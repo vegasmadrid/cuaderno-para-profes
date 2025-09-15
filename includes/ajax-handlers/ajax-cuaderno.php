@@ -311,9 +311,9 @@ function cpp_ajax_guardar_actividad_evaluable() {
     }
 
     if ($resultado_guardado !== false) {
-        wp_send_json_success(['message' => $mensaje_exito, 'new_id' => $resultado_guardado]);
+        wp_send_json_success(['message' => $mensaje_exito, 'new_id' => $resultado_guardado, 'debug_sesion_id' => $sesion_id]);
     } else {
-        wp_send_json_error(['message' => 'Error al procesar la actividad.']);
+        wp_send_json_error(['message' => 'Error al procesar la actividad.', 'debug_sesion_id' => $sesion_id]);
     }
 }
 

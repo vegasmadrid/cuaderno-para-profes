@@ -767,6 +767,7 @@
         const currentSesionId = this.currentSesion ? this.currentSesion.id : null;
         this.fetchDataFromServer().then(result => {
             if (result.success) {
+                console.log("DEBUG: Datos recibidos en refresh", result.data);
                 this.clases = result.data.clases || [];
                 this.config = result.data.config || { time_slots: [], horario: {} };
                 this.sesiones = result.data.sesiones || [];
