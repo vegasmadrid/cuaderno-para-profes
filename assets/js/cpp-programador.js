@@ -59,10 +59,10 @@
         });
 
         // Actividades
-        $document.on('click', '#cpp-programador-app #cpp-add-actividad-btn', function() { self.addActividad(this.dataset.sesionId); });
-        $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId); });
-        $document.on('change', '#cpp-programador-app .cpp-actividad-evaluable-toggle', function() { self.toggleActividadEvaluable(this, this.dataset.actividadId); });
-        $document.on('change', '#cpp-programador-app .cpp-actividad-categoria-selector', function() { self.updateActividadCategoria(this, this.dataset.actividadId); });
+        $document.on('click', '#cpp-add-actividad-no-evaluable-btn', function() { self.addNonEvaluableActividad(this.dataset.sesionId); });
+        $document.on('click', '#cpp-add-actividad-evaluable-btn', function() { self.addEvaluableActividad(this.dataset.sesionId); });
+        $document.on('click', '.cpp-edit-evaluable-btn', function() { self.editEvaluableActividad(this.dataset.actividadId); });
+        $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
         $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
 
 
@@ -615,124 +615,43 @@
             <div class="cpp-sesion-detail-section">
                 <h4>Actividades</h4>
                 <ul class="cpp-actividades-list">${listItems}</ul>
-                <button id="cpp-add-actividad-btn" class="cpp-btn" data-sesion-id="${sesion.id}">+ Añadir Actividad</button>
+                <div class="cpp-add-activity-buttons-container">
+                    <button id="cpp-add-actividad-no-evaluable-btn" class="cpp-btn" data-sesion-id="${sesion.id}">+ Añadir Tarea/Actividad no evaluable</button>
+                    <button id="cpp-add-actividad-evaluable-btn" class="cpp-btn cpp-btn-primary" data-sesion-id="${sesion.id}">+ Añadir Actividad Evaluable</button>
+                </div>
             </div>
         `;
     },
 
     renderActividadItem(actividad) {
-        const isEvaluable = parseInt(actividad.es_evaluable, 10) === 1;
-        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-        let categorySelector = '';
+        const isEvaluable = actividad.tipo === 'evaluable';
+        const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
+        const editIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
 
-
-        if (isEvaluable && currentEval && currentEval.calculo_nota.trim() === 'ponderado' && currentEval.categorias && currentEval.categorias.length > 0) {
-            const options = currentEval.categorias.map(cat => `<option value="${cat.id}" ${actividad.categoria_id == cat.id ? 'selected' : ''}>${cat.nombre_categoria}</option>`).join('');
-            categorySelector = `<select class="cpp-actividad-categoria-selector" data-actividad-id="${actividad.id}">${options}</select>`;
+        let actionsHTML = '';
+        if (isEvaluable) {
+            actionsHTML = `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
         }
 
+        actionsHTML += `<button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="Eliminar">
+                            ${deleteIconSVG}
+                        </button>`;
+
         return `
-            <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : ''}" data-actividad-id="${actividad.id}">
+            <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : 'no-evaluable'}" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}">
+                <span class="cpp-actividad-handle">⠿</span>
                 <span class="cpp-actividad-titulo" contenteditable="true" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
                 <div class="cpp-actividad-actions">
-                    <div class="cpp-toggle-switch">
-                        <input type="checkbox" id="evaluable-toggle-${actividad.id}" class="cpp-actividad-evaluable-toggle" data-actividad-id="${actividad.id}" ${isEvaluable ? 'checked' : ''}>
-                        <label for="evaluable-toggle-${actividad.id}"></label>
-                    </div>
-                    ${categorySelector}
-                    <button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}">❌</button>
+                    ${actionsHTML}
                 </div>
             </li>
         `;
     },
 
-    toggleActividadEvaluable(toggle, actividadId) {
-        const isEvaluable = toggle.checked;
-        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
-        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-
-        if (!actividad || !currentEval) {
-            this.showNotification('Error: No se encuentra la actividad o la evaluación actual.', 'error');
-            toggle.checked = !isEvaluable;
-            return;
-        }
-
-        if (isEvaluable) {
-            // -- NUEVO FLUJO: Abrir modal de configuración --
-            if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.abrirParaProgramador === 'function') {
-                // Guardamos el estado del checkbox en caso de que el usuario cierre el modal
-                const originalCheckboxState = !isEvaluable;
-                $('#cpp-modal-actividad-evaluable-cuaderno').data('source-checkbox', toggle);
-
-                cpp.modals.actividades.abrirParaProgramador(actividad, currentEval, this.currentClase.id);
-
-                // Escuchar el evento de cierre del modal para revertir el checkbox si no se guardó
-                const modalElement = document.getElementById('cpp-modal-actividad-evaluable-cuaderno');
-                const observer = new MutationObserver((mutationsList, obs) => {
-                    for(const mutation of mutationsList) {
-                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                            const isModalHidden = modalElement.style.display === 'none';
-                            const wasSaved = $(modalElement).data('saved');
-                            if (isModalHidden) {
-                                if (!wasSaved) {
-                                    toggle.checked = originalCheckboxState;
-                                }
-                                $(modalElement).removeData('saved').removeData('source-checkbox'); // Limpiar
-                                obs.disconnect(); // Dejar de observar
-                                break;
-                            }
-                        }
-                    }
-                });
-                observer.observe(modalElement, { attributes: true });
-
-            } else {
-                this.showNotification('Error: El módulo de modales de actividad no está disponible.', 'error');
-                toggle.checked = !isEvaluable;
-            }
-        } else {
-            // -- FLUJO ANTERIOR: Marcar como no evaluable --
-            if (!confirm('¿Estás seguro?\n\nLa actividad se eliminará del cuaderno de evaluación y todas las notas asociadas se borrarán permanentemente. Esta acción no se puede deshacer.')) {
-                toggle.checked = true; // Revertir
-                return;
-            }
-
-            const data = new URLSearchParams({
-                action: 'cpp_toggle_actividad_evaluable',
-                nonce: cppFrontendData.nonce,
-                actividad_id: actividadId,
-                es_evaluable: 0,
-                categoria_id: null
-            });
-
-            fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
-                .then(res => res.json())
-                .then(result => {
-                    if (result.success && result.data.actividad) {
-                        this.showNotification(`Actividad marcada como no evaluable.`);
-                        const listItem = toggle.closest('.cpp-actividad-item');
-                        const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
-                        if (index > -1 && listItem) {
-                            this.currentSesion.actividades_programadas[index] = result.data.actividad;
-                            const newItemHTML = this.renderActividadItem(result.data.actividad);
-                            listItem.outerHTML = newItemHTML;
-                        } else {
-                            this.fetchData(this.currentClase.id);
-                        }
-                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
-                    } else {
-                        this.showNotification(result.data.message || 'Error al actualizar la actividad.', 'error');
-                        toggle.checked = true; // Revertir en caso de fallo
-                    }
-                });
-        }
-    },
-
-    addActividad(sesionId) {
+    addNonEvaluableActividad(sesionId) {
         const newActividad = {
             sesion_id: sesionId,
-            titulo: 'Nueva actividad',
-            es_evaluable: 0,
+            titulo: 'Nueva tarea...',
         };
         const data = new URLSearchParams({
             action: 'cpp_save_programador_actividad',
@@ -742,32 +661,71 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success && result.data.actividad) {
-                    if (!this.currentSesion.actividades_programadas) {
-                        this.currentSesion.actividades_programadas = [];
-                    }
-                    this.currentSesion.actividades_programadas.push(result.data.actividad);
-                    const rightCol = document.getElementById('cpp-programacion-right-col');
-                    if (rightCol) {
-                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                    }
+                if (result.success) {
+                    this.refreshCurrentView();
                 } else {
-                    this.showNotification('Error al añadir actividad.', 'error');
+                    this.showNotification('Error al añadir la tarea.', 'error');
                 }
             });
     },
 
-    deleteActividad(actividadId) {
-        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
+    addEvaluableActividad(sesionId) {
+        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+        if (!currentEval) {
+            this.showNotification('No se puede añadir una actividad evaluable sin una evaluación seleccionada.', 'error');
+            return;
+        }
+
+        // Abrimos el modal de actividad del cuaderno, pero en modo creación y pasándole la sesión
+        if (cpp.modals && cpp.modals.actividades) {
+            cpp.modals.actividades.resetForm();
+            $('#clase_id_actividad_cuaderno_form').val(this.currentClase.id);
+            // Rellenamos el campo hidden de sesion_id que ya existe en el formulario
+            $('#sesion_id_cuaderno').val(sesionId);
+
+            cpp.modals.actividades.mostrarAnadir();
+        } else {
+            this.showNotification('Error: El módulo de modales no está disponible.', 'error');
+        }
+    },
+
+    editEvaluableActividad(actividadId) {
+        const data = new URLSearchParams({
+            action: 'cpp_get_evaluable_activity_data',
+            nonce: cppFrontendData.nonce,
+            actividad_id: actividadId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.cargarConDatos === 'function') {
+                        cpp.modals.actividades.cargarConDatos(result.data);
+                    } else {
+                        this.showNotification('Error: El módulo de modales no está disponible.', 'error');
+                    }
+                } else {
+                    this.showNotification(result.data.message || 'Error al cargar los datos de la actividad.', 'error');
+                }
+            });
+    },
+
+    deleteActividad(actividadId, tipo) {
         let confirmMessage = '¿Seguro que quieres eliminar esta actividad?';
-        if (actividad && parseInt(actividad.es_evaluable, 10) === 1) {
-            confirmMessage += '\n\nEsta actividad es evaluable. También se eliminará del cuaderno de evaluación junto con todas sus notas. Esta acción no se puede deshacer.';
+        let action = '';
+
+        if (tipo === 'evaluable') {
+            confirmMessage = 'Esta acción eliminará la actividad del Cuaderno y de la Programación, junto con todas las notas asociadas. ¿Estás seguro?';
+            action = 'cpp_eliminar_actividad';
+        } else {
+            action = 'cpp_delete_programador_actividad';
         }
 
         if (!confirm(confirmMessage)) return;
 
         const data = new URLSearchParams({
-            action: 'cpp_delete_programador_actividad',
+            action: action,
             nonce: cppFrontendData.nonce,
             actividad_id: actividadId
         });
@@ -775,13 +733,10 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.currentSesion.actividades_programadas = this.currentSesion.actividades_programadas.filter(a => a.id != actividadId);
-                    const rightCol = document.getElementById('cpp-programacion-right-col');
-                    if (rightCol) {
-                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                    }
+                    this.showNotification('Actividad eliminada.');
+                    this.refreshCurrentView();
                 } else {
-                    this.showNotification('Error al eliminar actividad.', 'error');
+                    this.showNotification(result.data.message || 'Error al eliminar la actividad.', 'error');
                 }
             });
     },

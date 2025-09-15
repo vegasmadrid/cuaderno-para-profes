@@ -229,7 +229,7 @@ function cpp_ajax_guardar_actividad_evaluable() {
     $fecha_actividad = isset($_POST['fecha_actividad']) && !empty($_POST['fecha_actividad']) ? sanitize_text_field($_POST['fecha_actividad']) : null;
     $descripcion_actividad = isset($_POST['descripcion_actividad']) ? sanitize_textarea_field($_POST['descripcion_actividad']) : '';
     $actividad_id_editar = isset($_POST['actividad_id_editar']) ? intval($_POST['actividad_id_editar']) : 0;
-    $id_actividad_programada = isset($_POST['id_actividad_programada']) ? intval($_POST['id_actividad_programada']) : null;
+    $sesion_id = isset($_POST['sesion_id']) ? intval($_POST['sesion_id']) : null;
     
     $categoria_id = isset($_POST['categoria_id_actividad']) && $_POST['categoria_id_actividad'] !== '' ? intval($_POST['categoria_id_actividad']) : 0;
 
@@ -239,6 +239,20 @@ function cpp_ajax_guardar_actividad_evaluable() {
     }
     
     global $wpdb;
+
+    if ($actividad_id_editar == 0 && $sesion_id) {
+        $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+        $tabla_act_programadas = $wpdb->prefix . 'cpp_programador_actividades';
+
+        $max_orden_evaluable = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_act_evaluables WHERE sesion_id = %d", $sesion_id));
+        $max_orden_programada = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_act_programadas WHERE sesion_id = %d", $sesion_id));
+
+        $max_orden = max( (is_null($max_orden_evaluable) ? -1 : $max_orden_evaluable), (is_null($max_orden_programada) ? -1 : $max_orden_programada) );
+        $orden = $max_orden + 1;
+    } else {
+        $orden = isset($_POST['orden']) ? intval($_POST['orden']) : 0; // Podríamos necesitar pasar el orden al editar
+    }
+
 
     if ($categoria_id === 0) {
         $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
@@ -275,18 +289,21 @@ function cpp_ajax_guardar_actividad_evaluable() {
         return;
     }
     
-    $datos_actividad = [ 'clase_id' => $clase_id, 'evaluacion_id' => $evaluacion_id, 'user_id' => $user_id, 'categoria_id' => $categoria_id, 'nombre_actividad' => $nombre_actividad, 'nota_maxima' => $nota_maxima, 'fecha_actividad' => $fecha_actividad, 'descripcion_actividad' => $descripcion_actividad, 'id_actividad_programada' => $id_actividad_programada ];
+    $datos_actividad = [
+        'clase_id' => $clase_id,
+        'sesion_id' => $sesion_id,
+        'evaluacion_id' => $evaluacion_id,
+        'user_id' => $user_id,
+        'categoria_id' => $categoria_id,
+        'nombre_actividad' => $nombre_actividad,
+        'nota_maxima' => $nota_maxima,
+        'fecha_actividad' => $fecha_actividad,
+        'descripcion_actividad' => $descripcion_actividad,
+        'orden' => $orden
+    ];
 
-    // Si la actividad proviene de una actividad de programación que se está haciendo evaluable por primera vez,
-    // es posible que no exista aún una actividad 'evaluable' como tal. En ese caso, `actividad_id_editar`
-    // se usará para encontrar la actividad de programación, pero para la tabla de 'evaluables' será una inserción.
-    $tabla_actividades_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
-    $actividad_evaluable_existente_id = $wpdb->get_var($wpdb->prepare(
-        "SELECT id FROM $tabla_actividades_evaluables WHERE id_actividad_programada = %d", $id_actividad_programada
-    ));
-
-    if ($actividad_evaluable_existente_id) {
-        $resultado_guardado = cpp_actualizar_actividad_evaluable($actividad_evaluable_existente_id, $datos_actividad);
+    if ($actividad_id_editar > 0) {
+        $resultado_guardado = cpp_actualizar_actividad_evaluable($actividad_id_editar, $datos_actividad);
         $mensaje_exito = 'Actividad actualizada.';
     } else {
         $resultado_guardado = cpp_guardar_actividad_evaluable($datos_actividad);
@@ -294,25 +311,7 @@ function cpp_ajax_guardar_actividad_evaluable() {
     }
 
     if ($resultado_guardado !== false) {
-        $actividad_evaluable_id = ($actividad_evaluable_existente_id) ? $actividad_evaluable_existente_id : $resultado_guardado;
-        // Una vez guardada la actividad evaluable, nos aseguramos de que la de programación está marcada como tal
-        // y que tiene el ID de la actividad del cuaderno para futuras referencias.
-        if ($id_actividad_programada) {
-            $tabla_actividades_programadas = $wpdb->prefix . 'cpp_actividades_programadas';
-            $wpdb->update(
-                $tabla_actividades_programadas,
-                [
-                    'es_evaluable' => 1,
-                    'titulo' => $nombre_actividad,
-                    'categoria_id' => $categoria_id,
-                    'actividad_calificable_id' => $actividad_evaluable_id
-                ],
-                ['id' => $id_actividad_programada], // No necesitamos user_id aquí, la propiedad se verifica en otro punto.
-                ['%d', '%s', '%d', '%d'],
-                ['%d']
-            );
-        }
-        wp_send_json_success(['message' => $mensaje_exito, 'new_id' => $actividad_evaluable_id]);
+        wp_send_json_success(['message' => $mensaje_exito, 'new_id' => $resultado_guardado]);
     } else {
         wp_send_json_error(['message' => 'Error al procesar la actividad.']);
     }
@@ -356,47 +355,48 @@ function cpp_ajax_eliminar_actividad() {
 
     $user_id = get_current_user_id();
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
-    $id_actividad_programada = isset($_POST['id_actividad_programada']) ? intval($_POST['id_actividad_programada']) : 0;
-    $modo_eliminacion = isset($_POST['modo_eliminacion']) ? sanitize_key($_POST['modo_eliminacion']) : 'total';
 
-    if (empty($actividad_id) && empty($id_actividad_programada)) {
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+        return;
+    }
+
+    // Esta función ahora solo elimina actividades evaluables.
+    // La eliminación es total y no hay desvinculación.
+    $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
+
+    if ($resultado) {
+        wp_send_json_success(['message' => 'Actividad eliminada correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);
+    }
+}
+
+add_action('wp_ajax_cpp_get_evaluable_activity_data', 'cpp_ajax_get_evaluable_activity_data');
+function cpp_ajax_get_evaluable_activity_data() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+
+    if (empty($actividad_id)) {
         wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
         return;
     }
 
     global $wpdb;
-    $resultado = false;
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $actividad = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $tabla_actividades WHERE id = %d AND user_id = %d",
+        $actividad_id,
+        $user_id
+    ), ARRAY_A);
 
-    if ($id_actividad_programada > 0 && $modo_eliminacion === 'desvincular') {
-        // --- MODO DESVINCULAR ---
-        // 1. Eliminar la actividad del cuaderno (evaluable) y sus calificaciones
-        $resultado_cuaderno = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
-
-        // 2. Marcar la actividad de programación como 'no evaluable'
-        if ($resultado_cuaderno) {
-            $tabla_programador = $wpdb->prefix . 'cpp_programador_actividades';
-            $wpdb->update(
-                $tabla_programador,
-                ['es_evaluable' => 0, 'actividad_calificable_id' => null, 'categoria_id' => null],
-                ['id' => $id_actividad_programada],
-                ['%d', '%d', '%d'],
-                ['%d']
-            );
-            $resultado = true; // Si la eliminación del cuaderno fue exitosa, consideramos la operación un éxito.
-        }
-    } elseif ($id_actividad_programada > 0 && $modo_eliminacion === 'total') {
-        // --- MODO TOTAL ---
-        // La función cpp_programador_delete_actividad ya se encarga de llamar a cpp_eliminar_actividad_y_calificaciones
-        $resultado = cpp_programador_delete_actividad($id_actividad_programada, $user_id);
+    if ($actividad) {
+        wp_send_json_success($actividad);
     } else {
-        // --- MODO LEGACY / NO VINCULADA ---
-        $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
-    }
-
-    if ($resultado !== false) {
-        wp_send_json_success(['message' => 'Actividad eliminada correctamente.']);
-    } else {
-        wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);
+        wp_send_json_error(['message' => 'Actividad no encontrada o no tienes permiso.']);
     }
 }
 

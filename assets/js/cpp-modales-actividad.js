@@ -192,6 +192,47 @@
             });
         },
 
+        cargarConDatos: function(actividad) {
+            if (!actividad || !actividad.id) {
+                alert('Error: Datos de actividad no válidos.');
+                return;
+            }
+            this.resetForm();
+
+            const $modal = $('#cpp-modal-actividad-evaluable-cuaderno');
+            const $form = $modal.find('#cpp-form-actividad-evaluable-cuaderno');
+            if (!$modal.length || !$form.length) { alert("Error: Formulario de actividades no disponible."); return; }
+
+            const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
+
+            if (cpp.gradebook.currentCalculoNota === 'ponderada') {
+                $selectCategoriasGroup.show();
+                if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') {
+                    cpp.gradebook.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
+                        if (success) {
+                            $form.find('#categoria_id_actividad_cuaderno_select').val(actividad.categoria_id);
+                        }
+                    });
+                }
+            } else {
+                $selectCategoriasGroup.hide();
+            }
+
+            $form.find('#actividad_id_editar_cuaderno').val(actividad.id);
+            $form.find('#sesion_id_cuaderno').val(actividad.sesion_id);
+            $form.find('#nombre_actividad_cuaderno_input').val(actividad.nombre_actividad);
+            $form.find('#nota_maxima_actividad_cuaderno_input').val(parseFloat(actividad.nota_maxima).toFixed(2));
+            $form.find('#fecha_actividad_cuaderno_input').val(actividad.fecha_actividad ? actividad.fecha_actividad.split(' ')[0] : '');
+            $form.find('#descripcion_actividad_cuaderno_textarea').val(actividad.descripcion_actividad);
+            $form.find('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
+
+            $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Editar Actividad Evaluable');
+            $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad');
+            $form.find('#cpp-eliminar-actividad-btn-modal').show();
+            $modal.fadeIn();
+            $form.find('#nombre_actividad_cuaderno_input').focus();
+        },
+
         eliminar: function() {
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const actividadId = $form.find('#actividad_id_editar_cuaderno').val();

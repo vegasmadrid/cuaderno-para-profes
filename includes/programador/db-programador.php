@@ -59,9 +59,21 @@ function cpp_programador_get_all_data($user_id) {
     if (!empty($sesiones)) {
         $sesiones_ids = array_keys($sesiones);
         $placeholders = implode(',', array_fill(0, count($sesiones_ids), '%d'));
-        $actividades_results = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE sesion_id IN ($placeholders) ORDER BY orden ASC", $sesiones_ids));
 
-        foreach ($actividades_results as $actividad) {
+        // Cargar actividades NO evaluables
+        $actividades_no_evaluables = $wpdb->get_results($wpdb->prepare("SELECT *, 'no_evaluable' as tipo FROM $tabla_actividades WHERE sesion_id IN ($placeholders)", $sesiones_ids));
+
+        // Cargar actividades EVALUABLES
+        $tabla_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+        $actividades_evaluables = $wpdb->get_results($wpdb->prepare("SELECT id, sesion_id, nombre_actividad as titulo, orden, 'evaluable' as tipo FROM $tabla_evaluables WHERE sesion_id IN ($placeholders)", $sesiones_ids));
+
+        // Unir y ordenar
+        $todas_las_actividades = array_merge($actividades_no_evaluables, $actividades_evaluables);
+        usort($todas_las_actividades, function($a, $b) {
+            return $a->orden <=> $b->orden;
+        });
+
+        foreach ($todas_las_actividades as $actividad) {
             if (isset($sesiones[$actividad->sesion_id])) {
                 if (!isset($sesiones[$actividad->sesion_id]->actividades_programadas)) {
                     $sesiones[$actividad->sesion_id]->actividades_programadas = [];
@@ -259,13 +271,8 @@ function cpp_programador_delete_actividad($actividad_id, $user_id) {
         return false; // User doesn't own this session
     }
 
-    // Also delete the associated gradebook item if it exists
-    $actividad_calificable_id = $wpdb->get_var($wpdb->prepare("SELECT actividad_calificable_id FROM $tabla_actividades WHERE id = %d", $actividad_id));
-    if ($actividad_calificable_id) {
-        cpp_eliminar_actividad_y_calificaciones($actividad_calificable_id, $user_id);
-    }
-
-
+    // This function now only deletes non-evaluable activities.
+    // Deletion of evaluable activities is handled by the gradebook's AJAX handler.
     return $wpdb->delete($tabla_actividades, ['id' => $actividad_id], ['%d']) !== false;
 }
 
