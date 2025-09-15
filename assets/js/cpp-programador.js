@@ -380,8 +380,20 @@
         const newHorario = {};
         this.appElement.querySelectorAll('#cpp-horario-table tbody tr').forEach(tr => {
             tr.querySelectorAll('td[data-day]').forEach(td => {
-                const day = td.dataset.day, slot = td.dataset.slot, claseId = td.querySelector('select').value;
-                if (claseId) { if (!newHorario[day]) newHorario[day] = {}; newHorario[day][slot] = claseId; }
+                const day = td.dataset.day;
+                const slot = td.dataset.slot;
+                const claseId = td.querySelector('.cpp-horario-clase-selector').value;
+                const notas = td.querySelector('.cpp-horario-notas-input').value;
+
+                if (claseId || notas.trim() !== '') {
+                    if (!newHorario[day]) {
+                        newHorario[day] = {};
+                    }
+                    newHorario[day][slot] = {
+                        claseId: claseId,
+                        notas: notas.trim()
+                    };
+                }
             });
         });
         this.config.horario = newHorario;
@@ -867,8 +879,14 @@
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
             Object.keys(daysToRender).forEach(dayKey => {
-                const claseId = this.config.horario?.[dayKey]?.[slot] || '';
-                tableHTML += `<td data-day="${dayKey}" data-slot="${slot}"><select data-clase-id="${claseId}">${classOptions}</select></td>`;
+                const cellData = this.config.horario?.[dayKey]?.[slot] || {};
+                const claseId = cellData.claseId || '';
+                const notas = cellData.notas || '';
+
+                tableHTML += `<td data-day="${dayKey}" data-slot="${slot}">
+                                <select class="cpp-horario-clase-selector" data-clase-id="${claseId}">${classOptions}</select>
+                                <textarea class="cpp-horario-notas-input" placeholder="Notas...">${notas}</textarea>
+                              </td>`;
             });
             tableHTML += `<td><button class="cpp-delete-slot-btn" data-slot="${slot}">❌</button></td></tr>`;
         });

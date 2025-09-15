@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 1.7
+Version: 1.8
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.7');
+define('CPP_VERSION', '1.8');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -287,9 +287,66 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '1.7', '<')) {
         cpp_migrate_add_link_column_v1_7();
     }
+    if (version_compare($current_version, '1.8', '<')) {
+        cpp_migrate_horario_data_v1_8();
+    }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
     update_option('cpp_version', CPP_VERSION);
+}
+
+function cpp_migrate_horario_data_v1_8() {
+    global $wpdb;
+    $tabla_config = $wpdb->prefix . 'cpp_programador_config';
+
+    // Obtener todos los horarios de todos los usuarios
+    $horarios_a_migrar = $wpdb->get_results(
+        $wpdb->prepare("SELECT id, valor FROM $tabla_config WHERE clave = %s", 'horario')
+    );
+
+    foreach ($horarios_a_migrar as $item) {
+        $horario_actual = json_decode($item->valor, true);
+        if (empty($horario_actual) || !is_array($horario_actual)) {
+            continue; // No es un horario válido, lo saltamos
+        }
+
+        $horario_nuevo = [];
+        $migracion_necesaria = false;
+
+        foreach ($horario_actual as $dia => $slots) {
+            if (!is_array($slots)) continue;
+            $horario_nuevo[$dia] = [];
+            foreach ($slots as $hora => $valor) {
+                if (is_string($valor)) {
+                    // Formato antiguo: el valor es solo el ID de la clase
+                    $horario_nuevo[$dia][$hora] = [
+                        'claseId' => $valor,
+                        'notas'   => ''
+                    ];
+                    $migracion_necesaria = true;
+                } elseif (is_array($valor) && isset($valor['claseId'])) {
+                    // Formato nuevo, nos aseguramos de que tenga el campo de notas
+                    $horario_nuevo[$dia][$hora] = [
+                        'claseId' => $valor['claseId'],
+                        'notas'   => isset($valor['notas']) ? $valor['notas'] : ''
+                    ];
+                } else {
+                    // Dato inesperado, lo conservamos como está para no perderlo
+                    $horario_nuevo[$dia][$hora] = $valor;
+                }
+            }
+        }
+
+        if ($migracion_necesaria) {
+            $wpdb->update(
+                $tabla_config,
+                ['valor' => wp_json_encode($horario_nuevo)],
+                ['id' => $item->id],
+                ['%s'],
+                ['%d']
+            );
+        }
+    }
 }
 add_action('plugins_loaded', 'cpp_run_migrations');
 
