@@ -299,6 +299,16 @@
                         }
                     }
                 }
+            } else if (tabName === 'configuracion') {
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    if (cpp.currentClaseIdCuaderno) {
+                        cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
+                    } else {
+                        // Si no hay clase abierta, la pestaña de configuración muestra por defecto
+                        // el formulario para crear una nueva clase, así que reseteamos a ese estado.
+                        cpp.config.resetForm();
+                    }
+                }
             }
         },
 
