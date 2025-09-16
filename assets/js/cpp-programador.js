@@ -730,6 +730,9 @@
                 if (result.success) {
                     this.showNotification('Actividad eliminada.');
                     this.refreshCurrentView();
+                    if (tipo === 'evaluable') {
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    }
                 } else {
                     this.showNotification(result.data.message || 'Error al eliminar la actividad.', 'error');
                 }
