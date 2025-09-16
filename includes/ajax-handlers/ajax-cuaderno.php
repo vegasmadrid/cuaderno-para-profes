@@ -111,6 +111,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
         <table class="cpp-cuaderno-tabla">
             <thead>
                 <tr>
+                    <th class="cpp-cuaderno-th-numero-fila">#</th>
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div id="cpp-evaluacion-selector-container" class="cpp-a1-evaluacion-selector"></div>
@@ -194,7 +195,9 @@ function cpp_ajax_cargar_cuaderno_clase() {
                         <?php
                             $nombre_completo_display = (in_array($sort_order, ['nombre'])) ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
                         ?>
-                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($notas_finales_alumnos[$alumno['id']]); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
+                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($notas_finales_alumnos[$alumno['id']]); ?>" <?php echo $row_style_attr; ?>>
+                            <td class="cpp-cuaderno-td-numero-fila"><?php echo $index + 1; ?></td>
+                            <td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
                             <?php else: foreach ($actividades_raw as $actividad):
                                     $nota_alumno_actividad_raw = isset($calificaciones_raw[$alumno['id']][$actividad['id']]) ? $calificaciones_raw[$alumno['id']][$actividad['id']] : '';
                                     $nota_alumno_actividad_display = cpp_formatear_nota_display($nota_alumno_actividad_raw);
@@ -228,6 +231,7 @@ function cpp_ajax_guardar_actividad_evaluable() {
     $fecha_actividad = isset($_POST['fecha_actividad']) && !empty($_POST['fecha_actividad']) ? sanitize_text_field($_POST['fecha_actividad']) : null;
     $descripcion_actividad = isset($_POST['descripcion_actividad']) ? sanitize_textarea_field($_POST['descripcion_actividad']) : '';
     $actividad_id_editar = isset($_POST['actividad_id_editar']) ? intval($_POST['actividad_id_editar']) : 0;
+    $sesion_id = isset($_POST['sesion_id']) ? intval($_POST['sesion_id']) : null;
     
     $categoria_id = isset($_POST['categoria_id_actividad']) && $_POST['categoria_id_actividad'] !== '' ? intval($_POST['categoria_id_actividad']) : 0;
 
@@ -237,6 +241,20 @@ function cpp_ajax_guardar_actividad_evaluable() {
     }
     
     global $wpdb;
+
+    if ($actividad_id_editar == 0 && $sesion_id) {
+        $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+        $tabla_act_programadas = $wpdb->prefix . 'cpp_programador_actividades';
+
+        $max_orden_evaluable = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_act_evaluables WHERE sesion_id = %d", $sesion_id));
+        $max_orden_programada = $wpdb->get_var($wpdb->prepare("SELECT MAX(orden) FROM $tabla_act_programadas WHERE sesion_id = %d", $sesion_id));
+
+        $max_orden = max( (is_null($max_orden_evaluable) ? -1 : $max_orden_evaluable), (is_null($max_orden_programada) ? -1 : $max_orden_programada) );
+        $orden = $max_orden + 1;
+    } else {
+        $orden = isset($_POST['orden']) ? intval($_POST['orden']) : 0; // Podríamos necesitar pasar el orden al editar
+    }
+
 
     if ($categoria_id === 0) {
         $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
@@ -273,11 +291,32 @@ function cpp_ajax_guardar_actividad_evaluable() {
         return;
     }
     
-    $datos_actividad = [ 'clase_id' => $clase_id, 'evaluacion_id' => $evaluacion_id, 'user_id' => $user_id, 'categoria_id' => $categoria_id, 'nombre_actividad' => $nombre_actividad, 'nota_maxima' => $nota_maxima, 'fecha_actividad' => $fecha_actividad, 'descripcion_actividad' => $descripcion_actividad ];
-    if ($actividad_id_editar > 0) { $resultado_guardado = cpp_actualizar_actividad_evaluable($actividad_id_editar, $datos_actividad); $mensaje_exito = 'Actividad actualizada.'; }
-    else { $resultado_guardado = cpp_guardar_actividad_evaluable($datos_actividad); $mensaje_exito = 'Actividad guardada.'; }
-    if ($resultado_guardado !== false) { wp_send_json_success(['message' => $mensaje_exito]); }
-    else { wp_send_json_error(['message' => 'Error al procesar la actividad.']); }
+    $datos_actividad = [
+        'clase_id' => $clase_id,
+        'sesion_id' => $sesion_id,
+        'evaluacion_id' => $evaluacion_id,
+        'user_id' => $user_id,
+        'categoria_id' => $categoria_id,
+        'nombre_actividad' => $nombre_actividad,
+        'nota_maxima' => $nota_maxima,
+        'fecha_actividad' => $fecha_actividad,
+        'descripcion_actividad' => $descripcion_actividad,
+        'orden' => $orden
+    ];
+
+    if ($actividad_id_editar > 0) {
+        $resultado_guardado = cpp_actualizar_actividad_evaluable($actividad_id_editar, $datos_actividad);
+        $mensaje_exito = 'Actividad actualizada.';
+    } else {
+        $resultado_guardado = cpp_guardar_actividad_evaluable($datos_actividad);
+        $mensaje_exito = 'Actividad guardada.';
+    }
+
+    if ($resultado_guardado !== false) {
+        wp_send_json_success(['message' => $mensaje_exito, 'new_id' => $resultado_guardado]);
+    } else {
+        wp_send_json_error(['message' => 'Error al procesar la actividad.']);
+    }
 }
 
 add_action('wp_ajax_cpp_guardar_calificacion_alumno', 'cpp_ajax_guardar_calificacion_alumno');
@@ -315,12 +354,107 @@ add_action('wp_ajax_cpp_eliminar_actividad', 'cpp_ajax_eliminar_actividad');
 function cpp_ajax_eliminar_actividad() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
     $user_id = get_current_user_id();
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
-    if (empty($actividad_id)) { wp_send_json_error(['message' => 'ID de actividad no proporcionado.']); return; }
+
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+        return;
+    }
+
+    // Esta función ahora solo elimina actividades evaluables.
+    // La eliminación es total y no hay desvinculación.
     $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
-    if ($resultado) { wp_send_json_success(['message' => 'Actividad eliminada correctamente.']); }
-    else { wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']); }
+
+    if ($resultado) {
+        wp_send_json_success(['message' => 'Actividad eliminada correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);
+    }
+}
+
+add_action('wp_ajax_cpp_unlink_actividad_evaluable', 'cpp_ajax_unlink_actividad_evaluable');
+function cpp_ajax_unlink_actividad_evaluable() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    if (empty($user_id)) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+    }
+
+    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+    }
+
+    global $wpdb;
+    $tabla_eval_act = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_prog_act = $wpdb->prefix . 'cpp_programador_actividades';
+
+    // 1. Obtener la actividad evaluable para conseguir sus datos
+    $actividad = $wpdb->get_row($wpdb->prepare(
+        "SELECT nombre_actividad, sesion_id FROM $tabla_eval_act WHERE id = %d AND user_id = %d",
+        $actividad_id,
+        $user_id
+    ));
+
+    if (!$actividad || empty($actividad->sesion_id)) {
+        wp_send_json_error(['message' => 'La actividad no existe, no pertenece al usuario o no está vinculada a una sesión.']);
+    }
+
+    // 2. Crear una nueva actividad no evaluable en la tabla del programador
+    $resultado_insert = $wpdb->insert(
+        $tabla_prog_act,
+        [
+            'sesion_id' => $actividad->sesion_id,
+            'titulo' => $actividad->nombre_actividad,
+            'orden' => 999 // Ponerla al final para que el usuario la vea y la pueda reordenar
+        ],
+        ['%d', '%s', '%d']
+    );
+
+    if (false === $resultado_insert) {
+        wp_send_json_error(['message' => 'Error al crear la actividad no evaluable en la programación.']);
+    }
+
+    // 3. Eliminar la actividad evaluable original (esto también borra las calificaciones asociadas)
+    $resultado_delete = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
+
+    if ($resultado_delete) {
+        wp_send_json_success(['message' => 'Actividad desvinculada y movida a la programación como tarea no evaluable.']);
+    } else {
+        // Esto es problemático, porque la actividad no evaluable ya se creó.
+        // En un sistema más complejo, aquí habría que hacer un rollback. Por ahora, se notifica.
+        wp_send_json_error(['message' => 'Se creó la tarea no evaluable, pero hubo un error al eliminar la actividad original del cuaderno.']);
+    }
+}
+
+add_action('wp_ajax_cpp_get_evaluable_activity_data', 'cpp_ajax_get_evaluable_activity_data');
+function cpp_ajax_get_evaluable_activity_data() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+
+    if (empty($actividad_id)) {
+        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
+        return;
+    }
+
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $actividad = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $tabla_actividades WHERE id = %d AND user_id = %d",
+        $actividad_id,
+        $user_id
+    ), ARRAY_A);
+
+    if ($actividad) {
+        wp_send_json_success($actividad);
+    } else {
+        wp_send_json_error(['message' => 'Actividad no encontrada o no tienes permiso.']);
+    }
 }
 
 add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');

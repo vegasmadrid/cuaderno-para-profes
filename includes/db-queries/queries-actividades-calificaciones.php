@@ -40,12 +40,17 @@ function cpp_guardar_actividad_evaluable($datos) {
     $nota_maxima = isset($datos['nota_maxima']) ? floatval($datos['nota_maxima']) : 10.00;
     if ($nota_maxima <= 0) { $nota_maxima = 10.00; }
     $data_to_insert = [
-        'clase_id' => intval($datos['clase_id']), 'evaluacion_id' => intval($datos['evaluacion_id']), 'user_id' => intval($datos['user_id']), 'categoria_id' => intval($datos['categoria_id']),
+        'clase_id' => intval($datos['clase_id']),
+        'sesion_id' => isset($datos['sesion_id']) ? intval($datos['sesion_id']) : null,
+        'evaluacion_id' => intval($datos['evaluacion_id']),
+        'user_id' => intval($datos['user_id']),
+        'categoria_id' => intval($datos['categoria_id']),
         'nombre_actividad' => sanitize_text_field($datos['nombre_actividad']),
         'descripcion_actividad' => isset($datos['descripcion_actividad']) ? sanitize_textarea_field($datos['descripcion_actividad']) : '',
         'nota_maxima' => $nota_maxima,
+        'orden' => isset($datos['orden']) ? intval($datos['orden']) : 0,
     ];
-    $formats = ['%d', '%d', '%d', '%d', '%s', '%s', '%f'];
+    $formats = ['%d', '%d', '%d', '%d', '%d', '%s', '%s', '%f', '%d'];
     if (!empty($datos['fecha_actividad'])) {
         if (preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) {
             $data_to_insert['fecha_actividad'] = $datos['fecha_actividad']; $formats[] = '%s';
@@ -72,6 +77,10 @@ function cpp_actualizar_actividad_evaluable($actividad_id, $datos) {
         $data_to_update['evaluacion_id'] = intval($datos['evaluacion_id']);
         $formats_update[] = '%d';
     }
+     if (isset($datos['sesion_id'])) {
+        $data_to_update['sesion_id'] = intval($datos['sesion_id']);
+        $formats_update[] = '%d';
+    }
     if (isset($datos['nota_maxima'])) { $nota_maxima = floatval($datos['nota_maxima']); $data_to_update['nota_maxima'] = ($nota_maxima > 0) ? $nota_maxima : 10.00; $formats_update[] = '%f'; }
     if (array_key_exists('fecha_actividad', $datos)) {
         if (!empty($datos['fecha_actividad']) && preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) { $data_to_update['fecha_actividad'] = $datos['fecha_actividad']; }
@@ -79,6 +88,7 @@ function cpp_actualizar_actividad_evaluable($actividad_id, $datos) {
         $formats_update[] = '%s';
     }
     if (isset($datos['descripcion_actividad'])) { $data_to_update['descripcion_actividad'] = sanitize_textarea_field($datos['descripcion_actividad']); $formats_update[] = '%s'; }
+
     if (empty($data_to_update)) { return 0; }
     $where = ['id' => $actividad_id, 'user_id' => $user_id_actual]; $where_formats = ['%d', '%d'];
     $resultado = $wpdb->update($tabla_actividades, $data_to_update, $where, $formats_update, $where_formats);

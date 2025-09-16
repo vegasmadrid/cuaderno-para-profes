@@ -417,6 +417,16 @@
                             contentHtml += '</select></div><hr>';
                             contentHtml += '<div id="cpp-ponderaciones-settings-content"></div>';
                             $ponderacionesContainer.html(contentHtml);
+
+                            // --- INICIO DE LA MODIFICACIÓN ---
+                            // Seleccionar automáticamente la primera evaluación para cargar sus categorías
+                            const $selector = $ponderacionesContainer.find('#cpp-ponderaciones-eval-selector');
+                            if ($selector.length) {
+                                $selector.val(evaluaciones[0].id);
+                                $selector.trigger('change');
+                            }
+                            // --- FIN DE LA MODIFICACIÓN ---
+
                         } else {
                             $ponderacionesContainer.html('<h4>Tipos de ponderación y categorías</h4><p>No hay evaluaciones creadas para esta clase. Añade una evaluación primero para poder gestionar sus ponderaciones y categorías.</p>');
                         }

@@ -178,17 +178,6 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     flex-grow: 1; min-height: 0; overflow: auto !important;
     position: relative; background-color: #fff; border: none;
     cursor: default;
-    height: calc(100vh - 50px); /* Altura base: 100% viewport - 50px topbar */
-}
-
-body.admin-bar .cpp-cuaderno-tabla-wrapper {
-    height: calc(100vh - 50px - 32px);
-}
-
-@media screen and (max-width: 782px) {
-    body.admin-bar .cpp-cuaderno-tabla-wrapper {
-        height: calc(100vh - 50px - 46px);
-    }
 }
 .cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando, .cpp-welcome-screen {
     display: flex;
@@ -255,6 +244,17 @@ body.admin-bar .cpp-cuaderno-tabla-wrapper {
 }
 
 /* Celda A1 - Controles del Cuaderno */
+.cpp-cuaderno-th-numero-fila, .cpp-cuaderno-td-numero-fila {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    text-align: center;
+    color: #5f6368;
+    background-color: #f8f9fa;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
 .cpp-cuaderno-tabla thead .cpp-cuaderno-th-alumno {
     position: -webkit-sticky; position: sticky; left: 0; top: 0;
     width: 270px; min-width: 270px; max-width: 270px;
@@ -309,33 +309,15 @@ body.admin-bar .cpp-cuaderno-tabla-wrapper {
 tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 /* Celdas de datos fijas (Alumno y Nota Final) */
-.cpp-cuaderno-tabla tbody {
-    counter-reset: student-counter; /* Initialize the counter */
-}
-
 .cpp-cuaderno-tabla tbody td.cpp-cuaderno-td-alumno {
     position: -webkit-sticky; position: sticky; left: 0; z-index: 5;
     font-weight: normal;
     cursor: pointer; 
     transition: background-color 0.2s ease-in-out;
     width: 270px; min-width: 270px; max-width: 270px;
-    overflow: visible; /* Change to visible to allow pseudo-element to show */
+    overflow: hidden; text-overflow: ellipsis;
     background-color: #ffffff;
     border-right: 1px solid #e0e0e0;
-}
-
-.cpp-cuaderno-td-alumno::before {
-    counter-increment: student-counter;
-    content: counter(student-counter);
-    position: absolute;
-    left: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    font-weight: 500;
-    color: #5f6368;
-    width: 24px;
-    text-align: center;
 }
 .cpp-cuaderno-tabla tbody td.cpp-cuaderno-td-final {
     position: -webkit-sticky; position: sticky; right: 0;
@@ -425,7 +407,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     margin-top: 3px; line-height: 1.1; text-align: center; width: 100%;
 }
 
-.cpp-cuaderno-td-alumno { display: flex; align-items: center; gap: 10px; font-size: 14px; padding-left: 36px !important; }
+.cpp-cuaderno-td-alumno { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .cpp-alumno-avatar-cuaderno {
     width: 32px; height: 32px; border-radius: 50%; overflow: hidden; background: #e9ecef;
     display: flex; align-items: center; justify-content: center;
@@ -1783,12 +1765,10 @@ body.cpp-no-text-select {
 /* Contenedor principal de los contenidos de las pestañas */
 .cpp-main-tabs-content {
     flex-grow: 1;
-    overflow-y: hidden; /* Cambiado de auto a hidden para evitar doble scroll */
+    overflow-y: auto;
     position: relative;
     background-color: #fff;
     border-top: 1px solid #e0e0e0;
-    display: flex; /* Añadido para que el hijo flex-grow funcione bien */
-    flex-direction: column; /* Añadido */
 }
 
 .cpp-main-tab-content {

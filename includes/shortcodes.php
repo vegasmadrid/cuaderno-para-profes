@@ -464,6 +464,29 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <?php
             do_action('cpp_modal_ficha_alumno_outputted');
         }
+
+        // --- NUEVO: Modal de confirmación de borrado ---
+        if (empty(did_action('cpp_modal_confirmar_borrado_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-confirmar-borrado">
+                <div class="cpp-modal-content" style="max-width: 500px;">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2 id="cpp-confirm-delete-title">Confirmar eliminación</h2>
+                    <p id="cpp-confirm-delete-message">¿Qué deseas hacer con esta actividad?</p>
+                    <div class="cpp-modal-actions">
+                        <button class="cpp-btn cpp-btn-secondary" id="cpp-confirm-unlink-btn">
+                            <span class="dashicons dashicons-editor-unlink"></span> Desvincular
+                        </button>
+                        <button class="cpp-btn cpp-btn-danger" id="cpp-confirm-delete-btn">
+                            <span class="dashicons dashicons-trash"></span> Eliminar de todas partes
+                        </button>
+                    </div>
+                    <small id="cpp-confirm-delete-explanation" style="display: block; margin-top: 15px; text-align: center; color: #5f6368;"></small>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_confirmar_borrado_outputted');
+        }
         ?>
 
     </div> 
