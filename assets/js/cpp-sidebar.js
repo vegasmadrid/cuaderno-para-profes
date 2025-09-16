@@ -121,6 +121,13 @@
                 console.error("cpp.gradebook.cargarContenidoCuaderno no está definido.");
             }
 
+            // --- FIX: Notificar también al programador del cambio de clase ---
+            if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase && CppProgramadorApp.currentClase.id != claseId) {
+                if (typeof CppProgramadorApp.loadClass === 'function') {
+                    CppProgramadorApp.loadClass(claseId);
+                }
+            }
+
             if (cpp.sidebar.isSidebarVisible) { 
                 cpp.sidebar.toggle(); 
             }

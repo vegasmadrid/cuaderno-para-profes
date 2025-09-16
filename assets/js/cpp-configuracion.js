@@ -400,6 +400,7 @@
                 dataType: 'json',
                 data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: function(response) {
+                    alert('DEBUG: Respuesta de cpp_obtener_evaluaciones: ' + JSON.stringify(response));
                     if (response.success && response.data && Array.isArray(response.data.evaluaciones)) {
                         const evaluaciones = response.data.evaluaciones;
 
@@ -425,7 +426,8 @@
                         $ponderacionesContainer.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    alert('DEBUG: Error en AJAX para cpp_obtener_evaluaciones. Status: ' + status + ', Error: ' + error);
                     $evaluacionesContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
                     $ponderacionesContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
                 }
