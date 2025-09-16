@@ -76,7 +76,6 @@ function cpp_crear_tablas() {
     $sql_actividades_evaluables = "CREATE TABLE $tabla_actividades_evaluables_nombre (
         id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
         clase_id mediumint(9) UNSIGNED NOT NULL,
-        sesion_id bigint(20) UNSIGNED NULL DEFAULT NULL,
         evaluacion_id mediumint(9) UNSIGNED DEFAULT NULL,
         categoria_id mediumint(9) UNSIGNED NOT NULL, 
         nombre_actividad varchar(150) NOT NULL,
@@ -84,11 +83,9 @@ function cpp_crear_tablas() {
         descripcion_actividad text,
         nota_maxima decimal(5,2) DEFAULT 10.00 NOT NULL, 
         user_id bigint(20) UNSIGNED NOT NULL,
-        orden INT NOT NULL DEFAULT 0,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY clase_id (clase_id),
-        KEY sesion_id (sesion_id),
         KEY evaluacion_id (evaluacion_id),
         KEY categoria_id (categoria_id),
         KEY user_id (user_id)
@@ -184,9 +181,12 @@ function cpp_crear_tablas() {
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         sesion_id bigint(20) UNSIGNED NOT NULL,
         titulo varchar(255) NOT NULL,
+        es_evaluable tinyint(1) NOT NULL DEFAULT 0,
         orden int NOT NULL DEFAULT 0,
+        actividad_calificable_id mediumint(9) UNSIGNED DEFAULT NULL,
         PRIMARY KEY (id),
-        KEY sesion_id (sesion_id)
+        KEY sesion_id (sesion_id),
+        KEY actividad_calificable_id (actividad_calificable_id)
     ) $charset_collate;";
     dbDelta($sql_programador_actividades);
 }

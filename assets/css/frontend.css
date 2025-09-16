@@ -1754,10 +1754,12 @@ body.cpp-no-text-select {
 /* Contenedor principal de los contenidos de las pestañas */
 .cpp-main-tabs-content {
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: hidden; /* Cambiado de auto a hidden para evitar doble scroll */
     position: relative;
     background-color: #fff;
     border-top: 1px solid #e0e0e0;
+    display: flex; /* Añadido para que el hijo flex-grow funcione bien */
+    flex-direction: column; /* Añadido */
 }
 
 .cpp-main-tab-content {

@@ -255,32 +255,21 @@
 
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
-
+            if (tabName === 'cuaderno' || tabName === 'configuracion') {
+                return;
+            }
             if ($tab.hasClass('active')) {
                 return; // Ya está activo
             }
 
-            // 1. Manejar estado visual
             $('.cpp-main-tab-link').removeClass('active');
             $('.cpp-main-tab-content').removeClass('active');
+
             $tab.addClass('active');
             $('#cpp-main-tab-' + tabName).addClass('active');
 
-            // 2. Guardar estado en localStorage
-            try {
-                localStorage.setItem('cpp_last_opened_tab', tabName);
-            } catch (e) {
-                console.warn("No se pudo guardar la última pestaña abierta en localStorage:", e);
-            }
-
-            // 3. Lógica específica de la pestaña (efectos secundarios)
-            if (tabName === 'configuracion' && cpp.currentClaseIdCuaderno) {
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
-                }
-            }
-
             const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
+
             if (isProgramadorTab) {
                 // Inicializar el programador si es la primera vez que se accede a una de sus pestañas
                 if (!this.programadorInicializado) {

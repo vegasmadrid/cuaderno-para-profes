@@ -323,7 +323,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <form id="cpp-form-actividad-evaluable-cuaderno" novalidate>
                         <input type="hidden" id="clase_id_actividad_cuaderno_form" name="clase_id_actividad" value="">
                         <input type="hidden" id="actividad_id_editar_cuaderno" name="actividad_id_editar" value="">
-                        <input type="hidden" id="sesion_id_cuaderno" name="sesion_id" value="">
                         <div class="cpp-form-group"><label for="nombre_actividad_cuaderno_input">Nombre de la Actividad:</label><input type="text" id="nombre_actividad_cuaderno_input" name="nombre_actividad" required></div>
                         <div class="cpp-form-group"><label for="categoria_id_actividad_cuaderno_select">Categoría de Evaluación:</label><select id="categoria_id_actividad_cuaderno_select" name="categoria_id_actividad"><option value="">-- Selecciona una categoría --</option></select></div>
                         <div class="cpp-form-group"><label for="nota_maxima_actividad_cuaderno_input">Nota Máxima (ej. 10, 100):</label><input type="number" id="nota_maxima_actividad_cuaderno_input" name="nota_maxima_actividad" value="10.00" step="0.01" min="0.01" required></div>

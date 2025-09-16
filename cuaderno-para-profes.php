@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 1.9
+Version: 1.5.1
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.9');
+define('CPP_VERSION', '1.6');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -264,146 +264,15 @@ function cpp_migrate_add_passing_grade_v1_6() {
 }
 // --- FIN: SCRIPT DE MIGRACIÓN DE DATOS ---
 
-function cpp_migrate_add_link_column_v1_7() {
-    global $wpdb;
-    $tabla_actividades_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
-    $tabla_actividades_programadas = $wpdb->prefix . 'cpp_programador_actividades';
-
-    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_actividades_evaluables` LIKE 'id_actividad_programada'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_actividades_evaluables` ADD `id_actividad_programada` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `user_id`, ADD KEY `id_actividad_programada` (`id_actividad_programada`);");
-    }
-
-    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_actividades_programadas` LIKE 'categoria_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_actividades_programadas` ADD `categoria_id` MEDIUMINT(9) UNSIGNED NULL DEFAULT NULL AFTER `es_evaluable`;");
-    }
-}
-
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
     if (version_compare($current_version, '1.6', '<')) {
         cpp_migrate_add_passing_grade_v1_6();
     }
-    if (version_compare($current_version, '1.7', '<')) {
-        cpp_migrate_add_link_column_v1_7();
-    }
-    if (version_compare($current_version, '1.8', '<')) {
-        cpp_migrate_horario_data_v1_8();
-    }
-    if (version_compare($current_version, '1.9', '<')) {
-        cpp_migrate_refactor_activities_v1_9();
-    }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
     update_option('cpp_version', CPP_VERSION);
-}
-
-function cpp_migrate_horario_data_v1_8() {
-    global $wpdb;
-    $tabla_config = $wpdb->prefix . 'cpp_programador_config';
-
-    // Obtener todos los horarios de todos los usuarios
-    $horarios_a_migrar = $wpdb->get_results(
-        $wpdb->prepare("SELECT id, valor FROM $tabla_config WHERE clave = %s", 'horario')
-    );
-
-    foreach ($horarios_a_migrar as $item) {
-        $horario_actual = json_decode($item->valor, true);
-        if (empty($horario_actual) || !is_array($horario_actual)) {
-            continue; // No es un horario válido, lo saltamos
-        }
-
-        $horario_nuevo = [];
-        $migracion_necesaria = false;
-
-        foreach ($horario_actual as $dia => $slots) {
-            if (!is_array($slots)) continue;
-            $horario_nuevo[$dia] = [];
-            foreach ($slots as $hora => $valor) {
-                if (is_string($valor)) {
-                    // Formato antiguo: el valor es solo el ID de la clase
-                    $horario_nuevo[$dia][$hora] = [
-                        'claseId' => $valor,
-                        'notas'   => ''
-                    ];
-                    $migracion_necesaria = true;
-                } elseif (is_array($valor) && isset($valor['claseId'])) {
-                    // Formato nuevo, nos aseguramos de que tenga el campo de notas
-                    $horario_nuevo[$dia][$hora] = [
-                        'claseId' => $valor['claseId'],
-                        'notas'   => isset($valor['notas']) ? $valor['notas'] : ''
-                    ];
-                } else {
-                    // Dato inesperado, lo conservamos como está para no perderlo
-                    $horario_nuevo[$dia][$hora] = $valor;
-                }
-            }
-        }
-
-        if ($migracion_necesaria) {
-            $wpdb->update(
-                $tabla_config,
-                ['valor' => wp_json_encode($horario_nuevo)],
-                ['id' => $item->id],
-                ['%s'],
-                ['%d']
-            );
-        }
-    }
-}
-
-function cpp_migrate_refactor_activities_v1_9() {
-    global $wpdb;
-    $tabla_prog_act = $wpdb->prefix . 'cpp_programador_actividades';
-    $tabla_eval_act = $wpdb->prefix . 'cpp_actividades_evaluables';
-
-    // 1. Add new columns to 'cpp_actividades_evaluables' if they don't exist
-    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_eval_act` LIKE 'sesion_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_eval_act` ADD `sesion_id` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `clase_id`, ADD KEY `sesion_id` (`sesion_id`);");
-    }
-    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_eval_act` LIKE 'orden'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_eval_act` ADD `orden` INT NOT NULL DEFAULT 0 AFTER `user_id`;");
-    }
-
-    // 2. Find all evaluable activities in the programmer table to migrate them
-    $actividades_a_migrar = $wpdb->get_results(
-        "SELECT id, sesion_id, orden, actividad_calificable_id FROM `$tabla_prog_act` WHERE es_evaluable = 1 AND actividad_calificable_id IS NOT NULL"
-    );
-
-    $ids_a_eliminar = [];
-    if (!empty($actividades_a_migrar)) {
-        foreach ($actividades_a_migrar as $act_prog) {
-            // 3. For each one, update its corresponding gradebook activity with the sesion_id and orden
-            $wpdb->update(
-                $tabla_eval_act,
-                [
-                    'sesion_id' => $act_prog->sesion_id,
-                    'orden' => $act_prog->orden
-                ],
-                ['id' => $act_prog->actividad_calificable_id],
-                ['%d', '%d'],
-                ['%d']
-            );
-            $ids_a_eliminar[] = $act_prog->id;
-        }
-
-        // 4. Delete the now-redundant rows from the programmer table
-        if (!empty($ids_a_eliminar)) {
-            $placeholders = implode(',', array_fill(0, count($ids_a_eliminar), '%d'));
-            $wpdb->query($wpdb->prepare("DELETE FROM $tabla_prog_act WHERE id IN ($placeholders)", $ids_a_eliminar));
-        }
-    }
-
-    // 5. Drop unnecessary columns from the programmer activities table
-    if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_prog_act` LIKE 'es_evaluable'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_prog_act` DROP COLUMN `es_evaluable`;");
-    }
-    if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_prog_act` LIKE 'actividad_calificable_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_prog_act` DROP COLUMN `actividad_calificable_id`;");
-    }
-    if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_prog_act` LIKE 'categoria_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_prog_act` DROP COLUMN `categoria_id`;");
-    }
 }
 add_action('plugins_loaded', 'cpp_run_migrations');
 

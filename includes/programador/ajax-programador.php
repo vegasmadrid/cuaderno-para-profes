@@ -169,37 +169,17 @@ function cpp_ajax_get_programador_actividades() {
 function cpp_ajax_save_programador_actividad() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
-
     $user_id = get_current_user_id();
     $actividad_data = isset($_POST['actividad']) ? json_decode(stripslashes($_POST['actividad']), true) : null;
     if (empty($actividad_data)) { wp_send_json_error(['message' => 'Datos de actividad no válidos.']); return; }
 
-    // Guardar la actividad de programación
-    $result_id = cpp_programador_save_actividad($actividad_data, $user_id);
+    $result = cpp_programador_save_actividad($actividad_data, $user_id);
 
-    if ($result_id) {
-        // Si la actividad es evaluable y tiene un ID de actividad del cuaderno vinculado,
-        // actualizamos también el nombre en la tabla de actividades evaluables para mantener la sincronización.
-        if (isset($actividad_data['es_evaluable']) && $actividad_data['es_evaluable'] == 1 && isset($actividad_data['actividad_calificable_id']) && !empty($actividad_data['actividad_calificable_id'])) {
-
-            $datos_para_cuaderno = [
-                'user_id' => $user_id,
-                'nombre_actividad' => $actividad_data['titulo']
-            ];
-
-            cpp_actualizar_actividad_evaluable($actividad_data['actividad_calificable_id'], $datos_para_cuaderno);
-
-            // Forzar recarga del cuaderno para que se vea el cambio de nombre
-            // El frontend tiene que escuchar este evento.
-            // wp_send_json_success se encargará de enviar la respuesta, pero podemos añadir un flag.
-        }
-
+    if ($result) {
         global $wpdb;
         $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
-        $actividad_guardada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $result_id), ARRAY_A);
-
-        wp_send_json_success(['message' => 'Actividad guardada.', 'actividad' => $actividad_guardada, 'needs_gradebook_reload' => true]);
-
+        $actividad_guardada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $result), ARRAY_A);
+        wp_send_json_success(['message' => 'Actividad guardada.', 'actividad' => $actividad_guardada]);
     } else {
         wp_send_json_error(['message' => 'Error al guardar la actividad.']);
     }

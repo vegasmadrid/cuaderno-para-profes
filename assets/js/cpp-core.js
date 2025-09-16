@@ -66,21 +66,6 @@ const cpp = {
             CppProgramadorApp.init(initialClaseId);
         }
 
-        // Restaurar la última pestaña abierta al final de toda la inicialización
-        try {
-            const lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
-            if (lastOpenedTab) {
-                const $targetTab = $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`);
-                if ($targetTab.length && !$targetTab.hasClass('active')) {
-                    console.log(`CPP Core: Restaurando la pestaña ${lastOpenedTab}.`);
-                    // El click ahora se maneja de forma centralizada, por lo que un simple trigger es suficiente y más limpio.
-                    $targetTab.trigger('click');
-                }
-            }
-        } catch (e) {
-            console.warn("No se pudo restaurar la última pestaña abierta desde localStorage:", e);
-        }
-
         console.log("CPP Core: init() completado.");
     },
 
@@ -88,11 +73,26 @@ const cpp = {
         const $ = jQuery;
         const $document = $(document);
 
-        // Este listener ahora solo delega al manejador centralizado en el módulo del cuaderno
         $document.on('click', '.cpp-main-tab-link', function(e) {
             e.preventDefault();
-            if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
-                cpp.gradebook.handleMainTabSwitch(jQuery(this));
+            const $tab = $(this);
+            const tabId = $tab.data('tab');
+
+            if ($tab.hasClass('active')) {
+                return;
+            }
+
+            $('.cpp-main-tab-link').removeClass('active');
+            $tab.addClass('active');
+
+            $('.cpp-main-tab-content').removeClass('active');
+            $('#cpp-main-tab-' + tabId).addClass('active');
+
+            // Si se activa la pestaña de configuración y hay una clase seleccionada, cargar sus datos
+            if (tabId === 'configuracion' && cpp.currentClaseIdCuaderno) {
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
+                }
             }
         });
 
@@ -186,9 +186,6 @@ const cpp = {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');
         }
-
-        // La restauración de la pestaña se ha movido al final de la función init()
-        // para asegurar que todos los módulos estén cargados.
     }
 };
 
