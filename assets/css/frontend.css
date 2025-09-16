@@ -178,6 +178,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     flex-grow: 1; min-height: 0; overflow: auto !important;
     position: relative; background-color: #fff; border: none;
     cursor: default;
+    padding-bottom: 50px; /* Espacio para que la última fila no quede oculta */
 }
 .cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando, .cpp-welcome-screen {
     display: flex;
@@ -1754,19 +1755,15 @@ body.cpp-no-text-select {
 /* Contenedor principal de los contenidos de las pestañas */
 .cpp-main-tabs-content {
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+    overflow-y: auto;
     position: relative;
     background-color: #fff;
     border-top: 1px solid #e0e0e0;
-    overflow: hidden; /* Evitar que este contenedor tenga scroll */
 }
 
 .cpp-main-tab-content {
     display: none;
     height: 100%;
-    flex-grow: 1; /* Añadido para que ocupe el espacio */
-    min-height: 0; /* Para que flexbox funcione correctamente en altura */
 }
 
 .cpp-main-tab-content.active {
