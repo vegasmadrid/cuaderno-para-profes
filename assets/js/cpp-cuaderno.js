@@ -274,6 +274,12 @@
             }
 
             // 3. Lógica específica de la pestaña (efectos secundarios)
+            if (tabName === 'configuracion' && cpp.currentClaseIdCuaderno) {
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
+                }
+            }
+
             const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
             if (isProgramadorTab) {
                 // Inicializar el programador si es la primera vez que se accede a una de sus pestañas

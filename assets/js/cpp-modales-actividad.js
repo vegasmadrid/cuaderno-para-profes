@@ -294,8 +294,8 @@
                                 cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
                             }
                             // Recargar Programador si existe en la página
-                            if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
-                                CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
+                            if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.refreshCurrentView === 'function') {
+                                CppProgramadorApp.refreshCurrentView();
                             }
                         } else {
                             alert('Error al eliminar: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
