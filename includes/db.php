@@ -194,10 +194,10 @@ function cpp_crear_tablas() {
 // --- CARGADOR DE ARCHIVOS DE CONSULTAS A LA BBDD ---
 $db_queries_dir = CPP_PLUGIN_DIR . 'includes/db-queries/';
 
+require_once $db_queries_dir . 'queries-categorias.php';
 require_once $db_queries_dir . 'queries-evaluaciones.php';
 require_once $db_queries_dir . 'queries-asistencia.php';
 require_once $db_queries_dir . 'queries-clases.php';
 require_once $db_queries_dir . 'queries-alumnos.php';
-require_once $db_queries_dir . 'queries-categorias.php';
 require_once $db_queries_dir . 'queries-actividades-calificaciones.php';
 require_once $db_queries_dir . 'queries-calculos.php';
