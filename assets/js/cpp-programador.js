@@ -940,7 +940,7 @@
             if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
                 const sortedSlots = Object.keys(horario[dayKey]).sort();
                 for (const slot of sortedSlots) {
-                    if (sessionIndex < sesiones.length && String(horario[dayKey][slot]) === String(this.currentClase.id)) {
+                    if (sessionIndex < sesiones.length && String(horario[dayKey][slot].claseId) === String(this.currentClase.id)) {
                         schedule.push({ sesion: sesiones[sessionIndex], fecha: new Date(currentDate.getTime()), hora: slot });
                         sessionIndex++;
                     }
