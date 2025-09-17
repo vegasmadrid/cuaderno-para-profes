@@ -896,7 +896,7 @@
         // ** FIX: Pre-check to prevent infinite loop **
         let classHasSlots = false;
         for (const day in horario) {
-            if (Object.values(horario[day]).includes(String(this.currentClase.id))) {
+            if (Object.values(horario[day]).some(slot => slot.claseId === String(this.currentClase.id))) {
                 classHasSlots = true;
                 break;
             }
