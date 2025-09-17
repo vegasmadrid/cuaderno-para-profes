@@ -76,20 +76,16 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     </button>
                     <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"></span>
                 </div>
-                <div class="cpp-top-bar-center">
-                    <div class="cpp-main-tabs-nav">
-                        <div class="cpp-tabs-clase-specific">
-                            <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
-                            <button class="cpp-main-tab-link" data-tab="programacion">Programación</button>
-                            <button class="cpp-main-tab-link" data-tab="configuracion">Configuración</button>
-                        </div>
-                        <div class="cpp-tabs-general">
-                            <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
-                            <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
-                        </div>
-                    </div>
+                <div class="cpp-top-bar-center cpp-tabs-clase-specific">
+                    <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
+                    <button class="cpp-main-tab-link" data-tab="programacion">Programación</button>
+                    <button class="cpp-main-tab-link" data-tab="configuracion">Configuración</button>
                 </div>
                 <div class="cpp-top-bar-right">
+                    <div class="cpp-tabs-general">
+                        <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
+                        <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
+                    </div>
                     <div class="cpp-user-menu-container">
                         <button class="cpp-user-menu-avatar-btn">
                             <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
