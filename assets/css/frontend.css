@@ -1710,46 +1710,84 @@ body.cpp-no-text-select {
 /* --- END: Ficha Alumno Attendance List --- */
 
 
-/* --- Estilos para las Pestañas Principales (Cuaderno / Programador) --- */
-.cpp-top-bar-center {
+/* --- Estilos para las Pestañas Principales (Revisado) --- */
+.cpp-fixed-top-bar {
+    justify-content: space-between;
+}
+
+.cpp-top-bar-left {
     flex-grow: 1;
-    display: flex;
+}
+
+.cpp-top-bar-center.cpp-tabs-clase-specific {
+    flex-grow: 10; /* Darle más espacio para centrar las pestañas */
     justify-content: center;
-    align-items: flex-end; /* Alinea las pestañas en la parte inferior de la barra */
-}
-
-.cpp-main-tabs-nav {
     display: flex;
+    gap: 8px;
 }
 
-.cpp-main-tab-link {
-    padding: 10px 24px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    border-bottom: none;
-    background-color: rgba(0,0,0,0.05);
+.cpp-tabs-clase-specific .cpp-main-tab-link {
+    padding: 6px 16px;
+    border-radius: 6px;
     color: inherit;
-    opacity: 0.7;
-    font-size: 14px;
+    opacity: 0.8;
     font-weight: 500;
-    border-radius: 8px 8px 0 0;
-    margin: 0 4px;
-    position: relative;
-    bottom: -1px; /* Para que se solape con el borde del contenido */
+    transition: all 0.2s ease-in-out;
+    border-bottom: 3px solid transparent;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cpp-tabs-clase-specific .cpp-main-tab-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    opacity: 1;
+}
+
+.cpp-tabs-clase-specific .cpp-main-tab-link.active {
+    background-color: rgba(0, 0, 0, 0.1);
+    opacity: 1;
+    font-weight: 600;
+}
+
+.cpp-top-bar-right {
+    background-color: #fff;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    box-shadow: -5px 0 10px -5px rgba(0,0,0,0.1);
+}
+
+.cpp-tabs-general {
+    display: flex;
+    gap: 8px;
+    margin-right: 20px;
+}
+
+.cpp-tabs-general .cpp-main-tab-link {
+    background-color: #f1f3f4;
+    color: #3c4043;
+    padding: 8px 16px;
+    border-radius: 18px; /* Hacerlos más redondeados */
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid #f1f3f4;
     transition: all 0.2s ease-in-out;
 }
 
-.cpp-main-tab-link:hover {
-    opacity: 1;
-    background-color: rgba(0,0,0,0.1);
+.cpp-tabs-general .cpp-main-tab-link:hover {
+    background-color: #e8eaed;
+    border-color: #e8eaed;
 }
 
-.cpp-main-tab-link.active {
-    background-color: #fff; /* El color del área de contenido */
-    color: #333; /* Texto oscuro para la pestaña activa */
-    opacity: 1;
-    border-color: #e0e0e0;
+.cpp-tabs-general .cpp-main-tab-link.active {
+    background-color: #e8f0fe;
+    color: #1967d2;
     font-weight: 600;
+    border-color: #d2e3fc;
 }
 
 /* Contenedor principal de los contenidos de las pestañas */
