@@ -128,6 +128,13 @@
                 }
             }
 
+            // --- FIX: Notificar a la pestaña de configuración del cambio de clase ---
+            if (jQuery('.cpp-main-tab-link[data-tab="configuracion"]').hasClass('active')) {
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    cpp.config.showParaEditar(null, false, claseId);
+                }
+            }
+
             if (cpp.sidebar.isSidebarVisible) { 
                 cpp.sidebar.toggle(); 
             }
