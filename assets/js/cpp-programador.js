@@ -454,7 +454,7 @@
         const dayKey = dayMapping[dayOfWeek];
 
         const isWorkingDay = this.config.calendar_config.working_days.includes(dayKey);
-        const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).includes(String(this.currentClase.id));
+        const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).some(slot => slot.claseId === String(this.currentClase.id));
 
         if (startDate && (!isWorkingDay || !classIdInHorario)) {
             alert('La fecha de inicio debe ser un día lectivo en el que esta clase tenga horas asignadas en el horario.');
@@ -884,70 +884,63 @@
 
     renderSemanaTab() {
         const content = this.tabContents.semana;
-        if (!this.currentClase || !this.currentEvaluacionId) { content.innerHTML = '<p class="cpp-empty-panel">Selecciona una clase y evaluación.</p>'; return; }
-        const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-        if (!currentEval || !currentEval.start_date) { content.innerHTML = '<p class="cpp-empty-panel">Establece una fecha de inicio en "Programación".</p>'; return; }
-
-        const sesiones = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-        if (sesiones.length === 0) { content.innerHTML = '<p class="cpp-empty-panel">No hay sesiones para programar.</p>'; return; }
-
         const horario = this.config.horario;
-
-        // ** FIX: Pre-check to prevent infinite loop **
-        let classHasSlots = false;
-        for (const day in horario) {
-            if (Object.values(horario[day]).includes(String(this.currentClase.id))) {
-                classHasSlots = true;
-                break;
-            }
-        }
-        if (!classHasSlots) {
-            content.innerHTML = '<p class="cpp-empty-panel">Esta clase no tiene horas asignadas en el horario. Ve a la pestaña "Horario" para añadirlas.</p>';
-            return;
-        }
-
-        let schedule = [];
-        let currentDate = new Date(`${currentEval.start_date}T12:00:00Z`);
-
-        // FIX: Prevent infinite loop if start_date is invalid
-        if (isNaN(currentDate.getTime())) {
-            content.innerHTML = '<p class="cpp-empty-panel" style="color: red;">Error: La fecha de inicio de la evaluación no es válida. Por favor, corrígela en la pestaña "Programación".</p>';
-            return;
-        }
-
-        let sessionIndex = 0;
         const calendarConfig = this.config.calendar_config || { working_days: ['mon', 'tue', 'wed', 'thu', 'fri'], holidays: [], vacations: [] };
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
 
-        let safetyCounter = 0;
-        const MAX_ITERATIONS = 50000;
+        let schedule = [];
 
-        while(sessionIndex < sesiones.length) {
-            if (++safetyCounter > MAX_ITERATIONS) {
-                console.error("Scheduler safety break triggered. Check for logic errors.");
-                content.innerHTML = '<p class="cpp-empty-panel" style="color: red;">Error: Se ha producido un error inesperado al generar el calendario. Revisa la configuración del horario y las fechas.</p>';
-                break;
-            }
+        // Iterate over all classes and their evaluations to build a global schedule
+        this.clases.forEach(clase => {
+            clase.evaluaciones.forEach(evaluacion => {
+                if (evaluacion.start_date) {
+                    const sesionesDeLaEvaluacion = this.sesiones.filter(s => s.clase_id == clase.id && s.evaluacion_id == evaluacion.id);
+                    if (sesionesDeLaEvaluacion.length === 0) return;
 
-            const dayOfWeek = currentDate.getUTCDay();
-            const dayKey = dayMapping[dayOfWeek];
-            const ymd = currentDate.toISOString().slice(0, 10);
+                    let classHasSlots = false;
+                    for (const day in horario) {
+                        if (Object.values(horario[day]).some(slot => slot.claseId === String(clase.id))) {
+                            classHasSlots = true;
+                            break;
+                        }
+                    }
+                    if (!classHasSlots) return;
 
-            const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-            const isHoliday = calendarConfig.holidays.includes(ymd);
-            const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
+                    let currentDate = new Date(`${evaluacion.start_date}T12:00:00Z`);
+                    if (isNaN(currentDate.getTime())) return;
 
-            if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
-                const sortedSlots = Object.keys(horario[dayKey]).sort();
-                for (const slot of sortedSlots) {
-                    if (sessionIndex < sesiones.length && String(horario[dayKey][slot]) === String(this.currentClase.id)) {
-                        schedule.push({ sesion: sesiones[sessionIndex], fecha: new Date(currentDate.getTime()), hora: slot });
-                        sessionIndex++;
+                    let sessionIndex = 0;
+                    let safetyCounter = 0;
+                    const MAX_ITERATIONS = 50000; // Safety break for each evaluation
+
+                    while(sessionIndex < sesionesDeLaEvaluacion.length) {
+                        if (++safetyCounter > MAX_ITERATIONS) {
+                            console.error(`Scheduler safety break for clase ${clase.id}, evaluacion ${evaluacion.id}.`);
+                            break;
+                        }
+
+                        const dayOfWeek = currentDate.getUTCDay();
+                        const dayKey = dayMapping[dayOfWeek];
+                        const ymd = currentDate.toISOString().slice(0, 10);
+
+                        const isWorkingDay = calendarConfig.working_days.includes(dayKey);
+                        const isHoliday = calendarConfig.holidays.includes(ymd);
+                        const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
+
+                        if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
+                            const sortedSlots = Object.keys(horario[dayKey]).sort();
+                            for (const slot of sortedSlots) {
+                                if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(clase.id)) {
+                                    schedule.push({ sesion: sesionesDeLaEvaluacion[sessionIndex], fecha: new Date(currentDate.getTime()), hora: slot });
+                                    sessionIndex++;
+                                }
+                            }
+                        }
+                        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
                     }
                 }
-            }
-            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-        }
+            });
+        });
 
         const weekDates = this.getWeekDates(this.semanaDate);
         const allDays = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo' };
@@ -976,11 +969,25 @@
             renderedHeaders.forEach(dayKey => {
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
-                const evento = schedule.find(e => e.fecha.toISOString().slice(0,10) === ymd && e.hora === slot);
+                const eventos = schedule.filter(e => e.fecha.toISOString().slice(0,10) === ymd && e.hora === slot);
                 let cellContent = '';
-                if (evento) {
-                    const clase = this.clases.find(c => c.id == evento.sesion.clase_id);
-                    if (clase) cellContent = `<div class="cpp-semana-slot" style="border-left-color: ${clase.color};"><strong>${clase.nombre}</strong><p>${evento.sesion.titulo}</p></div>`;
+                if (eventos.length > 0) {
+                    eventos.forEach(evento => {
+                        const clase = this.clases.find(c => c.id == evento.sesion.clase_id);
+                        if (clase) {
+                            let actividadesHTML = '';
+                            if (evento.sesion.actividades_programadas && evento.sesion.actividades_programadas.length > 0) {
+                                actividadesHTML = `<ul class="cpp-semana-actividades-list">
+                                    ${evento.sesion.actividades_programadas.map(act => `<li>${act.titulo}</li>`).join('')}
+                                </ul>`;
+                            }
+                            cellContent += `<div class="cpp-semana-slot" style="border-left-color: ${clase.color};">
+                                <strong>${clase.nombre}</strong>
+                                <p>${evento.sesion.titulo}</p>
+                                ${actividadesHTML}
+                            </div>`;
+                        }
+                    });
                 }
                 tableHTML += `<td>${cellContent}</td>`;
             });
