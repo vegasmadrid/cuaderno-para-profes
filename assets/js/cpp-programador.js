@@ -454,7 +454,7 @@
         const dayKey = dayMapping[dayOfWeek];
 
         const isWorkingDay = this.config.calendar_config.working_days.includes(dayKey);
-        const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).includes(String(this.currentClase.id));
+        const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).some(slot => slot.claseId === String(this.currentClase.id));
 
         if (startDate && (!isWorkingDay || !classIdInHorario)) {
             alert('La fecha de inicio debe ser un día lectivo en el que esta clase tenga horas asignadas en el horario.');
