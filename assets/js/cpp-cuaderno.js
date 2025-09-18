@@ -309,6 +309,23 @@
                         cpp.config.resetForm();
                     }
                 }
+            } else if (tabName === 'cuaderno') {
+                // Sincronizar el cuaderno si la evaluación ha cambiado en otra pestaña
+                if (cpp.currentClaseIdCuaderno) {
+                    const localStorageKey = this.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
+                    let lastEvalIdFromStorage = null;
+                    try {
+                        lastEvalIdFromStorage = localStorage.getItem(localStorageKey);
+                    } catch (e) {
+                        console.warn("No se pudo leer de localStorage:", e);
+                    }
+
+                    if (lastEvalIdFromStorage && lastEvalIdFromStorage !== cpp.currentEvaluacionId) {
+                        console.log(`Sincronizando cuaderno a la evaluación ${lastEvalIdFromStorage} desde localStorage.`);
+                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                        this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, lastEvalIdFromStorage);
+                    }
+                }
             }
         },
 

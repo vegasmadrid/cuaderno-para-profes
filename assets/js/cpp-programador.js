@@ -82,7 +82,28 @@
         });
         $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
         $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
-        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() { self.currentEvaluacionId = this.value; self.currentSesion = null; self.render(); });
+        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() {
+            const newEvalId = this.value;
+            self.currentEvaluacionId = newEvalId;
+
+            // Guardar en localStorage
+            if (self.currentClase) {
+                const localStorageKey = 'cpp_last_opened_eval_clase_' + self.currentClase.id;
+                try {
+                    localStorage.setItem(localStorageKey, newEvalId);
+                } catch (e) {
+                    console.warn("No se pudo guardar en localStorage:", e);
+                }
+            }
+
+            // Sincronizar con el estado global
+            if (typeof cpp !== 'undefined') {
+                cpp.currentEvaluacionId = newEvalId;
+            }
+
+            self.currentSesion = null;
+            self.render();
+        });
         $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
         // Edición Inline
@@ -142,15 +163,45 @@
                 }
             });
     },
-    loadClass(claseId) {
+    loadClass(claseId, renderAfter = true) {
         this.currentClase = this.clases.find(c => c.id == claseId);
         if (!this.currentClase) {
             this.tabContents.programacion.innerHTML = `<p style="color:red;">Error: No se encontró la clase con ID ${claseId}.</p>`;
             return;
         }
-        this.currentEvaluacionId = this.currentClase.evaluaciones.length > 0 ? this.currentClase.evaluaciones[0].id : null;
+
+        let savedEvalId = null;
+        const localStorageKey = 'cpp_last_opened_eval_clase_' + this.currentClase.id;
+
+        try {
+            savedEvalId = localStorage.getItem(localStorageKey);
+        } catch (e) {
+            console.warn("No se pudo acceder a localStorage:", e);
+        }
+
+        if (savedEvalId && this.currentClase.evaluaciones.some(e => e.id == savedEvalId)) {
+            this.currentEvaluacionId = savedEvalId;
+        } else {
+            this.currentEvaluacionId = this.currentClase.evaluaciones.length > 0 ? this.currentClase.evaluaciones[0].id : null;
+            // Si se usa el de por defecto, guardarlo para la próxima vez
+            if (this.currentEvaluacionId) {
+                try {
+                    localStorage.setItem(localStorageKey, this.currentEvaluacionId);
+                } catch (e) {
+                    console.warn("No se pudo guardar en localStorage:", e);
+                }
+            }
+        }
+
+        // Sincronizar con el estado global
+        if (typeof cpp !== 'undefined') {
+            cpp.currentEvaluacionId = this.currentEvaluacionId;
+        }
+
         this.currentSesion = null;
-        this.render();
+        if (renderAfter) {
+            this.render();
+        }
     },
     // La lógica de switchTab ahora es manejada por cpp-cuaderno.js
     addTimeSlot() {
@@ -331,7 +382,7 @@
             .then(res => res.json());
     },
 
-    processInitialData(result, initialClaseId) {
+    processInitialData(result, initialClaseId, sesionIdToSelect = null) {
         if (result.success) {
             this.clases = result.data.clases || [];
             this.config = result.data.config || { time_slots: [], horario: {} };
@@ -339,7 +390,13 @@
 
             if (this.clases.length > 0) {
                 if (initialClaseId) {
-                    this.loadClass(initialClaseId);
+                    this.loadClass(initialClaseId, false); // No renderizar todavía
+
+                    if (sesionIdToSelect) {
+                        this.currentSesion = this.sesiones.find(s => s.id == sesionIdToSelect) || null;
+                    }
+
+                    this.render(); // Renderizar una vez con todo el estado actualizado
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
@@ -351,9 +408,9 @@
         }
     },
 
-    fetchData(initialClaseId) {
+    fetchData(initialClaseId, sesionIdToSelect = null) {
         this.fetchDataFromServer().then(result => {
-            this.processInitialData(result, initialClaseId);
+            this.processInitialData(result, initialClaseId, sesionIdToSelect);
         });
     },
 
@@ -432,7 +489,8 @@
             .then(result => {
                 if (result.success) {
                     if (fromModal) this.closeSesionModal();
-                    this.fetchData(this.currentClase.id);
+                    const newSesionId = result.data.sesion_id || null;
+                    this.fetchData(this.currentClase.id, newSesionId);
                 } else {
                     alert('Error al guardar.');
                     this.fetchData(this.currentClase.id);
