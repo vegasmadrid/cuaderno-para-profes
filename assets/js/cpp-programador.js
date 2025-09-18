@@ -825,26 +825,21 @@
 
         let classOptions = '<option value="">-- Vacío --</option>' + this.clases.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 
-        const headerHTML = `
-            <div class="cpp-horario-header">
-                <div class="cpp-horario-actions">
-                    <button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-secondary"><span class="dashicons dashicons-plus-alt"></span> Añadir Tramo</button>
-                    <button id="cpp-horario-config-btn" class="cpp-btn"><span class="dashicons dashicons-calendar-alt"></span> Configurar Calendario</button>
-                </div>
-            </div>`;
+        const addSlotButtonHTML = `<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-secondary cpp-btn-add-slot-header" title="Añadir nuevo tramo horario"><span class="dashicons dashicons-plus-alt"></span></button>`;
 
         let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table">
                             <thead>
                                 <tr class="cpp-horario-header-row">
-                                    <th class="cpp-horario-th-hora">Hora</th>
-                                    ${Object.values(daysToRender).map(day => `<th class="cpp-horario-th-dia">${day}</th>`).join('')}
                                     <th class="cpp-horario-th-actions"></th>
+                                    <th class="cpp-horario-th-hora">${addSlotButtonHTML}</th>
+                                    ${Object.values(daysToRender).map(day => `<th class="cpp-horario-th-dia">${day}</th>`).join('')}
                                 </tr>
                             </thead>
                             <tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr data-slot-value="${slot}">
+                            <td class="cpp-horario-td-actions"><button class="cpp-delete-slot-btn" data-slot="${slot}">❌</button></td>
                             <td class="cpp-horario-td-hora" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
             Object.keys(daysToRender).forEach(dayKey => {
                 const cellData = this.config.horario?.[dayKey]?.[slot] || {};
@@ -858,10 +853,10 @@
                                 </div>
                               </td>`;
             });
-            tableHTML += `<td class="cpp-horario-td-actions"><button class="cpp-delete-slot-btn" data-slot="${slot}">❌</button></td></tr>`;
+            tableHTML += `</tr>`;
         });
         tableHTML += `</tbody></table>`;
-        content.innerHTML = headerHTML + tableHTML;
+        content.innerHTML = tableHTML;
         this.appElement.querySelectorAll('#cpp-horario-table select').forEach(s => {
             s.value = s.dataset.claseId;
             this.updateHorarioCellColor(s);

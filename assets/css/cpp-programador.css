@@ -188,22 +188,6 @@
 
 
 /* --- Pestaña de Horario (Rediseño) --- */
-.cpp-horario-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-.cpp-horario-header h2 {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 500;
-}
-.cpp-horario-actions {
-    display: flex;
-    gap: 10px;
-}
-
 .cpp-horario-table {
     width: 100%;
     border-collapse: separate;
@@ -230,22 +214,54 @@
     transition: background-color 0.2s ease;
     position: relative;
 }
-.cpp-horario-table td:first-child {
+
+.cpp-horario-table tr > *:first-child {
     border-left: 1px solid #e8eaed;
     border-top-left-radius: 8px;
     border-bottom-left-radius: 8px;
 }
-.cpp-horario-table td:last-child {
+.cpp-horario-table tr > *:last-child {
     border-right: 1px solid #e8eaed;
     border-top-right-radius: 8px;
     border-bottom-right-radius: 8px;
 }
 
-.cpp-horario-td-hora {
+.cpp-horario-th-actions, .cpp-horario-td-actions {
+    width: 50px;
+}
+.cpp-horario-th-hora {
+    width: 100px;
+}
+
+.cpp-horario-td-hora, .cpp-horario-td-actions {
     font-weight: 500;
     color: #3c4043;
     background-color: #f8f9fa !important;
     vertical-align: middle;
+}
+
+.cpp-horario-td-actions {
+    background-color: #fff !important;
+}
+
+.cpp-delete-slot-btn {
+    background: none;
+    border: none;
+    color: #a00;
+    cursor: pointer;
+    opacity: 0.3;
+    font-size: 16px;
+    transition: opacity 0.2s ease;
+}
+.cpp-delete-slot-btn:hover {
+    opacity: 1;
+}
+
+.cpp-btn-add-slot-header {
+    padding: 6px !important;
+    height: 32px !important;
+    width: 32px !important;
+    border-radius: 50% !important;
 }
 
 .cpp-horario-table td.has-class {
