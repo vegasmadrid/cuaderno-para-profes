@@ -827,7 +827,6 @@
 
         const headerHTML = `
             <div class="cpp-horario-header">
-                <h2>Mi Horario</h2>
                 <div class="cpp-horario-actions">
                     <button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-secondary"><span class="dashicons dashicons-plus-alt"></span> Añadir Tramo</button>
                     <button id="cpp-horario-config-btn" class="cpp-btn"><span class="dashicons dashicons-calendar-alt"></span> Configurar Calendario</button>
@@ -839,13 +838,14 @@
                                 <tr class="cpp-horario-header-row">
                                     <th class="cpp-horario-th-hora">Hora</th>
                                     ${Object.values(daysToRender).map(day => `<th class="cpp-horario-th-dia">${day}</th>`).join('')}
+                                    <th class="cpp-horario-th-actions"></th>
                                 </tr>
                             </thead>
                             <tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr data-slot-value="${slot}">
-                            <td class="cpp-horario-td-hora">${slot}</td>`;
+                            <td class="cpp-horario-td-hora" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
             Object.keys(daysToRender).forEach(dayKey => {
                 const cellData = this.config.horario?.[dayKey]?.[slot] || {};
                 const claseId = cellData.claseId || '';
@@ -858,7 +858,7 @@
                                 </div>
                               </td>`;
             });
-            tableHTML += `</tr>`;
+            tableHTML += `<td class="cpp-horario-td-actions"><button class="cpp-delete-slot-btn" data-slot="${slot}">❌</button></td></tr>`;
         });
         tableHTML += `</tbody></table>`;
         content.innerHTML = headerHTML + tableHTML;
