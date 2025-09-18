@@ -208,7 +208,7 @@
     border-right: none;
     padding: 6px;
     text-align: center;
-    vertical-align: top;
+    vertical-align: middle;
     height: 80px;
     background-color: #fff;
     transition: background-color 0.2s ease;
@@ -265,10 +265,10 @@
 }
 
 .cpp-horario-table td.has-class {
-    border-left: 5px solid var(--class-color, #e0e0e0);
+    border-left: 8px solid var(--class-color, #e0e0e0);
 }
 .cpp-horario-table td.has-class:first-child {
-     border-left-width: 5px;
+     border-left-width: 8px;
 }
 
 
