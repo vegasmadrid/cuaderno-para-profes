@@ -825,24 +825,35 @@
 
         let classOptions = '<option value="">-- Vacío --</option>' + this.clases.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 
-        const addButtonHTML = '<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-primary" title="Añadir nuevo tramo horario">+ Añadir Tramo</button>';
-        const configButtonHTML = '<button id="cpp-horario-config-btn" class="cpp-btn cpp-btn-secondary" title="Configurar calendario">Configurar</button>';
+        const addSlotButtonHTML = `<button id="cpp-horario-add-slot-btn" class="cpp-btn cpp-btn-secondary cpp-btn-add-slot-header" title="Añadir nuevo tramo horario"><span class="dashicons dashicons-plus-alt"></span></button>`;
 
-        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table"><thead><tr class="cpp-horario-header-row"><th class="cpp-horario-a1-cell">${addButtonHTML}</th>${Object.values(daysToRender).map(day => `<th>${day}</th>`).join('')}<th>${configButtonHTML}</th></tr></thead><tbody>`;
+        let tableHTML = `<table id="cpp-horario-table" class="cpp-horario-table">
+                            <thead>
+                                <tr class="cpp-horario-header-row">
+                                    <th class="cpp-horario-th-actions"></th>
+                                    <th class="cpp-horario-th-hora">${addSlotButtonHTML}</th>
+                                    ${Object.values(daysToRender).map(day => `<th class="cpp-horario-th-dia">${day}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
-            tableHTML += `<tr><td class="cpp-horario-time-slot" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
+            tableHTML += `<tr data-slot-value="${slot}">
+                            <td class="cpp-horario-td-actions"><button class="cpp-delete-slot-btn" data-slot="${slot}">❌</button></td>
+                            <td class="cpp-horario-td-hora" contenteditable="true" data-original-value="${slot}">${slot}</td>`;
             Object.keys(daysToRender).forEach(dayKey => {
                 const cellData = this.config.horario?.[dayKey]?.[slot] || {};
                 const claseId = cellData.claseId || '';
                 const notas = cellData.notas || '';
 
                 tableHTML += `<td data-day="${dayKey}" data-slot="${slot}">
-                                <select class="cpp-horario-clase-selector" data-clase-id="${claseId}">${classOptions}</select>
-                                <textarea class="cpp-horario-notas-input" placeholder="Notas...">${notas}</textarea>
+                                <div class="cpp-horario-slot-content">
+                                    <select class="cpp-horario-clase-selector" data-clase-id="${claseId}">${classOptions}</select>
+                                    <textarea class="cpp-horario-notas-input" placeholder="Notas...">${notas}</textarea>
+                                </div>
                               </td>`;
             });
-            tableHTML += `<td><button class="cpp-delete-slot-btn" data-slot="${slot}">❌</button></td></tr>`;
+            tableHTML += `</tr>`;
         });
         tableHTML += `</tbody></table>`;
         content.innerHTML = tableHTML;
@@ -857,15 +868,18 @@
         const cell = selectElement.closest('td');
         if (!cell) return;
 
+        cell.style.setProperty('--class-color', 'transparent');
+
         if (claseId) {
             const clase = this.clases.find(c => c.id == claseId);
             if (clase && clase.color) {
-                cell.style.backgroundColor = clase.color;
+                cell.style.setProperty('--class-color', clase.color);
+                cell.classList.add('has-class');
             } else {
-                cell.style.backgroundColor = ''; // Color por defecto si no se encuentra
+                cell.classList.remove('has-class');
             }
         } else {
-            cell.style.backgroundColor = ''; // Sin color si no hay clase seleccionada
+            cell.classList.remove('has-class');
         }
     },
 
