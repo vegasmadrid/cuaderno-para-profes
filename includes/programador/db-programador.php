@@ -116,10 +116,66 @@ function cpp_programador_save_sesion($data) {
     }
 }
 
-function cpp_programador_delete_sesion($sesion_id, $user_id) {
+function cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities = false) {
     global $wpdb;
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
-    return $wpdb->delete($tabla_sesiones, ['id' => $sesion_id, 'user_id' => $user_id], ['%d', '%d']) !== false;
+    $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_act_programadas = $wpdb->prefix . 'cpp_programador_actividades';
+
+    // Primero, verificar que el usuario es el propietario de la sesión
+    $owner_check = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+    if ($owner_check != $user_id) {
+        return false;
+    }
+
+    $wpdb->query('START TRANSACTION');
+
+    // Gestionar actividades evaluables asociadas
+    $actividades_evaluables_ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM $tabla_act_evaluables WHERE sesion_id = %d", $sesion_id));
+
+    if (!empty($actividades_evaluables_ids)) {
+        if ($delete_activities) {
+            // Incluir el archivo necesario para la función de eliminación
+            require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
+            foreach ($actividades_evaluables_ids as $actividad_id) {
+                if (function_exists('cpp_eliminar_actividad_y_calificaciones')) {
+                    $delete_ok = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
+                    if (!$delete_ok) {
+                        $wpdb->query('ROLLBACK');
+                        return false;
+                    }
+                } else {
+                    // Fallback o error si la función no existe
+                    $wpdb->query('ROLLBACK');
+                    return false;
+                }
+            }
+        } else {
+            // Desvincular las actividades evaluables
+            $ids_placeholder = implode(',', array_fill(0, count($actividades_evaluables_ids), '%d'));
+            $result = $wpdb->query($wpdb->prepare(
+                "UPDATE $tabla_act_evaluables SET sesion_id = NULL WHERE id IN ($ids_placeholder)",
+                $actividades_evaluables_ids
+            ));
+            if ($result === false) {
+                $wpdb->query('ROLLBACK');
+                return false;
+            }
+        }
+    }
+
+    // Eliminar actividades no evaluables (que solo existen en la tabla del programador)
+    $wpdb->delete($tabla_act_programadas, ['sesion_id' => $sesion_id], ['%d']);
+
+    // Finalmente, eliminar la sesión
+    $delete_sesion_ok = $wpdb->delete($tabla_sesiones, ['id' => $sesion_id, 'user_id' => $user_id], ['%d', '%d']);
+    if ($delete_sesion_ok === false) {
+        $wpdb->query('ROLLBACK');
+        return false;
+    }
+
+    $wpdb->query('COMMIT');
+    return true;
 }
 
 function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden_sesiones) {

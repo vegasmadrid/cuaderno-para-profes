@@ -79,9 +79,10 @@ function cpp_ajax_delete_programador_sesion() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     $sesion_id = isset($_POST['sesion_id']) ? intval($_POST['sesion_id']) : 0;
+    $delete_activities = isset($_POST['delete_activities']) && $_POST['delete_activities'] === 'true'; // El 'true' viene como string
     if (empty($sesion_id)) { wp_send_json_error(['message' => 'ID de sesión no proporcionado.']); return; }
     $user_id = get_current_user_id();
-    if (cpp_programador_delete_sesion($sesion_id, $user_id)) { wp_send_json_success(['message' => 'Sesión eliminada.']); }
+    if (cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities)) { wp_send_json_success(['message' => 'Sesión eliminada.']); }
     else { wp_send_json_error(['message' => 'Error al eliminar la sesión.']); }
 }
 

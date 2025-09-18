@@ -163,33 +163,41 @@
                 }
             });
     },
-    loadClass(claseId, renderAfter = true) {
+    loadClass(claseId, evaluacionIdToSelect = null, renderAfter = true) {
         this.currentClase = this.clases.find(c => c.id == claseId);
         if (!this.currentClase) {
             this.tabContents.programacion.innerHTML = `<p style="color:red;">Error: No se encontró la clase con ID ${claseId}.</p>`;
             return;
         }
 
-        let savedEvalId = null;
-        const localStorageKey = 'cpp_last_opened_eval_clase_' + this.currentClase.id;
+        // Priorizar el ID de evaluación pasado explícitamente
+        if (evaluacionIdToSelect && this.currentClase.evaluaciones.some(e => e.id == evaluacionIdToSelect)) {
+            this.currentEvaluacionId = evaluacionIdToSelect;
+        } else {
+            // Si no hay uno explícito, usar el de localStorage
+            let savedEvalId = null;
+            const localStorageKey = 'cpp_last_opened_eval_clase_' + this.currentClase.id;
+            try {
+                savedEvalId = localStorage.getItem(localStorageKey);
+            } catch (e) {
+                console.warn("No se pudo acceder a localStorage:", e);
+            }
 
-        try {
-            savedEvalId = localStorage.getItem(localStorageKey);
-        } catch (e) {
-            console.warn("No se pudo acceder a localStorage:", e);
+            if (savedEvalId && this.currentClase.evaluaciones.some(e => e.id == savedEvalId)) {
+                this.currentEvaluacionId = savedEvalId;
+            } else {
+                // Como último recurso, usar la primera evaluación
+                this.currentEvaluacionId = this.currentClase.evaluaciones.length > 0 ? this.currentClase.evaluaciones[0].id : null;
+            }
         }
 
-        if (savedEvalId && this.currentClase.evaluaciones.some(e => e.id == savedEvalId)) {
-            this.currentEvaluacionId = savedEvalId;
-        } else {
-            this.currentEvaluacionId = this.currentClase.evaluaciones.length > 0 ? this.currentClase.evaluaciones[0].id : null;
-            // Si se usa el de por defecto, guardarlo para la próxima vez
-            if (this.currentEvaluacionId) {
-                try {
-                    localStorage.setItem(localStorageKey, this.currentEvaluacionId);
-                } catch (e) {
-                    console.warn("No se pudo guardar en localStorage:", e);
-                }
+        // Guardar la evaluación seleccionada (ya sea la explícita, la de storage o la primera) para consistencia
+        if (this.currentEvaluacionId) {
+            try {
+                const localStorageKey = 'cpp_last_opened_eval_clase_' + this.currentClase.id;
+                localStorage.setItem(localStorageKey, this.currentEvaluacionId);
+            } catch (e) {
+                console.warn("No se pudo guardar en localStorage:", e);
             }
         }
 
@@ -382,7 +390,7 @@
             .then(res => res.json());
     },
 
-    processInitialData(result, initialClaseId, sesionIdToSelect = null) {
+    processInitialData(result, initialClaseId, evaluacionIdToSelect = null, sesionIdToSelect = null) {
         if (result.success) {
             this.clases = result.data.clases || [];
             this.config = result.data.config || { time_slots: [], horario: {} };
@@ -390,7 +398,7 @@
 
             if (this.clases.length > 0) {
                 if (initialClaseId) {
-                    this.loadClass(initialClaseId, false); // No renderizar todavía
+                    this.loadClass(initialClaseId, evaluacionIdToSelect, false); // No renderizar todavía
 
                     if (sesionIdToSelect) {
                         this.currentSesion = this.sesiones.find(s => s.id == sesionIdToSelect) || null;
@@ -408,9 +416,9 @@
         }
     },
 
-    fetchData(initialClaseId, sesionIdToSelect = null) {
+    fetchData(initialClaseId, evaluacionIdToSelect = null, sesionIdToSelect = null) {
         this.fetchDataFromServer().then(result => {
-            this.processInitialData(result, initialClaseId, sesionIdToSelect);
+            this.processInitialData(result, initialClaseId, evaluacionIdToSelect, sesionIdToSelect);
         });
     },
 
@@ -490,10 +498,10 @@
                 if (result.success) {
                     if (fromModal) this.closeSesionModal();
                     const newSesionId = result.data.sesion_id || null;
-                    this.fetchData(this.currentClase.id, newSesionId);
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
                 } else {
                     alert('Error al guardar.');
-                    this.fetchData(this.currentClase.id);
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
                 }
             })
             .finally(() => {
@@ -530,18 +538,47 @@
         });
     },
     deleteSesion(sesionId) {
-        if (!confirm('¿Seguro que quieres eliminar esta sesión?')) return;
+        const sesionToDelete = this.sesiones.find(s => s.id == sesionId);
+        if (!sesionToDelete) {
+            alert('Error: No se pudo encontrar la sesión a eliminar.');
+            return;
+        }
+
+        const hasEvaluableActivities = sesionToDelete.actividades_programadas && sesionToDelete.actividades_programadas.some(act => act.tipo === 'evaluable');
+        let deleteActivities = false;
+
+        if (hasEvaluableActivities) {
+            if (!confirm("¿Seguro que quieres eliminar esta sesión? Contiene actividades evaluables.")) {
+                return; // El usuario canceló la eliminación de la sesión por completo
+            }
+            // Si confirma, ahora preguntamos qué hacer con las actividades
+            deleteActivities = confirm("¿Deseas eliminar también las actividades evaluables asociadas del cuaderno de notas?\n\n(Aceptar = SÍ, eliminar actividades / Cancelar = NO, mantener actividades)");
+        } else {
+            if (!confirm('¿Seguro que quieres eliminar esta sesión?')) {
+                return;
+            }
+        }
+
         if (this.isProcessing) return;
         this.isProcessing = true;
 
-        const data = new URLSearchParams({ action: 'cpp_delete_programador_sesion', nonce: cppFrontendData.nonce, sesion_id: sesionId });
+        const data = new URLSearchParams({
+            action: 'cpp_delete_programador_sesion',
+            nonce: cppFrontendData.nonce,
+            sesion_id: sesionId,
+            delete_activities: deleteActivities
+        });
 
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
                     if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
-                    this.fetchData(this.currentClase.id);
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    // Forzar recarga del cuaderno si se eliminaron actividades
+                    if (deleteActivities) {
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    }
                 }
                 else { alert('Error al eliminar la sesión.'); }
             })
@@ -736,7 +773,8 @@
         }
 
         if (cpp.modals && cpp.modals.actividades && typeof cpp.modals.actividades.mostrarAnadir === 'function') {
-            cpp.modals.actividades.mostrarAnadir(sesionId);
+            const calculatedDate = this.calculateDateForSesion(sesionId);
+            cpp.modals.actividades.mostrarAnadir(sesionId, calculatedDate);
         } else {
             this.showNotification('Error: El módulo de modales no está disponible.', 'error');
         }
@@ -1078,6 +1116,60 @@
     getDayKey(date) {
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
         return dayMapping[date.getDay()];
+    },
+
+    calculateDateForSesion(sesionId) {
+        const horario = this.config.horario;
+        const calendarConfig = this.config.calendar_config || { working_days: ['mon', 'tue', 'wed', 'thu', 'fri'], holidays: [], vacations: [] };
+        const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
+
+        const targetSesion = this.sesiones.find(s => s.id == sesionId);
+        if (!targetSesion) return null;
+
+        const targetClase = this.clases.find(c => c.id == targetSesion.clase_id);
+        if (!targetClase) return null;
+
+        const targetEvaluacion = targetClase.evaluaciones.find(e => e.id == targetSesion.evaluacion_id);
+        if (!targetEvaluacion || !targetEvaluacion.start_date) return null;
+
+        const sesionesDeLaEvaluacion = this.sesiones.filter(s => s.clase_id == targetClase.id && s.evaluacion_id == targetEvaluacion.id);
+        if (sesionesDeLaEvaluacion.length === 0) return null;
+
+        let currentDate = new Date(`${targetEvaluacion.start_date}T12:00:00Z`);
+        if (isNaN(currentDate.getTime())) return null;
+
+        let sessionIndex = 0;
+        let safetyCounter = 0;
+        const MAX_ITERATIONS = 50000;
+
+        while(sessionIndex < sesionesDeLaEvaluacion.length) {
+            if (++safetyCounter > MAX_ITERATIONS) {
+                console.error(`Scheduler safety break for clase ${targetClase.id}, evaluacion ${targetEvaluacion.id}.`);
+                return null;
+            }
+
+            const dayOfWeek = currentDate.getUTCDay();
+            const dayKey = dayMapping[dayOfWeek];
+            const ymd = currentDate.toISOString().slice(0, 10);
+
+            const isWorkingDay = calendarConfig.working_days.includes(dayKey);
+            const isHoliday = calendarConfig.holidays.includes(ymd);
+            const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
+
+            if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
+                const sortedSlots = Object.keys(horario[dayKey]).sort();
+                for (const slot of sortedSlots) {
+                    if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(targetClase.id)) {
+                        if (sesionesDeLaEvaluacion[sessionIndex].id == sesionId) {
+                            return ymd; // Found it!
+                        }
+                        sessionIndex++;
+                    }
+                }
+            }
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+        }
+        return null; // Not found
     }
     };
 })(jQuery);
