@@ -9,7 +9,7 @@
 .cpp-tab-link.active { color: #1a73e8; border-bottom-color: #1a73e8; background-color: #fff; }
 
 /* Contenido de Pestañas */
-.cpp-programador-content { padding: 24px; overflow-y: auto; padding-bottom: 74px; /* 24px + 50px de espacio extra */ }
+.cpp-programador-content { padding: 24px; overflow-y: auto; }
 .cpp-tab-content { display: none; }
 .cpp-tab-content.active { display: block; }
 
@@ -265,10 +265,10 @@
 }
 
 .cpp-horario-table td.has-class {
-    border-left: 8px solid var(--class-color, #e0e0e0);
+    border-left: 5px solid var(--class-color, #e0e0e0);
 }
 .cpp-horario-table td.has-class:first-child {
-     border-left-width: 8px;
+     border-left-width: 5px;
 }
 
 
