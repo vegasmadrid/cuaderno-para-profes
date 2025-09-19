@@ -443,7 +443,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
-/* --- INICIO: Rediseño Simplificado Pestañas v3 --- */
+/* --- INICIO: Rediseño Simplificado Pestañas v4 --- */
 
 /* La barra superior principal */
 .cpp-fixed-top-bar {
@@ -474,7 +474,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 /* Pestañas de la clase */
 .cpp-tabs-clase-specific .cpp-main-tab-link {
     height: 100%; /* Ocupar toda la altura */
-    border-radius: 0; /* Sin bordes redondeados */
+    border-radius: 0 !important; /* Sin bordes redondeados */
     padding: 0 25px;
     font-size: 15px; /* Tamaño de letra ajustado */
     font-weight: 600; /* Letra más destacada */
@@ -508,7 +508,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     border-left: 1px solid #ddd;
 }
 
-/* --- FIN: Rediseño Simplificado Pestañas v3 --- */
+/* --- FIN: Rediseño Simplificado Pestañas v4 --- */
 
 /* --- Mejora de Espaciado en Modal de Importación --- */
 #cpp-import-step-2-options p {
