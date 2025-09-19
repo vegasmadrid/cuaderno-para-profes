@@ -13,6 +13,8 @@ add_action('wp_ajax_cpp_save_sesiones_order', 'cpp_ajax_save_sesiones_order');
 add_action('wp_ajax_cpp_save_start_date', 'cpp_ajax_save_start_date');
 add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_programador_example_data');
 add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
+add_action('wp_ajax_cpp_check_schedule_conflict', 'cpp_ajax_check_schedule_conflict_handler');
+
 
 // Handlers para Actividades
 add_action('wp_ajax_cpp_get_programador_actividades', 'cpp_ajax_get_programador_actividades');
@@ -111,6 +113,13 @@ function cpp_ajax_save_start_date() {
     }
 
     // Si la fecha está vacía, la guardamos como NULL en la BBDD
+    if (!empty($start_date)) {
+        if (cpp_programador_check_schedule_conflict($user_id, $evaluacion_id, $start_date)) {
+            wp_send_json_error(['message' => 'La fecha de inicio seleccionada crea un conflicto de horario con otra evaluación. Por favor, elige una fecha diferente.']);
+            return;
+        }
+    }
+
     if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date)) {
         wp_send_json_success(['message' => 'Fecha de inicio guardada.']);
     }
@@ -143,7 +152,7 @@ function cpp_ajax_add_inline_sesion() {
     $result = cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user_id);
 
     if ($result) {
-        wp_send_json_success(['message' => 'Sesión añadida.']);
+        wp_send_json_success(['message' => 'Sesión añadida.', 'new_sesion_id' => $result]);
     } else {
         wp_send_json_error(['message' => 'Error al añadir la sesión.']);
     }
@@ -333,6 +342,26 @@ function cpp_ajax_toggle_actividad_evaluable() {
     }
 
     wp_send_json_success(['message' => 'Estado actualizado.', 'actividad' => $actividad_actualizada]);
+}
+
+function cpp_ajax_check_schedule_conflict_handler() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
+    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : '';
+
+    if (empty($evaluacion_id) || empty($start_date)) {
+        wp_send_json_error(['message' => 'Datos insuficientes.']);
+        return;
+    }
+
+    $has_conflict = cpp_programador_check_schedule_conflict($user_id, $evaluacion_id, $start_date);
+
+    wp_send_json_success(['conflict' => $has_conflict]);
 }
 
 

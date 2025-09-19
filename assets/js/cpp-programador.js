@@ -157,7 +157,8 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.fetchData(this.currentClase.id);
+                    const newSesionId = result.data.new_sesion_id || null;
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
                 } else {
                     alert('Error al añadir la sesión en línea.');
                 }
@@ -512,9 +513,40 @@
                 }
             });
     },
-    saveStartDate(startDate) {
+    async saveStartDate(startDate) {
         if (!this.currentEvaluacionId) return;
-        const date = new Date(`${startDate}T12:00:00`);
+
+        // --- Client-side conflict check ---
+        if (startDate) {
+            const checkData = new URLSearchParams({
+                action: 'cpp_check_schedule_conflict',
+                nonce: cppFrontendData.nonce,
+                evaluacion_id: this.currentEvaluacionId,
+                start_date: startDate
+            });
+
+            try {
+                const response = await fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: checkData });
+                const result = await response.json();
+
+                if (result.success && result.data.conflict) {
+                    alert('La fecha de inicio seleccionada crea un conflicto de horario con otra evaluación. Por favor, elige una fecha diferente.');
+                    const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+                    this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+                    return;
+                }
+                if (!result.success) {
+                    // Non-blocking error, backend will validate again
+                    console.warn("No se pudo verificar el conflicto de horario: " + (result.data.message || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error("Error en la verificación de conflicto de horario:", error);
+                // Non-blocking error, backend will validate again
+            }
+        }
+        // --- End client-side conflict check ---
+
+        const date = new Date(`${startDate}T12:00:00Z`); // Use Z for UTC context
         const dayOfWeek = date.getUTCDay();
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
         const dayKey = dayMapping[dayOfWeek];
@@ -528,13 +560,18 @@
             this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
             return;
         }
+
         const data = new URLSearchParams({ action: 'cpp_save_start_date', nonce: cppFrontendData.nonce, evaluacion_id: this.currentEvaluacionId, start_date: startDate });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
                 if (currentEval) currentEval.start_date = startDate;
                 this.render();
-            } else { alert('Error al guardar la fecha.'); }
+            } else {
+                alert(result.data.message || 'Error al guardar la fecha.');
+                const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+                this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+            }
         });
     },
     deleteSesion(sesionId) {
