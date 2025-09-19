@@ -299,6 +299,12 @@
                         }
                     }
                 }
+                    // Renderizar la pestaña de la semana bajo demanda
+                    if (tabName === 'semana') {
+                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
+                            CppProgramadorApp.renderSemanaTab();
+                        }
+                    }
             } else if (tabName === 'configuracion') {
                 if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
                     if (cpp.currentClaseIdCuaderno) {
@@ -307,6 +313,23 @@
                         // Si no hay clase abierta, la pestaña de configuración muestra por defecto
                         // el formulario para crear una nueva clase, así que reseteamos a ese estado.
                         cpp.config.resetForm();
+                    }
+                }
+            } else if (tabName === 'cuaderno') {
+                // Sincronizar el cuaderno si la evaluación ha cambiado en otra pestaña
+                if (cpp.currentClaseIdCuaderno) {
+                    const localStorageKey = this.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
+                    let lastEvalIdFromStorage = null;
+                    try {
+                        lastEvalIdFromStorage = localStorage.getItem(localStorageKey);
+                    } catch (e) {
+                        console.warn("No se pudo leer de localStorage:", e);
+                    }
+
+                    if (lastEvalIdFromStorage && lastEvalIdFromStorage !== cpp.currentEvaluacionId) {
+                        console.log(`Sincronizando cuaderno a la evaluación ${lastEvalIdFromStorage} desde localStorage.`);
+                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                        this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, lastEvalIdFromStorage);
                     }
                 }
             }

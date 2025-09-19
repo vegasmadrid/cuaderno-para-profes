@@ -116,10 +116,66 @@ function cpp_programador_save_sesion($data) {
     }
 }
 
-function cpp_programador_delete_sesion($sesion_id, $user_id) {
+function cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities = false) {
     global $wpdb;
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
-    return $wpdb->delete($tabla_sesiones, ['id' => $sesion_id, 'user_id' => $user_id], ['%d', '%d']) !== false;
+    $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_act_programadas = $wpdb->prefix . 'cpp_programador_actividades';
+
+    // Primero, verificar que el usuario es el propietario de la sesión
+    $owner_check = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+    if ($owner_check != $user_id) {
+        return false;
+    }
+
+    $wpdb->query('START TRANSACTION');
+
+    // Gestionar actividades evaluables asociadas
+    $actividades_evaluables_ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM $tabla_act_evaluables WHERE sesion_id = %d", $sesion_id));
+
+    if (!empty($actividades_evaluables_ids)) {
+        if ($delete_activities) {
+            // Incluir el archivo necesario para la función de eliminación
+            require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
+            foreach ($actividades_evaluables_ids as $actividad_id) {
+                if (function_exists('cpp_eliminar_actividad_y_calificaciones')) {
+                    $delete_ok = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
+                    if (!$delete_ok) {
+                        $wpdb->query('ROLLBACK');
+                        return false;
+                    }
+                } else {
+                    // Fallback o error si la función no existe
+                    $wpdb->query('ROLLBACK');
+                    return false;
+                }
+            }
+        } else {
+            // Desvincular las actividades evaluables
+            $ids_placeholder = implode(',', array_fill(0, count($actividades_evaluables_ids), '%d'));
+            $result = $wpdb->query($wpdb->prepare(
+                "UPDATE $tabla_act_evaluables SET sesion_id = NULL WHERE id IN ($ids_placeholder)",
+                $actividades_evaluables_ids
+            ));
+            if ($result === false) {
+                $wpdb->query('ROLLBACK');
+                return false;
+            }
+        }
+    }
+
+    // Eliminar actividades no evaluables (que solo existen en la tabla del programador)
+    $wpdb->delete($tabla_act_programadas, ['sesion_id' => $sesion_id], ['%d']);
+
+    // Finalmente, eliminar la sesión
+    $delete_sesion_ok = $wpdb->delete($tabla_sesiones, ['id' => $sesion_id, 'user_id' => $user_id], ['%d', '%d']);
+    if ($delete_sesion_ok === false) {
+        $wpdb->query('ROLLBACK');
+        return false;
+    }
+
+    $wpdb->query('COMMIT');
+    return true;
 }
 
 function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden_sesiones) {
@@ -195,6 +251,121 @@ function cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user
     $wpdb->query('COMMIT');
     return $wpdb->insert_id;
 }
+
+// --- Funciones de Lógica de Horario ---
+
+/**
+ * Calculates all the dates for a given evaluation's sessions based on a start date and schedule.
+ *
+ * @param array $sesiones_en_evaluacion Array of session objects for the evaluation.
+ * @param string $start_date_str The start date in 'Y-m-d' format.
+ * @param array $horario The user's schedule.
+ * @param array $calendar_config The user's calendar config (working_days, holidays, vacations).
+ * @param int $clase_id The ID of the class.
+ * @return array An array of calculated dates for each session, e.g., ['2025-09-15_09:00', '2025-09-15_10:00'].
+ */
+function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluacion, $start_date_str, $horario, $calendar_config, $clase_id) {
+    if (empty($start_date_str) || empty($sesiones_en_evaluacion) || empty($horario)) {
+        return [];
+    }
+
+    $schedule = [];
+
+    try {
+        $current_date = new DateTime($start_date_str . 'T12:00:00Z');
+    } catch (Exception $e) {
+        return []; // Invalid date format
+    }
+
+    $session_index = 0;
+    $safety_counter = 0;
+    $max_iterations = 365 * 5; // 5 years of margin
+
+    while ($session_index < count($sesiones_en_evaluacion) && $safety_counter < $max_iterations) {
+        $day_key = strtolower($current_date->format('D')); // mon, tue, etc.
+        $ymd = $current_date->format('Y-m-d');
+
+        $is_working_day = in_array($day_key, $calendar_config['working_days']);
+        $is_holiday = in_array($ymd, $calendar_config['holidays']);
+        $is_vacation = false;
+        if (!empty($calendar_config['vacations'])) {
+            foreach ($calendar_config['vacations'] as $v) {
+                if ($ymd >= $v['start'] && $ymd <= $v['end']) {
+                    $is_vacation = true;
+                    break;
+                }
+            }
+        }
+
+        if ($is_working_day && !$is_holiday && !$is_vacation && isset($horario[$day_key])) {
+            $slots_del_dia = $horario[$day_key];
+            ksort($slots_del_dia);
+
+            foreach ($slots_del_dia as $slot => $slot_data) {
+                if (isset($slot_data['claseId']) && strval($slot_data['claseId']) === strval($clase_id)) {
+                    if ($session_index < count($sesiones_en_evaluacion)) {
+                        $schedule[] = $ymd . '_' . $slot;
+                        $session_index++;
+                    }
+                }
+            }
+        }
+
+        $current_date->add(new DateInterval('P1D'));
+        $safety_counter++;
+    }
+
+    return $schedule;
+}
+
+/**
+ * Checks if a proposed start date for an evaluation causes a schedule conflict.
+ *
+ * @param int $user_id
+ * @param int $evaluacion_id_a_chequear The evaluation being changed.
+ * @param string $nueva_start_date The proposed new start date.
+ * @return bool True if there is a conflict, false otherwise.
+ */
+function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_chequear, $nueva_start_date) {
+    global $wpdb;
+    $all_data = cpp_programador_get_all_data($user_id);
+
+    $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id_a_chequear, $user_id));
+    if (!$clase_id) return false;
+
+    $sesiones_de_la_clase = array_filter($all_data['sesiones'], function($sesion) use ($clase_id) {
+        return $sesion->clase_id == $clase_id;
+    });
+
+    $occupied_slots = [];
+
+    $otras_evaluaciones = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, start_date FROM {$wpdb->prefix}cpp_evaluaciones WHERE clase_id = %d AND id != %d AND user_id = %d",
+        $clase_id, $evaluacion_id_a_chequear, $user_id
+    ));
+
+    foreach ($otras_evaluaciones as $eval) {
+        if (!empty($eval->start_date)) {
+            $sesiones_de_esta_eval = array_filter($sesiones_de_la_clase, function($sesion) use ($eval) {
+                return $sesion->evaluacion_id == $eval->id;
+            });
+            $schedule = cpp_programador_calculate_schedule_for_evaluation(array_values($sesiones_de_esta_eval), $eval->start_date, $all_data['config']['horario'], $all_data['config']['calendar_config'], $clase_id);
+            $occupied_slots = array_merge($occupied_slots, $schedule);
+        }
+    }
+
+    $occupied_slots = array_unique($occupied_slots);
+
+    $sesiones_a_chequear = array_filter($sesiones_de_la_clase, function($sesion) use ($evaluacion_id_a_chequear) {
+        return $sesion->evaluacion_id == $evaluacion_id_a_chequear;
+    });
+    $proposed_schedule = cpp_programador_calculate_schedule_for_evaluation(array_values($sesiones_a_chequear), $nueva_start_date, $all_data['config']['horario'], $all_data['config']['calendar_config'], $clase_id);
+
+    $conflict = array_intersect($proposed_schedule, $occupied_slots);
+
+    return !empty($conflict);
+}
+
 
 // --- Funciones CRUD para Actividades del Programador ---
 

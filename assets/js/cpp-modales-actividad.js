@@ -28,7 +28,7 @@
             }
         },
 
-        mostrarAnadir: function(sesionId = null) {
+        mostrarAnadir: function(sesionId = null, calculatedDate = null) {
             if (!cpp.currentClaseIdCuaderno || !cpp.currentEvaluacionId) {
                 alert('Por favor, selecciona una clase y una evaluación válidas para añadir la actividad.');
                 return;
@@ -36,6 +36,7 @@
             
             this.resetForm(); 
             $('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
+            $('#fecha_actividad_cuaderno_input').val(calculatedDate || ''); // Poner la fecha calculada
             if (sesionId) {
                 $('#sesion_id_cuaderno').val(sesionId);
             }
