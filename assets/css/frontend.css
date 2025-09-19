@@ -443,12 +443,12 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
-/* --- INICIO: Rediseño Simplificado Pestañas v2 --- */
+/* --- INICIO: Rediseño Simplificado Pestañas v3 --- */
 
 /* La barra superior principal */
 .cpp-fixed-top-bar {
     padding: 0;
-    box-shadow: 0 4px 8px -2px rgba(0,0,0,0.2); /* Sombra más pronunciada */
+    box-shadow: none; /* La sombra se aplica a las secciones */
 }
 
 /* Sección coloreada (izquierda + centro) */
@@ -456,6 +456,8 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     height: 100%;
     display: flex;
     align-items: center;
+    background-color: inherit; /* Hereda el color de la clase */
+    box-shadow: 0 4px 8px -2px rgba(0,0,0,0.2); /* Sombra solo en la parte de color */
 }
 
 /* Ajuste para que la sección de color ocupe más espacio */
@@ -492,6 +494,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-tabs-clase-specific .cpp-main-tab-link.active {
     background-color: #fff !important;
     color: #333 !important;
+    box-shadow: none; /* Sin sombra en la pestaña activa */
 }
 
 /* Sección blanca (derecha) */
@@ -501,10 +504,11 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     border-radius: 0; /* Sin bordes redondeados */
     flex-grow: 1; /* Menos espacio */
     justify-content: flex-end; /* Alinear contenido a la derecha */
+    box-shadow: none !important; /* Sin sombra */
     border-left: 1px solid #ddd;
 }
 
-/* --- FIN: Rediseño Simplificado Pestañas v2 --- */
+/* --- FIN: Rediseño Simplificado Pestañas v3 --- */
 
 /* --- Mejora de Espaciado en Modal de Importación --- */
 #cpp-import-step-2-options p {
@@ -540,6 +544,16 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-semana-table td {
     vertical-align: top;
     padding: 8px;
+    position: relative; /* Para el posicionamiento de los puntos */
+    overflow: hidden; /* Para que los puntos no se salgan */
+}
+
+.cpp-semana-table td .cpp-actividad-punto {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin: 2px;
 }
 
 .cpp-horario-header-row th {
