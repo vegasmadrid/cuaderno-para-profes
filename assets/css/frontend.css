@@ -443,95 +443,73 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
-/* --- INICIO: Rediseño Pestañas Agenda --- */
+/* --- INICIO: Rediseño Pestañas Agenda v2 (Alternativa sin cambio de HTML) --- */
 
-/* Ajuste general de la barra superior */
 .cpp-fixed-top-bar {
-    align-items: flex-end; /* Alinear items en la parte inferior para efecto de pestañas */
-    padding: 0; /* Resetear padding para control total */
-    box-shadow: none; /* Quitar sombra para un look más plano */
+    align-items: flex-end;
+    padding-left: 0;
+    padding-right: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
+    height: 50px;
 }
 
-/* Contenedor izquierdo: logo y nombre de clase */
 .cpp-top-bar-left {
-    padding: 0 15px;
-    height: 50px; /* Altura original */
-    display: flex;
-    align-items: center;
+    padding-left: 15px;
+    z-index: 1;
+    height: 100%;
 }
 
-/* Contenedor central: pestañas de la clase (cuaderno, programación, etc.) */
 .cpp-top-bar-center.cpp-tabs-clase-specific {
-    flex-grow: 1; /* Ocupar el espacio restante */
-    justify-content: flex-start; /* Alinear pestañas a la izquierda */
     margin-left: 20px;
     gap: 2px;
+    z-index: 1;
+    height: 40px; /* Altura de las pestañas */
+    align-self: flex-end;
+}
+
+.cpp-top-bar-right {
+    background-color: #fff;
+    height: 40px;
+    align-items: center;
+    padding: 0 15px;
+    margin-left: -15px; /* Para que se solape con la curva */
+    border-top-left-radius: 15px;
 }
 
 .cpp-tabs-clase-specific .cpp-main-tab-link {
     border-radius: 10px 10px 0 0;
-    padding: 8px 20px;
-    font-weight: 500;
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.85); /* Texto semi-transparente */
-    opacity: 1;
+    padding: 0 20px;
+    font-size: 16px; /* Letra más grande */
+    color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(0,0,0,0.15);
+    box-shadow: inset 0px -2px 3px rgba(0,0,0,0.1);
     border: none;
-    border-bottom: 1px solid transparent; /* Para el estado activo */
-    position: relative;
-    bottom: -1px; /* Para que se solape con el borde del contenido */
-    background-color: rgba(0,0,0,0.15); /* Color base de pestaña inactiva */
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
     transition: all 0.2s ease-in-out;
 }
 
-/* Colores para cada pestaña específica */
-.cpp-tabs-clase-specific .cpp-main-tab-link[data-tab="cuaderno"] {
-    background-color: rgba(255, 87, 34, 0.7); /* Naranja */
-}
-.cpp-tabs-clase-specific .cpp-main-tab-link[data-tab="programacion"] {
-    background-color: rgba(3, 169, 244, 0.7); /* Azul */
-}
-.cpp-tabs-clase-specific .cpp-main-tab-link[data-tab="configuracion"] {
-    background-color: rgba(139, 195, 74, 0.7); /* Verde */
-}
-
-/* Hover para pestañas inactivas */
 .cpp-tabs-clase-specific .cpp-main-tab-link:not(.active):hover {
     background-color: rgba(0,0,0,0.25);
     color: #fff;
 }
 
-/* Pestaña activa */
 .cpp-tabs-clase-specific .cpp-main-tab-link.active {
-    background-color: #fff !important; /* El fondo es blanco */
-    color: #333 !important; /* El texto es oscuro */
+    background-color: #fff !important;
+    color: #333 !important;
     font-weight: 600;
-    z-index: 2;
+    box-shadow: none;
+    height: 45px; /* Más alta que las inactivas */
 }
 
-/* Contenedor derecho: pestañas generales (semana, horario) y menú de usuario */
-.cpp-top-bar-right {
-    background-color: #fff;
-    border-top-left-radius: 15px; /* Curva para separar de la barra de color */
-    padding: 0 15px;
-    height: 40px; /* Un poco más bajo que la barra principal */
-    display: flex;
-    align-items: center;
-    box-shadow: -3px -3px 8px -5px rgba(0,0,0,0.1); /* Sombra sutil */
-}
-
-.cpp-tabs-general .cpp-main-tab-link {
-    border-radius: 18px; /* Mantener forma de píldora */
-    font-size: 13px;
-    padding: 6px 14px;
-}
-
-/* Contenido principal */
 .cpp-main-tabs-content {
-    border-top: 1px solid #e0e0e0; /* Borde superior para unir con la pestaña activa */
+    border-top: 1px solid #e0e0e0;
     background-color: #fff;
 }
 
-/* --- FIN: Rediseño Pestañas Agenda --- */
+/* --- FIN: Rediseño Pestañas Agenda v2 (Alternativa sin cambio de HTML) --- */
 
 /* --- Mejora de Espaciado en Modal de Importación --- */
 #cpp-import-step-2-options p {
