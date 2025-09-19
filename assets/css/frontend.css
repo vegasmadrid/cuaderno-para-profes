@@ -443,12 +443,12 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
-/* --- INICIO: Rediseño Simplificado Pestañas --- */
+/* --- INICIO: Rediseño Simplificado Pestañas v2 --- */
 
 /* La barra superior principal */
 .cpp-fixed-top-bar {
     padding: 0;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px -2px rgba(0,0,0,0.2); /* Sombra más pronunciada */
 }
 
 /* Sección coloreada (izquierda + centro) */
@@ -458,13 +458,13 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     align-items: center;
 }
 
-/* Ajuste para que la sección de color no ocupe tanto */
+/* Ajuste para que la sección de color ocupe más espacio */
 .cpp-top-bar-left {
-    flex-grow: 0;
+    flex-grow: 1;
     flex-shrink: 0;
 }
 .cpp-top-bar-center.cpp-tabs-clase-specific {
-    flex-grow: 1;
+    flex-grow: 10; /* Más espacio para las pestañas */
     justify-content: flex-start;
     gap: 0; /* Sin espacio entre pestañas */
 }
@@ -499,12 +499,12 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     background-color: #fff;
     height: 100%;
     border-radius: 0; /* Sin bordes redondeados */
-    flex-grow: 10; /* Ocupa mucho más espacio */
+    flex-grow: 1; /* Menos espacio */
     justify-content: flex-end; /* Alinear contenido a la derecha */
     border-left: 1px solid #ddd;
 }
 
-/* --- FIN: Rediseño Simplificado Pestañas --- */
+/* --- FIN: Rediseño Simplificado Pestañas v2 --- */
 
 /* --- Mejora de Espaciado en Modal de Importación --- */
 #cpp-import-step-2-options p {
