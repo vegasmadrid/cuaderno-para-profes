@@ -664,7 +664,6 @@
     render() {
         if (!this.currentClase) { this.tabContents.programacion.innerHTML = '<p class="cpp-empty-panel">Cargando...</p>'; return; }
         this.renderProgramacionTab();
-        this.renderSemanaTab();
         this.renderHorarioTab();
     },
     renderProgramacionTab() {

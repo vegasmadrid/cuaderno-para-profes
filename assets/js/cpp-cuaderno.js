@@ -299,6 +299,12 @@
                         }
                     }
                 }
+                    // Renderizar la pestaña de la semana bajo demanda
+                    if (tabName === 'semana') {
+                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
+                            CppProgramadorApp.renderSemanaTab();
+                        }
+                    }
             } else if (tabName === 'configuracion') {
                 if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
                     if (cpp.currentClaseIdCuaderno) {
