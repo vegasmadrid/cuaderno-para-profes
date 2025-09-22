@@ -737,17 +737,18 @@
 
         return sesionesFiltradas.map((s, index) => {
             const fechaMostrada = s.fecha_calculada
-                ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+                ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
                 : '';
+
+            const titleHTML = s.fecha_calculada
+                ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+                : s.titulo;
 
             return `
             <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
                 <span class="cpp-sesion-handle">⠿</span>
-                <div class="cpp-sesion-title-wrapper">
-                    <span class="cpp-sesion-number">${index + 1}.</span>
-                    <span class="cpp-sesion-title">${s.titulo}</span>
-                    ${fechaMostrada ? `<small class="cpp-sesion-date">${fechaMostrada}</small>` : ''}
-                </div>
+                <span class="cpp-sesion-number">${index + 1}.</span>
+                <span class="cpp-sesion-title">${titleHTML}</span>
                 <div class="cpp-sesion-actions">
                     <button class="cpp-sesion-action-btn cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">${addIconSVG}</button>
                     <button class="cpp-sesion-action-btn cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">${deleteIconSVG}</button>
@@ -759,14 +760,15 @@
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
 
         const fechaMostrada = this.currentSesion.fecha_calculada
-            ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+            ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
             : '';
 
+        const headerHTML = fechaMostrada
+            ? `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><span class="cpp-sesion-detail-date">${fechaMostrada}</span>`
+            : `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>`;
+
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
-                    <div class="cpp-sesion-detail-header">
-                        <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
-                        ${fechaMostrada ? `<span class="cpp-sesion-detail-date">${fechaMostrada}</span>` : ''}
-                    </div>
+                    ${headerHTML}
                     <div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div>
                     <div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div>
                     <div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div>
