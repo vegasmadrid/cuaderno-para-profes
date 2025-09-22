@@ -772,7 +772,7 @@
         return `
             <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : 'no-evaluable'}" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}">
                 <span class="cpp-actividad-handle">⠿</span>
-                <span class="cpp-actividad-titulo" contenteditable="true" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
+                <span class="cpp-actividad-titulo" contenteditable="${!isEvaluable}" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
                 <div class="cpp-actividad-actions">
                     ${actionsHTML}
                 </div>
@@ -897,11 +897,9 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    actividad.titulo = newTitle;
                     this.showNotification('Título guardado.');
-                    if (result.data.needs_gradebook_reload) {
-                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
-                    }
+                    // Forzamos un refresco para asegurar la consistencia de la UI
+                    this.refreshCurrentView();
                 } else {
                     this.showNotification('Error al guardar.', 'error');
                     element.textContent = actividad.titulo;
