@@ -500,12 +500,8 @@
                     },
                     success: (response) => {
                         if(response.success) {
-                            this.refreshEvaluacionesList(claseId);
-                            // Disparar evento para notificar a otros componentes
-                            $(document).trigger('cpp:evaluacionCreada', {
-                                claseId: claseId,
-                                newEvalId: response.data.evaluacion_id
-                            });
+                            // Forzar un refresco completo de la página para asegurar la sincronización total.
+                            window.location.reload();
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
                         }

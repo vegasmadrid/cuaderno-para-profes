@@ -291,9 +291,12 @@
                          $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
                     }
                 } else {
-                    // Si ya está inicializado, siempre recargamos los datos para asegurar que están sincronizados
-                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.fetchData === 'function') {
-                         CppProgramadorApp.fetchData(cpp.currentClaseIdCuaderno);
+                    // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
+                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                        // Solo cargar la clase si es diferente a la actual para no perder el estado
+                        if (!CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno) {
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        }
                     }
                 }
                     // Renderizar la pestaña de la semana bajo demanda
@@ -313,12 +316,21 @@
                     }
                 }
             } else if (tabName === 'cuaderno') {
-                // Siempre recargar el cuaderno para asegurar que los datos (evaluaciones, etc.) están actualizados.
+                // Sincronizar el cuaderno si la evaluación ha cambiado en otra pestaña
                 if (cpp.currentClaseIdCuaderno) {
-                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    // Cargar la última evaluación vista para esta clase desde localStorage, o la primera por defecto.
-                    const lastEvalId = localStorage.getItem(this.localStorageKey_lastEval + cpp.currentClaseIdCuaderno);
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, lastEvalId);
+                    const localStorageKey = this.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
+                    let lastEvalIdFromStorage = null;
+                    try {
+                        lastEvalIdFromStorage = localStorage.getItem(localStorageKey);
+                    } catch (e) {
+                        console.warn("No se pudo leer de localStorage:", e);
+                    }
+
+                    if (lastEvalIdFromStorage && lastEvalIdFromStorage !== cpp.currentEvaluacionId) {
+                        console.log(`Sincronizando cuaderno a la evaluación ${lastEvalIdFromStorage} desde localStorage.`);
+                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                        this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, lastEvalIdFromStorage);
+                    }
                 }
             }
         },
@@ -423,22 +435,6 @@
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     // Usar cpp.currentEvaluacionId que ya debería estar actualizado
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
-                }
-            });
-
-            $document.on('cpp:evaluacionCreada', function(e, data) {
-                // Cuando se crea una evaluación, tenemos que actualizar los componentes que la muestran.
-                if (data.claseId && cpp.currentClaseIdCuaderno == data.claseId) {
-                    console.log('Nueva evaluación creada, actualizando vistas...');
-
-                    // 1. Recargar el cuaderno para que muestre la nueva evaluación en el selector.
-                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    self.cargarContenidoCuaderno(data.claseId, claseNombre, data.newEvalId);
-
-                    // 2. Si el programador ya ha sido inicializado, recargarlo también.
-                    if (typeof CppProgramadorApp !== 'undefined' && self.programadorInicializado) {
-                        CppProgramadorApp.fetchData(data.claseId, data.newEvalId);
-                    }
                 }
             });
 
