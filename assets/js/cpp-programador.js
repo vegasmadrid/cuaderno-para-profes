@@ -793,8 +793,19 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
-                    this.refreshCurrentView();
+                if (result.success && result.data && result.data.actividad) {
+                    const newActividadId = result.data.actividad.id;
+                    this.refreshCurrentView(() => {
+                        const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividadId}"]`);
+                        if (newElement) {
+                            newElement.focus();
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            range.selectNodeContents(newElement);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        }
+                    });
                 } else {
                     this.showNotification('Error al añadir la tarea.', 'error');
                 }
@@ -898,7 +909,7 @@
             });
     },
 
-    refreshCurrentView() {
+    refreshCurrentView(callback) {
         const currentSesionId = this.currentSesion ? this.currentSesion.id : null;
         this.fetchDataFromServer().then(result => {
             if (result.success) {
@@ -911,6 +922,10 @@
                     this.currentSesion = this.sesiones.find(s => s.id == currentSesionId) || null;
                 }
                 this.render();
+                if (callback && typeof callback === 'function') {
+                    // Usamos un pequeño timeout para asegurar que el DOM se haya actualizado tras el renderizado
+                    setTimeout(callback, 50);
+                }
             } else {
                 this.showNotification('Error al refrescar los datos.', 'error');
             }

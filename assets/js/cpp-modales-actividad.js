@@ -35,6 +35,7 @@
             }
             
             this.resetForm(); 
+            $('#nombre_actividad_cuaderno_input').val('Nueva Actividad Evaluable');
             $('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
             $('#fecha_actividad_cuaderno_input').val(calculatedDate || ''); // Poner la fecha calculada
             if (sesionId) {
@@ -58,7 +59,7 @@
             }
 
             $('#cpp-modal-actividad-evaluable-cuaderno').fadeIn(function() {
-                $(this).find('#nombre_actividad_cuaderno_input').focus();
+                $(this).find('#nombre_actividad_cuaderno_input').select();
                 if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 8) {
                     cpp.tutorial.nextStep();
                 }
