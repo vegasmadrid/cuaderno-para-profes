@@ -83,6 +83,37 @@ function cpp_programador_get_all_data($user_id) {
         }
     }
 
+    // Calcular y adjuntar las fechas de las sesiones
+    if (!empty($clases) && !empty($sesiones)) {
+        foreach ($clases as $clase) {
+            foreach ($clase['evaluaciones'] as $evaluacion) {
+                if (!empty($evaluacion['start_date'])) {
+                    $sesiones_de_la_evaluacion = array_filter($sesiones, function($s) use ($evaluacion) {
+                        return $s->evaluacion_id == $evaluacion['id'];
+                    });
+
+                    if (!empty($sesiones_de_la_evaluacion)) {
+                        $schedule = cpp_programador_calculate_schedule_for_evaluation(
+                            array_values($sesiones_de_la_evaluacion),
+                            $evaluacion['start_date'],
+                            $config['horario'],
+                            $config['calendar_config'],
+                            $clase['id']
+                        );
+
+                        $i = 0;
+                        foreach ($sesiones_de_la_evaluacion as $sesion_obj) {
+                            if (isset($schedule[$i])) {
+                                $sesiones[$sesion_obj->id]->fecha_calculada = explode('_', $schedule[$i])[0];
+                            }
+                            $i++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones), 'debug_evaluables' => $actividades_evaluables];
 }
 
