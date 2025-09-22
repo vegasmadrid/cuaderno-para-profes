@@ -501,13 +501,11 @@
                     success: (response) => {
                         if(response.success) {
                             this.refreshEvaluacionesList(claseId);
-
-                            // Notificar al programador que recargue sus datos
-                            if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
-                                const newEvalId = response.data.evaluacion_id || null;
-                                // Forzar recarga de datos en el programador y seleccionar la nueva evaluación
-                                CppProgramadorApp.fetchData(claseId, newEvalId);
-                            }
+                            // Disparar evento para notificar a otros componentes
+                            $(document).trigger('cpp:evaluacionCreada', {
+                                claseId: claseId,
+                                newEvalId: response.data.evaluacion_id
+                            });
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
                         }

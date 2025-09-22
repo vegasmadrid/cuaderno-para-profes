@@ -291,12 +291,9 @@
                          $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
                     }
                 } else {
-                    // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
-                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                        // Solo cargar la clase si es diferente a la actual para no perder el estado
-                        if (!CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno) {
-                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
-                        }
+                    // Si ya está inicializado, siempre recargamos los datos para asegurar que están sincronizados
+                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.fetchData === 'function') {
+                         CppProgramadorApp.fetchData(cpp.currentClaseIdCuaderno);
                     }
                 }
                     // Renderizar la pestaña de la semana bajo demanda
@@ -435,6 +432,16 @@
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     // Usar cpp.currentEvaluacionId que ya debería estar actualizado
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
+                }
+            });
+
+            $document.on('cpp:evaluacionCreada', function(e, data) {
+                if (typeof CppProgramadorApp !== 'undefined' && self.programadorInicializado) {
+                    // Si el programador está visible y la nueva evaluación pertenece a la clase actual, recargar
+                    if (CppProgramadorApp.currentClase && CppProgramadorApp.currentClase.id == data.claseId) {
+                        console.log('Nueva evaluación creada, recargando programador...');
+                        CppProgramadorApp.fetchData(data.claseId, data.newEvalId);
+                    }
                 }
             });
 
