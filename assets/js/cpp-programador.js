@@ -63,7 +63,25 @@
         $document.on('click', '#cpp-add-actividad-evaluable-btn', function() { self.addEvaluableActividad(this.dataset.sesionId); });
         $document.on('click', '.cpp-edit-evaluable-btn', function() { self.editEvaluableActividad(this.dataset.actividadId); });
         $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
-        $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
+        $document.on('click', '.cpp-edit-inline-actividad-btn', function(e) {
+            e.preventDefault();
+            const titleSpan = this.previousElementSibling;
+            if (titleSpan && titleSpan.classList.contains('cpp-actividad-titulo')) {
+                titleSpan.setAttribute('contenteditable', 'true');
+                titleSpan.focus();
+                const range = document.createRange();
+                range.selectNodeContents(titleSpan);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        });
+        $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() {
+            if (this.getAttribute('contenteditable') === 'true') {
+                self.updateActividadTitle(this, this.dataset.actividadId);
+                this.setAttribute('contenteditable', 'false');
+            }
+        });
 
 
         // Horario
@@ -761,18 +779,22 @@
         const editIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
 
         let actionsHTML = '';
+        // The main edit button (for modal) is only for gradable activities
         if (isEvaluable) {
-            actionsHTML = `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
+            actionsHTML += `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
         }
 
-        actionsHTML += `<button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="Eliminar">
-                            ${deleteIconSVG}
-                        </button>`;
+        // Both types get a delete button in the main actions area
+        actionsHTML += `<button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="Eliminar">${deleteIconSVG}</button>`;
+
+        // The inline edit button is only for non-gradable activities and is placed right after the title
+        const inlineEditBtn = isEvaluable ? '' : `<button class="cpp-edit-inline-actividad-btn" data-actividad-id="${actividad.id}" title="Editar título">${editIconSVG}</button>`;
 
         return `
             <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : 'no-evaluable'}" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}">
                 <span class="cpp-actividad-handle">⠿</span>
-                <span class="cpp-actividad-titulo" contenteditable="${!isEvaluable}" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
+                <span class="cpp-actividad-titulo" contenteditable="false" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
+                ${inlineEditBtn}
                 <div class="cpp-actividad-actions">
                     ${actionsHTML}
                 </div>
