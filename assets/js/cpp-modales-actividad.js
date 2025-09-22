@@ -34,11 +34,23 @@
                 return;
             }
             
-            this.resetForm(); 
+            this.resetForm();
+            $('#nombre_actividad_cuaderno_input').val('Nueva Actividad Evaluable');
             $('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
-            $('#fecha_actividad_cuaderno_input').val(calculatedDate || ''); // Poner la fecha calculada
+
+            const $fechaInput = $('#fecha_actividad_cuaderno_input');
+            const $fechaGroup = $fechaInput.closest('.cpp-form-group');
+
             if (sesionId) {
+                // Vinculada a la programación: fecha no editable
+                $fechaInput.val(calculatedDate || '').prop('readonly', true);
+                $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
                 $('#sesion_id_cuaderno').val(sesionId);
+            } else {
+                // No vinculada: fecha editable
+                $fechaInput.val('').prop('readonly', false);
+                $fechaGroup.removeClass('cpp-readonly').attr('title', '');
+                $('#sesion_id_cuaderno').val('');
             }
 
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
@@ -58,7 +70,7 @@
             }
 
             $('#cpp-modal-actividad-evaluable-cuaderno').fadeIn(function() {
-                $(this).find('#nombre_actividad_cuaderno_input').focus();
+                $(this).find('#nombre_actividad_cuaderno_input').select();
                 if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 8) {
                     cpp.tutorial.nextStep();
                 }
@@ -113,7 +125,19 @@
             $form.find('#actividad_id_editar_cuaderno').val(actividadId);
             $form.find('#nombre_actividad_cuaderno_input').val(nombreActividad);
             $form.find('#nota_maxima_actividad_cuaderno_input').val(parseFloat(notaMaxima).toFixed(2));
-            $form.find('#fecha_actividad_cuaderno_input').val(fechaActividad ? fechaActividad.split(' ')[0] : '');
+
+            const $fechaInput = $form.find('#fecha_actividad_cuaderno_input');
+            const $fechaGroup = $fechaInput.closest('.cpp-form-group');
+            $fechaInput.val(fechaActividad ? fechaActividad.split(' ')[0] : '');
+
+            if (idActividadProgramada && idActividadProgramada !== 'null' && idActividadProgramada !== '') {
+                 $fechaInput.prop('readonly', true);
+                 $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
+            } else {
+                 $fechaInput.prop('readonly', false);
+                 $fechaGroup.removeClass('cpp-readonly').attr('title', '');
+            }
+
             $form.find('#descripcion_actividad_cuaderno_textarea').val(descripcionActividad);
             $form.find('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
 
@@ -226,7 +250,19 @@
             $form.find('#sesion_id_cuaderno').val(actividad.sesion_id);
             $form.find('#nombre_actividad_cuaderno_input').val(actividad.nombre_actividad);
             $form.find('#nota_maxima_actividad_cuaderno_input').val(parseFloat(actividad.nota_maxima).toFixed(2));
-            $form.find('#fecha_actividad_cuaderno_input').val(actividad.fecha_actividad ? actividad.fecha_actividad.split(' ')[0] : '');
+
+            const $fechaInput = $form.find('#fecha_actividad_cuaderno_input');
+            const $fechaGroup = $fechaInput.closest('.cpp-form-group');
+            $fechaInput.val(actividad.fecha_actividad ? actividad.fecha_actividad.split(' ')[0] : '');
+
+            if (actividad.sesion_id && actividad.sesion_id != '0') {
+                $fechaInput.prop('readonly', true);
+                $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
+            } else {
+                $fechaInput.prop('readonly', false);
+                $fechaGroup.removeClass('cpp-readonly').attr('title', '');
+            }
+
             $form.find('#descripcion_actividad_cuaderno_textarea').val(actividad.descripcion_actividad);
             $form.find('#clase_id_actividad_cuaderno_form').val(cpp.currentClaseIdCuaderno);
 

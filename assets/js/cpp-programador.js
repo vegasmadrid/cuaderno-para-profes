@@ -717,21 +717,40 @@
         const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
         const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
 
-        return sesionesFiltradas.map((s, index) => `
+        return sesionesFiltradas.map((s, index) => {
+            const fechaMostrada = s.fecha_calculada
+                ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                : '';
+
+            const titleHTML = s.fecha_calculada
+                ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+                : s.titulo;
+
+            return `
             <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
                 <span class="cpp-sesion-handle">⠿</span>
                 <span class="cpp-sesion-number">${index + 1}.</span>
-                <span class="cpp-sesion-title">${s.titulo}</span>
+                <span class="cpp-sesion-title">${titleHTML}</span>
                 <div class="cpp-sesion-actions">
                     <button class="cpp-sesion-action-btn cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">${addIconSVG}</button>
                     <button class="cpp-sesion-action-btn cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">${deleteIconSVG}</button>
                 </div>
-            </li>`).join('');
+            </li>`
+        }).join('');
     },
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
+
+        const fechaMostrada = this.currentSesion.fecha_calculada
+            ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+            : '';
+
+        const headerHTML = fechaMostrada
+            ? `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><span class="cpp-sesion-detail-date">${fechaMostrada}</span>`
+            : `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>`;
+
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
-                    <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
+                    ${headerHTML}
                     <div class="cpp-sesion-detail-section"><h4>Descripción</h4><div class="cpp-sesion-detail-content" data-field="descripcion" contenteditable="true">${this.currentSesion.descripcion || ''}</div></div>
                     <div class="cpp-sesion-detail-section"><h4>Objetivos</h4><div class="cpp-sesion-detail-content" data-field="objetivos" contenteditable="true">${this.currentSesion.objetivos || ''}</div></div>
                     <div class="cpp-sesion-detail-section"><h4>Recursos</h4><div class="cpp-sesion-detail-content" data-field="recursos" contenteditable="true">${this.currentSesion.recursos || ''}</div></div>
@@ -772,7 +791,7 @@
         return `
             <li class="cpp-actividad-item ${isEvaluable ? 'evaluable' : 'no-evaluable'}" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}">
                 <span class="cpp-actividad-handle">⠿</span>
-                <span class="cpp-actividad-titulo" contenteditable="true" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
+                <span class="cpp-actividad-titulo" contenteditable="${!isEvaluable}" data-actividad-id="${actividad.id}">${actividad.titulo}</span>
                 <div class="cpp-actividad-actions">
                     ${actionsHTML}
                 </div>
@@ -793,8 +812,19 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
-                    this.refreshCurrentView();
+                if (result.success && result.data && result.data.actividad) {
+                    const newActividadId = result.data.actividad.id;
+                    this.refreshCurrentView(() => {
+                        const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividadId}"]`);
+                        if (newElement) {
+                            newElement.focus();
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            range.selectNodeContents(newElement);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        }
+                    });
                 } else {
                     this.showNotification('Error al añadir la tarea.', 'error');
                 }
@@ -876,6 +906,9 @@
         const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
         if (!actividad || newTitle === actividad.titulo) return;
 
+        const oldTitle = actividad.titulo;
+        actividad.titulo = newTitle;
+
         const updatedActividad = { ...actividad, titulo: newTitle };
         const data = new URLSearchParams({
             action: 'cpp_save_programador_actividad',
@@ -886,19 +919,19 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    actividad.titulo = newTitle;
                     this.showNotification('Título guardado.');
                     if (result.data.needs_gradebook_reload) {
                         document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
                 } else {
                     this.showNotification('Error al guardar.', 'error');
-                    element.textContent = actividad.titulo;
+                    element.textContent = oldTitle;
+                    actividad.titulo = oldTitle;
                 }
             });
     },
 
-    refreshCurrentView() {
+    refreshCurrentView(callback) {
         const currentSesionId = this.currentSesion ? this.currentSesion.id : null;
         this.fetchDataFromServer().then(result => {
             if (result.success) {
@@ -911,6 +944,10 @@
                     this.currentSesion = this.sesiones.find(s => s.id == currentSesionId) || null;
                 }
                 this.render();
+                if (callback && typeof callback === 'function') {
+                    // Usamos un pequeño timeout para asegurar que el DOM se haya actualizado tras el renderizado
+                    setTimeout(callback, 50);
+                }
             } else {
                 this.showNotification('Error al refrescar los datos.', 'error');
             }

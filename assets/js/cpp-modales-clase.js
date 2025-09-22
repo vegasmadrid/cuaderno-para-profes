@@ -500,7 +500,8 @@
                     },
                     success: (response) => {
                         if(response.success) {
-                            this.refreshEvaluacionesList(claseId);
+                            // Forzar un refresco completo de la página para asegurar la sincronización total.
+                            window.location.reload();
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
                         }
