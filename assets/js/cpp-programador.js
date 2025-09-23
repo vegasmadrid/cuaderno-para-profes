@@ -763,7 +763,14 @@
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
-        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
+        let controlsHTML = `
+            <div class="cpp-programacion-controls">
+                <div class="cpp-programacion-main-controls">
+                    <label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label>
+                    <label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label>
+                </div>
+                <div id="cpp-sesion-bulk-actions" class="hidden"></div>
+            </div>`;
         let layoutHTML;
 
         if (sesionesFiltradas.length === 0) {
@@ -780,7 +787,7 @@
                 </div>
             `;
         } else {
-            layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul><div id="cpp-sesion-bulk-actions"></div></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+            layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
         }
 
         content.innerHTML = controlsHTML + layoutHTML;
@@ -828,9 +835,11 @@
             ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
             : '';
 
-        const headerHTML = fechaMostrada
-            ? `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><span class="cpp-sesion-detail-date">${fechaMostrada}</span>`
-            : `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>`;
+        const headerHTML = `
+            <div class="cpp-sesion-detail-header">
+                <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
+                ${fechaMostrada ? `<span class="cpp-sesion-detail-date-badge"><span class="dashicons dashicons-calendar-alt"></span> ${fechaMostrada}</span>` : ''}
+            </div>`;
 
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
                     ${headerHTML}
@@ -1354,8 +1363,10 @@
                 <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
             `;
+            container.classList.remove('hidden');
         } else {
             container.innerHTML = '';
+            container.classList.add('hidden');
         }
     },
 

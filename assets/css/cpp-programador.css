@@ -14,36 +14,44 @@
 .cpp-tab-content.active { display: block; }
 
 /* --- Pestaña de Programación --- */
-.cpp-programacion-controls { display: flex; gap: 20px; align-items: center; padding: 15px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; transition: background-color 0.3s ease, color 0.3s ease; }
+.hidden { display: none !important; }
+
+#cpp-main-tab-programacion.active {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px); /* Ajustar este valor según la altura de la cabecera y otros elementos */
+}
+
+.cpp-programacion-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.cpp-programacion-main-controls {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
 .cpp-programacion-controls label { margin-bottom: 0; display:flex; align-items:center; gap: 8px; font-size: 14px; font-weight: 500; }
-.cpp-programacion-controls.dark-bg label { color: #fff; }
-.cpp-programacion-controls.dark-bg select, .cpp-programacion-controls.dark-bg input { background-color: rgba(255,255,255,0.2); color: #fff; border-color: rgba(255,255,255,0.5); }
-.cpp-programacion-controls.dark-bg option { color: #000; }
 #cpp-programacion-clase-selector, #cpp-programacion-evaluacion-selector, #cpp-start-date-selector { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
 
-.cpp-programacion-layout { display: flex; gap: 20px; }
-.cpp-programacion-left-col { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; }
-.cpp-programacion-right-col { flex-grow: 1; border-left: 1px solid #e0e0e0; padding-left: 20px; }
-.cpp-programacion-left-col { position: relative; } /* Needed for sticky positioning context */
-.cpp-sesiones-list-detailed { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; border: 1px solid #e0e0e0; border-radius: 4px; }
 #cpp-sesion-bulk-actions {
-    position: sticky;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(5px);
-    padding: 12px;
-    border-top: 1px solid #ccc;
-    z-index: 10;
     display: flex;
     gap: 10px;
     align-items: center;
-    justify-content: center;
-    margin-top: auto; /* Pushes to the bottom */
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
 }
+
 #cpp-sesion-bulk-actions .cpp-btn-danger {
     background-color: #d63638;
     color: white;
@@ -53,6 +61,29 @@
     background-color: #b02a2c;
     border-color: #b02a2c;
 }
+
+.cpp-programacion-layout {
+    display: flex;
+    gap: 20px;
+    flex-grow: 1;
+    overflow: hidden; /* Evita que el layout se desborde */
+}
+.cpp-programacion-left-col {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Scroll independiente */
+}
+.cpp-programacion-right-col {
+    flex-grow: 1;
+    border-left: 1px solid #e0e0e0;
+    padding-left: 20px;
+    overflow-y: auto; /* Scroll independiente */
+}
+
+.cpp-sesiones-list-detailed { list-style: none; padding: 0; margin: 0; flex-grow: 1; border: 1px solid #e0e0e0; border-radius: 4px; }
+
 .cpp-add-sesion-btn { margin-top: 15px; }
 .cpp-sesion-list-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; position: relative; }
 .cpp-sesion-list-item:hover { background-color: #f7f7f7; }
@@ -94,7 +125,26 @@
 }
 .cpp-sesion-placeholder { height: 45px; background-color: #f0f8ff; border: 1px dashed #a0c4e0; }
 
-.cpp-sesion-detail-title { font-size: 22px; font-weight: 500; padding: 5px; margin-bottom: 15px; border-radius: 4px; }
+.cpp-sesion-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+.cpp-sesion-detail-date-badge {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    margin-left: 15px;
+}
+.cpp-sesion-detail-title { flex-grow: 1; font-size: 22px; font-weight: 500; padding: 5px; margin-bottom: 0; border-radius: 4px; }
 .cpp-sesion-detail-desc { font-size: 15px; line-height: 1.7; color: #333; padding: 5px; min-height: 100px; border-radius: 4px; }
 .cpp-sesion-detail-title:hover, .cpp-sesion-detail-desc:hover, .cpp-sesion-detail-content:hover { background-color: #f0f8ff; }
 .cpp-sesion-detail-title:focus, .cpp-sesion-detail-desc:focus, .cpp-sesion-detail-content:focus { background-color: #fff; box-shadow: 0 0 0 2px #1a73e8; outline: none; }
