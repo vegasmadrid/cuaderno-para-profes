@@ -133,7 +133,8 @@
         $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
-        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); self.handleSesionSelection(this.dataset.sesionId, this.checked); });
+        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); });
+        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
