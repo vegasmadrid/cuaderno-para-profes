@@ -19,7 +19,8 @@
 #cpp-main-tab-programacion.active {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 200px); /* Ajustar este valor según la altura de la cabecera y otros elementos */
+    padding: 24px; /* Añadir padding que se quitó del contenedor padre */
+    height: 100%;
 }
 
 .cpp-programacion-controls {
