@@ -136,11 +136,72 @@
         $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); });
         $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
+        $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
+        $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
     },
 
+    handleDeleteSelectedSesions() {
+        if (this.selectedSesiones.length === 0) {
+            alert('Por favor, selecciona al menos una sesión para eliminar.');
+            return;
+        }
+
+        const confirmMessage = `¿Estás seguro de que quieres eliminar ${this.selectedSesiones.length} ${this.selectedSesiones.length > 1 ? 'sesiones' : 'sesión'}? Esta acción no se puede deshacer.`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        let deleteActivities = false;
+        const sessionsWithEvaluableActivities = this.selectedSesiones.some(sesionId => {
+            const sesion = this.sesiones.find(s => s.id == sesionId);
+            return sesion && sesion.actividades_programadas && sesion.actividades_programadas.some(act => act.tipo === 'evaluable');
+        });
+
+        if (sessionsWithEvaluableActivities) {
+            deleteActivities = confirm("Algunas de las sesiones seleccionadas contienen actividades evaluables. ¿Deseas eliminar también estas actividades del cuaderno de notas?\n\n(Aceptar = SÍ, eliminar / Cancelar = NO, mantener y desvincular)");
+        }
+
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const data = new URLSearchParams({
+            action: 'cpp_delete_multiple_sesiones',
+            nonce: cppFrontendData.nonce,
+            session_ids: JSON.stringify(this.selectedSesiones),
+            delete_activities: deleteActivities
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification(result.data.message || 'Sesiones eliminadas con éxito.');
+                    if (this.currentSesion && this.selectedSesiones.includes(this.currentSesion.id.toString())) {
+                        this.currentSesion = null;
+                    }
+                    this.selectedSesiones = [];
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    if (deleteActivities) {
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    }
+                } else {
+                    alert(result.data.message || 'Error al eliminar las sesiones.');
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+                this.updateBulkActionsUI();
+            });
+    },
+
+    cancelSelection() {
+        this.selectedSesiones = [];
+        this.updateBulkActionsUI();
+        this.renderProgramacionTab(); // Re-render to uncheck all boxes
+    },
 
     // --- Lógica de la App ---
     handleInlineEdit(element) {
@@ -702,7 +763,7 @@
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
-        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div><div id="cpp-sesion-bulk-actions"></div>`;
+        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
         let layoutHTML;
 
         if (sesionesFiltradas.length === 0) {
@@ -719,7 +780,7 @@
                 </div>
             `;
         } else {
-            layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
+            layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul><div id="cpp-sesion-bulk-actions"></div></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
         }
 
         content.innerHTML = controlsHTML + layoutHTML;
@@ -1287,7 +1348,12 @@
         if (!container) return;
 
         if (this.selectedSesiones.length > 0) {
-            container.innerHTML = `<button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-secondary">Copiar ${this.selectedSesiones.length} sesiones</button>`;
+            const count = this.selectedSesiones.length;
+            container.innerHTML = `
+                <button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-primary">Copiar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
+                <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
+                <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
+            `;
         } else {
             container.innerHTML = '';
         }

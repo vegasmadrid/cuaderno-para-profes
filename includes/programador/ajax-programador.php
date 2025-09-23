@@ -15,6 +15,7 @@ add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_progr
 add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
 add_action('wp_ajax_cpp_check_schedule_conflict', 'cpp_ajax_check_schedule_conflict_handler');
 add_action('wp_ajax_cpp_copy_multiple_sesiones', 'cpp_ajax_copy_sessions');
+add_action('wp_ajax_cpp_delete_multiple_sesiones', 'cpp_ajax_delete_multiple_sesiones');
 
 
 // Handlers para Actividades
@@ -387,6 +388,30 @@ function cpp_ajax_copy_sessions() {
         wp_send_json_success(['message' => 'Sesiones copiadas correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al copiar las sesiones.']);
+    }
+}
+
+function cpp_ajax_delete_multiple_sesiones() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $session_ids = isset($_POST['session_ids']) ? json_decode(stripslashes($_POST['session_ids']), true) : null;
+    $delete_activities = isset($_POST['delete_activities']) && $_POST['delete_activities'] === 'true';
+
+    if (empty($session_ids) || !is_array($session_ids)) {
+        wp_send_json_error(['message' => 'No se han proporcionado IDs de sesión válidos.']);
+        return;
+    }
+
+    $result = cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities);
+
+    if ($result) {
+        wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Ocurrió un error al eliminar una o más de las sesiones seleccionadas.']);
     }
 }
 

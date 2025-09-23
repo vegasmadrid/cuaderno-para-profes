@@ -209,6 +209,26 @@ function cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities 
     return true;
 }
 
+function cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities) {
+    global $wpdb;
+    if (empty($session_ids) || !is_array($session_ids)) {
+        return false;
+    }
+
+    $wpdb->query('START TRANSACTION');
+
+    foreach ($session_ids as $session_id) {
+        $result = cpp_programador_delete_sesion(intval($session_id), $user_id, $delete_activities);
+        if (!$result) {
+            $wpdb->query('ROLLBACK');
+            return false;
+        }
+    }
+
+    $wpdb->query('COMMIT');
+    return true;
+}
+
 function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id) {
     global $wpdb;
 
