@@ -46,26 +46,6 @@ function cpp_shortcode_render_programador() {
                 </form>
             </div>
         </div>
-
-        <div id="cpp-copy-sesion-modal" class="cpp-modal" style="display:none;">
-            <div class="cpp-modal-content">
-                <span class="cpp-modal-close">&times;</span>
-                <h2 id="cpp-copy-sesion-modal-title">Copiar Sesiones</h2>
-                <form id="cpp-copy-sesion-form">
-                    <div class="cpp-form-group">
-                        <label for="cpp-copy-dest-clase">Copiar a la clase:</label>
-                        <select id="cpp-copy-dest-clase" name="dest_clase" required></select>
-                    </div>
-                    <div class="cpp-form-group">
-                        <label for="cpp-copy-dest-evaluacion">En la evaluación:</label>
-                        <select id="cpp-copy-dest-evaluacion" name="dest_evaluacion" required></select>
-                    </div>
-                    <div class="cpp-modal-actions">
-                        <button type="submit" class="cpp-btn cpp-btn-primary">Copiar Sesiones</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
     <?php
     return ob_get_clean();
