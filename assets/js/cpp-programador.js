@@ -62,6 +62,7 @@
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
         $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
+            self.selectedSesiones = [];
             self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
             self.renderProgramacionTab();
         });
@@ -82,6 +83,11 @@
         $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
         // Navegación y Controles Generales
+        $document.on('click', '.cpp-main-tab-link[data-tab="programacion"]', () => {
+            setTimeout(() => {
+                self.updateBulkActionsUI();
+            }, 0);
+        });
         $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
             $('.cpp-main-tab-link[data-tab="configuracion"]').click();
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
@@ -797,6 +803,7 @@
         if (this.currentSesion) {
             this.makeActividadesSortable();
         }
+        this.updateBulkActionsUI();
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
