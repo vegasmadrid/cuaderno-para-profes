@@ -7,9 +7,10 @@
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {},
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
     currentClase: null, currentEvaluacionId: null, currentSesion: null,
+    selectedSesiones: [],
     originalContent: '', semanaDate: new Date(),
     isProcessing: false,
 
@@ -33,6 +34,13 @@
             tituloInput: document.querySelector('#cpp-sesion-titulo'),
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
         };
+        this.copySesionModal = {
+            element: document.querySelector('#cpp-copy-sesion-modal'),
+            form: document.querySelector('#cpp-copy-sesion-form'),
+            title: document.querySelector('#cpp-copy-sesion-modal-title'),
+            claseSelect: document.querySelector('#cpp-copy-dest-clase'),
+            evaluacionSelect: document.querySelector('#cpp-copy-dest-evaluacion')
+        };
         this.configModal = {
             element: document.querySelector('#cpp-config-modal'),
             form: document.querySelector('#cpp-config-form')
@@ -54,6 +62,7 @@
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
         $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
+            self.selectedSesiones = [];
             self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
             self.renderProgramacionTab();
         });
@@ -74,6 +83,11 @@
         $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
         // Navegación y Controles Generales
+        $document.on('click', '.cpp-main-tab-link[data-tab="programacion"]', () => {
+            setTimeout(() => {
+                self.updateBulkActionsUI();
+            }, 0);
+        });
         $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
             $('.cpp-main-tab-link[data-tab="configuracion"]').click();
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
@@ -102,6 +116,7 @@
             }
 
             self.currentSesion = null;
+            self.selectedSesiones = [];
             self.render();
         });
         $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
@@ -122,8 +137,77 @@
         $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
         $document.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
         $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
+
+        // --- Copy Sessions ---
+        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); });
+        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
+        $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
+        $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
+        $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
+        this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
+        this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
+        this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
     },
 
+    handleDeleteSelectedSesions() {
+        if (this.selectedSesiones.length === 0) {
+            alert('Por favor, selecciona al menos una sesión para eliminar.');
+            return;
+        }
+
+        const confirmMessage = `¿Estás seguro de que quieres eliminar ${this.selectedSesiones.length} ${this.selectedSesiones.length > 1 ? 'sesiones' : 'sesión'}? Esta acción no se puede deshacer.`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        let deleteActivities = false;
+        const sessionsWithEvaluableActivities = this.selectedSesiones.some(sesionId => {
+            const sesion = this.sesiones.find(s => s.id == sesionId);
+            return sesion && sesion.actividades_programadas && sesion.actividades_programadas.some(act => act.tipo === 'evaluable');
+        });
+
+        if (sessionsWithEvaluableActivities) {
+            deleteActivities = confirm("Algunas de las sesiones seleccionadas contienen actividades evaluables. ¿Deseas eliminar también estas actividades del cuaderno de notas?\n\n(Aceptar = SÍ, eliminar / Cancelar = NO, mantener y desvincular)");
+        }
+
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const data = new URLSearchParams({
+            action: 'cpp_delete_multiple_sesiones',
+            nonce: cppFrontendData.nonce,
+            session_ids: JSON.stringify(this.selectedSesiones),
+            delete_activities: deleteActivities
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification(result.data.message || 'Sesiones eliminadas con éxito.');
+                    if (this.currentSesion && this.selectedSesiones.includes(this.currentSesion.id.toString())) {
+                        this.currentSesion = null;
+                    }
+                    this.selectedSesiones = [];
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    if (deleteActivities) {
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    }
+                } else {
+                    alert(result.data.message || 'Error al eliminar las sesiones.');
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+                this.updateBulkActionsUI();
+            });
+    },
+
+    cancelSelection() {
+        this.selectedSesiones = [];
+        this.updateBulkActionsUI();
+        this.renderProgramacionTab(); // Re-render to uncheck all boxes
+    },
 
     // --- Lógica de la App ---
     handleInlineEdit(element) {
@@ -208,8 +292,11 @@
         }
 
         this.currentSesion = null;
+        this.selectedSesiones = [];
         if (renderAfter) {
             this.render();
+        } else {
+            this.updateBulkActionsUI();
         }
     },
     // La lógica de switchTab ahora es manejada por cpp-cuaderno.js
@@ -682,7 +769,14 @@
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
-        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
+        let controlsHTML = `
+            <div class="cpp-programacion-controls">
+                <div class="cpp-programacion-main-controls">
+                    <label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label>
+                    <label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label>
+                </div>
+                <div id="cpp-sesion-bulk-actions" class="hidden"></div>
+            </div>`;
         let layoutHTML;
 
         if (sesionesFiltradas.length === 0) {
@@ -709,6 +803,7 @@
         if (this.currentSesion) {
             this.makeActividadesSortable();
         }
+        this.updateBulkActionsUI();
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
@@ -726,8 +821,10 @@
                 ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
                 : s.titulo;
 
+            const isChecked = this.selectedSesiones.includes(s.id.toString());
             return `
             <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
+                <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
                 <span class="cpp-sesion-handle">⠿</span>
                 <span class="cpp-sesion-number">${index + 1}.</span>
                 <span class="cpp-sesion-title">${titleHTML}</span>
@@ -745,9 +842,11 @@
             ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
             : '';
 
-        const headerHTML = fechaMostrada
-            ? `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3><span class="cpp-sesion-detail-date">${fechaMostrada}</span>`
-            : `<h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>`;
+        const headerHTML = `
+            <div class="cpp-sesion-detail-header">
+                <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
+                ${fechaMostrada ? `<span class="cpp-sesion-detail-date-badge"><span class="dashicons dashicons-calendar-alt"></span> ${fechaMostrada}</span>` : ''}
+            </div>`;
 
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
                     ${headerHTML}
@@ -1243,6 +1342,121 @@
             currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
         return null; // Not found
+    },
+
+    // --- Copy Sessions Logic ---
+    handleSesionSelection(sesionId, isChecked) {
+        if (isChecked) {
+            if (!this.selectedSesiones.includes(sesionId)) {
+                this.selectedSesiones.push(sesionId);
+            }
+        } else {
+            const index = this.selectedSesiones.indexOf(sesionId);
+            if (index > -1) {
+                this.selectedSesiones.splice(index, 1);
+            }
+        }
+        this.updateBulkActionsUI();
+    },
+
+    updateBulkActionsUI() {
+        const container = document.getElementById('cpp-sesion-bulk-actions');
+        if (!container) return;
+
+        if (this.selectedSesiones.length > 0) {
+            const count = this.selectedSesiones.length;
+            container.innerHTML = `
+                <button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-primary">Copiar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
+                <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
+                <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
+            `;
+            container.classList.remove('hidden');
+        } else {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+        }
+    },
+
+    openCopySesionModal() {
+        if (this.selectedSesiones.length === 0) {
+            alert('Por favor, selecciona al menos una sesión para copiar.');
+            return;
+        }
+
+        const modal = this.copySesionModal;
+        modal.title.textContent = `Copiar ${this.selectedSesiones.length} sesiones`;
+
+        // Populate class select
+        modal.claseSelect.innerHTML = this.clases
+            .filter(c => c.id != this.currentClase.id)
+            .map(c => `<option value="${c.id}">${c.nombre}</option>`)
+            .join('');
+
+        this.updateCopyModalEvaluations();
+        modal.element.style.display = 'block';
+    },
+
+    closeCopySesionModal() {
+        this.copySesionModal.element.style.display = 'none';
+    },
+
+    updateCopyModalEvaluations() {
+        const modal = this.copySesionModal;
+        const selectedClaseId = modal.claseSelect.value;
+        const clase = this.clases.find(c => c.id == selectedClaseId);
+
+        if (clase && clase.evaluaciones) {
+            modal.evaluacionSelect.innerHTML = clase.evaluaciones
+                .map(e => `<option value="${e.id}">${e.nombre_evaluacion}</option>`)
+                .join('');
+        } else {
+            modal.evaluacionSelect.innerHTML = '<option value="">No hay evaluaciones</option>';
+        }
+    },
+
+    handleCopySesions(e) {
+        e.preventDefault();
+        if (this.isProcessing) return;
+
+        const destClaseId = this.copySesionModal.claseSelect.value;
+        const destEvaluacionId = this.copySesionModal.evaluacionSelect.value;
+
+        if (!destClaseId || !destEvaluacionId) {
+            alert('Por favor, selecciona una clase y una evaluación de destino.');
+            return;
+        }
+
+        this.isProcessing = true;
+        const $btn = this.copySesionModal.form.querySelector('button[type="submit"]');
+        const originalBtnHtml = $btn.innerHTML;
+        $btn.disabled = true;
+        $btn.innerHTML = '<span class="dashicons dashicons-update dashicons-spin"></span> Copiando...';
+
+        const data = new URLSearchParams({
+            action: 'cpp_copy_multiple_sesiones',
+            nonce: cppFrontendData.nonce,
+            session_ids: JSON.stringify(this.selectedSesiones),
+            destination_clase_id: destClaseId,
+            destination_evaluacion_id: destEvaluacionId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification(result.data.message || 'Sesiones copiadas con éxito.');
+                    this.closeCopySesionModal();
+                    this.selectedSesiones = [];
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                } else {
+                    alert(result.data.message || 'Error al copiar las sesiones.');
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+                $btn.disabled = false;
+                $btn.innerHTML = originalBtnHtml;
+            });
     }
     };
 })(jQuery);

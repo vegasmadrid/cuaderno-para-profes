@@ -209,6 +209,154 @@ function cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities 
     return true;
 }
 
+function cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities) {
+    global $wpdb;
+    if (empty($session_ids) || !is_array($session_ids)) {
+        return false;
+    }
+
+    $wpdb->query('START TRANSACTION');
+
+    foreach ($session_ids as $session_id) {
+        $result = cpp_programador_delete_sesion(intval($session_id), $user_id, $delete_activities);
+        if (!$result) {
+            $wpdb->query('ROLLBACK');
+            return false;
+        }
+    }
+
+    $wpdb->query('COMMIT');
+    return true;
+}
+
+function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id) {
+    global $wpdb;
+
+    if (empty($session_ids) || !is_array($session_ids)) {
+        return false;
+    }
+
+    $wpdb->query('START TRANSACTION');
+
+    // Helper function to get the default category ID for an evaluation
+    if (!function_exists('cpp_get_default_category_id_for_evaluacion')) {
+        function cpp_get_default_category_id_for_evaluacion($evaluacion_id) {
+            global $wpdb;
+            $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
+            // Assuming 'Sin categoría' is the default category name
+            $default_category_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $tabla_categorias WHERE evaluacion_id = %d AND nombre_categoria = 'Sin categoría'",
+                $evaluacion_id
+            ));
+            if ($default_category_id) {
+                return $default_category_id;
+            }
+            // Fallback to the first category if 'Sin categoría' does not exist
+            return $wpdb->get_var($wpdb->prepare("SELECT id FROM $tabla_categorias WHERE evaluacion_id = %d ORDER BY id ASC LIMIT 1", $evaluacion_id));
+        }
+    }
+
+    // Helper function to get a category by name for a given evaluation
+    if (!function_exists('cpp_get_category_id_by_name')) {
+        function cpp_get_category_id_by_name($evaluacion_id, $category_name) {
+            global $wpdb;
+            $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
+            return $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $tabla_categorias WHERE evaluacion_id = %d AND nombre_categoria = %s",
+                $evaluacion_id, $category_name
+            ));
+        }
+    }
+
+
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $tabla_act_programadas = $wpdb->prefix . 'cpp_programador_actividades';
+    $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
+
+    // Get the current max order in the destination
+    $max_orden = $wpdb->get_var($wpdb->prepare(
+        "SELECT MAX(orden) FROM $tabla_sesiones WHERE clase_id = %d AND evaluacion_id = %d AND user_id = %d",
+        $destination_clase_id, $destination_evaluacion_id, $user_id
+    ));
+    $current_order = is_null($max_orden) ? 0 : $max_orden + 1;
+
+    foreach ($session_ids as $session_id) {
+        $session_id = intval($session_id);
+
+        // 1. Fetch original session
+        $original_session = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_sesiones WHERE id = %d AND user_id = %d", $session_id, $user_id), ARRAY_A);
+
+        if (!$original_session) {
+            $wpdb->query('ROLLBACK');
+            return false; // Session not found or user does not own it
+        }
+
+        // 2. Duplicate session
+        $new_session_data = $original_session;
+        unset($new_session_data['id']);
+        $new_session_data['clase_id'] = $destination_clase_id;
+        $new_session_data['evaluacion_id'] = $destination_evaluacion_id;
+        $new_session_data['orden'] = $current_order++;
+
+        $result = $wpdb->insert($tabla_sesiones, $new_session_data);
+        if (!$result) {
+            $wpdb->query('ROLLBACK');
+            return false;
+        }
+        $new_session_id = $wpdb->insert_id;
+
+        // 3. Fetch and duplicate associated activities
+        // Non-evaluable activities
+        $non_evaluable_activities = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_act_programadas WHERE sesion_id = %d", $session_id), ARRAY_A);
+        foreach ($non_evaluable_activities as $activity) {
+            $new_activity_data = $activity;
+            unset($new_activity_data['id']);
+            $new_activity_data['sesion_id'] = $new_session_id;
+            if (!$wpdb->insert($tabla_act_programadas, $new_activity_data)) {
+                $wpdb->query('ROLLBACK');
+                return false;
+            }
+        }
+
+        // Evaluable activities
+        $evaluable_activities = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_act_evaluables WHERE sesion_id = %d", $session_id), ARRAY_A);
+        foreach ($evaluable_activities as $activity) {
+            $new_activity_data = $activity;
+            unset($new_activity_data['id']);
+            $new_activity_data['clase_id'] = $destination_clase_id;
+            $new_activity_data['evaluacion_id'] = $destination_evaluacion_id;
+            $new_activity_data['sesion_id'] = $new_session_id;
+
+            // Handle category mapping
+            $original_category_name = $wpdb->get_var($wpdb->prepare("SELECT nombre_categoria FROM $tabla_categorias WHERE id = %d", $activity['categoria_id']));
+            if ($original_category_name) {
+                $new_category_id = cpp_get_category_id_by_name($destination_evaluacion_id, $original_category_name);
+                if (!$new_category_id) {
+                    $new_category_id = cpp_get_default_category_id_for_evaluacion($destination_evaluacion_id);
+                }
+                $new_activity_data['categoria_id'] = $new_category_id;
+            } else {
+                $new_activity_data['categoria_id'] = cpp_get_default_category_id_for_evaluacion($destination_evaluacion_id);
+            }
+
+            if (!$new_activity_data['categoria_id']) {
+                // If there's still no category, we can't proceed
+                $wpdb->query('ROLLBACK');
+                return false;
+            }
+
+            if (!$wpdb->insert($tabla_act_evaluables, $new_activity_data)) {
+                $wpdb->query('ROLLBACK');
+                return false;
+            }
+        }
+    }
+
+    $wpdb->query('COMMIT');
+    return true;
+}
+
 function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden_sesiones) {
     global $wpdb;
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
