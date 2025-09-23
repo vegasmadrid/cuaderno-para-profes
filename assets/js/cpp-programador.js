@@ -7,9 +7,10 @@
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {},
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
     currentClase: null, currentEvaluacionId: null, currentSesion: null,
+    selectedSesiones: [],
     originalContent: '', semanaDate: new Date(),
     isProcessing: false,
 
@@ -32,6 +33,13 @@
             evaluacionIdInput: document.querySelector('#cpp-sesion-evaluacion-id'),
             tituloInput: document.querySelector('#cpp-sesion-titulo'),
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
+        };
+        this.copySesionModal = {
+            element: document.querySelector('#cpp-copy-sesion-modal'),
+            form: document.querySelector('#cpp-copy-sesion-form'),
+            title: document.querySelector('#cpp-copy-sesion-modal-title'),
+            claseSelect: document.querySelector('#cpp-copy-dest-clase'),
+            evaluacionSelect: document.querySelector('#cpp-copy-dest-evaluacion')
         };
         this.configModal = {
             element: document.querySelector('#cpp-config-modal'),
@@ -102,6 +110,7 @@
             }
 
             self.currentSesion = null;
+            self.selectedSesiones = [];
             self.render();
         });
         $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
@@ -122,6 +131,13 @@
         $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
         $document.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
         $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
+
+        // --- Copy Sessions ---
+        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); self.handleSesionSelection(this.dataset.sesionId, this.checked); });
+        $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
+        this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
+        this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
+        this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
     },
 
 
@@ -208,8 +224,11 @@
         }
 
         this.currentSesion = null;
+        this.selectedSesiones = [];
         if (renderAfter) {
             this.render();
+        } else {
+            this.updateBulkActionsUI();
         }
     },
     // La lógica de switchTab ahora es manejada por cpp-cuaderno.js
@@ -682,7 +701,7 @@
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
-        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div>`;
+        let controlsHTML = `<div class="cpp-programacion-controls"><label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label><label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label></div><div id="cpp-sesion-bulk-actions"></div>`;
         let layoutHTML;
 
         if (sesionesFiltradas.length === 0) {
@@ -726,8 +745,10 @@
                 ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
                 : s.titulo;
 
+            const isChecked = this.selectedSesiones.includes(s.id.toString());
             return `
             <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
+                <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
                 <span class="cpp-sesion-handle">⠿</span>
                 <span class="cpp-sesion-number">${index + 1}.</span>
                 <span class="cpp-sesion-title">${titleHTML}</span>
@@ -1243,6 +1264,114 @@
             currentDate.setUTCDate(currentDate.getUTCDate() + 1);
         }
         return null; // Not found
+    },
+
+    // --- Copy Sessions Logic ---
+    handleSesionSelection(sesionId, isChecked) {
+        if (isChecked) {
+            if (!this.selectedSesiones.includes(sesionId)) {
+                this.selectedSesiones.push(sesionId);
+            }
+        } else {
+            const index = this.selectedSesiones.indexOf(sesionId);
+            if (index > -1) {
+                this.selectedSesiones.splice(index, 1);
+            }
+        }
+        this.updateBulkActionsUI();
+    },
+
+    updateBulkActionsUI() {
+        const container = document.getElementById('cpp-sesion-bulk-actions');
+        if (!container) return;
+
+        if (this.selectedSesiones.length > 0) {
+            container.innerHTML = `<button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-secondary">Copiar ${this.selectedSesiones.length} sesiones</button>`;
+        } else {
+            container.innerHTML = '';
+        }
+    },
+
+    openCopySesionModal() {
+        if (this.selectedSesiones.length === 0) {
+            alert('Por favor, selecciona al menos una sesión para copiar.');
+            return;
+        }
+
+        const modal = this.copySesionModal;
+        modal.title.textContent = `Copiar ${this.selectedSesiones.length} sesiones`;
+
+        // Populate class select
+        modal.claseSelect.innerHTML = this.clases
+            .filter(c => c.id != this.currentClase.id)
+            .map(c => `<option value="${c.id}">${c.nombre}</option>`)
+            .join('');
+
+        this.updateCopyModalEvaluations();
+        modal.element.style.display = 'block';
+    },
+
+    closeCopySesionModal() {
+        this.copySesionModal.element.style.display = 'none';
+    },
+
+    updateCopyModalEvaluations() {
+        const modal = this.copySesionModal;
+        const selectedClaseId = modal.claseSelect.value;
+        const clase = this.clases.find(c => c.id == selectedClaseId);
+
+        if (clase && clase.evaluaciones) {
+            modal.evaluacionSelect.innerHTML = clase.evaluaciones
+                .map(e => `<option value="${e.id}">${e.nombre_evaluacion}</option>`)
+                .join('');
+        } else {
+            modal.evaluacionSelect.innerHTML = '<option value="">No hay evaluaciones</option>';
+        }
+    },
+
+    handleCopySesions(e) {
+        e.preventDefault();
+        if (this.isProcessing) return;
+
+        const destClaseId = this.copySesionModal.claseSelect.value;
+        const destEvaluacionId = this.copySesionModal.evaluacionSelect.value;
+
+        if (!destClaseId || !destEvaluacionId) {
+            alert('Por favor, selecciona una clase y una evaluación de destino.');
+            return;
+        }
+
+        this.isProcessing = true;
+        const $btn = this.copySesionModal.form.querySelector('button[type="submit"]');
+        const originalBtnHtml = $btn.innerHTML;
+        $btn.disabled = true;
+        $btn.innerHTML = '<span class="dashicons dashicons-update dashicons-spin"></span> Copiando...';
+
+        const data = new URLSearchParams({
+            action: 'cpp_copy_multiple_sesiones',
+            nonce: cppFrontendData.nonce,
+            session_ids: JSON.stringify(this.selectedSesiones),
+            destination_clase_id: destClaseId,
+            destination_evaluacion_id: destEvaluacionId
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification(result.data.message || 'Sesiones copiadas con éxito.');
+                    this.closeCopySesionModal();
+                    this.selectedSesiones = [];
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                } else {
+                    alert(result.data.message || 'Error al copiar las sesiones.');
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+                $btn.disabled = false;
+                $btn.innerHTML = originalBtnHtml;
+            });
     }
     };
 })(jQuery);

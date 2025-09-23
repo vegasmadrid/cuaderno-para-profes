@@ -14,6 +14,7 @@ add_action('wp_ajax_cpp_save_start_date', 'cpp_ajax_save_start_date');
 add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_programador_example_data');
 add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
 add_action('wp_ajax_cpp_check_schedule_conflict', 'cpp_ajax_check_schedule_conflict_handler');
+add_action('wp_ajax_cpp_copy_multiple_sesiones', 'cpp_ajax_copy_sessions');
 
 
 // Handlers para Actividades
@@ -362,6 +363,31 @@ function cpp_ajax_check_schedule_conflict_handler() {
     $has_conflict = cpp_programador_check_schedule_conflict($user_id, $evaluacion_id, $start_date);
 
     wp_send_json_success(['conflict' => $has_conflict]);
+}
+
+function cpp_ajax_copy_sessions() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $session_ids = isset($_POST['session_ids']) ? json_decode(stripslashes($_POST['session_ids']), true) : null;
+    $destination_clase_id = isset($_POST['destination_clase_id']) ? intval($_POST['destination_clase_id']) : 0;
+    $destination_evaluacion_id = isset($_POST['destination_evaluacion_id']) ? intval($_POST['destination_evaluacion_id']) : 0;
+
+    if (empty($session_ids) || empty($destination_clase_id) || empty($destination_evaluacion_id)) {
+        wp_send_json_error(['message' => 'Faltan datos para realizar la copia.']);
+        return;
+    }
+
+    $result = cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id);
+
+    if ($result) {
+        wp_send_json_success(['message' => 'Sesiones copiadas correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Ocurrió un error al copiar las sesiones.']);
+    }
 }
 
 
