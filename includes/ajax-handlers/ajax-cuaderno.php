@@ -121,8 +121,8 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
                                 </button>
-                                <button class="cpp-btn-icon" id="cpp-a1-enter-direction-btn" title="Desplazar hacia abajo al pulsar Intro">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
+                                <button class="cpp-btn-icon" id="cpp-a1-symbol-palette-btn" title="Insertar Símbolo">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm3.4 14.59L12 13.17 8.6 16.58 7.18 15.17 10.59 12 7.18 8.83l1.42-1.41L12 10.83l3.4-3.41 1.42 1.41L13.41 12l3.41 3.17-1.42 1.42z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-import-students-btn" title="Importar Alumnos desde Excel">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 13v-3h-2v3H8l4 4 4-4h-3zm-1-5V3.5L18.5 9H13z"/></svg>
@@ -327,12 +327,24 @@ function cpp_ajax_guardar_calificacion_alumno() {
     $nota_str = isset($_POST['nota']) ? trim($_POST['nota']) : null;
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : null;
     if (empty($alumno_id) || empty($actividad_id) || empty($evaluacion_id)) { wp_send_json_error(['data' => ['message' => 'Faltan IDs de alumno, actividad o evaluación.']]); return; }
+
+    $allowed_symbols = ['✓', 'F', 'T', 'X', 'E', 'N', 'P', 'J'];
     $nota_a_guardar = null;
+
     if ($nota_str !== '' && $nota_str !== null) {
-        $nota_str_limpia = str_replace(',', '.', $nota_str);
-        if (!is_numeric($nota_str_limpia)) { wp_send_json_error(['data' => ['message' => 'La nota debe ser un valor numérico.']]); return; }
-        $nota_a_guardar = floatval($nota_str_limpia);
+        if (in_array($nota_str, $allowed_symbols, true)) {
+            $nota_a_guardar = sanitize_text_field($nota_str);
+        } else {
+            $nota_str_limpia = str_replace(',', '.', $nota_str);
+            if (is_numeric($nota_str_limpia)) {
+                $nota_a_guardar = floatval($nota_str_limpia);
+            } else {
+                wp_send_json_error(['data' => ['message' => 'Valor no válido. Use un número o un símbolo permitido.']]);
+                return;
+            }
+        }
     }
+
     $resultado_guardado = cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota_a_guardar, $user_id);
     if ($resultado_guardado === false) { wp_send_json_error(['data' => ['message' => 'Error al guardar la calificación. Verifique que la nota no excede la máxima.']]); return; }
     global $wpdb;
@@ -461,8 +473,8 @@ function cpp_ajax_cargar_vista_final() {
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
                                 </button>
-                                <button class="cpp-btn-icon" id="cpp-a1-enter-direction-btn" title="Desplazar hacia abajo al pulsar Intro">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z"/></svg>
+                                <button class="cpp-btn-icon" id="cpp-a1-symbol-palette-btn" title="Insertar Símbolo">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm3.4 14.59L12 13.17 8.6 16.58 7.18 15.17 10.59 12 7.18 8.83l1.42-1.41L12 10.83l3.4-3.41 1.42 1.41L13.41 12l3.41 3.17-1.42 1.42z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-import-students-btn" title="Importar Alumnos desde Excel">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 13v-3h-2v3H8l4 4 4-4h-3zm-1-5V3.5L18.5 9H13z"/></svg>

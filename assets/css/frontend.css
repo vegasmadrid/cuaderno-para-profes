@@ -443,6 +443,62 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
+/* Estilos para la Paleta de Símbolos */
+#cpp-symbol-palette-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+#cpp-symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    flex-basis: 40%;
+}
+
+.cpp-symbol-item {
+    padding: 10px;
+    font-size: 1.5em;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.cpp-symbol-item:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.1);
+}
+
+#cpp-symbol-legend {
+    flex-basis: 60%;
+    border-left: 1px solid #eee;
+    padding-left: 20px;
+}
+
+#cpp-symbol-legend-inputs .cpp-form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#cpp-symbol-legend-inputs .cpp-legend-symbol-label {
+    font-size: 1.2em;
+    font-weight: bold;
+    width: 30px;
+    text-align: center;
+}
+
+#cpp-symbol-legend-inputs input[type="text"] {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 /* --- INICIO: Rediseño Simplificado Pestañas v4 --- */
 
 /* La barra superior principal */
