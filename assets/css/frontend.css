@@ -453,7 +453,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 #cpp-symbol-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 5px;
 }
 
 .cpp-symbol-item {
@@ -461,7 +461,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     align-items: center;
     justify-content: center;
     aspect-ratio: 1 / 1;
-    font-size: 1.8em;
+    font-size: 1.5em;
     border: 1px solid #ddd;
     border-radius: 8px;
     cursor: pointer;

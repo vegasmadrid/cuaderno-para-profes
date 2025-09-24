@@ -31,22 +31,27 @@
             const storageKey = self.localStorageKey_symbolLegends + userId;
 
             // Cargar leyendas desde localStorage o usar valores por defecto
+            const defaultLegends = {
+                '👍': 'Buen trabajo / Positivo',
+                '✅': 'Tarea entregada',
+                '🏃‍♂️': 'Falta injustificada',
+                '⌛': 'Retraso',
+                '❌': 'No se presenta / No entrega',
+                '📝': 'Falta justificada',
+                '❓': 'Duda / Necesita revisión',
+                '⭐': 'Trabajo destacado'
+            };
+            let savedLegends = {};
             try {
-                const savedLegends = localStorage.getItem(storageKey);
-                self.symbolLegends = savedLegends ? JSON.parse(savedLegends) : {
-                    '👍': 'Buen trabajo / Positivo',
-                    '✅': 'Tarea entregada',
-                    '🏃‍♂️': 'Falta injustificada',
-                    '⌛': 'Retraso',
-                    '❌': 'No se presenta / No entrega',
-                    '📝': 'Falta justificada',
-                    '❓': 'Duda / Necesita revisión',
-                    '⭐': 'Trabajo destacado'
-                };
+                const savedLegendsRaw = localStorage.getItem(storageKey);
+                if (savedLegendsRaw) {
+                    savedLegends = JSON.parse(savedLegendsRaw);
+                }
             } catch (e) {
                 console.error("Error al leer las leyendas de los símbolos desde localStorage:", e);
-                self.symbolLegends = {}; // Reset en caso de error
             }
+            // Unir los defaults con los guardados por el usuario
+            self.symbolLegends = Object.assign({}, defaultLegends, savedLegends);
 
             const $symbolGrid = $('#cpp-symbol-grid');
             const $legendInputs = $('#cpp-symbol-legend-inputs');
