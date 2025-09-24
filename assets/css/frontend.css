@@ -454,6 +454,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 5px;
+    flex: 0 0 180px; /* No crecer, no encoger, base de 180px */
 }
 
 .cpp-symbol-item {
@@ -476,6 +477,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 #cpp-symbol-legend {
     border-left: 1px solid #eee;
     padding-left: 20px;
+    flex: 1; /* Ocupar el espacio restante */
 }
 
 #cpp-symbol-legend-inputs .cpp-form-group {
