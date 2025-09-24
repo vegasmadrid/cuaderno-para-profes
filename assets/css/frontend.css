@@ -178,7 +178,6 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     flex-grow: 1; min-height: 0; overflow: auto !important;
     position: relative; background-color: #fff; border: none;
     cursor: default;
-    margin-bottom: 50px; /* Espacio para que la última fila y el scroll no queden ocultos */
 }
 .cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando, .cpp-welcome-screen {
     display: flex;
@@ -443,62 +442,44 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     flex-direction: column;
 }
 
-/* Estilos para la Paleta de Símbolos */
-#cpp-symbol-palette-container {
+/* Estilos para la Paleta de Símbolos (Diseño de Lista Única) */
+#cpp-symbol-list-container {
+    margin-top: 20px;
     display: flex;
-    gap: 20px;
-    margin-top: 15px;
+    flex-direction: column;
+    gap: 15px;
 }
 
-#cpp-symbol-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
-    flex: 0 0 180px; /* No crecer, no encoger, base de 180px */
+.cpp-symbol-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .cpp-symbol-item {
+    flex: 0 0 40px; /* Ancho fijo para el símbolo */
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 1 / 1;
-    font-size: 1.5em;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    font-size: 1.4em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s;
+    transition: background-color 0.2s;
 }
 
 .cpp-symbol-item:hover {
-    background-color: #f0f0f0;
-    transform: scale(1.1);
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
 }
 
-#cpp-symbol-legend {
-    border-left: 1px solid #eee;
-    padding-left: 20px;
-    flex: 1; /* Ocupar el espacio restante */
-}
-
-#cpp-symbol-legend-inputs .cpp-form-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-#cpp-symbol-legend-inputs .cpp-legend-symbol-label {
-    font-size: 1.2em;
-    font-weight: bold;
-    width: 30px;
-    text-align: center;
-}
-
-#cpp-symbol-legend-inputs input[type="text"] {
-    flex-grow: 1;
+.cpp-legend-input {
+    flex: 1; /* Ocupa el resto del espacio */
     padding: 8px 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    font-size: 14px;
 }
 
 /* --- INICIO: Rediseño Simplificado Pestañas v4 --- */
@@ -1932,7 +1913,6 @@ body.cpp-no-text-select {
     position: relative;
     background-color: #fff;
     border-top: 1px solid #e0e0e0;
-    margin-bottom: 50px;
 }
 
 .cpp-main-tab-content {

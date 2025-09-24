@@ -53,22 +53,21 @@
             // Unir los defaults con los guardados por el usuario
             self.symbolLegends = Object.assign({}, defaultLegends, savedLegends);
 
-            const $symbolGrid = $('#cpp-symbol-grid');
-            const $legendInputs = $('#cpp-symbol-legend-inputs');
-            $symbolGrid.empty();
-            $legendInputs.empty();
+            const $listContainer = $('#cpp-symbol-list-container');
+            $listContainer.empty();
 
             self.availableSymbols.forEach(symbol => {
-                // Añadir símbolo a la rejilla
-                const symbolItem = $('<div class="cpp-symbol-item"></div>').text(symbol).data('symbol', symbol);
-                $symbolGrid.append(symbolItem);
-
-                // Añadir campo de leyenda
                 const legendText = self.symbolLegends[symbol] || '';
-                const formGroup = $('<div class="cpp-form-group"></div>');
-                formGroup.append(`<span class="cpp-legend-symbol-label">${symbol}</span>`);
-                formGroup.append(`<input type="text" class="cpp-legend-input" data-symbol="${symbol}" value="${legendText}" placeholder="Significado...">`);
-                $legendInputs.append(formGroup);
+
+                const row = $('<div class="cpp-symbol-row"></div>');
+
+                const symbolItem = $('<div class="cpp-symbol-item"></div>').text(symbol).data('symbol', symbol);
+                const legendInput = $(`<input type="text" class="cpp-legend-input" data-symbol="${symbol}" value="${legendText}" placeholder="Significado...">`);
+
+                row.append(symbolItem);
+                row.append(legendInput);
+
+                $listContainer.append(row);
             });
 
             // Mostrar el modal
@@ -481,7 +480,7 @@
                 const userId = (cppFrontendData && cppFrontendData.userId) ? cppFrontendData.userId : '0';
                 const storageKey = self.localStorageKey_symbolLegends + userId;
                 let newLegends = {};
-                $('#cpp-symbol-legend-inputs .cpp-legend-input').each(function() {
+                $('#cpp-symbol-list-container .cpp-legend-input').each(function() {
                     const symbol = $(this).data('symbol');
                     const legendText = $(this).val();
                     newLegends[symbol] = legendText;
@@ -502,7 +501,7 @@
             });
 
             // Insertar un símbolo en la celda activa
-            $document.on('click', '#cpp-symbol-grid .cpp-symbol-item', function() {
+            $document.on('click', '#cpp-symbol-list-container .cpp-symbol-item', function() {
                 const symbol = $(this).data('symbol');
 
                 if (self.lastFocusedCell) {

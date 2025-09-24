@@ -287,17 +287,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <div class="cpp-modal-content">
                     <span class="cpp-modal-close">&times;</span>
                     <h2>Paleta de Símbolos</h2>
-                    <p>Haz clic en un símbolo para insertarlo en la celda activa. Edita la leyenda para personalizar su significado.</p>
-                    <div id="cpp-symbol-palette-container">
-                        <div id="cpp-symbol-grid">
-                            <!-- Los símbolos se generarán aquí por JS -->
-                        </div>
-                        <div id="cpp-symbol-legend">
-                            <h3>Leyenda</h3>
-                            <div id="cpp-symbol-legend-inputs">
-                                <!-- Las entradas para la leyenda se generarán aquí por JS -->
-                            </div>
-                        </div>
+                    <p>Haz clic en un símbolo para insertarlo. Edita la leyenda y pulsa Guardar.</p>
+                    <div id="cpp-symbol-list-container">
+                        <!-- Las filas de símbolos y leyendas se generarán aquí por JS -->
                     </div>
                     <div class="cpp-modal-actions">
                         <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-save-symbol-legend-btn">Guardar Leyenda</button>
