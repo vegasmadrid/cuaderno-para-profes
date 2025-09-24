@@ -20,7 +20,7 @@
         programadorInicializado: false,
 
         // --- Propiedades para la paleta de símbolos ---
-        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', ' excused ', '❓', '⭐'],
+        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', '📝', '❓', '⭐'],
         symbolLegends: {}, // Se cargará desde localStorage
         localStorageKey_symbolLegends: 'cpp_symbol_legends_user_',
         lastFocusedCell: null,
@@ -39,7 +39,7 @@
                     '🏃‍♂️': 'Falta injustificada',
                     '⌛': 'Retraso',
                     '❌': 'No se presenta / No entrega',
-                    ' excused ': 'Falta justificada',
+                    '📝': 'Falta justificada',
                     '❓': 'Duda / Necesita revisión',
                     '⭐': 'Trabajo destacado'
                 };

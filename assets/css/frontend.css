@@ -454,7 +454,6 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
-    flex-basis: 40%;
 }
 
 .cpp-symbol-item {
@@ -475,7 +474,6 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 #cpp-symbol-legend {
-    flex-basis: 60%;
     border-left: 1px solid #eee;
     padding-left: 20px;
 }
