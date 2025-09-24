@@ -23,7 +23,7 @@
         availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', ' excused ', '❓', '⭐'],
         symbolLegends: {}, // Se cargará desde localStorage
         localStorageKey_symbolLegends: 'cpp_symbol_legends_user_',
-        activeCellForSymbolInsertion: null,
+        lastFocusedCell: null,
 
         openSymbolPalette: function() {
             const self = this;
@@ -419,7 +419,7 @@
 
             $document.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); });
             $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); });
-            $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } });
+            $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.lastFocusedCell = this; self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } });
             $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); });
             $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); });
             $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); });
@@ -459,9 +459,7 @@
             $document.on('click', '#cpp-a1-symbol-palette-btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                const $activeInput = $(document.activeElement);
-                if ($activeInput.is('.cpp-input-nota')) {
-                    self.activeCellForSymbolInsertion = $activeInput[0]; // Guardar la celda activa
+                if (self.lastFocusedCell) {
                     self.openSymbolPalette();
                 } else {
                     alert("Por favor, selecciona una celda de nota primero.");
@@ -471,7 +469,6 @@
             // Cerrar la paleta (genérico para todos los modales)
             $document.on('click', '#cpp-modal-symbol-palette .cpp-modal-close', function() {
                 $('#cpp-modal-symbol-palette').hide();
-                self.activeCellForSymbolInsertion = null; // Limpiar la celda guardada
             });
 
             // Guardar la leyenda
@@ -503,12 +500,11 @@
             $document.on('click', '#cpp-symbol-grid .cpp-symbol-item', function() {
                 const symbol = $(this).data('symbol');
 
-                if (self.activeCellForSymbolInsertion) {
-                    const $targetInput = $(self.activeCellForSymbolInsertion);
+                if (self.lastFocusedCell) {
+                    const $targetInput = $(self.lastFocusedCell);
                     $targetInput.val(symbol);
                     self.guardarNotaDesdeInput.call($targetInput[0], { type: 'blur' }, null);
                     $('#cpp-modal-symbol-palette').hide();
-                    self.activeCellForSymbolInsertion = null; // Limpiar después de usar
                 } else {
                     alert("Error: No se encontró una celda de destino. Por favor, selecciona una celda de nuevo.");
                 }
