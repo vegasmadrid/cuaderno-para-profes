@@ -458,11 +458,13 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 .cpp-symbol-item {
-    padding: 10px;
-    font-size: 1.5em;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    font-size: 1.8em;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.2s;
 }

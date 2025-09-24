@@ -328,7 +328,7 @@ function cpp_ajax_guardar_calificacion_alumno() {
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : null;
     if (empty($alumno_id) || empty($actividad_id) || empty($evaluacion_id)) { wp_send_json_error(['data' => ['message' => 'Faltan IDs de alumno, actividad o evaluación.']]); return; }
 
-    $allowed_symbols = ['✓', 'F', 'T', 'X', 'E', 'N', 'P', 'J'];
+    $allowed_symbols = ['👍', '✅', '🏃‍♂️', '⌛', '❌', ' excused ', '❓', '⭐'];
     $nota_a_guardar = null;
 
     if ($nota_str !== '' && $nota_str !== null) {

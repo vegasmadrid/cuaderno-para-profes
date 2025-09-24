@@ -20,9 +20,10 @@
         programadorInicializado: false,
 
         // --- Propiedades para la paleta de símbolos ---
-        availableSymbols: ['✓', 'F', 'T', 'X', 'E', 'N', 'P', 'J'],
+        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', ' excused ', '❓', '⭐'],
         symbolLegends: {}, // Se cargará desde localStorage
         localStorageKey_symbolLegends: 'cpp_symbol_legends_user_',
+        activeCellForSymbolInsertion: null,
 
         openSymbolPalette: function() {
             const self = this;
@@ -33,14 +34,14 @@
             try {
                 const savedLegends = localStorage.getItem(storageKey);
                 self.symbolLegends = savedLegends ? JSON.parse(savedLegends) : {
-                    '✓': 'Tarea Entregada',
-                    'F': 'Falta Injustificada',
-                    'T': 'Retraso',
-                    'X': 'No se presenta',
-                    'E': 'Expulsión',
-                    'N': 'Necesita Mejorar',
-                    'P': 'Positivo',
-                    'J': 'Falta Justificada'
+                    '👍': 'Buen trabajo / Positivo',
+                    '✅': 'Tarea entregada',
+                    '🏃‍♂️': 'Falta injustificada',
+                    '⌛': 'Retraso',
+                    '❌': 'No se presenta / No entrega',
+                    ' excused ': 'Falta justificada',
+                    '❓': 'Duda / Necesita revisión',
+                    '⭐': 'Trabajo destacado'
                 };
             } catch (e) {
                 console.error("Error al leer las leyendas de los símbolos desde localStorage:", e);
@@ -458,24 +459,19 @@
             $document.on('click', '#cpp-a1-symbol-palette-btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                // Asegurarse de que hay una celda activa
-                if ($(document.activeElement).is('.cpp-input-nota')) {
+                const $activeInput = $(document.activeElement);
+                if ($activeInput.is('.cpp-input-nota')) {
+                    self.activeCellForSymbolInsertion = $activeInput[0]; // Guardar la celda activa
                     self.openSymbolPalette();
                 } else {
-                    // Opcional: enfocar la primera celda si no hay ninguna activa
-                    const $firstInput = $('.cpp-input-nota').first();
-                    if ($firstInput.length) {
-                        $firstInput.focus();
-                        self.openSymbolPalette();
-                    } else {
-                        alert("No hay celdas de notas disponibles para insertar un símbolo.");
-                    }
+                    alert("Por favor, selecciona una celda de nota primero.");
                 }
             });
 
             // Cerrar la paleta (genérico para todos los modales)
             $document.on('click', '#cpp-modal-symbol-palette .cpp-modal-close', function() {
                 $('#cpp-modal-symbol-palette').hide();
+                self.activeCellForSymbolInsertion = null; // Limpiar la celda guardada
             });
 
             // Guardar la leyenda
@@ -491,7 +487,6 @@
                 try {
                     localStorage.setItem(storageKey, JSON.stringify(newLegends));
                     self.symbolLegends = newLegends;
-                    // Opcional: mostrar una confirmación visual
                     const $button = $(this);
                     const originalText = $button.text();
                     $button.text('¡Guardado!').css('background-color', '#28a745');
@@ -507,15 +502,15 @@
             // Insertar un símbolo en la celda activa
             $document.on('click', '#cpp-symbol-grid .cpp-symbol-item', function() {
                 const symbol = $(this).data('symbol');
-                const $activeInput = $(document.activeElement);
 
-                if ($activeInput.is('.cpp-input-nota')) {
-                    $activeInput.val(symbol);
-                    // Disparar el guardado y el cierre del modal
-                    self.guardarNotaDesdeInput.call($activeInput[0], { type: 'blur' }, null);
+                if (self.activeCellForSymbolInsertion) {
+                    const $targetInput = $(self.activeCellForSymbolInsertion);
+                    $targetInput.val(symbol);
+                    self.guardarNotaDesdeInput.call($targetInput[0], { type: 'blur' }, null);
                     $('#cpp-modal-symbol-palette').hide();
+                    self.activeCellForSymbolInsertion = null; // Limpiar después de usar
                 } else {
-                    alert("Por favor, selecciona una celda de nota primero.");
+                    alert("Error: No se encontró una celda de destino. Por favor, selecciona una celda de nuevo.");
                 }
             });
 
