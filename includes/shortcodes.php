@@ -280,6 +280,27 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         <?php
         // --- INICIO DE LA SECCIÓN DE MODALES ---
 
+        // Modal para la paleta de símbolos
+        if (empty(did_action('cpp_modal_symbol_palette_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-symbol-palette">
+                <div class="cpp-modal-content">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2>Paleta de Símbolos</h2>
+                    <p>Haz clic en un símbolo para insertarlo. Edita la leyenda y pulsa Guardar.</p>
+                    <div id="cpp-symbol-list-container">
+                        <!-- Las filas de símbolos y leyendas se generarán aquí por JS -->
+                    </div>
+                    <div class="cpp-modal-actions">
+                        <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-save-symbol-legend-btn">Guardar Leyenda</button>
+                    </div>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_symbol_palette_outputted');
+        }
+
+
         if (empty(did_action('cpp_modal_crear_clase_outputted'))) {
             ?>
             <div class="cpp-modal" id="cpp-modal-crear-clase">

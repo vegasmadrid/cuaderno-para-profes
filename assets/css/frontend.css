@@ -178,7 +178,6 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     flex-grow: 1; min-height: 0; overflow: auto !important;
     position: relative; background-color: #fff; border: none;
     cursor: default;
-    margin-bottom: 50px; /* Espacio para que la última fila y el scroll no queden ocultos */
 }
 .cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando, .cpp-welcome-screen {
     display: flex;
@@ -322,6 +321,20 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     background-color: inherit !important; 
 }
 
+.cpp-cuaderno-td-final {
+    font-size: 16px;
+    position: relative;
+    cursor: pointer;
+}
+
+.cpp-warning-icon {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    font-size: 18px;
+}
+
 .cpp-editable-activity-name {
     display: block; padding: 2px 0; font-weight: 500;
     margin-bottom: 4px; font-size: 13px;
@@ -367,7 +380,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     background-color: transparent;
     border-radius: 0;
     text-align: center;
-    font-size: 14px;
+    font-size: 22px;
     color: inherit;
     -moz-appearance: textfield;
     transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
@@ -441,6 +454,46 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+}
+
+/* Estilos para la Paleta de Símbolos (Diseño de Lista Única) */
+#cpp-symbol-list-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.cpp-symbol-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cpp-symbol-item {
+    flex: 0 0 40px; /* Ancho fijo para el símbolo */
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cpp-symbol-item:hover {
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
+}
+
+.cpp-legend-input {
+    flex: 1; /* Ocupa el resto del espacio */
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
 }
 
 /* --- INICIO: Rediseño Simplificado Pestañas v4 --- */
@@ -1874,7 +1927,6 @@ body.cpp-no-text-select {
     position: relative;
     background-color: #fff;
     border-top: 1px solid #e0e0e0;
-    margin-bottom: 50px;
 }
 
 .cpp-main-tab-content {
@@ -1893,7 +1945,7 @@ body.cpp-no-text-select {
 }
 
 #cpp-programador-app, #cpp-cuaderno-tabla-area {
-    height: 100%;
+    height: 92%;
     display: flex;
     flex-direction: column;
 }

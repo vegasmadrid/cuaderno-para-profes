@@ -131,13 +131,33 @@ function cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota,
     }
 
     $nota_maxima_actividad = floatval($actividad_info->nota_maxima);
-    $nota_formateada_para_db = null;
+    $valor_a_guardar = null;
+    $formato_valor = '%s'; // Por defecto, tratar como string para permitir texto libre
 
     if ($nota !== null) {
-        if ($nota < 0 || $nota > $nota_maxima_actividad) {
-            return false;
+        // Extraer solo la parte numérica para la validación
+        preg_match('/^[0-9,.]*/', $nota, $matches);
+        $parte_numerica_str = isset($matches[0]) ? $matches[0] : '';
+        $parte_numerica_str_limpia = str_replace(',', '.', $parte_numerica_str);
+
+        if ($parte_numerica_str_limpia !== '' && is_numeric($parte_numerica_str_limpia)) {
+            $nota_numerica = floatval($parte_numerica_str_limpia);
+            if ($nota_numerica < 0 || $nota_numerica > $nota_maxima_actividad) {
+                return false; // La parte numérica excede los límites
+            }
         }
-        $nota_formateada_para_db = number_format($nota, 2, '.', '');
+
+        $valor_a_guardar = sanitize_text_field($nota);
+
+    } else { // Si la nota es null (celda vacía)
+        $existente_id_a_borrar = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id = %d",
+            $alumno_id, $actividad_id
+        ));
+        if ($existente_id_a_borrar) {
+            return $wpdb->delete($tabla_calificaciones, ['id' => $existente_id_a_borrar], ['%d']);
+        }
+        return true; // No hay nada que borrar, éxito
     }
 
     $existente_id = $wpdb->get_var($wpdb->prepare(
@@ -145,15 +165,8 @@ function cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota,
         $alumno_id, $actividad_id
     ));
 
-    if ($nota_formateada_para_db === null) {
-        if ($existente_id) {
-            return $wpdb->delete($tabla_calificaciones, ['id' => $existente_id], ['%d']);
-        }
-        return true;
-    }
-
-    $datos_calificacion = ['alumno_id' => $alumno_id, 'actividad_id' => $actividad_id, 'nota' => $nota_formateada_para_db];
-    $formatos_calificacion = ['%d', '%d', '%f'];
+    $datos_calificacion = ['alumno_id' => $alumno_id, 'actividad_id' => $actividad_id, 'nota' => $valor_a_guardar];
+    $formatos_calificacion = ['%d', '%d', $formato_valor];
 
     if ($existente_id) {
         return $wpdb->update($tabla_calificaciones, $datos_calificacion, ['id' => $existente_id], $formatos_calificacion, ['%d']);
