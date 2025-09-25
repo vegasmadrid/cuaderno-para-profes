@@ -328,22 +328,8 @@ function cpp_ajax_guardar_calificacion_alumno() {
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : null;
     if (empty($alumno_id) || empty($actividad_id) || empty($evaluacion_id)) { wp_send_json_error(['data' => ['message' => 'Faltan IDs de alumno, actividad o evaluación.']]); return; }
 
-    $allowed_symbols = ['👍', '✅', '🏃‍♂️', '⌛', '❌', '📝', '❓', '⭐'];
-    $nota_a_guardar = null;
-
-    if ($nota_str !== '' && $nota_str !== null) {
-        if (in_array($nota_str, $allowed_symbols, true)) {
-            $nota_a_guardar = sanitize_text_field($nota_str);
-        } else {
-            $nota_str_limpia = str_replace(',', '.', $nota_str);
-            if (is_numeric($nota_str_limpia)) {
-                $nota_a_guardar = floatval($nota_str_limpia);
-            } else {
-                wp_send_json_error(['data' => ['message' => 'Valor no válido. Use un número o un símbolo permitido.']]);
-                return;
-            }
-        }
-    }
+    // La validación ahora se hará en la función de guardado para permitir texto libre.
+    $nota_a_guardar = ($nota_str !== '' && $nota_str !== null) ? sanitize_text_field($nota_str) : null;
 
     $resultado_guardado = cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota_a_guardar, $user_id);
     if ($resultado_guardado === false) { wp_send_json_error(['data' => ['message' => 'Error al guardar la calificación. Verifique que la nota no excede la máxima.']]); return; }

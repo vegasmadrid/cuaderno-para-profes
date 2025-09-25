@@ -5,6 +5,21 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 // --- FUNCIONES DE CÁLCULO ---
 
+/**
+ * Extrae la parte numérica de una calificación que puede contener texto (ej. "7.5 👍").
+ * @param string $calificacion_str La calificación guardada.
+ * @return float|null El número extraído o null si no se encuentra ninguno.
+ */
+function cpp_extraer_numero_de_calificacion($calificacion_str) {
+    // Busca el primer número (entero o decimal, con punto o coma) en la cadena.
+    preg_match('/[0-9]+([.,][0-9]+)?/', $calificacion_str, $matches);
+    if (isset($matches[0])) {
+        // Reemplaza la coma por un punto para la conversión a float.
+        return floatval(str_replace(',', '.', $matches[0]));
+    }
+    return null;
+}
+
 function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id) {
     global $wpdb;
     
@@ -61,17 +76,19 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
             $categoria_id_actividad = $actividad['categoria_id'];
             if (!isset($map_categorias_porcentajes[$categoria_id_actividad])) { continue; }
             
-            if (isset($calificaciones_alumno[$actividad['id']]) && is_numeric($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = floatval($calificaciones_alumno[$actividad['id']]);
-                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                
-                $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
-                
-                if (!isset($notas_por_categoria_alumno[$categoria_id_actividad])) {
-                    $notas_por_categoria_alumno[$categoria_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
+            if (isset($calificaciones_alumno[$actividad['id']])) {
+                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
+
+                if ($nota_obtenida !== null) {
+                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                    $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+
+                    if (!isset($notas_por_categoria_alumno[$categoria_id_actividad])) {
+                        $notas_por_categoria_alumno[$categoria_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
+                    }
+                    $notas_por_categoria_alumno[$categoria_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
+                    $notas_por_categoria_alumno[$categoria_id_actividad]['contador']++;
                 }
-                $notas_por_categoria_alumno[$categoria_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
-                $notas_por_categoria_alumno[$categoria_id_actividad]['contador']++;
             }
         }
 
@@ -97,12 +114,13 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         $numero_de_actividades_con_nota = 0;
 
         foreach ($actividades_raw as $actividad) {
-            if (isset($calificaciones_alumno[$actividad['id']]) && is_numeric($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = floatval($calificaciones_alumno[$actividad['id']]);
-                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                
-                $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
-                $numero_de_actividades_con_nota++;
+            if (isset($calificaciones_alumno[$actividad['id']])) {
+                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
+                if ($nota_obtenida !== null) {
+                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                    $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
+                    $numero_de_actividades_con_nota++;
+                }
             }
         }
 
@@ -203,16 +221,18 @@ function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_
                 $categoria_id_actividad = $actividad['categoria_id'];
                 if (!isset($map_categorias[$categoria_id_actividad])) { continue; }
 
-                if (isset($calificaciones_alumno[$actividad['id']]) && is_numeric($calificaciones_alumno[$actividad['id']])) {
-                    $nota_obtenida = floatval($calificaciones_alumno[$actividad['id']]);
-                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                    $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+                if (isset($calificaciones_alumno[$actividad['id']])) {
+                    $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
+                    if ($nota_obtenida !== null) {
+                        $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                        $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
 
-                    if (!isset($notas_por_categoria_alumno[$categoria_id_actividad])) {
-                        $notas_por_categoria_alumno[$categoria_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
+                        if (!isset($notas_por_categoria_alumno[$categoria_id_actividad])) {
+                            $notas_por_categoria_alumno[$categoria_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
+                        }
+                        $notas_por_categoria_alumno[$categoria_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
+                        $notas_por_categoria_alumno[$categoria_id_actividad]['contador']++;
                     }
-                    $notas_por_categoria_alumno[$categoria_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
-                    $notas_por_categoria_alumno[$categoria_id_actividad]['contador']++;
                 }
             }
 
@@ -244,11 +264,13 @@ function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_
         $suma_notas_normalizadas = 0.0;
         $numero_de_actividades_con_nota = 0;
         foreach ($actividades_raw as $actividad) {
-            if (isset($calificaciones_alumno[$actividad['id']]) && is_numeric($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = floatval($calificaciones_alumno[$actividad['id']]);
-                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
-                $numero_de_actividades_con_nota++;
+            if (isset($calificaciones_alumno[$actividad['id']])) {
+                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
+                if ($nota_obtenida !== null) {
+                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                    $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
+                    $numero_de_actividades_con_nota++;
+                }
             }
         }
         if ($numero_de_actividades_con_nota > 0) {
