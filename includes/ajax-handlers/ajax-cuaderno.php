@@ -207,8 +207,8 @@ function cpp_ajax_cargar_cuaderno_clase() {
                         $data_attributes = '';
                         if ($is_incomplete) {
                             $data_attributes = 'data-is-incomplete="true" ';
-                            $data_attributes .= 'data-used-categories="' . esc_attr(implode(', ', $nota_final_data['used_categories'])) . '" ';
-                            $data_attributes .= 'data-missing-categories="' . esc_attr(implode(', ', $nota_final_data['missing_categories'])) . '"';
+                            $data_attributes .= 'data-used-categories=\'' . esc_attr(json_encode($nota_final_data['used_categories'])) . '\' ';
+                            $data_attributes .= 'data-missing-categories=\'' . esc_attr(json_encode($nota_final_data['missing_categories'])) . '\'';
                         }
                     ?>
                         <?php

@@ -434,14 +434,27 @@
                 const $cell = $(this);
                 if ($cell.data('is-incomplete')) {
                     e.stopPropagation(); // Evitar que se disparen otros eventos
-                    const usedCategories = $cell.data('used-categories') || 'Ninguna';
-                    const missingCategories = $cell.data('missing-categories') || 'Ninguna';
+                    try {
+                        const usedCategories = JSON.parse($cell.data('used-categories') || '[]');
+                        const missingCategories = JSON.parse($cell.data('missing-categories') || '[]');
 
-                    let message = "⚠️ ¡Atención! Esta nota final es incompleta.\n\n";
-                    message += "Se ha calculado usando las siguientes categorías:\n- " + usedCategories.replace(/, /g, '\n- ') + "\n\n";
-                    message += "Faltan calificaciones en las siguientes categorías:\n- " + missingCategories.replace(/, /g, '\n- ');
+                        let message = "⚠️ ¡Atención! Esta nota final es incompleta.\n\n";
 
-                    alert(message);
+                        if (usedCategories.length > 0) {
+                            message += "Se ha calculado usando las siguientes categorías:\n- " + usedCategories.join('\n- ') + "\n\n";
+                        } else {
+                            message += "No se ha calificado ninguna categoría.\n\n";
+                        }
+
+                        if (missingCategories.length > 0) {
+                            message += "Faltan calificaciones en las siguientes categorías:\n- " + missingCategories.join('\n- ');
+                        }
+
+                        alert(message);
+                    } catch (err) {
+                        console.error("Error al parsear los datos de las categorías:", err);
+                        alert("Error al mostrar los detalles de la nota. Revisa la consola para más información.");
+                    }
                 }
             });
 
