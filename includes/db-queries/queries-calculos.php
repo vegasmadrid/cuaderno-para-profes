@@ -23,22 +23,18 @@ function cpp_extraer_numero_de_calificacion($calificacion_str) {
 function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id) {
     global $wpdb;
     
+    $default_return = ['nota' => 0.00, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
+
     if (empty($evaluacion_id)) {
-        return 0.00;
+        return $default_return;
     }
 
-    // 1. Obtener el método de cálculo para esta evaluación
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
+    if (empty($metodo_calculo)) { $metodo_calculo = 'total'; }
 
-    // Fallback por si la columna no existiera o estuviera vacía
-    if (empty($metodo_calculo)) {
-        $metodo_calculo = 'total';
-    }
-
-    // 2. Obtener todas las actividades y calificaciones de la evaluación
     $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
-    if (empty($actividades_raw)) { return 0.00; }
+    if (empty($actividades_raw)) { return $default_return; }
 
     $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
@@ -54,31 +50,29 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
     $calificaciones_alumno = []; 
     foreach ($calificaciones_alumno_raw as $cal) { $calificaciones_alumno[$cal['actividad_id']] = $cal['nota']; }
 
-    // 3. Aplicar la lógica de cálculo según el método
     if ($metodo_calculo === 'ponderada') {
-        // --- MODO PONDERADO POR CATEGORÍAS ---
         $categorias_evaluacion = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);
-        if (empty($categorias_evaluacion)) { return 0.00; }
+        if (empty($categorias_evaluacion)) { return $default_return; }
 
-        $map_categorias_porcentajes = [];
+        $map_categorias = [];
         $total_porcentaje = 0;
-        foreach ($categorias_evaluacion as $cat) { 
-            $map_categorias_porcentajes[$cat['id']] = floatval($cat['porcentaje']);
+        foreach ($categorias_evaluacion as $cat) {
+            $map_categorias[$cat['id']] = ['nombre' => $cat['nombre_categoria'], 'porcentaje' => floatval($cat['porcentaje'])];
             $total_porcentaje += floatval($cat['porcentaje']);
         }
 
-        if (empty($map_categorias_porcentajes)) { return 0.00; }
+        if (empty($map_categorias)) { return $default_return; }
 
         $notas_por_categoria_alumno = [];
         $nota_final_alumno_0_100 = 0.0;
+        $categorias_con_nota = [];
 
         foreach ($actividades_raw as $actividad) {
             $categoria_id_actividad = $actividad['categoria_id'];
-            if (!isset($map_categorias_porcentajes[$categoria_id_actividad])) { continue; }
+            if (!isset($map_categorias[$categoria_id_actividad])) { continue; }
             
             if (isset($calificaciones_alumno[$actividad['id']])) {
                 $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
-
                 if ($nota_obtenida !== null) {
                     $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
                     $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
@@ -88,6 +82,7 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
                     }
                     $notas_por_categoria_alumno[$categoria_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
                     $notas_por_categoria_alumno[$categoria_id_actividad]['contador']++;
+                    $categorias_con_nota[$categoria_id_actividad] = true;
                 }
             }
         }
@@ -95,7 +90,7 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         foreach ($notas_por_categoria_alumno as $cat_id => $data_cat) {
             if ($data_cat['contador'] > 0) {
                 $media_categoria_normalizada = $data_cat['suma_normalizada'] / $data_cat['contador'];
-                $porcentaje_categoria = $map_categorias_porcentajes[$cat_id];
+                $porcentaje_categoria = $map_categorias[$cat_id]['porcentaje'];
                 $nota_final_alumno_0_100 += $media_categoria_normalizada * $porcentaje_categoria;
             }
         }
@@ -106,13 +101,31 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         
         $nota_final_alumno_0_100 = min($nota_final_alumno_0_100, 100);
 
-        return round($nota_final_alumno_0_100, 2);
+        // Lógica de advertencia
+        $used_categories_names = [];
+        $missing_categories_names = [];
+        $is_incomplete = false;
+        foreach ($map_categorias as $id => $cat_data) {
+            if (isset($categorias_con_nota[$id])) {
+                $used_categories_names[] = $cat_data['nombre'];
+            } else {
+                $missing_categories_names[] = $cat_data['nombre'];
+            }
+        }
+        if (!empty($missing_categories_names)) {
+            $is_incomplete = true;
+        }
+
+        return [
+            'nota' => round($nota_final_alumno_0_100, 2),
+            'is_incomplete' => $is_incomplete,
+            'used_categories' => $used_categories_names,
+            'missing_categories' => $missing_categories_names
+        ];
 
     } else {
-        // --- MODO PUNTUACIÓN TOTAL (MEDIA SIMPLE) ---
         $suma_notas_normalizadas = 0.0;
         $numero_de_actividades_con_nota = 0;
-
         foreach ($actividades_raw as $actividad) {
             if (isset($calificaciones_alumno[$actividad['id']])) {
                 $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
@@ -123,13 +136,12 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
                 }
             }
         }
-
+        $nota_final = 0.00;
         if ($numero_de_actividades_con_nota > 0) {
             $media_simple = $suma_notas_normalizadas / $numero_de_actividades_con_nota;
-            return round($media_simple * 100, 2); // Devolver en escala de 0 a 100
-        } else {
-            return 0.00;
+            $nota_final = round($media_simple * 100, 2);
         }
+        return ['nota' => $nota_final, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
     }
 }
 

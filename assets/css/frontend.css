@@ -322,7 +322,17 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 .cpp-cuaderno-td-final {
-    font-size: 22px;
+    font-size: 16px;
+    position: relative;
+    cursor: pointer;
+}
+
+.cpp-warning-icon {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    font-size: 18px;
 }
 
 .cpp-editable-activity-name {

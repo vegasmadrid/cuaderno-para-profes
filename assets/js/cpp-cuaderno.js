@@ -429,6 +429,22 @@
             $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); });
             $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); });
 
+            // Listener para el aviso de nota final incompleta
+            $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-final', function(e) {
+                const $cell = $(this);
+                if ($cell.data('is-incomplete')) {
+                    e.stopPropagation(); // Evitar que se disparen otros eventos
+                    const usedCategories = $cell.data('used-categories') || 'Ninguna';
+                    const missingCategories = $cell.data('missing-categories') || 'Ninguna';
+
+                    let message = "⚠️ ¡Atención! Esta nota final es incompleta.\n\n";
+                    message += "Se ha calculado usando las siguientes categorías:\n- " + usedCategories.replace(/, /g, '\n- ') + "\n\n";
+                    message += "Faltan calificaciones en las siguientes categorías:\n- " + missingCategories.replace(/, /g, '\n- ');
+
+                    alert(message);
+                }
+            });
+
             $cuadernoContenido.on('click', '.cpp-cuaderno-th-actividad', function(e){
                 const $header = $(this);
                 const evaluacionId = $header.data('evaluacion-id');

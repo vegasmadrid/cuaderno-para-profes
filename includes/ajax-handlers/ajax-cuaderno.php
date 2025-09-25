@@ -63,9 +63,16 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $notas_finales_alumnos = [];
     if (!empty($alumnos)) {
         foreach ($alumnos as $index => $alumno) {
-            $nota_0_100 = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_activa_id);
+            $calculo_result = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_activa_id);
+            $nota_0_100 = $calculo_result['nota'];
             $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
-            $notas_finales_alumnos[$alumno['id']] = $nota_reescalada;
+
+            $notas_finales_alumnos[$alumno['id']] = [
+                'nota' => $nota_reescalada,
+                'is_incomplete' => $calculo_result['is_incomplete'],
+                'used_categories' => $calculo_result['used_categories'],
+                'missing_categories' => $calculo_result['missing_categories']
+            ];
             $alumnos[$index]['nota_final_calculada'] = $nota_reescalada;
         }
     }
@@ -188,19 +195,36 @@ function cpp_ajax_cargar_cuaderno_clase() {
             <tbody>
                 <?php foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
+
+                        $nota_final_data = $notas_finales_alumnos[$alumno['id']];
+                        $nota_final_valor = $nota_final_data['nota'];
+                        $is_incomplete = $nota_final_data['is_incomplete'];
+
                         $decimales_nota_final = 2;
-                        if ($base_nota_final_clase == floor($base_nota_final_clase)) { if (isset($notas_finales_alumnos[$alumno['id']]) && $notas_finales_alumnos[$alumno['id']] == floor($notas_finales_alumnos[$alumno['id']])) { $decimales_nota_final = 0; } }
-                        $nota_final_display = isset($notas_finales_alumnos[$alumno['id']]) ? cpp_formatear_nota_display($notas_finales_alumnos[$alumno['id']], $decimales_nota_final) : '-';
+                        if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_valor == floor($nota_final_valor)) { $decimales_nota_final = 0; }
+                        $nota_final_display = cpp_formatear_nota_display($nota_final_valor, $decimales_nota_final);
+
+                        $data_attributes = '';
+                        if ($is_incomplete) {
+                            $data_attributes = 'data-is-incomplete="true" ';
+                            $data_attributes .= 'data-used-categories="' . esc_attr(implode(', ', $nota_final_data['used_categories'])) . '" ';
+                            $data_attributes .= 'data-missing-categories="' . esc_attr(implode(', ', $nota_final_data['missing_categories'])) . '"';
+                        }
                     ?>
                         <?php
                             $nombre_completo_display = (in_array($sort_order, ['nombre'])) ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
                         ?>
-                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($notas_finales_alumnos[$alumno['id']]); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
+                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($nota_final_valor); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
                             <?php else: foreach ($actividades_raw as $actividad):
                                     $nota_alumno_actividad_raw = isset($calificaciones_raw[$alumno['id']][$actividad['id']]) ? $calificaciones_raw[$alumno['id']][$actividad['id']] : '';
                                     $nota_alumno_actividad_display = cpp_formatear_nota_display($nota_alumno_actividad_raw);
                                     ?><td class="cpp-cuaderno-td-nota" data-actividad-id="<?php echo esc_attr($actividad['id']); ?>"><input type="text" class="cpp-input-nota" value="<?php echo esc_attr($nota_alumno_actividad_display); ?>" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-actividad-id="<?php echo esc_attr($actividad['id']); ?>" data-nota-maxima="<?php echo esc_attr($actividad['nota_maxima']); ?>" placeholder="-"><span class="cpp-nota-validation-message cpp-error-message" style="display:none;"></span></td><?php endforeach; ?>
-                            <?php endif; ?><td class="cpp-cuaderno-td-final" id="cpp-nota-final-alumno-<?php echo esc_attr($alumno['id']); ?>"><?php echo esc_html($nota_final_display); ?></td></tr>
+                            <?php endif; ?><td class="cpp-cuaderno-td-final" id="cpp-nota-final-alumno-<?php echo esc_attr($alumno['id']); ?>" <?php echo $data_attributes; ?>>
+                                <?php echo esc_html($nota_final_display); ?>
+                                <?php if ($is_incomplete): ?>
+                                    <span class="cpp-warning-icon" title="Nota incompleta">⚠️</span>
+                                <?php endif; ?>
+                            </td></tr>
                     <?php endforeach; ?>
             </tbody>
         </table>
