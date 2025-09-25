@@ -432,11 +432,11 @@
             // Listener para el aviso de nota final incompleta
             $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-final', function(e) {
                 const $cell = $(this);
-                if ($cell.data('is-incomplete')) {
+                if ($cell.attr('data-is-incomplete')) {
                     e.stopPropagation(); // Evitar que se disparen otros eventos
                     try {
-                        const usedCategories = JSON.parse($cell.data('used-categories') || '[]');
-                        const missingCategories = JSON.parse($cell.data('missing-categories') || '[]');
+                        const usedCategories = JSON.parse($cell.attr('data-used-categories') || '[]');
+                        const missingCategories = JSON.parse($cell.attr('data-missing-categories') || '[]');
 
                         let message = "⚠️ ¡Atención! Esta nota final es incompleta.\n\n";
 

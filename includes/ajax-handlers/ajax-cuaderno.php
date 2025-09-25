@@ -363,7 +363,10 @@ function cpp_ajax_guardar_calificacion_alumno() {
     $clase_id = $clase_info->clase_id;
     $base_nota_final_clase = floatval($clase_info->base_nota_final);
     if ($base_nota_final_clase <= 0) { $base_nota_final_clase = 100.00; }
-    $nota_final_alumno_0_100 = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
+
+    $calculo_result = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
+    $nota_final_alumno_0_100 = $calculo_result['nota']; // Acceder a la nota desde el array
+
     $nota_final_reescalada = ($nota_final_alumno_0_100 / 100) * $base_nota_final_clase;
     $decimales_nota_final = 2;
     if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) { $decimales_nota_final = 0; }
