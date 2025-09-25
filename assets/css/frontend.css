@@ -1931,7 +1931,7 @@ body.cpp-no-text-select {
 }
 
 #cpp-programador-app, #cpp-cuaderno-tabla-area {
-    height: 100%;
+    height: 92%;
     display: flex;
     flex-direction: column;
 }
