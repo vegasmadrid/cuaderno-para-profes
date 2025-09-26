@@ -94,8 +94,17 @@
                 cpp.config.handleConfigTabClick(null, 'calendario');
             }
         });
+
+        // Navegación de la pestaña Semana
         $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
         $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
+        $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
+            const sesionId = this.dataset.sesionId;
+            const claseId = this.dataset.claseId;
+            const evaluacionId = this.dataset.evaluacionId;
+            self.navigateToSesion(claseId, evaluacionId, sesionId);
+        });
+
         $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() {
             const newEvalId = this.value;
             self.currentEvaluacionId = newEvalId;
@@ -484,14 +493,21 @@
             this.config = result.data.config || { time_slots: [], horario: {} };
             this.sesiones = result.data.sesiones || [];
 
+            // Comprobar si hay una navegación pendiente desde la vista de semana
+            if (typeof cpp !== 'undefined' && cpp.pendingNavigation) {
+                const nav = cpp.pendingNavigation;
+                initialClaseId = nav.claseId;
+                evaluacionIdToSelect = nav.evaluacionId;
+                sesionIdToSelect = nav.sesionId;
+                cpp.pendingNavigation = null; // Limpiar la bandera
+            }
+
             if (this.clases.length > 0) {
                 if (initialClaseId) {
                     this.loadClass(initialClaseId, evaluacionIdToSelect, false); // No renderizar todavía
-
                     if (sesionIdToSelect) {
                         this.currentSesion = this.sesiones.find(s => s.id == sesionIdToSelect) || null;
                     }
-
                     this.render(); // Renderizar una vez con todo el estado actualizado
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
@@ -1176,7 +1192,7 @@
         this.clases.forEach(clase => {
             clase.evaluaciones.forEach(evaluacion => {
                 if (evaluacion.start_date) {
-                    const sesionesDeLaEvaluacion = this.sesiones.filter(s => s.clase_id == clase.id && s.evaluacion_id == evaluacion.id);
+                    const sesionesDeLaEvaluacion = this.sesiones.filter(s => s.clase_id == clase.id && s.evaluacion_id == evaluacion.id).sort((a,b) => a.orden - b.orden);
                     if (sesionesDeLaEvaluacion.length === 0) return;
 
                     let classHasSlots = false;
@@ -1259,11 +1275,18 @@
                         if (clase) {
                             let actividadesHTML = '';
                             if (evento.sesion.actividades_programadas && evento.sesion.actividades_programadas.length > 0) {
+                                // FIX: Ordenar actividades por la propiedad 'orden'
+                                const sortedActividades = evento.sesion.actividades_programadas.sort((a, b) => a.orden - b.orden);
                                 actividadesHTML = `<ul class="cpp-semana-actividades-list">
-                                    ${evento.sesion.actividades_programadas.map(act => `<li>${act.titulo}</li>`).join('')}
+                                    ${sortedActividades.map(act => `<li>${act.titulo}</li>`).join('')}
                                 </ul>`;
                             }
-                            cellContent += `<div class="cpp-semana-slot" style="border-left-color: ${clase.color};">
+                            cellContent += `<div class="cpp-semana-slot"
+                                                data-sesion-id="${evento.sesion.id}"
+                                                data-clase-id="${evento.sesion.clase_id}"
+                                                data-evaluacion-id="${evento.sesion.evaluacion_id}"
+                                                style="border-left-color: ${clase.color};"
+                                                title="Ir a la sesión: ${evento.sesion.titulo}">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
                                 ${actividadesHTML}
@@ -1457,6 +1480,29 @@
                 $btn.disabled = false;
                 $btn.innerHTML = originalBtnHtml;
             });
+    },
+
+    navigateToSesion(claseId, evaluacionId, sesionId) {
+        // Set a global flag for what to select after the data loads.
+        if (typeof cpp !== 'undefined') {
+            cpp.pendingNavigation = { claseId, evaluacionId, sesionId };
+        }
+
+        // Switch to the 'Programación' tab.
+        const tabLink = document.querySelector('.cpp-main-tab-link[data-tab="programacion"]');
+        if (tabLink) {
+            tabLink.click();
+        }
+
+        // The main app's loadClass function is responsible for fetching data.
+        // Our processInitialData will then use the pendingNavigation flag to select the correct session.
+        if (typeof cpp !== 'undefined' && typeof cpp.loadClass === 'function') {
+            cpp.loadClass(claseId);
+        } else {
+            console.error("cpp.loadClass() no encontrada. Recurriendo a simular click.");
+            const classLink = document.querySelector(`.cpp-sidebar-link[data-clase-id="${claseId}"]`);
+            if (classLink) classLink.click();
+        }
     }
     };
 })(jQuery);
