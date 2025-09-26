@@ -29,7 +29,7 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
          FROM $tabla_actividades a
          LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id
          WHERE a.clase_id = %d AND a.user_id = %d AND a.evaluacion_id = %d
-         ORDER BY a.fecha_actividad ASC, a.nombre_actividad ASC",
+         ORDER BY a.fecha_actividad DESC, a.nombre_actividad ASC",
         $clase_id, $user_id, $evaluacion_id
     ), ARRAY_A );
 }
@@ -125,58 +125,53 @@ function cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota,
     $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
 
-    // Verificar que el usuario es el propietario de la actividad
     $actividad_info = $wpdb->get_row($wpdb->prepare("SELECT user_id, nota_maxima FROM $tabla_actividades WHERE id = %d", $actividad_id));
     if (!$actividad_info || $actividad_info->user_id != $user_id) {
         return false;
     }
 
-    // Si la nota es null o una cadena vacía, significa que la celda se ha borrado.
-    if ($nota === null || $nota === '') {
-        $id_existente = $wpdb->get_var($wpdb->prepare("SELECT id FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id = %d", $alumno_id, $actividad_id));
-        if ($id_existente) {
-            return $wpdb->delete($tabla_calificaciones, ['id' => $id_existente], ['%d']);
+    $nota_maxima_actividad = floatval($actividad_info->nota_maxima);
+    $valor_a_guardar = null;
+    $formato_valor = '%s'; // Por defecto, tratar como string para permitir texto libre
+
+    if ($nota !== null) {
+        // Extraer solo la parte numérica para la validación
+        preg_match('/^[0-9,.]*/', $nota, $matches);
+        $parte_numerica_str = isset($matches[0]) ? $matches[0] : '';
+        $parte_numerica_str_limpia = str_replace(',', '.', $parte_numerica_str);
+
+        if ($parte_numerica_str_limpia !== '' && is_numeric($parte_numerica_str_limpia)) {
+            $nota_numerica = floatval($parte_numerica_str_limpia);
+            if ($nota_numerica < 0 || $nota_numerica > $nota_maxima_actividad) {
+                return false; // La parte numérica excede los límites
+            }
         }
-        return true; // No había nada que borrar, la operación es un éxito.
+
+        $valor_a_guardar = $nota;
+
+    } else { // Si la nota es null (celda vacía)
+        $existente_id_a_borrar = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id = %d",
+            $alumno_id, $actividad_id
+        ));
+        if ($existente_id_a_borrar) {
+            return $wpdb->delete($tabla_calificaciones, ['id' => $existente_id_a_borrar], ['%d']);
+        }
+        return true; // No hay nada que borrar, éxito
     }
 
-    $nota_maxima = floatval($actividad_info->nota_maxima);
-    $valor_a_guardar = '';
+    $existente_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id = %d",
+        $alumno_id, $actividad_id
+    ));
 
-    // Reemplazar comas por puntos para la validación numérica
-    $nota_limpia = str_replace(',', '.', $nota);
+    $datos_calificacion = ['alumno_id' => $alumno_id, 'actividad_id' => $actividad_id, 'nota' => $valor_a_guardar];
+    $formatos_calificacion = ['%d', '%d', $formato_valor];
 
-    // Comprobar si la nota es puramente numérica
-    if (is_numeric($nota_limpia)) {
-        $nota_numerica = floatval($nota_limpia);
-        // Validar que el valor numérico esté dentro de los límites
-        if ($nota_numerica < 0 || $nota_numerica > $nota_maxima) {
-            return false; // Error: la nota está fuera de los límites
-        }
-        // Si es válido, lo guardamos como está (la columna es VARCHAR)
-        $valor_a_guardar = $nota;
+    if ($existente_id) {
+        return $wpdb->update($tabla_calificaciones, $datos_calificacion, ['id' => $existente_id], $formatos_calificacion, ['%d']);
     } else {
-        // Si no es numérico, lo tratamos como texto/icono.
-        // La sanitización se realiza mediante wpdb->prepare, por lo que no es necesario aquí.
-        $valor_a_guardar = $nota;
-    }
-
-    // Comprobar si ya existe una calificación para este alumno y actividad
-    $id_existente = $wpdb->get_var($wpdb->prepare("SELECT id FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id = %d", $alumno_id, $actividad_id));
-
-    $datos = ['nota' => $valor_a_guardar];
-    $formatos_datos = ['%s'];
-
-    if ($id_existente) {
-        // Actualizar la calificación existente
-        return $wpdb->update($tabla_calificaciones, $datos, ['id' => $id_existente], $formatos_datos, ['%d']);
-    } else {
-        // Insertar una nueva calificación
-        $datos['alumno_id'] = $alumno_id;
-        $datos['actividad_id'] = $actividad_id;
-        $formatos_datos[] = '%d';
-        $formatos_datos[] = '%d';
-        return $wpdb->insert($tabla_calificaciones, $datos, $formatos_datos);
+        return $wpdb->insert($tabla_calificaciones, $datos_calificacion, $formatos_calificacion);
     }
 }
 

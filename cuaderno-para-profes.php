@@ -278,6 +278,21 @@ function cpp_migrate_add_link_column_v1_7() {
     }
 }
 
+function cpp_migrate_nota_to_varchar_v1_9_1() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $column_name = 'nota';
+    $column_type = 'VARCHAR(255)';
+
+    // Check if the column exists and is not already VARCHAR
+    $column_info = $wpdb->get_row($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+
+    if ($column_info && strpos(strtolower($column_info->Type), 'decimal') !== false) {
+        // Only alter if the column is of type decimal
+        $wpdb->query("ALTER TABLE `$table_name` MODIFY COLUMN `$column_name` $column_type DEFAULT NULL");
+    }
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -294,7 +309,7 @@ function cpp_run_migrations() {
         cpp_migrate_refactor_activities_v1_9();
     }
     if (version_compare($current_version, '1.9.1', '<')) {
-        cpp_migrate_grades_to_varchar_v1_9_1();
+        cpp_migrate_nota_to_varchar_v1_9_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
@@ -408,25 +423,6 @@ function cpp_migrate_refactor_activities_v1_9() {
         $wpdb->query("ALTER TABLE `$tabla_prog_act` DROP COLUMN `categoria_id`;");
     }
 }
-
-function cpp_migrate_grades_to_varchar_v1_9_1() {
-    global $wpdb;
-    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
-
-    // Comprobar si la columna 'nota' existe y no es ya de tipo VARCHAR
-    $column_type = $wpdb->get_var($wpdb->prepare(
-        "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE table_schema = %s AND table_name = %s AND column_name = 'nota'",
-        DB_NAME, $tabla_calificaciones
-    ));
-
-    // Solo ejecutar si la columna existe y es de tipo 'decimal'
-    if ($column_type && strtolower($column_type) == 'decimal') {
-        // Cambiar el tipo de la columna a VARCHAR(255) para permitir texto e iconos
-        $wpdb->query("ALTER TABLE `$tabla_calificaciones` MODIFY COLUMN `nota` VARCHAR(255) NULL DEFAULT NULL");
-    }
-}
-
 add_action('plugins_loaded', 'cpp_run_migrations');
 
 ?>

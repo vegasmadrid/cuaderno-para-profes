@@ -360,19 +360,14 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
 function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden_sesiones) {
     global $wpdb;
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+
     if (!is_array($orden_sesiones)) {
         return false;
     }
 
-    // Security check: Verify the user owns the class.
-    $clase_owner = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id));
-    if ($clase_owner != $user_id) {
-        return false;
-    }
-
     $wpdb->query('START TRANSACTION');
+
     foreach ($orden_sesiones as $index => $sesion_id) {
-        // The WHERE clause must be very specific to avoid updating rows from other evaluations.
         $resultado = $wpdb->update(
             $tabla_sesiones,
             ['orden' => $index],
@@ -381,13 +376,17 @@ function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id
                 'user_id' => $user_id,
                 'clase_id' => $clase_id,
                 'evaluacion_id' => $evaluacion_id
-            ]
+            ],
+            ['%d'],
+            ['%d', '%d', '%d', '%d']
         );
+
         if ($resultado === false) {
             $wpdb->query('ROLLBACK');
             return false;
         }
     }
+
     $wpdb->query('COMMIT');
     return true;
 }
