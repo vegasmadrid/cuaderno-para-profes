@@ -1180,8 +1180,12 @@
 
     renderSemanaTab() {
         const content = this.tabContents.semana;
+        if (!this.config || !this.config.calendar_config) {
+            content.innerHTML = '<p>Cargando configuración...</p>';
+            return;
+        }
         const horario = this.config.horario;
-        const calendarConfig = this.config.calendar_config || { working_days: ['mon', 'tue', 'wed', 'thu', 'fri'], holidays: [], vacations: [] };
+        const calendarConfig = this.config.calendar_config;
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
 
         let schedule = [];
@@ -1273,17 +1277,17 @@
                         if (clase) {
                             let actividadesHTML = '';
                             if (evento.sesion.actividades_programadas && evento.sesion.actividades_programadas.length > 0) {
-                                const sortedActividades = evento.sesion.actividades_programadas.sort((a, b) => a.orden - b.orden);
+                            const sortedActividades = evento.sesion.actividades_programadas.sort((a, b) => a.orden - b.orden);
                                 actividadesHTML = `<ul class="cpp-semana-actividades-list">
-                                    ${sortedActividades.map(act => `<li>${act.titulo}</li>`).join('')}
+                                ${sortedActividades.map(act => `<li>${act.titulo}</li>`).join('')}
                                 </ul>`;
                             }
-                            cellContent += `<div class="cpp-semana-slot"
-                                                data-sesion-id="${evento.sesion.id}"
-                                                data-clase-id="${evento.sesion.clase_id}"
-                                                data-evaluacion-id="${evento.sesion.evaluacion_id}"
-                                                style="border-left-color: ${clase.color};"
-                                                title="Ir a la sesión: ${evento.sesion.titulo}">
+                        cellContent += `<div class="cpp-semana-slot"
+                                            data-sesion-id="${evento.sesion.id}"
+                                            data-clase-id="${evento.sesion.clase_id}"
+                                            data-evaluacion-id="${evento.sesion.evaluacion_id}"
+                                            style="border-left-color: ${clase.color};"
+                                            title="Ir a la sesión: ${evento.sesion.titulo}">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
                                 ${actividadesHTML}

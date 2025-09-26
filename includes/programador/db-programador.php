@@ -372,11 +372,16 @@ function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id
 
     $wpdb->query('START TRANSACTION');
     foreach ($orden_sesiones as $index => $sesion_id) {
-        // Update the order for each session, ensuring it belongs to the current user.
+        // The WHERE clause must be very specific to avoid updating rows from other evaluations.
         $resultado = $wpdb->update(
             $tabla_sesiones,
             ['orden' => $index],
-            ['id' => intval($sesion_id), 'user_id' => $user_id]
+            [
+                'id' => intval($sesion_id),
+                'user_id' => $user_id,
+                'clase_id' => $clase_id,
+                'evaluacion_id' => $evaluacion_id
+            ]
         );
         if ($resultado === false) {
             $wpdb->query('ROLLBACK');

@@ -156,8 +156,9 @@ function cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota,
         // Si es válido, lo guardamos como está (la columna es VARCHAR)
         $valor_a_guardar = $nota;
     } else {
-        // Si no es numérico, lo tratamos como texto/icono y lo sanitizamos
-        $valor_a_guardar = sanitize_text_field($nota);
+        // Si no es numérico, lo tratamos como texto/icono.
+        // La sanitización se realiza mediante wpdb->prepare, por lo que no es necesario aquí.
+        $valor_a_guardar = $nota;
     }
 
     // Comprobar si ya existe una calificación para este alumno y actividad
