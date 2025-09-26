@@ -1284,6 +1284,16 @@
             });
         });
 
+        // FIX: Sort the schedule chronologically before rendering to avoid visual disorder.
+        schedule.sort((a, b) => {
+            const dateA = a.fecha.getTime();
+            const dateB = b.fecha.getTime();
+            if (dateA !== dateB) {
+                return dateA - dateB;
+            }
+            return a.hora.localeCompare(b.hora);
+        });
+
         const weekDates = this.getWeekDates(this.semanaDate);
         const allDays = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo' };
         const daysToRender = calendarConfig.working_days.reduce((acc, dayKey) => {

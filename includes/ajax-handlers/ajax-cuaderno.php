@@ -353,7 +353,7 @@ function cpp_ajax_guardar_calificacion_alumno() {
     if (empty($alumno_id) || empty($actividad_id) || empty($evaluacion_id)) { wp_send_json_error(['data' => ['message' => 'Faltan IDs de alumno, actividad o evaluación.']]); return; }
 
     // La validación ahora se hará en la función de guardado para permitir texto libre.
-    $nota_a_guardar = ($nota_str !== '' && $nota_str !== null) ? sanitize_text_field($nota_str) : null;
+    $nota_a_guardar = ($nota_str !== '' && $nota_str !== null) ? $nota_str : null;
 
     $resultado_guardado = cpp_guardar_o_actualizar_calificacion($alumno_id, $actividad_id, $nota_a_guardar, $user_id);
     if ($resultado_guardado === false) { wp_send_json_error(['data' => ['message' => 'Error al guardar la calificación. Verifique que la nota no excede la máxima.']]); return; }

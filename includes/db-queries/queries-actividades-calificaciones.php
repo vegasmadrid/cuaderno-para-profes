@@ -29,7 +29,7 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
          FROM $tabla_actividades a
          LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id
          WHERE a.clase_id = %d AND a.user_id = %d AND a.evaluacion_id = %d
-         ORDER BY a.fecha_actividad DESC, a.nombre_actividad ASC",
+         ORDER BY a.fecha_actividad ASC, a.nombre_actividad ASC",
         $clase_id, $user_id, $evaluacion_id
     ), ARRAY_A );
 }
