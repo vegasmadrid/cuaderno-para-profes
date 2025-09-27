@@ -99,7 +99,7 @@ function cpp_crear_tablas() {
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         actividad_id mediumint(9) UNSIGNED NOT NULL,
         alumno_id mediumint(9) UNSIGNED NOT NULL,
-        nota decimal(5,2) DEFAULT NULL, 
+        nota varchar(255) DEFAULT NULL,
         observaciones text,
         fecha_calificacion datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
