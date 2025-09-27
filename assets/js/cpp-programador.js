@@ -1221,7 +1221,6 @@
 
     renderSemanaTab() {
         const content = this.tabContents.semana;
-        // FIX: Add guard clause to prevent rendering before config is loaded.
         if (!this.config || !this.config.calendar_config) {
             content.innerHTML = '<p>Cargando configuración...</p>';
             return;
@@ -1231,8 +1230,6 @@
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
 
         let schedule = [];
-
-        // Iterate over all classes and their evaluations to build a global schedule
         this.clases.forEach(clase => {
             clase.evaluaciones.forEach(evaluacion => {
                 if (evaluacion.start_date) {
@@ -1253,7 +1250,7 @@
 
                     let sessionIndex = 0;
                     let safetyCounter = 0;
-                    const MAX_ITERATIONS = 50000; // Safety break for each evaluation
+                    const MAX_ITERATIONS = 50000;
 
                     while(sessionIndex < sesionesDeLaEvaluacion.length) {
                         if (++safetyCounter > MAX_ITERATIONS) {
@@ -1273,7 +1270,13 @@
                             const sortedSlots = Object.keys(horario[dayKey]).sort();
                             for (const slot of sortedSlots) {
                                 if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(clase.id)) {
-                                    schedule.push({ sesion: sesionesDeLaEvaluacion[sessionIndex], fecha: new Date(currentDate.getTime()), hora: slot });
+                                    const slotData = horario[dayKey][slot];
+                                    schedule.push({
+                                        sesion: sesionesDeLaEvaluacion[sessionIndex],
+                                        fecha: new Date(currentDate.getTime()),
+                                        hora: slot,
+                                        notas: slotData.notas || ''
+                                    });
                                     sessionIndex++;
                                 }
                             }
@@ -1284,7 +1287,6 @@
             });
         });
 
-        // FIX: Sort the schedule chronologically before rendering to avoid visual disorder.
         schedule.sort((a, b) => {
             const dateA = a.fecha.getTime();
             const dateB = b.fecha.getTime();
@@ -1303,22 +1305,33 @@
             return acc;
         }, {});
 
-        let headerHTML = `<div class="cpp-semana-nav"><button class="cpp-semana-prev-btn cpp-btn">◄ Semana Anterior</button><h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3><button class="cpp-semana-next-btn cpp-btn">Siguiente ►</button></div>`;
-        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora">Hora</th>`;
+        const today = new Date();
+        const todayYMD = today.toISOString().slice(0, 10);
+
+        let headerHTML = `<div class="cpp-semana-nav">
+                            <button class="cpp-semana-prev-btn cpp-btn-icon" title="Semana Anterior">◄</button>
+                            <h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3>
+                            <button class="cpp-semana-next-btn cpp-btn-icon" title="Siguiente Semana">►</button>
+                          </div>`;
+        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
 
         const renderedHeaders = [];
         Object.keys(daysToRender).forEach((dayKey) => {
             const date = weekDates.find(d => this.getDayKey(d) === dayKey);
             if(date) {
-                tableHTML += `<th class="cpp-semana-th-dia">${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
-                renderedHeaders.push(dayKey);
+                const isToday = date.toISOString().slice(0, 10) === todayYMD;
+                const todayClass = isToday ? 'cpp-semana-today' : '';
+                tableHTML += `<th class="cpp-semana-th-dia ${todayClass}">${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
+                renderedHeaders.push({dayKey: dayKey, isToday: isToday});
             }
         });
         tableHTML += `</tr></thead><tbody>`;
 
         (this.config.time_slots || []).forEach(slot => {
             tableHTML += `<tr><td class="cpp-semana-td-hora">${slot}</td>`;
-            renderedHeaders.forEach(dayKey => {
+            renderedHeaders.forEach(header => {
+                const dayKey = header.dayKey;
+                const todayClass = header.isToday ? 'cpp-semana-today' : '';
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
                 const eventos = schedule.filter(e => e.fecha.toISOString().slice(0,10) === ymd && e.hora === slot);
@@ -1340,12 +1353,13 @@
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
+                                ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;
                         }
                     });
                 }
-                tableHTML += `<td>${cellContent}</td>`;
+                tableHTML += `<td class="${todayClass}">${cellContent}</td>`;
             });
             tableHTML += `</tr>`;
         });
