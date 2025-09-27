@@ -444,13 +444,14 @@
     color: #5f6368;
     font-size: 13px;
 }
-.cpp-semana-td-hora {
+td.cpp-semana-td-hora {
     font-weight: 500;
     font-size: 13px;
-    text-align: center;
-    vertical-align: middle;
     color: #5f6368;
     padding-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .cpp-semana-slot {
     background-color: #fff;
