@@ -481,6 +481,14 @@
     color: #5f6368;
     line-height: 1.4;
 }
+.cpp-semana-notas-horario {
+    font-style: italic;
+    font-size: 12px !important;
+    color: #e67e22 !important;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e0e0e0;
+}
 .cpp-semana-actividades-list {
     list-style: none;
     padding: 0;

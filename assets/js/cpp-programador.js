@@ -1270,7 +1270,13 @@
                             const sortedSlots = Object.keys(horario[dayKey]).sort();
                             for (const slot of sortedSlots) {
                                 if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(clase.id)) {
-                                    schedule.push({ sesion: sesionesDeLaEvaluacion[sessionIndex], fecha: new Date(currentDate.getTime()), hora: slot });
+                                    const slotData = horario[dayKey][slot];
+                                    schedule.push({
+                                        sesion: sesionesDeLaEvaluacion[sessionIndex],
+                                        fecha: new Date(currentDate.getTime()),
+                                        hora: slot,
+                                        notas: slotData.notas || ''
+                                    });
                                     sessionIndex++;
                                 }
                             }
@@ -1347,6 +1353,7 @@
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
+                                ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;
                         }
