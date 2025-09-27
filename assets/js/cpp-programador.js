@@ -188,8 +188,17 @@
 
                 // Trigger the tab switch and class load in the main app
                 $('.cpp-main-tab-link[data-tab="programacion"]').click();
-                if (typeof cpp.loadClass === 'function') {
-                    cpp.loadClass(claseId);
+                // --- FIX ---
+                // Instead of calling a non-existent function, we find the corresponding
+                // sidebar link for the class and trigger a click on it. This reuses
+                // the existing, correct logic for switching classes.
+                const sidebarLink = $(`.cpp-sidebar-clase-item[data-clase-id="${claseId}"] a`);
+                if (sidebarLink.length) {
+                    sidebarLink.click();
+                } else {
+                    console.error(`Error de navegación: No se encontró el enlace de la clase ${claseId} en la barra lateral.`);
+                    // Opcional: mostrar un error al usuario
+                    alert('Error: No se pudo cambiar a la clase seleccionada porque no se encontró en la lista.');
                 }
             }
         }
