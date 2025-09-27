@@ -188,8 +188,17 @@
 
                 // Trigger the tab switch and class load in the main app
                 $('.cpp-main-tab-link[data-tab="programacion"]').click();
-                if (typeof cpp.loadClass === 'function') {
-                    cpp.loadClass(claseId);
+                // --- FIX ---
+                // Instead of calling a non-existent function, we find the corresponding
+                // sidebar link for the class and trigger a click on it. This reuses
+                // the existing, correct logic for switching classes.
+                const sidebarLink = $(`.cpp-sidebar-clase-item[data-clase-id="${claseId}"] a`);
+                if (sidebarLink.length) {
+                    sidebarLink.click();
+                } else {
+                    console.error(`Error de navegación: No se encontró el enlace de la clase ${claseId} en la barra lateral.`);
+                    // Opcional: mostrar un error al usuario
+                    alert('Error: No se pudo cambiar a la clase seleccionada porque no se encontró en la lista.');
                 }
             }
         }
@@ -295,13 +304,23 @@
             });
     },
     loadClass(claseId, evaluacionIdToSelect = null, renderAfter = true) {
+        let sesionIdToSelect = null;
+        // --- FIX: Check for pending navigation when a class is loaded ---
+        if (typeof cpp !== 'undefined' && cpp.pendingNavigation && cpp.pendingNavigation.target === 'programador' && cpp.pendingNavigation.claseId == claseId) {
+            const nav = cpp.pendingNavigation;
+            evaluacionIdToSelect = nav.evaluacionId;
+            sesionIdToSelect = nav.sesionId;
+            // Limpiar la bandera para que no se reutilice
+            delete cpp.pendingNavigation;
+        }
+
         this.currentClase = this.clases.find(c => c.id == claseId);
         if (!this.currentClase) {
             this.tabContents.programacion.innerHTML = `<p style="color:red;">Error: No se encontró la clase con ID ${claseId}.</p>`;
             return;
         }
 
-        // Priorizar el ID de evaluación pasado explícitamente
+        // Priorizar el ID de evaluación pasado explícitamente (o desde pendingNavigation)
         if (evaluacionIdToSelect && this.currentClase.evaluaciones.some(e => e.id == evaluacionIdToSelect)) {
             this.currentEvaluacionId = evaluacionIdToSelect;
         } else {
@@ -337,8 +356,13 @@
             cpp.currentEvaluacionId = this.currentEvaluacionId;
         }
 
-        this.currentSesion = null;
         this.selectedSesiones = [];
+        if (sesionIdToSelect) {
+            this.currentSesion = this.sesiones.find(s => s.id == sesionIdToSelect) || null;
+        } else {
+            this.currentSesion = null;
+        }
+
         if (renderAfter) {
             this.render();
         } else {
@@ -530,24 +554,11 @@
             this.config = result.data.config || { time_slots: [], horario: {} };
             this.sesiones = result.data.sesiones || [];
 
-            // Comprobar si hay una navegación pendiente desde otra vista
-            if (typeof cpp !== 'undefined' && cpp.pendingNavigation && cpp.pendingNavigation.target === 'programador' && cpp.pendingNavigation.claseId == initialClaseId) {
-                const nav = cpp.pendingNavigation;
-                evaluacionIdToSelect = nav.evaluacionId;
-                sesionIdToSelect = nav.sesionId;
-                // Limpiar la bandera para que no se reutilice
-                delete cpp.pendingNavigation;
-            }
-
             if (this.clases.length > 0) {
                 if (initialClaseId) {
-                    this.loadClass(initialClaseId, evaluacionIdToSelect, false); // No renderizar todavía
-
-                    if (sesionIdToSelect) {
-                        this.currentSesion = this.sesiones.find(s => s.id == sesionIdToSelect) || null;
-                    }
-
-                    this.render(); // Renderizar una vez con todo el estado actualizado
+                    // La lógica de pendingNavigation ahora está en loadClass.
+                    // Simplemente llamamos a loadClass y ella se encargará de todo.
+                    this.loadClass(initialClaseId, evaluacionIdToSelect, true);
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
