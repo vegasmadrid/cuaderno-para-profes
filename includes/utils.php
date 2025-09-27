@@ -60,7 +60,16 @@ if (!function_exists('cpp_formatear_nota_display')) {
         if ($nota === null || $nota === '') {
             return '';
         }
-        $nota_float = floatval(str_replace(',', '.', $nota));
+
+        // Primero, verificar si la nota es un valor numérico (o convertible a numérico).
+        $nota_limpia = str_replace(',', '.', $nota);
+        if (!is_numeric($nota_limpia)) {
+            // Si no es numérico, es un símbolo o texto, devolverlo tal cual.
+            return $nota;
+        }
+
+        // Si es numérico, proceder con el formateo.
+        $nota_float = floatval($nota_limpia);
         if ($decimales !== null) {
             return number_format($nota_float, intval($decimales), '.', '');
         }
