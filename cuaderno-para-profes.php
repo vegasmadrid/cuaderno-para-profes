@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.9');
+define('CPP_VERSION', '1.9.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -278,6 +278,21 @@ function cpp_migrate_add_link_column_v1_7() {
     }
 }
 
+function cpp_migrate_nota_to_varchar_v1_9_1() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $column_name = 'nota';
+    $column_type = 'VARCHAR(255)';
+
+    // Check if the column exists and is not already VARCHAR
+    $column_info = $wpdb->get_row($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+
+    if ($column_info && strpos(strtolower($column_info->Type), 'decimal') !== false) {
+        // Only alter if the column is of type decimal
+        $wpdb->query("ALTER TABLE `$table_name` MODIFY COLUMN `$column_name` $column_type DEFAULT NULL");
+    }
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -292,6 +307,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '1.9', '<')) {
         cpp_migrate_refactor_activities_v1_9();
+    }
+    if (version_compare($current_version, '1.9.1', '<')) {
+        cpp_migrate_nota_to_varchar_v1_9_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 

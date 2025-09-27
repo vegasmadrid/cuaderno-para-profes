@@ -147,6 +147,52 @@
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
+
+        // --- Semana View Navigation ---
+        $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
+            const sesionId = this.dataset.sesionId;
+            const claseId = this.dataset.claseId;
+            const evaluacionId = this.dataset.evaluacionId;
+            self.navigateToSesion(claseId, evaluacionId, sesionId);
+        });
+    },
+
+    navigateToSesion(claseId, evaluacionId, sesionId) {
+        if (!claseId || !evaluacionId || !sesionId) return;
+
+        // Check if we are already in the correct class
+        if (this.currentClase && this.currentClase.id == claseId) {
+            // We are in the correct class, just switch tab and load session
+            this.loadClass(claseId, evaluacionId, false); // don't render yet
+            this.currentSesion = this.sesiones.find(s => s.id == sesionId) || null;
+
+            // The main app (cpp-cuaderno.js) handles the tab switching. We just need to trigger the click.
+            $('.cpp-main-tab-link[data-tab="programacion"]').click();
+
+            // After the tab is switched, we render our content.
+            // A small delay might be needed for the tab switch to complete.
+            setTimeout(() => {
+                this.render();
+            }, 50);
+
+        } else {
+            // We need to switch to a different class.
+            // Set a flag that processInitialData will use upon data loading.
+            if (typeof cpp !== 'undefined') {
+                cpp.pendingNavigation = {
+                    target: 'programador',
+                    claseId: claseId,
+                    evaluacionId: evaluacionId,
+                    sesionId: sesionId,
+                };
+
+                // Trigger the tab switch and class load in the main app
+                $('.cpp-main-tab-link[data-tab="programacion"]').click();
+                if (typeof cpp.loadClass === 'function') {
+                    cpp.loadClass(claseId);
+                }
+            }
+        }
     },
 
     handleDeleteSelectedSesions() {
@@ -483,6 +529,15 @@
             this.clases = result.data.clases || [];
             this.config = result.data.config || { time_slots: [], horario: {} };
             this.sesiones = result.data.sesiones || [];
+
+            // Comprobar si hay una navegación pendiente desde otra vista
+            if (typeof cpp !== 'undefined' && cpp.pendingNavigation && cpp.pendingNavigation.target === 'programador' && cpp.pendingNavigation.claseId == initialClaseId) {
+                const nav = cpp.pendingNavigation;
+                evaluacionIdToSelect = nav.evaluacionId;
+                sesionIdToSelect = nav.sesionId;
+                // Limpiar la bandera para que no se reutilice
+                delete cpp.pendingNavigation;
+            }
 
             if (this.clases.length > 0) {
                 if (initialClaseId) {
@@ -1166,8 +1221,13 @@
 
     renderSemanaTab() {
         const content = this.tabContents.semana;
+        // FIX: Add guard clause to prevent rendering before config is loaded.
+        if (!this.config || !this.config.calendar_config) {
+            content.innerHTML = '<p>Cargando configuración...</p>';
+            return;
+        }
         const horario = this.config.horario;
-        const calendarConfig = this.config.calendar_config || { working_days: ['mon', 'tue', 'wed', 'thu', 'fri'], holidays: [], vacations: [] };
+        const calendarConfig = this.config.calendar_config;
         const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
 
         let schedule = [];
@@ -1224,6 +1284,16 @@
             });
         });
 
+        // FIX: Sort the schedule chronologically before rendering to avoid visual disorder.
+        schedule.sort((a, b) => {
+            const dateA = a.fecha.getTime();
+            const dateB = b.fecha.getTime();
+            if (dateA !== dateB) {
+                return dateA - dateB;
+            }
+            return a.hora.localeCompare(b.hora);
+        });
+
         const weekDates = this.getWeekDates(this.semanaDate);
         const allDays = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo' };
         const daysToRender = calendarConfig.working_days.reduce((acc, dayKey) => {
@@ -1263,7 +1333,11 @@
                                     ${evento.sesion.actividades_programadas.map(act => `<li>${act.titulo}</li>`).join('')}
                                 </ul>`;
                             }
-                            cellContent += `<div class="cpp-semana-slot" style="border-left-color: ${clase.color};">
+                            cellContent += `<div class="cpp-semana-slot"
+                                                 data-sesion-id="${evento.sesion.id}"
+                                                 data-clase-id="${evento.sesion.clase_id}"
+                                                 data-evaluacion-id="${evento.sesion.evaluacion_id}"
+                                                 style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
                                 ${actividadesHTML}
