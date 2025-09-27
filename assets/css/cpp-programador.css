@@ -397,13 +397,27 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 .cpp-semana-nav h3 {
-    margin: 0;
+    margin: 0 15px;
     font-size: 20px;
     font-weight: 500;
     color: #3c4043;
+}
+.cpp-btn-icon {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #5f6368;
+    font-size: 24px;
+    padding: 5px 10px;
+    border-radius: 50%;
+    line-height: 1;
+}
+.cpp-btn-icon:hover {
+    background-color: #f1f3f4;
+    color: #202124;
 }
 .cpp-semana-table {
     width: 100%;
@@ -479,6 +493,14 @@
     border-radius: 4px;
     margin-bottom: 5px;
     color: #3c4043;
+}
+
+.cpp-semana-today {
+    background-color: #e8f0fe;
+}
+.cpp-semana-th-dia.cpp-semana-today {
+    color: #1967d2;
+    font-weight: 600;
 }
 
 /* Modales */
