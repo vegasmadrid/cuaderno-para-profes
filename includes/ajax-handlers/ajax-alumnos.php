@@ -38,10 +38,10 @@ function cpp_ajax_obtener_alumnos() {
         <?php if (empty($alumnos)): ?>
             <p class="cpp-no-alumnos">No hay alumnos en esta clase.</p>
         <?php else: ?>
-            <?php foreach ($alumnos as $alumno): ?>
+            <?php foreach ($alumnos as $index => $alumno): ?>
                 <div class="cpp-alumno-card" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>">
                     <div class="cpp-alumno-avatar"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div>
-                    <div class="cpp-alumno-info"><h4><?php echo esc_html($alumno['nombre'] . ' ' . $alumno['apellidos']); ?></h4></div>
+                    <div class="cpp-alumno-info"><h4><?php echo ($index + 1) . '. ' . esc_html($alumno['nombre'] . ' ' . $alumno['apellidos']); ?></h4></div>
                     <div class="cpp-alumno-actions">
                         <button class="cpp-btn cpp-btn-editar" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" title="Editar Alumno"><span class="dashicons dashicons-edit"></span></button>
                         <button class="cpp-btn cpp-btn-eliminar-alumno" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" title="Eliminar Alumno"><span class="dashicons dashicons-trash"></span></button>
