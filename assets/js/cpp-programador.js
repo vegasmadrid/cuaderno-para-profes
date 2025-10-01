@@ -118,6 +118,8 @@
             self.currentSesion = null;
             self.selectedSesiones = [];
             self.render();
+            // --- FIX: Cargar fechas en segundo plano ---
+            self.fetchAndApplyFechas(self.currentEvaluacionId);
         });
         $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
@@ -162,9 +164,9 @@
 
         // Check if we are already in the correct class
         if (this.currentClase && this.currentClase.id == claseId) {
-            // We are in the correct class, just switch tab and load session
-            this.loadClass(claseId, evaluacionId, false); // don't render yet
-            this.currentSesion = this.sesiones.find(s => s.id == sesionId) || null;
+            // We are in the correct class, just switch tab and load session.
+            // Pass the sesionId directly to loadClass.
+            this.loadClass(claseId, evaluacionId, sesionId, false); // don't render yet
 
             // The main app (cpp-cuaderno.js) handles the tab switching. We just need to trigger the click.
             $('.cpp-main-tab-link[data-tab="programacion"]').click();
@@ -295,7 +297,46 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
+                if (result.success && result.data.sesion) {
+                    const newSesion = result.data.sesion;
+                    const afterId = result.data.after_sesion_id;
+                    const afterIndex = this.sesiones.findIndex(s => s.id == afterId);
+
+                    if (afterIndex > -1) {
+                        this.sesiones.splice(afterIndex + 1, 0, newSesion);
+                    } else {
+                        this.sesiones.push(newSesion);
+                    }
+                    this.currentSesion = newSesion;
+
+                    // --- DOM OPTIMIZATION ---
+                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    const afterElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${afterId}"]`);
+                    const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                    const newDisplayIndex = sesionesFiltradas.findIndex(s => s.id == newSesion.id);
+                    const newItemHTML = this.renderSingleSesionItemHTML(newSesion, newDisplayIndex);
+
+                    if (afterElement) {
+                        afterElement.insertAdjacentHTML('afterend', newItemHTML);
+                    } else {
+                        list.insertAdjacentHTML('beforeend', newItemHTML);
+                    }
+
+                    list.querySelectorAll('.cpp-sesion-list-item').forEach((item, index) => {
+                        item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
+                    });
+
+                    const oldActive = list.querySelector('.cpp-sesion-list-item.active');
+                    if (oldActive) oldActive.classList.remove('active');
+                    const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
+                    if (newActiveElement) newActiveElement.classList.add('active');
+
+                    this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
+                    this.makeActividadesSortable();
+                    this.scrollToSelectedSesion();
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+
+                } else if (result.success) { // Fallback
                     const newSesionId = result.data.new_sesion_id || null;
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
                 } else {
@@ -303,9 +344,9 @@
                 }
             });
     },
-    loadClass(claseId, evaluacionIdToSelect = null, renderAfter = true) {
-        let sesionIdToSelect = null;
+    loadClass(claseId, evaluacionIdToSelect = null, sesionIdToSelect = null, renderAfter = true) {
         // --- FIX: Check for pending navigation when a class is loaded ---
+        // La navegación pendiente tiene prioridad sobre el sesionIdToSelect pasado como argumento
         if (typeof cpp !== 'undefined' && cpp.pendingNavigation && cpp.pendingNavigation.target === 'programador' && cpp.pendingNavigation.claseId == claseId) {
             const nav = cpp.pendingNavigation;
             evaluacionIdToSelect = nav.evaluacionId;
@@ -365,6 +406,8 @@
 
         if (renderAfter) {
             this.render();
+            // --- FIX: Cargar fechas en segundo plano ---
+            this.fetchAndApplyFechas(this.currentEvaluacionId);
         } else {
             this.updateBulkActionsUI();
         }
@@ -558,7 +601,7 @@
                 if (initialClaseId) {
                     // La lógica de pendingNavigation ahora está en loadClass.
                     // Simplemente llamamos a loadClass y ella se encargará de todo.
-                    this.loadClass(initialClaseId, evaluacionIdToSelect, true);
+                    this.loadClass(initialClaseId, evaluacionIdToSelect, sesionIdToSelect, true);
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
@@ -651,11 +694,45 @@
             .then(result => {
                 if (result.success) {
                     if (fromModal) this.closeSesionModal();
-                    const newSesionId = result.data.sesion_id || null;
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
+
+                    if (result.data.sesion && !result.data.needs_reload) {
+                        const updatedSesion = result.data.sesion;
+                        const index = this.sesiones.findIndex(s => s.id == updatedSesion.id);
+                        const isNew = index === -1;
+
+                        if (isNew) {
+                            this.sesiones.push(updatedSesion);
+                        } else {
+                            this.sesiones[index] = updatedSesion;
+                        }
+                        this.currentSesion = updatedSesion;
+
+                        if (isNew) {
+                            const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                            const noSesionesContainer = this.appElement.querySelector('.cpp-no-sesiones-container');
+                            if (list) {
+                                const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                                const newDisplayIndex = sesionesFiltradas.length - 1;
+                                const newItemHTML = this.renderSingleSesionItemHTML(updatedSesion, newDisplayIndex);
+                                list.insertAdjacentHTML('beforeend', newItemHTML);
+                                this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
+                                this.makeActividadesSortable();
+                                this.scrollToSelectedSesion();
+                                this.fetchAndApplyFechas(this.currentEvaluacionId);
+                            } else if (noSesionesContainer) {
+                                this.render();
+                                this.fetchAndApplyFechas(this.currentEvaluacionId);
+                            }
+                        } else {
+                            this.render();
+                            this.fetchAndApplyFechas(this.currentEvaluacionId);
+                        }
+                    } else {
+                        const newSesionId = result.data.sesion_id || (result.data.sesion ? result.data.sesion.id : null);
+                        this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
+                    }
                 } else {
-                    alert('Error al guardar.');
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    alert(result.data.message || 'Error al guardar.');
                 }
             })
             .finally(() => {
@@ -720,6 +797,8 @@
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
                 if (currentEval) currentEval.start_date = startDate;
                 this.render();
+                // --- FIX: Recalcular y aplicar fechas ---
+                this.fetchAndApplyFechas(this.currentEvaluacionId);
             } else {
                 alert(result.data.message || 'Error al guardar la fecha.');
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
@@ -789,6 +868,51 @@
     },
 
     // --- Renderizado y UI ---
+    fetchAndApplyFechas(evaluacionId) {
+        if (!evaluacionId || !this.currentClase) return;
+
+        const data = new URLSearchParams({
+            action: 'cpp_get_fechas_evaluacion',
+            nonce: cppFrontendData.nonce,
+            evaluacion_id: evaluacionId,
+            clase_id: this.currentClase.id
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data.fechas) {
+                    let changed = false;
+                    this.sesiones.forEach(sesion => {
+                        // Solo actualizamos las sesiones de la evaluación actual
+                        if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
+                            const newFecha = result.data.fechas[sesion.id];
+                            if (sesion.fecha_calculada !== newFecha) {
+                                sesion.fecha_calculada = newFecha;
+                                changed = true;
+                            }
+                        }
+                    });
+                    if (changed) {
+                        // Volvemos a renderizar solo si hubo cambios para evitar parpadeos
+                        this.render();
+                    }
+                }
+                // No hacemos nada en caso de error para no molestar al usuario
+            }).catch(error => console.error('Error fetching session dates:', error));
+    },
+
+    scrollToSelectedSesion() {
+        if (!this.currentSesion) return;
+        const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+        if (sesionElement) {
+            // Usamos 'auto' para un desplazamiento instantáneo que es menos molesto
+            // que 'smooth' cuando la lista se recarga. 'nearest' evita el scroll
+            // si el elemento ya está visible.
+            sesionElement.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        }
+    },
+
     makeSesionesSortable() {
         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
         if (list) {
@@ -870,36 +994,42 @@
             this.makeActividadesSortable();
         }
         this.updateBulkActionsUI();
+
+        // Usamos un setTimeout para asegurar que el DOM está completamente pintado
+        // antes de intentar hacer scroll, especialmente en navegadores más lentos.
+        setTimeout(() => this.scrollToSelectedSesion(), 0);
     },
+    renderSingleSesionItemHTML(s, index) {
+        const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
+        const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
+
+        const fechaMostrada = s.fecha_calculada
+            ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+            : '';
+
+        const titleHTML = s.fecha_calculada
+            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+            : s.titulo;
+
+        const isChecked = this.selectedSesiones.includes(s.id.toString());
+        return `
+        <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
+            <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
+            <span class="cpp-sesion-handle">⠿</span>
+            <span class="cpp-sesion-number">${index + 1}.</span>
+            <span class="cpp-sesion-title">${titleHTML}</span>
+            <div class="cpp-sesion-actions">
+                <button class="cpp-sesion-action-btn cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">${addIconSVG}</button>
+                <button class="cpp-sesion-action-btn cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">${deleteIconSVG}</button>
+            </div>
+        </li>`;
+    },
+
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
         if (sesionesFiltradas.length === 0) return ''; // Ya no se maneja aquí
 
-        const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
-        const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
-
-        return sesionesFiltradas.map((s, index) => {
-            const fechaMostrada = s.fecha_calculada
-                ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-                : '';
-
-            const titleHTML = s.fecha_calculada
-                ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
-                : s.titulo;
-
-            const isChecked = this.selectedSesiones.includes(s.id.toString());
-            return `
-            <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
-                <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
-                <span class="cpp-sesion-handle">⠿</span>
-                <span class="cpp-sesion-number">${index + 1}.</span>
-                <span class="cpp-sesion-title">${titleHTML}</span>
-                <div class="cpp-sesion-actions">
-                    <button class="cpp-sesion-action-btn cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">${addIconSVG}</button>
-                    <button class="cpp-sesion-action-btn cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">${deleteIconSVG}</button>
-                </div>
-            </li>`
-        }).join('');
+        return sesionesFiltradas.map((s, index) => this.renderSingleSesionItemHTML(s, index)).join('');
     },
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
