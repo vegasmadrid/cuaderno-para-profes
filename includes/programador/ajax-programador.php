@@ -16,6 +16,7 @@ add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_con
 add_action('wp_ajax_cpp_check_schedule_conflict', 'cpp_ajax_check_schedule_conflict_handler');
 add_action('wp_ajax_cpp_copy_multiple_sesiones', 'cpp_ajax_copy_sessions');
 add_action('wp_ajax_cpp_delete_multiple_sesiones', 'cpp_ajax_delete_multiple_sesiones');
+add_action('wp_ajax_cpp_get_fechas_evaluacion', 'cpp_ajax_get_fechas_evaluacion');
 
 
 // Handlers para Actividades
@@ -425,6 +426,25 @@ function cpp_ajax_delete_multiple_sesiones() {
     }
 }
 
+function cpp_ajax_get_fechas_evaluacion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+
+    if (empty($evaluacion_id) || empty($clase_id)) {
+        wp_send_json_error(['message' => 'Faltan datos para calcular las fechas.']);
+        return;
+    }
+
+    $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
+    wp_send_json_success(['fechas' => $fechas]);
+}
+
 
 function cpp_programador_get_sesion_by_id($sesion_id, $user_id) {
     global $wpdb;
@@ -495,8 +515,8 @@ function cpp_programador_calculate_activity_date($sesion_id, $user_id) {
     // Comprobar que la clase tiene al menos un hueco en el horario
     $clase_tiene_horario = false;
     foreach ($horario as $day => $slots) {
-        foreach ($slots as $slot => $clase_id) {
-            if ($clase_id == $sesion_target->clase_id) {
+        foreach ($slots as $slot => $data) {
+            if ($data['claseId'] == $sesion_target->clase_id) {
                 $clase_tiene_horario = true;
                 break 2;
             }
@@ -527,8 +547,8 @@ function cpp_programador_calculate_activity_date($sesion_id, $user_id) {
             $slots_del_dia = $horario[$day_key];
             ksort($slots_del_dia); // Ordenar por hora
 
-            foreach ($slots_del_dia as $slot => $clase_id_en_slot) {
-                if ($clase_id_en_slot == $sesion_target->clase_id) {
+            foreach ($slots_del_dia as $slot => $data) {
+                if ($data['claseId'] == $sesion_target->clase_id) {
                     if ($sesiones_en_evaluacion[$session_index]->id == $sesion_id) {
                         return $ymd; // Fecha encontrada
                     }
@@ -544,4 +564,99 @@ function cpp_programador_calculate_activity_date($sesion_id, $user_id) {
     }
 
     return null; // No se encontró la fecha
+}
+
+function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id) {
+    $all_data = cpp_programador_get_all_data($user_id);
+    $fechas_calculadas = [];
+
+    $sesiones_en_evaluacion = array_filter($all_data['sesiones'], function($s) use ($clase_id, $evaluacion_id) {
+        return $s->clase_id == $clase_id && $s->evaluacion_id == $evaluacion_id;
+    });
+
+    // Re-indexar el array para asegurar que las claves son numéricas consecutivas
+    $sesiones_en_evaluacion = array_values($sesiones_en_evaluacion);
+
+    if (empty($sesiones_en_evaluacion)) {
+        return [];
+    }
+
+    $horario = $all_data['config']['horario'];
+    $calendar_config = $all_data['config']['calendar_config'];
+    $day_mapping = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+    $start_date_str = null;
+    foreach ($all_data['clases'] as $clase) {
+        if ($clase['id'] == $clase_id) {
+            foreach ($clase['evaluaciones'] as $eval) {
+                if ($eval['id'] == $evaluacion_id) {
+                    $start_date_str = $eval['start_date'];
+                    break 2;
+                }
+            }
+        }
+    }
+
+    if (!$start_date_str) {
+        return [];
+    }
+
+    $clase_tiene_horario = false;
+    foreach ($horario as $day => $slots) {
+        foreach ($slots as $slot => $data) {
+            if ($data['claseId'] == $clase_id) {
+                $clase_tiene_horario = true;
+                break 2;
+            }
+        }
+    }
+
+    if (!$clase_tiene_horario) {
+        return [];
+    }
+
+    try {
+        $current_date = new DateTime($start_date_str . 'T12:00:00Z');
+    } catch (Exception $e) {
+        // Si la fecha no es válida, no podemos calcular nada.
+        return [];
+    }
+
+    $session_index = 0;
+    $safety_counter = 0;
+    $max_iterations = 365 * 5;
+
+    while ($session_index < count($sesiones_en_evaluacion) && $safety_counter < $max_iterations) {
+        $day_key = $day_mapping[$current_date->format('w')];
+        $ymd = $current_date->format('Y-m-d');
+
+        $is_working_day = in_array($day_key, $calendar_config['working_days']);
+        $is_holiday = in_array($ymd, $calendar_config['holidays']);
+        $is_vacation = false;
+        foreach ($calendar_config['vacations'] as $v) {
+            if ($ymd >= $v['start'] && $ymd <= $v['end']) {
+                $is_vacation = true;
+                break;
+            }
+        }
+
+        if ($is_working_day && !$is_holiday && !$is_vacation && isset($horario[$day_key])) {
+            $slots_del_dia = $horario[$day_key];
+            ksort($slots_del_dia);
+
+            foreach ($slots_del_dia as $slot => $data) {
+                if ($data['claseId'] == $clase_id) {
+                    if (isset($sesiones_en_evaluacion[$session_index])) {
+                        $sesion_actual_id = $sesiones_en_evaluacion[$session_index]->id;
+                        $fechas_calculadas[$sesion_actual_id] = $ymd;
+                        $session_index++;
+                    }
+                }
+            }
+        }
+        $current_date->add(new DateInterval('P1D'));
+        $safety_counter++;
+    }
+
+    return $fechas_calculadas;
 }

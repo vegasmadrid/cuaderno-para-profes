@@ -118,6 +118,8 @@
             self.currentSesion = null;
             self.selectedSesiones = [];
             self.render();
+            // --- FIX: Cargar fechas en segundo plano ---
+            self.fetchAndApplyFechas(self.currentEvaluacionId);
         });
         $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
@@ -308,6 +310,8 @@
                     }
                     this.currentSesion = newSesion;
                     this.render();
+                    // --- FIX: Cargar fechas en segundo plano ---
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
                 } else if (result.success) { // Fallback
                     const newSesionId = result.data.new_sesion_id || null;
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
@@ -378,6 +382,8 @@
 
         if (renderAfter) {
             this.render();
+            // --- FIX: Cargar fechas en segundo plano ---
+            this.fetchAndApplyFechas(this.currentEvaluacionId);
         } else {
             this.updateBulkActionsUI();
         }
@@ -679,6 +685,8 @@
                         }
                         this.currentSesion = updatedSesion;
                         this.render();
+                        // --- FIX: Cargar fechas en segundo plano ---
+                        this.fetchAndApplyFechas(this.currentEvaluacionId);
                     } else {
                         // Fallback for old backend or if reload is needed
                         const newSesionId = result.data.sesion_id || (result.data.sesion ? result.data.sesion.id : null);
@@ -750,6 +758,8 @@
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
                 if (currentEval) currentEval.start_date = startDate;
                 this.render();
+                // --- FIX: Recalcular y aplicar fechas ---
+                this.fetchAndApplyFechas(this.currentEvaluacionId);
             } else {
                 alert(result.data.message || 'Error al guardar la fecha.');
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
@@ -819,6 +829,40 @@
     },
 
     // --- Renderizado y UI ---
+    fetchAndApplyFechas(evaluacionId) {
+        if (!evaluacionId || !this.currentClase) return;
+
+        const data = new URLSearchParams({
+            action: 'cpp_get_fechas_evaluacion',
+            nonce: cppFrontendData.nonce,
+            evaluacion_id: evaluacionId,
+            clase_id: this.currentClase.id
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.data.fechas) {
+                    let changed = false;
+                    this.sesiones.forEach(sesion => {
+                        // Solo actualizamos las sesiones de la evaluación actual
+                        if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
+                            const newFecha = result.data.fechas[sesion.id];
+                            if (sesion.fecha_calculada !== newFecha) {
+                                sesion.fecha_calculada = newFecha;
+                                changed = true;
+                            }
+                        }
+                    });
+                    if (changed) {
+                        // Volvemos a renderizar solo si hubo cambios para evitar parpadeos
+                        this.render();
+                    }
+                }
+                // No hacemos nada en caso de error para no molestar al usuario
+            }).catch(error => console.error('Error fetching session dates:', error));
+    },
+
     scrollToSelectedSesion() {
         if (!this.currentSesion) return;
         const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
