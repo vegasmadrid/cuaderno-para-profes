@@ -159,7 +159,8 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
 
             // Se pasa el $evaluacion_id para que la función de cálculo sepa si debe calcular
             // la nota de una evaluación concreta o la media de todas.
-            $nota_final_0_100 = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
+            $resultado_nota_final = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
+            $nota_final_0_100 = $resultado_nota_final['nota'];
             $nota_final_reescalada = ($nota_final_0_100 / 100) * $base_nota_final_clase;
             
             $sheet->setCellValue($col_final_nota_char . $current_row_excel, $nota_final_reescalada);
