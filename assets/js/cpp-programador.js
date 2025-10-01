@@ -162,9 +162,9 @@
 
         // Check if we are already in the correct class
         if (this.currentClase && this.currentClase.id == claseId) {
-            // We are in the correct class, just switch tab and load session
-            this.loadClass(claseId, evaluacionId, false); // don't render yet
-            this.currentSesion = this.sesiones.find(s => s.id == sesionId) || null;
+            // We are in the correct class, just switch tab and load session.
+            // Pass the sesionId directly to loadClass.
+            this.loadClass(claseId, evaluacionId, sesionId, false); // don't render yet
 
             // The main app (cpp-cuaderno.js) handles the tab switching. We just need to trigger the click.
             $('.cpp-main-tab-link[data-tab="programacion"]').click();
@@ -295,7 +295,20 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
+                if (result.success && result.data.sesion) {
+                    // --- FIX: Optimización para no recargar todo ---
+                    const newSesion = result.data.sesion;
+                    const afterId = result.data.after_sesion_id;
+                    const afterIndex = this.sesiones.findIndex(s => s.id == afterId);
+
+                    if (afterIndex > -1) {
+                        this.sesiones.splice(afterIndex + 1, 0, newSesion);
+                    } else {
+                        this.sesiones.push(newSesion);
+                    }
+                    this.currentSesion = newSesion;
+                    this.render();
+                } else if (result.success) { // Fallback
                     const newSesionId = result.data.new_sesion_id || null;
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
                 } else {
@@ -303,9 +316,9 @@
                 }
             });
     },
-    loadClass(claseId, evaluacionIdToSelect = null, renderAfter = true) {
-        let sesionIdToSelect = null;
+    loadClass(claseId, evaluacionIdToSelect = null, sesionIdToSelect = null, renderAfter = true) {
         // --- FIX: Check for pending navigation when a class is loaded ---
+        // La navegación pendiente tiene prioridad sobre el sesionIdToSelect pasado como argumento
         if (typeof cpp !== 'undefined' && cpp.pendingNavigation && cpp.pendingNavigation.target === 'programador' && cpp.pendingNavigation.claseId == claseId) {
             const nav = cpp.pendingNavigation;
             evaluacionIdToSelect = nav.evaluacionId;
@@ -558,7 +571,7 @@
                 if (initialClaseId) {
                     // La lógica de pendingNavigation ahora está en loadClass.
                     // Simplemente llamamos a loadClass y ella se encargará de todo.
-                    this.loadClass(initialClaseId, evaluacionIdToSelect, true);
+                    this.loadClass(initialClaseId, evaluacionIdToSelect, sesionIdToSelect, true);
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
@@ -651,11 +664,28 @@
             .then(result => {
                 if (result.success) {
                     if (fromModal) this.closeSesionModal();
-                    const newSesionId = result.data.sesion_id || null;
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
+
+                    if (result.data.sesion && !result.data.needs_reload) {
+                        // --- FIX: Optimización para no recargar todo ---
+                        const updatedSesion = result.data.sesion;
+                        const index = this.sesiones.findIndex(s => s.id == updatedSesion.id);
+
+                        if (index > -1) {
+                            // Actualizar sesión existente
+                            this.sesiones[index] = updatedSesion;
+                        } else {
+                            // Añadir nueva sesión (desde modal)
+                            this.sesiones.push(updatedSesion);
+                        }
+                        this.currentSesion = updatedSesion;
+                        this.render();
+                    } else {
+                        // Fallback for old backend or if reload is needed
+                        const newSesionId = result.data.sesion_id || (result.data.sesion ? result.data.sesion.id : null);
+                        this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
+                    }
                 } else {
-                    alert('Error al guardar.');
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    alert(result.data.message || 'Error al guardar.');
                 }
             })
             .finally(() => {
@@ -789,6 +819,17 @@
     },
 
     // --- Renderizado y UI ---
+    scrollToSelectedSesion() {
+        if (!this.currentSesion) return;
+        const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+        if (sesionElement) {
+            // Usamos 'auto' para un desplazamiento instantáneo que es menos molesto
+            // que 'smooth' cuando la lista se recarga. 'nearest' evita el scroll
+            // si el elemento ya está visible.
+            sesionElement.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        }
+    },
+
     makeSesionesSortable() {
         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
         if (list) {
@@ -870,6 +911,10 @@
             this.makeActividadesSortable();
         }
         this.updateBulkActionsUI();
+
+        // Usamos un setTimeout para asegurar que el DOM está completamente pintado
+        // antes de intentar hacer scroll, especialmente en navegadores más lentos.
+        setTimeout(() => this.scrollToSelectedSesion(), 0);
     },
     renderSesionList() {
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);

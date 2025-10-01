@@ -75,8 +75,16 @@ function cpp_ajax_save_programador_sesion() {
     if (empty($sesion_data) || !isset($sesion_data['evaluacion_id'])) { wp_send_json_error(['message' => 'Datos de sesión no válidos.']); return; }
     $sesion_data['user_id'] = get_current_user_id();
     $result = cpp_programador_save_sesion($sesion_data);
-    if ($result) { wp_send_json_success(['message' => 'Sesión guardada.', 'sesion_id' => $result]); }
-    else { wp_send_json_error(['message' => 'Error al guardar la sesión.']); }
+    if ($result) {
+        // --- FIX: Devolver la sesión completa en lugar de recargar todo ---
+        $sesion_completa = cpp_programador_get_sesion_by_id($result, get_current_user_id());
+        if ($sesion_completa) {
+            wp_send_json_success(['message' => 'Sesión guardada.', 'sesion' => $sesion_completa]);
+        } else {
+            // Fallback por si algo falla al recuperar la sesión
+            wp_send_json_success(['message' => 'Sesión guardada, pero se necesita recargar.', 'sesion_id' => $result, 'needs_reload' => true]);
+        }
+    } else { wp_send_json_error(['message' => 'Error al guardar la sesión.']); }
 }
 
 function cpp_ajax_delete_programador_sesion() {
@@ -154,7 +162,9 @@ function cpp_ajax_add_inline_sesion() {
     $result = cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user_id);
 
     if ($result) {
-        wp_send_json_success(['message' => 'Sesión añadida.', 'new_sesion_id' => $result]);
+        // --- FIX: Devolver la sesión completa en lugar de recargar todo ---
+        $sesion_completa = cpp_programador_get_sesion_by_id($result, $user_id);
+        wp_send_json_success(['message' => 'Sesión añadida.', 'sesion' => $sesion_completa, 'after_sesion_id' => $after_sesion_id]);
     } else {
         wp_send_json_error(['message' => 'Error al añadir la sesión.']);
     }
@@ -413,6 +423,29 @@ function cpp_ajax_delete_multiple_sesiones() {
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al eliminar una o más de las sesiones seleccionadas.']);
     }
+}
+
+
+function cpp_programador_get_sesion_by_id($sesion_id, $user_id) {
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+
+    // Verificar que el usuario tiene permiso sobre la sesión
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+    if (!$owner_id || $owner_id != $user_id) {
+        return null;
+    }
+
+    $sesion = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+
+    if ($sesion) {
+        // Convertir tipos de datos para consistencia con el resto de la app
+        $sesion->id = intval($sesion->id);
+        $sesion->actividades_programadas = cpp_programador_get_actividades_by_sesion_id($sesion_id, $user_id) ?: [];
+        $sesion->fecha_calculada = cpp_programador_calculate_activity_date($sesion_id, $user_id);
+    }
+
+    return $sesion;
 }
 
 
