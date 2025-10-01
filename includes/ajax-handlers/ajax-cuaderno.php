@@ -214,7 +214,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                         <?php
                             $nombre_completo_display = (in_array($sort_order, ['nombre'])) ? ($alumno['nombre'] . ' ' . $alumno['apellidos']) : ($alumno['apellidos'] . ', ' . $alumno['nombre']);
                         ?>
-                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($nota_final_valor); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
+                        <tr data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-nota-final="<?php echo esc_attr($nota_final_valor); ?>" <?php echo $row_style_attr; ?>><td class="cpp-cuaderno-td-alumno"><div class="cpp-alumno-avatar-cuaderno"><img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>"></div><span class="cpp-alumno-nombre-cuaderno"><?php echo ($index + 1) . ". " . esc_html($nombre_completo_display); ?></span></td><?php if (empty($actividades_raw)): ?><td class="cpp-cuaderno-td-no-actividades"></td>
                             <?php else: foreach ($actividades_raw as $actividad):
                                     $nota_alumno_actividad_raw = isset($calificaciones_raw[$alumno['id']][$actividad['id']]) ? $calificaciones_raw[$alumno['id']][$actividad['id']] : '';
                                     $nota_alumno_actividad_display = cpp_formatear_nota_display($nota_alumno_actividad_raw);
@@ -535,7 +535,7 @@ function cpp_ajax_cargar_vista_final() {
                             <div class="cpp-alumno-avatar-cuaderno">
                                 <img src="<?php echo cpp_get_avatar_url($alumno); ?>" alt="Avatar de <?php echo esc_attr($alumno['nombre']); ?>">
                             </div>
-                            <span class="cpp-alumno-nombre-cuaderno"><?php echo esc_html($nombre_completo_display); ?></span>
+                            <span class="cpp-alumno-nombre-cuaderno"><?php echo ($index + 1) . ". " . esc_html($nombre_completo_display); ?></span>
                         </td>
                         <?php foreach ($evaluaciones_reales as $evaluacion):
                             $nota_0_100 = $notas_por_evaluacion[$alumno['id']][$evaluacion['id']];
