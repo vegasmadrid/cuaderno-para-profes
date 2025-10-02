@@ -137,6 +137,58 @@ function cpp_copiar_categorias_de_evaluacion($id_evaluacion_origen, $id_evaluaci
     return true;
 }
 
+function cpp_get_evaluaciones_para_media($clase_id, $user_id) {
+    global $wpdb;
+    $config_table = $wpdb->prefix . 'cpp_clase_final_eval_config';
+
+    $config_row = $wpdb->get_var($wpdb->prepare(
+        "SELECT evaluacion_ids FROM $config_table WHERE clase_id = %d AND user_id = %d",
+        $clase_id,
+        $user_id
+    ));
+
+    if ($config_row !== null) {
+        // Si hay una configuración guardada, devolverla como un array de IDs
+        // Filtramos para quitar valores vacíos por si la cadena es ""
+        return array_filter(array_map('intval', explode(',', $config_row)));
+    } else {
+        // Si no hay configuración, por defecto se usan TODAS las evaluaciones
+        $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+        return wp_list_pluck($todas_las_evaluaciones, 'id');
+    }
+}
+
+function cpp_save_evaluaciones_para_media($clase_id, $user_id, $evaluaciones_ids) {
+    global $wpdb;
+    $config_table = $wpdb->prefix . 'cpp_clase_final_eval_config';
+
+    // Asegurarnos de que el usuario es dueño de la clase
+    $clase_owner_check = $wpdb->get_var($wpdb->prepare(
+        "SELECT user_id FROM {$wpdb->prefix}cpp_clases WHERE id = %d",
+        $clase_id
+    ));
+
+    if ((int)$clase_owner_check !== (int)$user_id) {
+        return false; // El usuario no es el dueño de la clase
+    }
+
+    $ids_string = implode(',', array_map('intval', $evaluaciones_ids));
+
+    // Usamos INSERT ... ON DUPLICATE KEY UPDATE para insertar o actualizar
+    $query = $wpdb->prepare(
+        "INSERT INTO $config_table (clase_id, user_id, evaluacion_ids) VALUES (%d, %d, %s)
+         ON DUPLICATE KEY UPDATE evaluacion_ids = %s",
+        $clase_id,
+        $user_id,
+        $ids_string,
+        $ids_string
+    );
+
+    $resultado = $wpdb->query($query);
+
+    return $resultado !== false;
+}
+
 // ====================================================================
 // --- NUEVA FUNCIÓN ---
 // Asigna actividades sin categoría a una categoría por defecto.

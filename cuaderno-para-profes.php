@@ -425,4 +425,28 @@ function cpp_migrate_refactor_activities_v1_9() {
 }
 add_action('plugins_loaded', 'cpp_run_migrations');
 
+// Añadir modales al footer para que estén disponibles en el DOM
+add_action('wp_footer', 'cpp_add_modals_to_footer');
+function cpp_add_modals_to_footer() {
+    global $post;
+    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+        return;
+    }
+    ?>
+    <!-- Modal para Gestionar Evaluaciones en la Nota Final -->
+    <div id="cpp-modal-manage-final-grade-evals" class="cpp-modal">
+        <div class="cpp-modal-content">
+            <span class="cpp-close-btn">&times;</span>
+            <h2 id="cpp-modal-manage-final-grade-evals-title">Configurar Evaluaciones para la Media</h2>
+            <div id="cpp-manage-final-grade-evals-container" class="cpp-modal-body">
+                <!-- El contenido se cargará aquí vía AJAX -->
+                <p class="cpp-cuaderno-cargando">Cargando...</p>
+            </div>
+            <div class="cpp-modal-footer">
+                <button id="cpp-save-final-grade-evals-btn" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+    <?php
+}
 ?>

@@ -30,9 +30,14 @@ function cpp_ajax_obtener_alumnos() {
     ?>
     <div class="cpp-alumnos-header">
         <h3>Lista de Alumnos</h3>
-        <button class="cpp-btn cpp-btn-primary" id="cpp-nuevo-alumno-btn">
-            <span class="dashicons dashicons-plus"></span> Nuevo Alumno
-        </button>
+        <div class="cpp-alumnos-header-actions">
+            <button class="cpp-btn cpp-btn-secondary" id="cpp-btn-importar-alumnos-excel">
+                <span class="dashicons dashicons-database-import"></span> Importar desde Excel
+            </button>
+            <button class="cpp-btn cpp-btn-primary" id="cpp-nuevo-alumno-btn">
+                <span class="dashicons dashicons-plus"></span> Nuevo Alumno
+            </button>
+        </div>
     </div>
     <div class="cpp-alumnos-list">
         <?php if (empty($alumnos)): ?>

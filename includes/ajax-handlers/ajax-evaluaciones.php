@@ -138,3 +138,68 @@ function cpp_ajax_guardar_metodo_calculo() {
 
     wp_send_json_success(['message' => 'Método de cálculo guardado.']);
 }
+
+add_action('wp_ajax_cpp_get_final_grade_evals_config', 'cpp_ajax_get_final_grade_evals_config');
+function cpp_ajax_get_final_grade_evals_config() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
+
+    // Obtener todas las evaluaciones reales (no la final)
+    $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    // Obtener las evaluaciones que están actualmente seleccionadas para la media
+    $evaluaciones_seleccionadas_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
+
+    ob_start();
+    ?>
+    <form id="cpp-form-final-grade-evals">
+        <input type="hidden" name="clase_id" value="<?php echo esc_attr($clase_id); ?>">
+        <p>Selecciona las evaluaciones que se incluirán en el cálculo de la nota final media.</p>
+        <div class="cpp-evaluaciones-checkbox-list">
+            <?php if (empty($todas_las_evaluaciones)): ?>
+                <p>No hay evaluaciones en esta clase para configurar.</p>
+            <?php else: ?>
+                <?php foreach ($todas_las_evaluaciones as $evaluacion): ?>
+                    <?php $is_checked = in_array($evaluacion['id'], $evaluaciones_seleccionadas_ids); ?>
+                    <div class="cpp-checkbox-item">
+                        <input type="checkbox"
+                               id="eval-checkbox-<?php echo esc_attr($evaluacion['id']); ?>"
+                               name="evaluaciones_seleccionadas[]"
+                               value="<?php echo esc_attr($evaluacion['id']); ?>"
+                               <?php checked($is_checked, true); ?>>
+                        <label for="eval-checkbox-<?php echo esc_attr($evaluacion['id']); ?>">
+                            <?php echo esc_html($evaluacion['nombre_evaluacion']); ?>
+                        </label>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </form>
+    <?php
+    $html = ob_get_clean();
+    wp_send_json_success(['html' => $html]);
+}
+
+add_action('wp_ajax_cpp_save_final_grade_evals_config', 'cpp_ajax_save_final_grade_evals_config');
+function cpp_ajax_save_final_grade_evals_config() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $evaluaciones_ids = isset($_POST['evaluaciones_seleccionadas']) && is_array($_POST['evaluaciones_seleccionadas']) ? array_map('intval', $_POST['evaluaciones_seleccionadas']) : [];
+
+    if (empty($clase_id)) {
+        wp_send_json_error(['message' => 'ID de clase no proporcionado.']);
+        return;
+    }
+
+    $resultado = cpp_save_evaluaciones_para_media($clase_id, $user_id, $evaluaciones_ids);
+
+    if ($resultado) {
+        wp_send_json_success(['message' => 'Configuración guardada correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar la configuración.']);
+    }
+}
