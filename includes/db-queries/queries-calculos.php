@@ -158,8 +158,8 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
 
     // 2. Iterar sobre cada evaluación y calcular la nota final del alumno
     foreach ($evaluaciones as $evaluacion) {
-        $nota_evaluacion = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
-        $suma_notas_evaluaciones += $nota_evaluacion;
+        $resultado_nota = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
+        $suma_notas_evaluaciones += $resultado_nota['nota'];
     }
 
     // 3. Calcular la media de todas las evaluaciones

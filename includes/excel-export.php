@@ -23,9 +23,10 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 /**
  * Función principal para generar y descargar el archivo Excel CON DATOS DEL CUADERNO.
+ * MODIFICADO: Ahora exporta TODAS las evaluaciones de una clase (en hojas separadas) o de todas las clases.
  * Esta función es llamada por la acción cpp_trigger_excel_download_handler en el archivo principal del plugin.
  */
-function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = null, $download_type = 'single_class', $filename = 'cuaderno_exportado.xlsx', $evaluacion_id) {
+function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = null, $download_type = 'single_class', $filename = 'cuaderno_exportado.xlsx', $evaluacion_id_obsoleto = null) {
     
     if (!is_user_logged_in() || get_current_user_id() != $user_id) {
         wp_die('No tienes permiso para realizar esta acción.');
@@ -38,37 +39,72 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
         ->setTitle("Exportación de Cuaderno de Notas")
         ->setSubject("Datos de Clases y Alumnos");
 
+    $sheet_index = 0;
+
     if ($download_type === 'single_class' && !empty($clase_id_para_exportar)) {
         $clase_actual_info = cpp_obtener_clase_completa_por_id($clase_id_para_exportar, $user_id);
         if (!$clase_actual_info) {
             wp_die('Clase no encontrada o no tienes permiso sobre ella.');
         }
-        $sheet = $spreadsheet->getActiveSheet();
-        cpp_populate_sheet_with_class_data($sheet, $clase_actual_info, $user_id, $evaluacion_id);
-        $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_actual_info['nombre']), 0, 31);
-        $sheet->setTitle($sheet_name ?: 'Clase');
-        // El filename ya viene como parámetro, generado en el manejador de la acción.
+
+        $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id_para_exportar, $user_id);
+        if (empty($evaluaciones)) {
+            wp_die('La clase no tiene evaluaciones para exportar.');
+        }
+
+        foreach ($evaluaciones as $evaluacion) {
+            if ($sheet_index > 0) {
+                $spreadsheet->createSheet();
+            }
+            $sheet = $spreadsheet->getSheet($sheet_index);
+            cpp_populate_sheet_with_class_data($sheet, $clase_actual_info, $user_id, $evaluacion['id']);
+
+            $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $evaluacion['nombre_evaluacion']), 0, 31);
+            $sheet->setTitle($sheet_name ?: ('Evaluación ' . ($sheet_index + 1)));
+            $sheet_index++;
+        }
 
     } elseif ($download_type === 'all_classes') {
         $clases = cpp_obtener_clases_usuario($user_id);
         if (empty($clases)) {
             wp_die('No tienes clases para exportar.');
         }
-        $sheet_index = 0;
+
         foreach ($clases as $clase_info_loop) {
-            if ($sheet_index > 0) {
-                $spreadsheet->createSheet();
+            $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_info_loop['id'], $user_id);
+            if (empty($evaluaciones)) {
+                continue; // Saltar clases sin evaluaciones
             }
-            $sheet = $spreadsheet->getSheet($sheet_index);
-            cpp_populate_sheet_with_class_data($sheet, $clase_info_loop, $user_id, null);
-            $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_info_loop['nombre']), 0, 31);
-            $sheet->setTitle($sheet_name ?: ('Clase ' . ($sheet_index + 1)));
-            $sheet_index++;
+
+            $clase_completa_info = cpp_obtener_clase_completa_por_id($clase_info_loop['id'], $user_id);
+
+            foreach ($evaluaciones as $evaluacion) {
+                if ($sheet_index > 0) {
+                    $spreadsheet->createSheet();
+                }
+                $sheet = $spreadsheet->getSheet($sheet_index);
+                cpp_populate_sheet_with_class_data($sheet, $clase_completa_info, $user_id, $evaluacion['id']);
+
+                $clase_nombre_sanitized = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_info_loop['nombre']), 0, 15);
+                $eval_nombre_sanitized = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $evaluacion['nombre_evaluacion']), 0, 15);
+                $sheet_name = $clase_nombre_sanitized . ' - ' . $eval_nombre_sanitized;
+                $sheet->setTitle($sheet_name);
+                $sheet_index++;
+            }
         }
-        $spreadsheet->setActiveSheetIndex(0);
-        // El filename ya viene como parámetro.
+
+        if ($sheet_index === 0) {
+            wp_die('No se encontraron evaluaciones en ninguna de tus clases para exportar.');
+        }
+
     } else {
         wp_die('Tipo de descarga no válido.');
+    }
+
+    if ($sheet_index > 0) {
+        $spreadsheet->setActiveSheetIndex(0);
+    } else {
+        wp_die('No hay datos para exportar.');
     }
 
     // Limpiar cualquier salida de buffer anterior para evitar errores
@@ -159,7 +195,8 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
 
             // Se pasa el $evaluacion_id para que la función de cálculo sepa si debe calcular
             // la nota de una evaluación concreta o la media de todas.
-            $nota_final_0_100 = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
+            $resultado_nota_final = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
+            $nota_final_0_100 = $resultado_nota_final['nota'];
             $nota_final_reescalada = ($nota_final_0_100 / 100) * $base_nota_final_clase;
             
             $sheet->setCellValue($col_final_nota_char . $current_row_excel, $nota_final_reescalada);
