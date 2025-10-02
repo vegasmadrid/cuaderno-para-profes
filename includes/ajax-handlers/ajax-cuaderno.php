@@ -453,7 +453,8 @@ function cpp_ajax_cargar_vista_final() {
         $notas_finales_promediadas[$alumno['id']] = $nota_final_promediada;
         $alumnos[$index]['nota_final_calculada'] = $nota_final_promediada; // Used for sorting
         foreach ($evaluaciones_reales as $evaluacion) {
-            $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
+            $calculo_evaluacion = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
+            $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = $calculo_evaluacion['nota'];
         }
     }
 
