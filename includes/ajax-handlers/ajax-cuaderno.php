@@ -106,9 +106,6 @@ function cpp_ajax_cargar_cuaderno_clase() {
                 <button class="cpp-btn cpp-btn-primary" id="cpp-btn-agregar-alumnos-mano" data-clase-id="<?php echo esc_attr($clase_id); ?>" data-clase-nombre="<?php echo esc_attr($clase_db['nombre']); ?>">
                     <span class="dashicons dashicons-admin-users"></span> Ingresar alumnos a mano
                 </button>
-                <button class="cpp-btn cpp-btn-secondary" id="cpp-btn-importar-alumnos-excel">
-                    <span class="dashicons dashicons-database-import"></span> Importar alumnos desde un archivo
-                </button>
             </div>
         </div>
         <?php
@@ -128,18 +125,24 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM18 7H6v2h12V7zm-4.03 7.47l-1.41-1.41-4.03 4.03-1.48-1.48L6 17.02l2.88 2.88L13.97 14.5l-1.41-1.41-2.59 2.58z"/></svg>
                                 </button>
+                                <?php if ($evaluacion_activa_id !== 'final'): ?>
                                 <button class="cpp-btn-icon" id="cpp-a1-symbol-palette-btn" title="Insertar Símbolo">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"/></svg>
                                 </button>
-                                <button class="cpp-btn-icon" id="cpp-a1-import-students-btn" title="Importar Alumnos">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                                </button>
+                                <?php endif; ?>
                                 <button class="cpp-btn-icon" id="cpp-a1-download-excel-btn" title="Descargar Excel">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                                 </button>
+                                <?php if ($evaluacion_activa_id !== 'final'): ?>
                                 <button class="cpp-btn-icon" id="cpp-a1-add-activity-btn" title="Añadir Actividad">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>
                                 </button>
+                                <?php endif; ?>
+                                <?php if ($evaluacion_activa_id === 'final'): ?>
+                                <button class="cpp-btn-icon" id="cpp-manage-final-grade-evals-btn" data-clase-id="<?php echo esc_attr($clase_id); ?>" title="Configurar Evaluaciones para la Media">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+                                </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </th>
@@ -440,7 +443,14 @@ function cpp_ajax_cargar_vista_final() {
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id, in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
-    $evaluaciones_reales = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+
+    // Obtener todas las evaluaciones y luego filtrar las que se deben mostrar
+    $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    $evaluaciones_seleccionadas_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
+    $evaluaciones_a_mostrar = array_filter($todas_las_evaluaciones, function($eval) use ($evaluaciones_seleccionadas_ids) {
+        return in_array($eval['id'], $evaluaciones_seleccionadas_ids);
+    });
+
     $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
     $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
@@ -452,8 +462,10 @@ function cpp_ajax_cargar_vista_final() {
         $nota_final_promediada = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
         $notas_finales_promediadas[$alumno['id']] = $nota_final_promediada;
         $alumnos[$index]['nota_final_calculada'] = $nota_final_promediada; // Used for sorting
-        foreach ($evaluaciones_reales as $evaluacion) {
-            $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
+        // Recalcular las notas solo para las evaluaciones que se van a mostrar.
+        foreach ($evaluaciones_a_mostrar as $evaluacion) {
+            $calculo_evaluacion = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
+            $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = $calculo_evaluacion['nota'];
         }
     }
 
@@ -486,22 +498,16 @@ function cpp_ajax_cargar_vista_final() {
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM18 7H6v2h12V7zm-4.03 7.47l-1.41-1.41-4.03 4.03-1.48-1.48L6 17.02l2.88 2.88L13.97 14.5l-1.41-1.41-2.59 2.58z"/></svg>
                                 </button>
-                                <button class="cpp-btn-icon" id="cpp-a1-symbol-palette-btn" title="Insertar Símbolo">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"/></svg>
-                                </button>
-                                <button class="cpp-btn-icon" id="cpp-a1-import-students-btn" title="Importar Alumnos">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                                </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-download-excel-btn" title="Descargar Excel">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                                 </button>
-                                <button class="cpp-btn-icon" id="cpp-a1-add-activity-btn" title="Añadir Actividad">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>
+                                <button class="cpp-btn-icon" id="cpp-manage-final-grade-evals-btn" data-clase-id="<?php echo esc_attr($clase_id); ?>" title="Configurar Evaluaciones para la Media">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
                                 </button>
                             </div>
                         </div>
                     </th>
-                    <?php foreach ($evaluaciones_reales as $evaluacion): ?>
+                    <?php foreach ($evaluaciones_a_mostrar as $evaluacion): ?>
                         <th class="cpp-cuaderno-th-actividad" data-evaluacion-id="<?php echo esc_attr($evaluacion['id']); ?>" title="Ver la <?php echo esc_attr($evaluacion['nombre_evaluacion']); ?>">
                             <?php echo esc_html($evaluacion['nombre_evaluacion']); ?>
                         </th>
@@ -521,7 +527,7 @@ function cpp_ajax_cargar_vista_final() {
             </thead>
             <tbody>
                 <?php if (empty($alumnos)): ?>
-                    <tr><td colspan="<?php echo count($evaluaciones_reales) + 2; ?>">No hay alumnos en esta clase.</td></tr>
+                    <tr><td colspan="<?php echo count($evaluaciones_a_mostrar) + 2; ?>">No hay alumnos en esta clase.</td></tr>
                 <?php else: foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
                     ?>
@@ -537,7 +543,7 @@ function cpp_ajax_cargar_vista_final() {
                             </div>
                             <span class="cpp-alumno-nombre-cuaderno"><?php echo ($index + 1) . ". " . esc_html($nombre_completo_display); ?></span>
                         </td>
-                        <?php foreach ($evaluaciones_reales as $evaluacion):
+                        <?php foreach ($evaluaciones_a_mostrar as $evaluacion):
                             $nota_0_100 = $notas_por_evaluacion[$alumno['id']][$evaluacion['id']];
                             $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
                         ?>
@@ -558,8 +564,8 @@ function cpp_ajax_cargar_vista_final() {
     <?php
     $html_cuaderno = ob_get_clean();
 
-    $evaluaciones_con_final = $evaluaciones_reales;
-    if (count($evaluaciones_reales) > 1) {
+    $evaluaciones_con_final = $todas_las_evaluaciones;
+    if (count($todas_las_evaluaciones) > 1) {
         $evaluaciones_con_final[] = ['id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)'];
     }
 

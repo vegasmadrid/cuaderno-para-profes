@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.9.1');
+define('CPP_VERSION', '2.0.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -293,6 +293,23 @@ function cpp_migrate_nota_to_varchar_v1_9_1() {
     }
 }
 
+function cpp_migrate_add_final_eval_config_table_v2_0() {
+    global $wpdb;
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $table_name = $wpdb->prefix . 'cpp_clase_final_eval_config';
+    $sql = "CREATE TABLE $table_name (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        clase_id mediumint(9) UNSIGNED NOT NULL,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        evaluacion_ids text NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY clase_user_unique (clase_id, user_id)
+    ) $charset_collate;";
+    dbDelta($sql);
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -310,6 +327,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '1.9.1', '<')) {
         cpp_migrate_nota_to_varchar_v1_9_1();
+    }
+    if (version_compare($current_version, '2.0.0', '<')) {
+        cpp_migrate_add_final_eval_config_table_v2_0();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
@@ -425,4 +445,28 @@ function cpp_migrate_refactor_activities_v1_9() {
 }
 add_action('plugins_loaded', 'cpp_run_migrations');
 
+// Añadir modales al footer para que estén disponibles en el DOM
+add_action('wp_footer', 'cpp_add_modals_to_footer');
+function cpp_add_modals_to_footer() {
+    global $post;
+    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+        return;
+    }
+    ?>
+    <!-- Modal para Gestionar Evaluaciones en la Nota Final -->
+    <div id="cpp-modal-manage-final-grade-evals" class="cpp-modal">
+        <div class="cpp-modal-content">
+            <span class="cpp-close-btn">&times;</span>
+            <h2 id="cpp-modal-manage-final-grade-evals-title">Configurar Evaluaciones para la Media</h2>
+            <div id="cpp-manage-final-grade-evals-container" class="cpp-modal-body">
+                <!-- El contenido se cargará aquí vía AJAX -->
+                <p class="cpp-cuaderno-cargando">Cargando...</p>
+            </div>
+            <div class="cpp-modal-footer">
+                <button id="cpp-save-final-grade-evals-btn" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+    <?php
+}
 ?>

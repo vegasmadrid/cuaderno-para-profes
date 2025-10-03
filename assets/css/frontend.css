@@ -1949,3 +1949,92 @@ body.cpp-no-text-select {
     display: flex;
     flex-direction: column;
 }
+
+/* --- Estilos para el Modal de Configuración de Nota Final (Toggle Switches) --- */
+
+#cpp-modal-manage-final-grade-evals .cpp-modal-body {
+    padding-top: 15px;
+    padding-bottom: 20px;
+}
+
+#cpp-modal-manage-final-grade-evals p {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 15px;
+    color: #555;
+}
+
+.cpp-evaluaciones-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cpp-toggle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.cpp-toggle-label-text {
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+}
+
+.cpp-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px; /* Ancho del interruptor */
+    height: 28px; /* Alto del interruptor */
+}
+
+.cpp-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cpp-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 28px; /* Para que sea redondeado */
+}
+
+.cpp-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px; /* Tamaño del círculo */
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.cpp-toggle-switch input:checked + .cpp-toggle-slider {
+    background-color: #4A86E8; /* Color principal */
+}
+
+.cpp-toggle-switch input:focus + .cpp-toggle-slider {
+    box-shadow: 0 0 1px #4A86E8;
+}
+
+.cpp-toggle-switch input:checked + .cpp-toggle-slider:before {
+    -webkit-transform: translateX(22px); /* Desplazamiento del círculo */
+    -ms-transform: translateX(22px);
+    transform: translateX(22px);
+}

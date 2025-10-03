@@ -176,9 +176,95 @@
             }
         },
 
+        showManageFinalGradeModal: function(event) {
+            event.preventDefault();
+            const $btn = $(event.currentTarget);
+            const claseId = $btn.data('clase-id');
+            if (!claseId) {
+                alert('Error: No se encontró el ID de la clase.');
+                return;
+            }
+
+            const $modal = $('#cpp-modal-manage-final-grade-evals');
+            const $container = $modal.find('#cpp-manage-final-grade-evals-container');
+            const $title = $modal.find('#cpp-modal-manage-final-grade-evals-title');
+
+            const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+            $title.text(`Configurar Media para: ${claseNombre}`);
+
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
+            $modal.fadeIn();
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_get_final_grade_evals_config',
+                    nonce: cppFrontendData.nonce,
+                    clase_id: claseId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $container.html(response.data.html);
+                    } else {
+                        $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar la configuración.'}</p>`);
+                    }
+                },
+                error: function() {
+                    $container.html('<p class="cpp-error-message">Error de conexión.</p>');
+                }
+            });
+        },
+
+        saveFinalGradeConfig: function(event) {
+            event.preventDefault();
+            const $btn = $(event.currentTarget);
+            const $form = $('#cpp-form-final-grade-evals');
+            if (!$form.length) {
+                alert('Error: No se encontró el formulario de configuración.');
+                return;
+            }
+
+            const formData = $form.serialize();
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                data: formData + '&action=cpp_save_final_grade_evals_config' + '&nonce=' + cppFrontendData.nonce,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#cpp-modal-manage-final-grade-evals').fadeOut();
+                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, 'final');
+                    } else {
+                        alert('Error: ' + (response.data.message || 'No se pudo guardar la configuración.'));
+                    }
+                },
+                error: function() {
+                    alert('Error de conexión al guardar.');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
+        },
+
         bindEvents: function() {
             const $document = $(document);
             const self = this;
+
+            // Evento para abrir el modal de configuración de la nota final
+            $document.on('click', '#cpp-manage-final-grade-evals-btn', function(e) {
+                self.showManageFinalGradeModal.call(self, e);
+            });
+
+            // Evento para guardar la configuración del modal de nota final
+            $document.on('click', '#cpp-save-final-grade-evals-btn', function(e) {
+                self.saveFinalGradeConfig.call(self, e);
+            });
 
             const containerSelector = '#cpp-config-ponderaciones-container';
             
