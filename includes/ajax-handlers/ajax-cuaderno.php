@@ -527,7 +527,7 @@ function cpp_ajax_cargar_vista_final() {
             </thead>
             <tbody>
                 <?php if (empty($alumnos)): ?>
-                    <tr><td colspan="<?php echo count($evaluaciones_reales) + 2; ?>">No hay alumnos en esta clase.</td></tr>
+                    <tr><td colspan="<?php echo count($evaluaciones_a_mostrar) + 2; ?>">No hay alumnos en esta clase.</td></tr>
                 <?php else: foreach ($alumnos as $index => $alumno):
                         $row_style_attr = ($index % 2 != 0) ? 'style="background-color: ' . esc_attr(cpp_lighten_hex_color($clase_color_actual, 0.95)) . ';"' : '';
                     ?>
@@ -564,8 +564,8 @@ function cpp_ajax_cargar_vista_final() {
     <?php
     $html_cuaderno = ob_get_clean();
 
-    $evaluaciones_con_final = $evaluaciones_reales;
-    if (count($evaluaciones_reales) > 1) {
+    $evaluaciones_con_final = $todas_las_evaluaciones;
+    if (count($todas_las_evaluaciones) > 1) {
         $evaluaciones_con_final[] = ['id' => 'final', 'nombre_evaluacion' => 'Evaluación Final (Media)'];
     }
 
