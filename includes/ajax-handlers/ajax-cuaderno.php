@@ -443,7 +443,14 @@ function cpp_ajax_cargar_vista_final() {
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id, in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
-    $evaluaciones_reales = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+
+    // Obtener todas las evaluaciones y luego filtrar las que se deben mostrar
+    $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    $evaluaciones_seleccionadas_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
+    $evaluaciones_a_mostrar = array_filter($todas_las_evaluaciones, function($eval) use ($evaluaciones_seleccionadas_ids) {
+        return in_array($eval['id'], $evaluaciones_seleccionadas_ids);
+    });
+
     $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
     $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
@@ -455,7 +462,8 @@ function cpp_ajax_cargar_vista_final() {
         $nota_final_promediada = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
         $notas_finales_promediadas[$alumno['id']] = $nota_final_promediada;
         $alumnos[$index]['nota_final_calculada'] = $nota_final_promediada; // Used for sorting
-        foreach ($evaluaciones_reales as $evaluacion) {
+        // Recalcular las notas solo para las evaluaciones que se van a mostrar.
+        foreach ($evaluaciones_a_mostrar as $evaluacion) {
             $calculo_evaluacion = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
             $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = $calculo_evaluacion['nota'];
         }
@@ -499,7 +507,7 @@ function cpp_ajax_cargar_vista_final() {
                             </div>
                         </div>
                     </th>
-                    <?php foreach ($evaluaciones_reales as $evaluacion): ?>
+                    <?php foreach ($evaluaciones_a_mostrar as $evaluacion): ?>
                         <th class="cpp-cuaderno-th-actividad" data-evaluacion-id="<?php echo esc_attr($evaluacion['id']); ?>" title="Ver la <?php echo esc_attr($evaluacion['nombre_evaluacion']); ?>">
                             <?php echo esc_html($evaluacion['nombre_evaluacion']); ?>
                         </th>
@@ -535,7 +543,7 @@ function cpp_ajax_cargar_vista_final() {
                             </div>
                             <span class="cpp-alumno-nombre-cuaderno"><?php echo ($index + 1) . ". " . esc_html($nombre_completo_display); ?></span>
                         </td>
-                        <?php foreach ($evaluaciones_reales as $evaluacion):
+                        <?php foreach ($evaluaciones_a_mostrar as $evaluacion):
                             $nota_0_100 = $notas_por_evaluacion[$alumno['id']][$evaluacion['id']];
                             $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
                         ?>

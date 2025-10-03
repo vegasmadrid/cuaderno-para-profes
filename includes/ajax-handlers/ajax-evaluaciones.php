@@ -157,20 +157,20 @@ function cpp_ajax_get_final_grade_evals_config() {
     <form id="cpp-form-final-grade-evals">
         <input type="hidden" name="clase_id" value="<?php echo esc_attr($clase_id); ?>">
         <p>Selecciona las evaluaciones que se incluirán en el cálculo de la nota final media.</p>
-        <div class="cpp-evaluaciones-checkbox-list">
+        <div class="cpp-evaluaciones-toggle-list">
             <?php if (empty($todas_las_evaluaciones)): ?>
                 <p>No hay evaluaciones en esta clase para configurar.</p>
             <?php else: ?>
                 <?php foreach ($todas_las_evaluaciones as $evaluacion): ?>
                     <?php $is_checked = in_array($evaluacion['id'], $evaluaciones_seleccionadas_ids); ?>
-                    <div class="cpp-checkbox-item">
-                        <input type="checkbox"
-                               id="eval-checkbox-<?php echo esc_attr($evaluacion['id']); ?>"
-                               name="evaluaciones_seleccionadas[]"
-                               value="<?php echo esc_attr($evaluacion['id']); ?>"
-                               <?php checked($is_checked, true); ?>>
-                        <label for="eval-checkbox-<?php echo esc_attr($evaluacion['id']); ?>">
-                            <?php echo esc_html($evaluacion['nombre_evaluacion']); ?>
+                    <div class="cpp-toggle-item">
+                        <span class="cpp-toggle-label-text"><?php echo esc_html($evaluacion['nombre_evaluacion']); ?></span>
+                        <label class="cpp-toggle-switch">
+                            <input type="checkbox"
+                                   name="evaluaciones_seleccionadas[]"
+                                   value="<?php echo esc_attr($evaluacion['id']); ?>"
+                                   <?php checked($is_checked, true); ?>>
+                            <span class="cpp-toggle-slider"></span>
                         </label>
                     </div>
                 <?php endforeach; ?>
