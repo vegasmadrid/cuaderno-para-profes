@@ -189,17 +189,6 @@ function cpp_crear_tablas() {
         KEY sesion_id (sesion_id)
     ) $charset_collate;";
     dbDelta($sql_programador_actividades);
-
-    $tabla_clase_final_eval_config_nombre = $wpdb->prefix . 'cpp_clase_final_eval_config';
-    $sql_clase_final_eval_config = "CREATE TABLE $tabla_clase_final_eval_config_nombre (
-        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        clase_id mediumint(9) UNSIGNED NOT NULL,
-        user_id bigint(20) UNSIGNED NOT NULL,
-        evaluacion_ids text NOT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY clase_user_unique (clase_id, user_id)
-    ) $charset_collate;";
-    dbDelta($sql_clase_final_eval_config);
 }
 
 // --- CARGADOR DE ARCHIVOS DE CONSULTAS A LA BBDD ---

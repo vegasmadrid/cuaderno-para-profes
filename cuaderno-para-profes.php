@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '1.9.1');
+define('CPP_VERSION', '2.0.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -293,6 +293,23 @@ function cpp_migrate_nota_to_varchar_v1_9_1() {
     }
 }
 
+function cpp_migrate_add_final_eval_config_table_v2_0() {
+    global $wpdb;
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $table_name = $wpdb->prefix . 'cpp_clase_final_eval_config';
+    $sql = "CREATE TABLE $table_name (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        clase_id mediumint(9) UNSIGNED NOT NULL,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        evaluacion_ids text NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY clase_user_unique (clase_id, user_id)
+    ) $charset_collate;";
+    dbDelta($sql);
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -310,6 +327,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '1.9.1', '<')) {
         cpp_migrate_nota_to_varchar_v1_9_1();
+    }
+    if (version_compare($current_version, '2.0.0', '<')) {
+        cpp_migrate_add_final_eval_config_table_v2_0();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
