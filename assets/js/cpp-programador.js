@@ -70,8 +70,8 @@
         $document.on('click', '#cpp-simbolo-sesion-toolbar-btn', () => { if (self.currentSesion) { self.openSimboloModal(self.currentSesion.id); } });
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
-            // --- FIX: Evitar que el click en botones de acción o checkboxes dispare la selección ---
-            if (e.target.closest('.cpp-sesion-action-btn') || e.target.closest('.cpp-sesion-checkbox')) {
+            // Evitar que el click en el checkbox de selección múltiple dispare la selección de sesión individual.
+            if (e.target.closest('.cpp-sesion-checkbox')) {
                 return;
             }
 
@@ -82,30 +82,14 @@
             }
 
             // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
-            const list = this.closest('.cpp-sesiones-list-detailed');
             if (self.selectedSesiones.length > 0) {
                 self.selectedSesiones = [];
-                self.updateBulkActionsUI();
-                // Desmarcar visualmente los checkboxes
-                if (list) {
-                    list.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
-                }
             }
 
             self.currentSesion = self.sesiones.find(s => s.id == sesionId);
 
-            // --- OPTIMIZATION: No re-renderizar toda la pestaña ---
-            if (list) {
-                const activeElement = list.querySelector('.cpp-sesion-list-item.active');
-                if (activeElement) activeElement.classList.remove('active');
-            }
-            this.classList.add('active');
-
-            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
-            if (rightCol) {
-                rightCol.innerHTML = self.renderProgramacionTabRightColumn();
-                self.makeActividadesSortable();
-            }
+            // --- FIX: Re-renderizar toda la pestaña para actualizar el estado de los botones de la toolbar ---
+            self.render();
         });
 
         // Actividades
