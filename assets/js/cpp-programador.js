@@ -61,10 +61,43 @@
         $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) { e.stopPropagation(); self.deleteSesion(this.dataset.sesionId); });
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
         $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
-        $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
-            self.selectedSesiones = [];
-            self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
-            self.renderProgramacionTab();
+        $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
+            // --- FIX: Evitar que el click en botones de acción o checkboxes dispare la selección ---
+            if (e.target.closest('.cpp-sesion-action-btn') || e.target.closest('.cpp-sesion-checkbox')) {
+                return;
+            }
+
+            const sesionId = this.dataset.sesionId;
+            // Evitar re-render si ya está seleccionada
+            if (self.currentSesion && self.currentSesion.id == sesionId) {
+                return;
+            }
+
+            // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
+            const list = this.closest('.cpp-sesiones-list-detailed');
+            if (self.selectedSesiones.length > 0) {
+                self.selectedSesiones = [];
+                self.updateBulkActionsUI();
+                // Desmarcar visualmente los checkboxes
+                if (list) {
+                    list.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
+                }
+            }
+
+            self.currentSesion = self.sesiones.find(s => s.id == sesionId);
+
+            // --- OPTIMIZATION: No re-renderizar toda la pestaña ---
+            if (list) {
+                const activeElement = list.querySelector('.cpp-sesion-list-item.active');
+                if (activeElement) activeElement.classList.remove('active');
+            }
+            this.classList.add('active');
+
+            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
+            if (rightCol) {
+                rightCol.innerHTML = self.renderProgramacionTabRightColumn();
+                self.makeActividadesSortable();
+            }
         });
 
         // Actividades
@@ -884,11 +917,14 @@
                 if (result.success && result.data.fechas) {
                     let changed = false;
                     this.sesiones.forEach(sesion => {
-                        // Solo actualizamos las sesiones de la evaluación actual
                         if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
-                            const newFecha = result.data.fechas[sesion.id];
-                            if (sesion.fecha_calculada !== newFecha) {
+                            const fechaData = result.data.fechas[sesion.id];
+                            const newFecha = fechaData.fecha;
+                            const newNotas = fechaData.notas;
+
+                            if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
                                 sesion.fecha_calculada = newFecha;
+                                sesion.notas_horario = newNotas;
                                 changed = true;
                             }
                         }
@@ -906,10 +942,10 @@
         if (!this.currentSesion) return;
         const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
         if (sesionElement) {
-            // Usamos 'auto' para un desplazamiento instantáneo que es menos molesto
-            // que 'smooth' cuando la lista se recarga. 'nearest' evita el scroll
-            // si el elemento ya está visible.
-            sesionElement.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+            // --- FIX: Centrar el elemento seleccionado en la vista ---
+            // Usamos 'center' para asegurar que el elemento recién creado o seleccionado
+            // sea claramente visible para el usuario, en lugar de quedar en el borde.
+            sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
         }
     },
 
@@ -1012,8 +1048,13 @@
             : s.titulo;
 
         const isChecked = this.selectedSesiones.includes(s.id.toString());
+        const today = new Date();
+        const todayYMD = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        const isToday = s.fecha_calculada === todayYMD;
+        const todayClass = isToday ? 'cpp-sesion-hoy' : '';
+
         return `
-        <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''}" data-sesion-id="${s.id}">
+        <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''} ${todayClass}" data-sesion-id="${s.id}">
             <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
             <span class="cpp-sesion-handle">⠿</span>
             <span class="cpp-sesion-number">${index + 1}.</span>
@@ -1038,10 +1079,17 @@
             ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
             : '';
 
+        const notasHorarioHTML = this.currentSesion.notas_horario
+            ? `<div class="cpp-sesion-detail-notas">${this.currentSesion.notas_horario.replace(/\n/g, '<br>')}</div>`
+            : '';
+
         const headerHTML = `
             <div class="cpp-sesion-detail-header">
                 <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
-                ${fechaMostrada ? `<span class="cpp-sesion-detail-date-badge"><span class="dashicons dashicons-calendar-alt"></span> ${fechaMostrada}</span>` : ''}
+                <div class="cpp-sesion-detail-meta">
+                    ${fechaMostrada ? `<span class="cpp-sesion-detail-date-badge"><span class="dashicons dashicons-calendar-alt"></span> ${fechaMostrada}</span>` : ''}
+                    ${notasHorarioHTML}
+                </div>
             </div>`;
 
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
@@ -1494,7 +1542,7 @@
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
-                                ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas}</p>` : ''}
+                                ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;
                         }
