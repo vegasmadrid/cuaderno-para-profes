@@ -917,11 +917,14 @@
                 if (result.success && result.data.fechas) {
                     let changed = false;
                     this.sesiones.forEach(sesion => {
-                        // Solo actualizamos las sesiones de la evaluación actual
                         if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
-                            const newFecha = result.data.fechas[sesion.id];
-                            if (sesion.fecha_calculada !== newFecha) {
+                            const fechaData = result.data.fechas[sesion.id];
+                            const newFecha = fechaData.fecha;
+                            const newNotas = fechaData.notas;
+
+                            if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
                                 sesion.fecha_calculada = newFecha;
+                                sesion.notas_horario = newNotas;
                                 changed = true;
                             }
                         }
@@ -1040,8 +1043,10 @@
             ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
             : '';
 
+        const notasHTML = s.notas_horario ? `<small class="cpp-sesion-notas">${s.notas_horario}</small>` : '';
+
         const titleHTML = s.fecha_calculada
-            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>${notasHTML}`
             : s.titulo;
 
         const isChecked = this.selectedSesiones.includes(s.id.toString());

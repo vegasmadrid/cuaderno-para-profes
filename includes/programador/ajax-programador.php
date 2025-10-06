@@ -649,7 +649,10 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
                 if ($data['claseId'] == $clase_id) {
                     if (isset($sesiones_en_evaluacion[$session_index])) {
                         $sesion_actual_id = $sesiones_en_evaluacion[$session_index]->id;
-                        $fechas_calculadas[$sesion_actual_id] = $ymd;
+                        $fechas_calculadas[$sesion_actual_id] = [
+                            'fecha' => $ymd,
+                            'notas' => !empty($data['notas']) ? $data['notas'] : ''
+                        ];
                         $session_index++;
                     }
                 }
