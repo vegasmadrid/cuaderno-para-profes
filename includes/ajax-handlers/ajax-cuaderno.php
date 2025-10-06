@@ -166,7 +166,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                         data-nota-maxima="<?php echo esc_attr($actividad['nota_maxima']); ?>"
                                         data-fecha-actividad="<?php echo esc_attr($actividad['fecha_actividad']); ?>"
                                         data-descripcion-actividad="<?php echo esc_attr($actividad['descripcion_actividad']); ?>"
-                                        data-id-actividad-programada="<?php echo esc_attr($actividad['id_actividad_programada']); ?>"
+                                        data-sesion-id="<?php echo esc_attr($actividad['sesion_id']); ?>"
                                         title="Editar Actividad: <?php echo esc_attr($actividad['nombre_actividad']); ?>">
                                     <?php echo esc_html($actividad['nombre_actividad']); ?>
                                 </div>
