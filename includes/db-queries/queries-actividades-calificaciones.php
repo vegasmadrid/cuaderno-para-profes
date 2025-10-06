@@ -53,17 +53,13 @@ function cpp_guardar_actividad_evaluable($datos) {
         'orden' => isset($datos['orden']) ? intval($datos['orden']) : 0,
     ];
     $formats = ['%d', '%d', '%d', '%d', '%d', '%s', '%s', '%f', '%d'];
-    // Si la actividad está vinculada a una sesión, la fecha se ignora (se calcula automáticamente)
-    if ($sesion_id) {
-        $data_to_insert['fecha_actividad'] = null;
-        $formats[] = '%s';
-    } else {
-        if (!empty($datos['fecha_actividad'])) {
-            if (preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) {
-                $data_to_insert['fecha_actividad'] = $datos['fecha_actividad']; $formats[] = '%s';
-            } else { $data_to_insert['fecha_actividad'] = null; $formats[] = '%s'; }
+    // La fecha se procesa siempre, ya que el backend puede pasar una fecha calculada
+    // para actividades de la programación. La validación en la actualización previene cambios no deseados.
+    if (!empty($datos['fecha_actividad'])) {
+        if (preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $datos['fecha_actividad'])) {
+            $data_to_insert['fecha_actividad'] = $datos['fecha_actividad']; $formats[] = '%s';
         } else { $data_to_insert['fecha_actividad'] = null; $formats[] = '%s'; }
-    }
+    } else { $data_to_insert['fecha_actividad'] = null; $formats[] = '%s'; }
     $resultado = $wpdb->insert($tabla_actividades, $data_to_insert, $formats);
     return $resultado ? $wpdb->insert_id : false;
 }

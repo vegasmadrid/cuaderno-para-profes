@@ -20,9 +20,13 @@
             if ($form.length) {
                 $form.trigger('reset');
                 $form.find('#actividad_id_editar_cuaderno').val('');
-                // Mostramos todos los campos por defecto al resetear, la lógica de mostrar/ocultar se hará después
+                // Mostramos todos los campos por defecto al resetear
                 $form.find('.cpp-form-group').show();
-                $form.find('#cpp-eliminar-actividad-btn-modal').hide(); 
+                $form.find('#cpp-eliminar-actividad-btn-modal').hide();
+                // Ocultar el display de fecha y mostrar el input por defecto
+                $form.find('#cpp-fecha-actividad-display').hide();
+                $form.find('#fecha_actividad_cuaderno_input').show();
+
                 $('#cpp-modal-actividad-titulo-cuaderno').text('Añadir Actividad Evaluable');
                 $('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-saved"></span> Guardar Actividad');
             }
@@ -129,15 +133,17 @@
             $form.find('#nota_maxima_actividad_cuaderno_input').val(parseFloat(notaMaxima).toFixed(2));
 
             const $fechaInput = $form.find('#fecha_actividad_cuaderno_input');
-            const $fechaGroup = $fechaInput.closest('.cpp-form-group');
-            $fechaInput.val(fechaActividad ? fechaActividad.split(' ')[0] : '');
+            const $fechaDisplay = $form.find('#cpp-fecha-actividad-display');
+            const fechaValor = fechaActividad ? fechaActividad.split(' ')[0] : '';
+            $fechaInput.val(fechaValor);
 
             if (sesionId && sesionId !== 'null' && sesionId !== '') {
-                 $fechaInput.prop('readonly', true);
-                 $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
+                $fechaInput.hide();
+                const fechaFormateada = fechaValor ? new Date(fechaValor + 'T00:00:00').toLocaleDateString('es-ES') : 'No asignada';
+                $fechaDisplay.html(`<strong>${fechaFormateada}</strong><br><small>La fecha se gestiona desde la Programación y no es editable aquí.</small>`).show();
             } else {
-                 $fechaInput.prop('readonly', false);
-                 $fechaGroup.removeClass('cpp-readonly').attr('title', '');
+                $fechaInput.show();
+                $fechaDisplay.hide();
             }
 
             $form.find('#descripcion_actividad_cuaderno_textarea').val(descripcionActividad);
