@@ -61,10 +61,43 @@
         $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) { e.stopPropagation(); self.deleteSesion(this.dataset.sesionId); });
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
         $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
-        $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function() {
-            self.selectedSesiones = [];
-            self.currentSesion = self.sesiones.find(s => s.id == this.dataset.sesionId);
-            self.renderProgramacionTab();
+        $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
+            // --- FIX: Evitar que el click en botones de acción o checkboxes dispare la selección ---
+            if (e.target.closest('.cpp-sesion-action-btn') || e.target.closest('.cpp-sesion-checkbox')) {
+                return;
+            }
+
+            const sesionId = this.dataset.sesionId;
+            // Evitar re-render si ya está seleccionada
+            if (self.currentSesion && self.currentSesion.id == sesionId) {
+                return;
+            }
+
+            // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
+            const list = this.closest('.cpp-sesiones-list-detailed');
+            if (self.selectedSesiones.length > 0) {
+                self.selectedSesiones = [];
+                self.updateBulkActionsUI();
+                // Desmarcar visualmente los checkboxes
+                if (list) {
+                    list.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
+                }
+            }
+
+            self.currentSesion = self.sesiones.find(s => s.id == sesionId);
+
+            // --- OPTIMIZATION: No re-renderizar toda la pestaña ---
+            if (list) {
+                const activeElement = list.querySelector('.cpp-sesion-list-item.active');
+                if (activeElement) activeElement.classList.remove('active');
+            }
+            this.classList.add('active');
+
+            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
+            if (rightCol) {
+                rightCol.innerHTML = self.renderProgramacionTabRightColumn();
+                self.makeActividadesSortable();
+            }
         });
 
         // Actividades
