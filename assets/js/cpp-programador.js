@@ -1043,12 +1043,8 @@
             ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
             : '';
 
-        const notasHTML = s.notas_horario
-            ? `<br><small class="cpp-sesion-notas">${s.notas_horario.replace(/\n/g, '<br>')}</small>`
-            : '';
-
         const titleHTML = s.fecha_calculada
-            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>${notasHTML}`
+            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
             : s.titulo;
 
         const isChecked = this.selectedSesiones.includes(s.id.toString());
@@ -1078,10 +1074,17 @@
             ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
             : '';
 
+        const notasHorarioHTML = this.currentSesion.notas_horario
+            ? `<div class="cpp-sesion-detail-notas">${this.currentSesion.notas_horario.replace(/\n/g, '<br>')}</div>`
+            : '';
+
         const headerHTML = `
             <div class="cpp-sesion-detail-header">
                 <h3 class="cpp-sesion-detail-title" data-field="titulo" contenteditable="true">${this.currentSesion.titulo}</h3>
-                ${fechaMostrada ? `<span class="cpp-sesion-detail-date-badge"><span class="dashicons dashicons-calendar-alt"></span> ${fechaMostrada}</span>` : ''}
+                <div class="cpp-sesion-detail-meta">
+                    ${fechaMostrada ? `<span class="cpp-sesion-detail-date-badge"><span class="dashicons dashicons-calendar-alt"></span> ${fechaMostrada}</span>` : ''}
+                    ${notasHorarioHTML}
+                </div>
             </div>`;
 
         return `<div class="cpp-sesion-detail-container" data-sesion-id="${this.currentSesion.id}">
@@ -1534,7 +1537,7 @@
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
                                 <p>${evento.sesion.titulo}</p>
-                                ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas}</p>` : ''}
+                                ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;
                         }
