@@ -939,10 +939,10 @@
         if (!this.currentSesion) return;
         const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
         if (sesionElement) {
-            // Usamos 'auto' para un desplazamiento instantáneo que es menos molesto
-            // que 'smooth' cuando la lista se recarga. 'nearest' evita el scroll
-            // si el elemento ya está visible.
-            sesionElement.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+            // --- FIX: Centrar el elemento seleccionado en la vista ---
+            // Usamos 'center' para asegurar que el elemento recién creado o seleccionado
+            // sea claramente visible para el usuario, en lugar de quedar en el borde.
+            sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
         }
     },
 
