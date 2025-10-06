@@ -315,6 +315,7 @@ function cpp_ajax_toggle_actividad_evaluable() {
             'nombre_actividad' => $actividad_prog->titulo,
             'fecha_actividad' => $fecha_actividad,
             'user_id' => $user_id,
+            'sesion_id' => $actividad_prog->sesion_id, // Pasar el ID de la sesión
         ];
 
         $actividad_calificable_id = cpp_guardar_actividad_evaluable($datos_actividad_calificable);

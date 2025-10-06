@@ -20,9 +20,13 @@
             if ($form.length) {
                 $form.trigger('reset');
                 $form.find('#actividad_id_editar_cuaderno').val('');
-                // Mostramos todos los campos por defecto al resetear, la lógica de mostrar/ocultar se hará después
+                // Mostramos todos los campos por defecto al resetear
                 $form.find('.cpp-form-group').show();
-                $form.find('#cpp-eliminar-actividad-btn-modal').hide(); 
+                $form.find('#cpp-eliminar-actividad-btn-modal').hide();
+                // Ocultar el display de fecha y mostrar el input por defecto
+                $form.find('#cpp-fecha-actividad-display').hide();
+                $form.find('#fecha_actividad_cuaderno_input').show();
+
                 $('#cpp-modal-actividad-titulo-cuaderno').text('Añadir Actividad Evaluable');
                 $('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-saved"></span> Guardar Actividad');
             }
@@ -42,12 +46,14 @@
             const $fechaGroup = $fechaInput.closest('.cpp-form-group');
 
             if (sesionId) {
-                // Vinculada a la programación: fecha no editable
-                $fechaInput.val(calculatedDate || '').prop('readonly', true);
-                $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
+                // Vinculada a la programación: ocultar campo de fecha
+                $fechaGroup.hide();
                 $('#sesion_id_cuaderno').val(sesionId);
+                 // Aunque esté oculto, por seguridad ponemos la fecha calculada si la hay
+                $fechaInput.val(calculatedDate || '');
             } else {
-                // No vinculada: fecha editable
+                // No vinculada: fecha editable y visible
+                $fechaGroup.show();
                 $fechaInput.val('').prop('readonly', false);
                 $fechaGroup.removeClass('cpp-readonly').attr('title', '');
                 $('#sesion_id_cuaderno').val('');
@@ -95,7 +101,7 @@
             const notaMaxima = $actividadDataContainer.data('nota-maxima');
             const fechaActividad = $actividadDataContainer.data('fecha-actividad');
             const descripcionActividad = $actividadDataContainer.data('descripcion-actividad');
-            const idActividadProgramada = $actividadDataContainer.data('id-actividad-programada');
+            const sesionId = $actividadDataContainer.data('sesion-id');
 
             this.resetForm();
 
@@ -103,8 +109,8 @@
             const $form = $modal.find('#cpp-form-actividad-evaluable-cuaderno');
             if (!$modal.length || !$form.length) { alert("Error: Formulario de actividades no disponible."); return; }
 
-            // Rellenar el campo hidden con el id de la actividad de programación
-            $form.find('#id_actividad_programada_cuaderno').val(idActividadProgramada);
+            // Rellenar el campo hidden con el id de la sesion de programación
+            $form.find('#sesion_id_cuaderno').val(sesionId);
 
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
@@ -127,15 +133,17 @@
             $form.find('#nota_maxima_actividad_cuaderno_input').val(parseFloat(notaMaxima).toFixed(2));
 
             const $fechaInput = $form.find('#fecha_actividad_cuaderno_input');
-            const $fechaGroup = $fechaInput.closest('.cpp-form-group');
-            $fechaInput.val(fechaActividad ? fechaActividad.split(' ')[0] : '');
+            const $fechaDisplay = $form.find('#cpp-fecha-actividad-display');
+            const fechaValor = fechaActividad ? fechaActividad.split(' ')[0] : '';
+            $fechaInput.val(fechaValor);
 
-            if (idActividadProgramada && idActividadProgramada !== 'null' && idActividadProgramada !== '') {
-                 $fechaInput.prop('readonly', true);
-                 $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
+            if (sesionId && sesionId !== 'null' && sesionId !== '') {
+                $fechaInput.hide();
+                const fechaFormateada = fechaValor ? new Date(fechaValor + 'T00:00:00').toLocaleDateString('es-ES') : 'No asignada';
+                $fechaDisplay.html(`<strong>${fechaFormateada}</strong><br><small>La fecha se gestiona desde la Programación y no es editable aquí.</small>`).show();
             } else {
-                 $fechaInput.prop('readonly', false);
-                 $fechaGroup.removeClass('cpp-readonly').attr('title', '');
+                $fechaInput.show();
+                $fechaDisplay.hide();
             }
 
             $form.find('#descripcion_actividad_cuaderno_textarea').val(descripcionActividad);
@@ -277,7 +285,7 @@
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const actividadId = $form.find('#actividad_id_editar_cuaderno').val();
             const actividadNombre = $form.find('#nombre_actividad_cuaderno_input').val();
-            const idActividadProgramada = $form.find('#id_actividad_programada_cuaderno').val();
+            const sesionId = $form.find('#sesion_id_cuaderno').val();
 
             if (!actividadId) {
                 alert('No se ha podido identificar la actividad a eliminar.');
@@ -287,7 +295,7 @@
             let modoEliminacion = 'total'; // Por defecto, eliminación completa
             let confirmacion = false;
 
-            if (idActividadProgramada && idActividadProgramada !== 'null' && idActividadProgramada !== '') {
+            if (sesionId && sesionId !== 'null' && sesionId !== '') {
                 // Si la actividad está vinculada a la programación
                 const mensaje = `Esta actividad está vinculada a la Programación.\n\n¿Quieres eliminarla solo del Cuaderno o de ambos sitios?`;
                 if (confirm(mensaje)) {
@@ -320,7 +328,7 @@
                         action: 'cpp_eliminar_actividad',
                         nonce: cppFrontendData.nonce,
                         actividad_id: actividadId,
-                        id_actividad_programada: idActividadProgramada,
+                        sesion_id: sesionId,
                         modo_eliminacion: modoEliminacion
                     },
                     success: function(response) {
