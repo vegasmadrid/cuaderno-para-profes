@@ -175,14 +175,6 @@
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
 
-        // --- Simbolos ---
-        // El listener para abrir el modal ya está en la sección de Sesiones
-        if (this.simboloModal.element) {
-            this.simboloModal.closeBtn.addEventListener('click', () => this.closeSimboloModal());
-            this.simboloModal.saveLeyendasBtn.addEventListener('click', () => this.saveSimboloLeyendas());
-            $document.on('click', '#cpp-sesion-simbolo-modal .cpp-simbolo-item', function() { self.selectSimbolo(this.dataset.simboloId); });
-        }
-
         // --- Semana View Navigation ---
         $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
             const sesionId = this.dataset.sesionId;
@@ -1061,9 +1053,7 @@
         }
         this.updateBulkActionsUI();
 
-        // Usamos un setTimeout para asegurar que el DOM está completamente pintado
-        // antes de intentar hacer scroll, especialmente en navegadores más lentos.
-        setTimeout(() => this.scrollToSelectedSesion(), 0);
+        // Scroll to selected session only if it's a new one, handled in addInlineSesion
     },
     renderSingleSesionItemHTML(s, index) {
         const fechaMostrada = s.fecha_calculada
