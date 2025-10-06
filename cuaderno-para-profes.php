@@ -344,7 +344,7 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '2.0.0', '<')) {
         cpp_migrate_add_final_eval_config_table_v2_0();
     }
-	if (version_compare($current_version, '2.1.0', '<')) {
+    if (version_compare($current_version, '2.1.0', '<')) {
         cpp_migrate_add_symbol_id_to_sessions_v2_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
@@ -480,6 +480,26 @@ function cpp_add_modals_to_footer() {
             </div>
             <div class="cpp-modal-footer">
                 <button id="cpp-save-final-grade-evals-btn" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Símbolos de Sesión del Programador -->
+    <div id="cpp-sesion-simbolo-modal" class="cpp-modal">
+        <div class="cpp-modal-content">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Asignar Símbolo a la Sesión</h2>
+            <div class="cpp-simbolos-selector-container">
+                <div id="cpp-simbolos-grid" class="cpp-simbolos-grid">
+                    <!-- Símbolos se cargarán aquí dinámicamente -->
+                </div>
+                <div id="cpp-simbolos-leyendas" class="cpp-simbolos-leyendas">
+                    <h3>Leyendas</h3>
+                    <ul id="cpp-simbolos-leyendas-list">
+                        <!-- Leyendas se cargarán aquí dinámicamente -->
+                    </ul>
+                    <button id="cpp-save-leyendas-btn" class="cpp-btn cpp-btn-primary">Guardar Leyendas</button>
+                </div>
             </div>
         </div>
     </div>

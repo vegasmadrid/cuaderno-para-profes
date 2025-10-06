@@ -681,7 +681,6 @@ add_action('wp_ajax_cpp_save_programador_simbolos_leyendas', 'cpp_ajax_save_prog
 
 function cpp_get_default_programador_simbolos() {
     return [
-        'default' => ['simbolo' => '📅', 'leyenda' => 'Sesión regular'],
         'examen' => ['simbolo' => '📝', 'leyenda' => 'Examen / Prueba'],
         'proyecto' => ['simbolo' => '🏗️', 'leyenda' => 'Entrega de proyecto'],
         'presentacion' => ['simbolo' => '🗣️', 'leyenda' => 'Presentación oral'],
@@ -694,8 +693,9 @@ function cpp_get_default_programador_simbolos() {
 }
 
 function cpp_ajax_get_programador_simbolos() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cpp_frontend_nonce')) {
-        wp_send_json_error(['message' => 'Error de seguridad.'], 403);
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
         return;
     }
     $user_id = get_current_user_id();
@@ -717,8 +717,9 @@ function cpp_ajax_get_programador_simbolos() {
 }
 
 function cpp_ajax_save_programador_simbolos_leyendas() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cpp_frontend_nonce')) {
-        wp_send_json_error(['message' => 'Error de seguridad.'], 403);
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
         return;
     }
 
