@@ -7,9 +7,9 @@
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {},
-    clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [],
-    currentClase: null, currentEvaluacionId: null, currentSesion: null,
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, simboloModal: {},
+    clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
+    currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
     selectedSesiones: [],
     originalContent: '', semanaDate: new Date(),
     isProcessing: false,
@@ -33,6 +33,13 @@
             evaluacionIdInput: document.querySelector('#cpp-sesion-evaluacion-id'),
             tituloInput: document.querySelector('#cpp-sesion-titulo'),
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
+        };
+        this.simboloModal = {
+            element: document.getElementById('cpp-sesion-simbolo-modal'),
+            grid: document.getElementById('cpp-simbolos-grid'),
+            leyendasList: document.getElementById('cpp-simbolos-leyendas-list'),
+            saveLeyendasBtn: document.getElementById('cpp-save-leyendas-btn'),
+            closeBtn: document.querySelector('#cpp-sesion-simbolo-modal .cpp-modal-close'),
         };
         this.copySesionModal = {
             element: document.querySelector('#cpp-copy-sesion-modal'),
@@ -58,9 +65,9 @@
         // --- Delegated events for robustness ---
 
         // Sesiones
-        $document.on('click', '#cpp-programador-app .cpp-delete-sesion-btn', function(e) { e.stopPropagation(); self.deleteSesion(this.dataset.sesionId); });
-        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal());
-        $document.on('click', '#cpp-programador-app .cpp-add-inline-sesion-btn', function() { self.addInlineSesion(this.dataset.afterSesionId); });
+        $document.on('click', '#cpp-add-sesion-toolbar-btn', () => { if (self.currentSesion) { self.addInlineSesion(self.currentSesion.id); } });
+        $document.on('click', '#cpp-delete-sesion-toolbar-btn', () => { if (self.currentSesion) { self.deleteSesion(self.currentSesion.id); } });
+        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
             // --- FIX: Evitar que el click en botones de acción o checkboxes dispare la selección ---
             if (e.target.closest('.cpp-sesion-action-btn') || e.target.closest('.cpp-sesion-checkbox')) {
@@ -182,6 +189,13 @@
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
+
+        // --- Simbolos ---
+        $document.on('click', '.cpp-sesion-simbolo-container', function() { self.openSimboloModal(this.dataset.sesionId); });
+        this.simboloModal.closeBtn.addEventListener('click', () => this.closeSimboloModal());
+        this.simboloModal.saveLeyendasBtn.addEventListener('click', () => this.saveSimboloLeyendas());
+        $document.on('click', '.cpp-simbolo-item', function() { self.selectSimbolo(this.dataset.simboloId); });
+
 
         // --- Semana View Navigation ---
         $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
@@ -629,6 +643,7 @@
             this.clases = result.data.clases || [];
             this.config = result.data.config || { time_slots: [], horario: {} };
             this.sesiones = result.data.sesiones || [];
+            this.fetchSimbolos(); // Cargar símbolos
 
             if (this.clases.length > 0) {
                 if (initialClaseId) {
@@ -650,6 +665,23 @@
         this.fetchDataFromServer().then(result => {
             this.processInitialData(result, initialClaseId, evaluacionIdToSelect, sesionIdToSelect);
         });
+    },
+
+    fetchSimbolos() {
+        const data = new URLSearchParams({
+            action: 'cpp_get_programador_simbolos',
+            nonce: cppFrontendData.nonce,
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.simbolos = result.data.simbolos;
+                } else {
+                    console.error('Error al cargar los símbolos del programador.');
+                }
+            });
     },
 
     saveActividadesOrder(sesionId, newOrder) {
@@ -995,11 +1027,20 @@
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
+        const isSesionSelected = this.currentSesion !== null;
         let controlsHTML = `
             <div class="cpp-programacion-controls">
                 <div class="cpp-programacion-main-controls">
                     <label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label>
                     <label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label>
+                </div>
+                <div class="cpp-programacion-action-controls">
+                    <button id="cpp-add-sesion-toolbar-btn" class="cpp-btn cpp-btn-primary" ${!isSesionSelected ? 'disabled' : ''} title="Añadir sesión debajo de la seleccionada">
+                        <span class="dashicons dashicons-plus"></span> Añadir Sesión
+                    </button>
+                    <button id="cpp-delete-sesion-toolbar-btn" class="cpp-btn cpp-btn-danger" ${!isSesionSelected ? 'disabled' : ''} title="Eliminar la sesión seleccionada">
+                        <span class="dashicons dashicons-trash"></span> Eliminar Sesión
+                    </button>
                 </div>
                 <div id="cpp-sesion-bulk-actions" class="hidden"></div>
             </div>`;
@@ -1036,9 +1077,6 @@
         setTimeout(() => this.scrollToSelectedSesion(), 0);
     },
     renderSingleSesionItemHTML(s, index) {
-        const addIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>';
-        const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
-
         const fechaMostrada = s.fecha_calculada
             ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
             : '';
@@ -1053,15 +1091,19 @@
         const isToday = s.fecha_calculada === todayYMD;
         const todayClass = isToday ? 'cpp-sesion-hoy' : '';
 
+        const simboloData = (s.simbolo_id && this.simbolos[s.simbolo_id]) ? this.simbolos[s.simbolo_id] : this.simbolos['default'];
+        const simboloHTML = simboloData ? simboloData.simbolo : '📅';
+        const simboloTitle = simboloData ? simboloData.leyenda : 'Asignar símbolo';
+
+        // El div de acciones ahora será el contenedor del símbolo
         return `
         <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''} ${todayClass}" data-sesion-id="${s.id}">
             <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
             <span class="cpp-sesion-handle">⠿</span>
             <span class="cpp-sesion-number">${index + 1}.</span>
             <span class="cpp-sesion-title">${titleHTML}</span>
-            <div class="cpp-sesion-actions">
-                <button class="cpp-sesion-action-btn cpp-add-inline-sesion-btn" data-after-sesion-id="${s.id}" title="Añadir sesión debajo">${addIconSVG}</button>
-                <button class="cpp-sesion-action-btn cpp-delete-sesion-btn" data-sesion-id="${s.id}" title="Eliminar sesión">${deleteIconSVG}</button>
+            <div class="cpp-sesion-simbolo-container" data-sesion-id="${s.id}" title="${simboloTitle}">
+                <span class="cpp-sesion-simbolo">${simboloHTML}</span>
             </div>
         </li>`;
     },
@@ -1733,6 +1775,87 @@
                 this.isProcessing = false;
                 $btn.disabled = false;
                 $btn.innerHTML = originalBtnHtml;
+            });
+    },
+
+    // --- Lógica de Símbolos ---
+    openSimboloModal(sesionId) {
+        this.currentSimboloEditingSesionId = sesionId;
+        this.renderSimboloModal();
+        this.simboloModal.element.style.display = 'block';
+    },
+
+    closeSimboloModal() {
+        this.simboloModal.element.style.display = 'none';
+        this.currentSimboloEditingSesionId = null;
+    },
+
+    renderSimboloModal() {
+        if (!this.simbolos) return;
+
+        const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
+        const currentSimboloId = sesion ? sesion.simbolo_id : 'default';
+
+        let gridHTML = '';
+        for (const id in this.simbolos) {
+            const simbolo = this.simbolos[id];
+            const isActive = id === currentSimboloId;
+            gridHTML += `<div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="${simbolo.leyenda}">
+                            ${simbolo.simbolo}
+                         </div>`;
+        }
+        this.simboloModal.grid.innerHTML = gridHTML;
+
+        let leyendasHTML = '';
+        for (const id in this.simbolos) {
+            const simbolo = this.simbolos[id];
+            leyendasHTML += `<li>
+                                <span class="leyenda-simbolo">${simbolo.simbolo}</span>
+                                <input type="text" class="leyenda-input" data-simbolo-id="${id}" value="${simbolo.leyenda}">
+                             </li>`;
+        }
+        this.simboloModal.leyendasList.innerHTML = leyendasHTML;
+    },
+
+    selectSimbolo(simboloId) {
+        const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
+        if (!sesion) return;
+
+        // Optimistic update
+        sesion.simbolo_id = simboloId;
+        this.closeSimboloModal();
+        this.render(); // Re-render to show the new symbol in the list
+
+        // Save to backend
+        const { actividades_programadas, ...sesionToSave } = sesion;
+        this.saveSesion(null, false, { ...sesionToSave, simbolo_id: simboloId });
+    },
+
+    saveSimboloLeyendas() {
+        const leyendas = {};
+        this.simboloModal.leyendasList.querySelectorAll('.leyenda-input').forEach(input => {
+            leyendas[input.dataset.simboloId] = input.value;
+        });
+
+        const data = new URLSearchParams({
+            action: 'cpp_save_programador_simbolos_leyendas',
+            nonce: cppFrontendData.nonce,
+            leyendas: JSON.stringify(leyendas)
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification('Leyendas guardadas.');
+                    // Refresh symbol data and re-render modal and list
+                    this.fetchSimbolos().then(() => {
+                        this.renderSimboloModal();
+                        this.render();
+                    });
+                } else {
+                    alert(result.data.message || 'Error al guardar las leyendas.');
+                }
             });
     }
     };

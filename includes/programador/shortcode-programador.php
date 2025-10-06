@@ -14,6 +14,26 @@ function cpp_shortcode_render_programador() {
     ?>
     <div id="cpp-programador-app" class="cpp-programador-container">
 
+        <!-- Modal para Símbolos de Sesión -->
+        <div id="cpp-sesion-simbolo-modal" class="cpp-modal">
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2>Asignar Símbolo a la Sesión</h2>
+                <div class="cpp-simbolos-selector-container">
+                    <div id="cpp-simbolos-grid" class="cpp-simbolos-grid">
+                        <!-- Símbolos se cargarán aquí -->
+                    </div>
+                    <div id="cpp-simbolos-leyendas" class="cpp-simbolos-leyendas">
+                        <h3>Leyendas</h3>
+                        <ul id="cpp-simbolos-leyendas-list">
+                            <!-- Leyendas se cargarán aquí -->
+                        </ul>
+                        <button id="cpp-save-leyendas-btn" class="cpp-btn cpp-btn-primary">Guardar Leyendas</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="cpp-programador-tabs">
             <button class="cpp-tab-link active" data-tab="programacion">Programación</button>
             <button class="cpp-tab-link" data-tab="semana">Semana</button>
