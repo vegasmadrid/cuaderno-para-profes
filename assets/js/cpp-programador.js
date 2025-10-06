@@ -1043,7 +1043,9 @@
             ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
             : '';
 
-        const notasHTML = s.notas_horario ? `<small class="cpp-sesion-notas">${s.notas_horario}</small>` : '';
+        const notasHTML = s.notas_horario
+            ? `<br><small class="cpp-sesion-notas">${s.notas_horario.replace(/\n/g, '<br>')}</small>`
+            : '';
 
         const titleHTML = s.fecha_calculada
             ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>${notasHTML}`
