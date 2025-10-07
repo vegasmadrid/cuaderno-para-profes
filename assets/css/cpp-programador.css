@@ -708,3 +708,10 @@ td.cpp-semana-td-hora {
 #cpp-save-leyendas-btn {
     width: 100%;
 }
+
+/* Aumentar tamaño del símbolo en la lista de sesiones */
+.cpp-sesion-simbolo-container {
+    font-size: 22px; /* Tamaño más grande para el símbolo */
+    width: 40px;
+    text-align: center;
+}
