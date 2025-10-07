@@ -344,7 +344,7 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '2.0.0', '<')) {
         cpp_migrate_add_final_eval_config_table_v2_0();
     }
-    if (version_compare($current_version, '2.1.0', '<')) {
+	if (version_compare($current_version, '2.1.0', '<')) {
         cpp_migrate_add_symbol_id_to_sessions_v2_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
