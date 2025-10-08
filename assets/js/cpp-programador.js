@@ -7,7 +7,7 @@
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, simboloModal: {},
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
     selectedSesiones: [],
@@ -33,13 +33,6 @@
             evaluacionIdInput: document.querySelector('#cpp-sesion-evaluacion-id'),
             tituloInput: document.querySelector('#cpp-sesion-titulo'),
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
-        };
-        this.simboloModal = {
-            element: document.getElementById('cpp-sesion-simbolo-modal'),
-            grid: document.getElementById('cpp-simbolos-grid'),
-            leyendasList: document.getElementById('cpp-simbolos-leyendas-list'),
-            saveLeyendasBtn: document.getElementById('cpp-save-leyendas-btn'),
-            closeBtn: document.querySelector('#cpp-sesion-simbolo-modal .cpp-modal-close'),
         };
         this.copySesionModal = {
             element: document.querySelector('#cpp-copy-sesion-modal'),
@@ -67,8 +60,8 @@
         // Sesiones
         $document.on('click', '#cpp-add-sesion-toolbar-btn', () => { if (self.currentSesion) { self.addInlineSesion(self.currentSesion.id); } });
         $document.on('click', '#cpp-delete-sesion-toolbar-btn', () => { if (self.currentSesion) { self.deleteSesion(self.currentSesion.id); } });
-        $document.on('click', '#cpp-simbolo-sesion-toolbar-btn', () => { if (self.currentSesion) { self.openSimboloModal(self.currentSesion.id); } });
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
+
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
             // Evitar que el click en el checkbox de selección múltiple dispare la selección de sesión individual.
             if (e.target.closest('.cpp-sesion-checkbox')) {
@@ -76,7 +69,7 @@
             }
 
             const sesionId = this.dataset.sesionId;
-            // Evitar re-render si ya está seleccionada
+            // Evitar procesamiento si ya está seleccionada
             if (self.currentSesion && self.currentSesion.id == sesionId) {
                 return;
             }
@@ -84,12 +77,40 @@
             // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
             if (self.selectedSesiones.length > 0) {
                 self.selectedSesiones = [];
+                // Ocultar la barra de acciones múltiples y desmarcar los checkboxes sin recargar toda la lista
+                self.updateBulkActionsUI();
+                self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
             }
 
             self.currentSesion = self.sesiones.find(s => s.id == sesionId);
 
-            // --- FIX: Re-renderizar toda la pestaña para actualizar el estado de los botones de la toolbar ---
-            self.render();
+            // --- FIX: Actualización selectiva del DOM para evitar el salto de scroll ---
+            // 1. Actualizar el estado activo en la lista de sesiones
+            const listContainer = this.closest('ul');
+            if (listContainer) {
+                const oldActive = listContainer.querySelector('.cpp-sesion-list-item.active');
+                if (oldActive) {
+                    oldActive.classList.remove('active');
+                }
+            }
+            this.classList.add('active');
+
+            // 2. Actualizar solo la columna derecha con los detalles de la sesión
+            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
+            if (rightCol) {
+                rightCol.innerHTML = self.renderProgramacionTabRightColumn();
+                self.makeActividadesSortable(); // Re-inicializar sortable para las actividades
+            }
+
+            // 3. Actualizar el estado de los botones de la barra de herramientas
+            const isSesionSelected = self.currentSesion !== null;
+            const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
+            if (toolbar) {
+                toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
+                toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
+                toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
+            }
+            // No se llama a scrollIntoView para que la vista no se mueva.
         });
 
         // Actividades
@@ -175,13 +196,27 @@
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
 
-        // --- Simbolos ---
-        // El listener para abrir el modal ya está en la sección de Sesiones
-        if (this.simboloModal.element) {
-            this.simboloModal.closeBtn.addEventListener('click', () => this.closeSimboloModal());
-            this.simboloModal.saveLeyendasBtn.addEventListener('click', () => this.saveSimboloLeyendas());
-            $document.on('click', '#cpp-sesion-simbolo-modal .cpp-simbolo-item', function() { self.selectSimbolo(this.dataset.simboloId); });
-        }
+        // --- Simbolos (Palette) ---
+        $document.on('click', '#cpp-simbolo-sesion-toolbar-btn', function() {
+            if (self.currentSesion) {
+                self.openSimboloPalette(this, self.currentSesion.id);
+            }
+        });
+        // Note: The class is specific to the programmer palette to avoid conflicts
+        $document.on('click', '.cpp-programador-symbol-palette .cpp-simbolo-item', function(e) {
+            self.selectSimbolo(e.currentTarget.dataset.simboloId);
+        });
+        $document.on('click', '#cpp-programador-save-leyendas-btn', () => self.saveSimboloLeyendas());
+        // Close on click outside
+        $document.on('click', function(e) {
+            const palette = document.querySelector('.cpp-programador-symbol-palette');
+            // Close if clicked outside the palette AND not on the button that opens it
+            if (palette && !palette.contains(e.target) && !e.target.closest('#cpp-simbolo-sesion-toolbar-btn')) {
+                 self.closeSimboloPalette();
+            }
+        });
+        $document.on('click', '.cpp-programador-symbol-palette .cpp-modal-close', () => self.closeSimboloPalette());
+
 
         // --- Semana View Navigation ---
         $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
@@ -746,42 +781,64 @@
                 if (result.success) {
                     if (fromModal) this.closeSesionModal();
 
-                    if (result.data.sesion && !result.data.needs_reload) {
-                        const updatedSesion = result.data.sesion;
-                        const index = this.sesiones.findIndex(s => s.id == updatedSesion.id);
-                        const isNew = index === -1;
+                    // Determinar la sesión actualizada, ya sea desde la respuesta o desde los datos enviados
+                    let updatedSesion = result.data.sesion || sesionData;
+                    if (result.data.sesion_id && !updatedSesion.id) {
+                        updatedSesion.id = result.data.sesion_id;
+                    }
 
-                        if (isNew) {
-                            this.sesiones.push(updatedSesion);
-                        } else {
-                            this.sesiones[index] = updatedSesion;
-                        }
-                        this.currentSesion = updatedSesion;
+                    const index = this.sesiones.findIndex(s => s.id == updatedSesion.id);
+                    const isNew = index === -1;
 
-                        if (isNew) {
-                            const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
-                            const noSesionesContainer = this.appElement.querySelector('.cpp-no-sesiones-container');
-                            if (list) {
-                                const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                                const newDisplayIndex = sesionesFiltradas.length - 1;
-                                const newItemHTML = this.renderSingleSesionItemHTML(updatedSesion, newDisplayIndex);
-                                list.insertAdjacentHTML('beforeend', newItemHTML);
-                                this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
-                                this.makeActividadesSortable();
-                                this.scrollToSelectedSesion();
-                                this.fetchAndApplyFechas(this.currentEvaluacionId);
-                            } else if (noSesionesContainer) {
-                                this.render();
-                                this.fetchAndApplyFechas(this.currentEvaluacionId);
-                            }
-                        } else {
+                    if (isNew) {
+                        this.sesiones.push(updatedSesion);
+                    } else {
+                        // Mantener las actividades que ya estaban cargadas para no perderlas en la actualización
+                        updatedSesion.actividades_programadas = this.sesiones[index].actividades_programadas;
+                        this.sesiones[index] = updatedSesion;
+                    }
+                    this.currentSesion = this.sesiones.find(s => s.id == updatedSesion.id);
+
+                    // Lógica de renderizado selectivo para evitar recargas completas
+                    if (isNew) {
+                        const noSesionesContainer = this.appElement.querySelector('.cpp-no-sesiones-container');
+                        if (noSesionesContainer) {
+                            // Si no había sesiones, es necesario un render completo para construir la nueva estructura
                             this.render();
-                            this.fetchAndApplyFechas(this.currentEvaluacionId);
+                        } else {
+                            const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                            const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            const newDisplayIndex = sesionesFiltradas.length - 1;
+                            const newItemHTML = this.renderSingleSesionItemHTML(this.currentSesion, newDisplayIndex);
+                            list.insertAdjacentHTML('beforeend', newItemHTML);
+
+                            const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+                            if (newActiveElement) {
+                                const oldActive = list.querySelector('.active');
+                                if (oldActive) oldActive.classList.remove('active');
+                                newActiveElement.classList.add('active');
+                            }
                         }
                     } else {
-                        const newSesionId = result.data.sesion_id || (result.data.sesion ? result.data.sesion.id : null);
-                        this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
+                        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                        const displayIndex = sesionesFiltradas.findIndex(s => s.id == this.currentSesion.id);
+                        const newItemHTML = this.renderSingleSesionItemHTML(this.currentSesion, displayIndex);
+                        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+                        if (listItem) {
+                            listItem.outerHTML = newItemHTML;
+                            const newListItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+                            if (newListItem) newListItem.classList.add('active');
+                        }
                     }
+
+                    // Siempre actualizar la columna derecha y buscar fechas
+                    const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                        this.makeActividadesSortable();
+                    }
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+
                 } else {
                     alert(result.data.message || 'Error al guardar.');
                 }
@@ -960,10 +1017,8 @@
         if (!this.currentSesion) return;
         const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
         if (sesionElement) {
-            // --- FIX: Centrar el elemento seleccionado en la vista ---
-            // Usamos 'center' para asegurar que el elemento recién creado o seleccionado
-            // sea claramente visible para el usuario, en lugar de quedar en el borde.
-            sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+            // --- FIX: Ya no se hace scroll para centrar el elemento ---
+            // sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
         }
     },
 
@@ -1171,31 +1226,37 @@
     },
 
     addNonEvaluableActividad(sesionId) {
-        const newActividad = {
+        const newActividadData = {
             sesion_id: sesionId,
             titulo: 'Nueva tarea...',
         };
         const data = new URLSearchParams({
             action: 'cpp_save_programador_actividad',
             nonce: cppFrontendData.nonce,
-            actividad: JSON.stringify(newActividad)
+            actividad: JSON.stringify(newActividadData)
         });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success && result.data && result.data.actividad) {
-                    const newActividadId = result.data.actividad.id;
-                    this.refreshCurrentView(() => {
-                        const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividadId}"]`);
-                        if (newElement) {
-                            newElement.focus();
-                            const range = document.createRange();
-                            const sel = window.getSelection();
-                            range.selectNodeContents(newElement);
-                            sel.removeAllRanges();
-                            sel.addRange(range);
-                        }
-                    });
+                    const newActividad = result.data.actividad;
+                    if (!this.currentSesion.actividades_programadas) {
+                        this.currentSesion.actividades_programadas = [];
+                    }
+                    this.currentSesion.actividades_programadas.push(newActividad);
+                    const list = this.appElement.querySelector('.cpp-actividades-list');
+                    if (list) {
+                        list.insertAdjacentHTML('beforeend', this.renderActividadItem(newActividad));
+                    }
+                    const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
+                    if (newElement) {
+                        newElement.focus();
+                        const range = document.createRange();
+                        const sel = window.getSelection();
+                        range.selectNodeContents(newElement);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
                 } else {
                     this.showNotification('Error al añadir la tarea.', 'error');
                 }
@@ -1262,7 +1323,16 @@
             .then(result => {
                 if (result.success) {
                     this.showNotification('Actividad eliminada.');
-                    this.refreshCurrentView();
+                    if (this.currentSesion && this.currentSesion.actividades_programadas) {
+                        const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
+                        if (index > -1) {
+                            this.currentSesion.actividades_programadas.splice(index, 1);
+                        }
+                    }
+                    const item = this.appElement.querySelector(`.cpp-actividad-item[data-actividad-id="${actividadId}"]`);
+                    if (item) {
+                        item.remove();
+                    }
                     if (tipo === 'evaluable') {
                         document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
@@ -1765,60 +1835,80 @@
     },
 
     // --- Lógica de Símbolos ---
-    openSimboloModal(sesionId) {
+    openSimboloPalette(buttonElement, sesionId) {
         this.currentSimboloEditingSesionId = sesionId;
-        this.renderSimboloModal();
-        this.simboloModal.element.style.display = 'block';
-    },
+        this.closeSimboloPalette(); // Close any existing one
 
-    closeSimboloModal() {
-        this.simboloModal.element.style.display = 'none';
-        this.currentSimboloEditingSesionId = null;
-    },
-
-    renderSimboloModal() {
-        if (!this.simbolos || Object.keys(this.simbolos).length === 0) {
-            this.simboloModal.grid.innerHTML = '<p>No hay símbolos definidos.</p>';
-            this.simboloModal.leyendasList.innerHTML = '';
-            return;
-        }
+        const modal = document.createElement('div');
+        // Use specific classes to avoid style collision with the gradebook palette
+        modal.className = 'cpp-modal cpp-programador-symbol-palette';
+        modal.style.display = 'flex';
 
         const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
         const currentSimboloId = sesion ? sesion.simbolo_id : null;
 
-        let gridHTML = '';
-        for (const id in this.simbolos) {
-            const simbolo = this.simbolos[id];
-            const isActive = id === currentSimboloId;
-            gridHTML += `<div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="${simbolo.leyenda}">
-                            ${simbolo.simbolo}
-                         </div>`;
+        let simbolosGridHTML = '';
+        if (this.simbolos && Object.keys(this.simbolos).length > 0) {
+            for (const id in this.simbolos) {
+                const simbolo = this.simbolos[id];
+                const isActive = id == currentSimboloId;
+                simbolosGridHTML += `
+                    <div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="${this.escapeHtml(simbolo.leyenda || '')}">
+                        ${this.escapeHtml(simbolo.simbolo)}
+                    </div>`;
+            }
+        } else {
+            simbolosGridHTML = '<p>No hay símbolos definidos.</p>';
         }
-        this.simboloModal.grid.innerHTML = gridHTML;
 
-        let leyendasHTML = '';
-        for (const id in this.simbolos) {
-            const simbolo = this.simbolos[id];
-            leyendasHTML += `<li>
-                                <span class="leyenda-simbolo">${simbolo.simbolo}</span>
-                                <input type="text" class="leyenda-input" data-simbolo-id="${id}" value="${simbolo.leyenda}">
-                             </li>`;
+        let leyendasListHTML = '';
+        if (this.simbolos && Object.keys(this.simbolos).length > 0) {
+            for (const id in this.simbolos) {
+                const simbolo = this.simbolos[id];
+                leyendasListHTML += `
+                    <div class="cpp-symbol-row">
+                        <span class="leyenda-simbolo">${this.escapeHtml(simbolo.simbolo)}</span>
+                        <input type="text" class="leyenda-input" data-simbolo-id="${id}" value="${this.escapeHtml(simbolo.leyenda || '')}" placeholder="Significado...">
+                    </div>`;
+            }
         }
-        this.simboloModal.leyendasList.innerHTML = leyendasHTML;
+
+        modal.innerHTML = `
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2>Asignar Símbolo</h2>
+                <p>Haz clic en un símbolo para asignarlo. Edita las leyendas y pulsa Guardar.</p>
+                <div class="cpp-simbolos-container">
+                    <div class="cpp-simbolos-grid">${simbolosGridHTML}</div>
+                    <div class="cpp-simbolos-leyendas">
+                        <h4>Leyendas</h4>
+                        <div class="cpp-simbolos-leyendas-list">${leyendasListHTML}</div>
+                         <div class="cpp-modal-actions">
+                            <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-programador-save-leyendas-btn">Guardar Leyendas</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        // Append to body to avoid being contained within a positioned element
+        document.body.appendChild(modal);
+    },
+
+    closeSimboloPalette() {
+        const existingPalette = document.querySelector('.cpp-programador-symbol-palette');
+        if (existingPalette) {
+            existingPalette.remove();
+        }
+        this.currentSimboloEditingSesionId = null;
     },
 
     selectSimbolo(simboloId) {
         const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
         if (!sesion) return;
 
-        // Si se vuelve a pulsar el mismo símbolo, se quita.
-        if (sesion.simbolo_id === simboloId) {
-            sesion.simbolo_id = null;
-        } else {
-            sesion.simbolo_id = simboloId;
-        }
-
-        this.closeSimboloModal();
+        // Toggle selection
+        sesion.simbolo_id = (sesion.simbolo_id == simboloId) ? null : simboloId;
+        this.closeSimboloPalette();
         this.render(); // Re-render to show the new symbol in the list
 
         // Save to backend
@@ -1828,7 +1918,8 @@
 
     saveSimboloLeyendas() {
         const leyendas = {};
-        this.simboloModal.leyendasList.querySelectorAll('.leyenda-input').forEach(input => {
+        // Target the specific palette's inputs
+        document.querySelectorAll('.cpp-programador-symbol-palette .leyenda-input').forEach(input => {
             leyendas[input.dataset.simboloId] = input.value;
         });
 
@@ -1838,20 +1929,48 @@
             leyendas: JSON.stringify(leyendas)
         });
 
+        const button = document.getElementById('cpp-programador-save-leyendas-btn');
+        if (!button) return;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Guardando...';
+
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
                     this.showNotification('Leyendas guardadas.');
-                    // Refresh symbol data and re-render modal and list
+                    // Update local symbols data and re-render everything
                     this.fetchSimbolos().then(() => {
-                        this.renderSimboloModal();
                         this.render();
                     });
+                    button.textContent = '¡Guardado!';
+                    setTimeout(() => {
+                        this.closeSimboloPalette(); // Close modal on successful save
+                    }, 1500);
                 } else {
                     alert(result.data.message || 'Error al guardar las leyendas.');
+                    button.textContent = originalText;
+                    button.disabled = false;
                 }
+            })
+            .catch(() => {
+                 alert('Error de conexión al guardar las leyendas.');
+                 button.textContent = originalText;
+                 button.disabled = false;
             });
+    },
+
+    escapeHtml(unsafe) {
+        if (typeof unsafe !== 'string') {
+            return '';
+        }
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
     }
     };
 })(jQuery);
