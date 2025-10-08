@@ -34,13 +34,7 @@
             tituloInput: document.querySelector('#cpp-sesion-titulo'),
             descripcionInput: document.querySelector('#cpp-sesion-descripcion')
         };
-        this.simboloModal = {
-            element: document.getElementById('cpp-sesion-simbolo-modal'),
-            grid: document.getElementById('cpp-simbolos-grid'),
-            leyendasList: document.getElementById('cpp-simbolos-leyendas-list'),
-            saveLeyendasBtn: document.getElementById('cpp-save-leyendas-btn'),
-            closeBtn: document.querySelector('#cpp-sesion-simbolo-modal .cpp-modal-close'),
-        };
+        this.simboloModal = {}; // Objeto vacío, ya no se usa el modal
         this.copySesionModal = {
             element: document.querySelector('#cpp-copy-sesion-modal'),
             form: document.querySelector('#cpp-copy-sesion-form'),
@@ -203,13 +197,15 @@
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
 
-        // --- Simbolos ---
-        // El listener para abrir el modal ya está en la sección de Sesiones
-        if (this.simboloModal.element) {
-            this.simboloModal.closeBtn.addEventListener('click', () => this.closeSimboloModal());
-            this.simboloModal.saveLeyendasBtn.addEventListener('click', () => this.saveSimboloLeyendas());
-            $document.on('click', '#cpp-sesion-simbolo-modal .cpp-simbolo-item', function() { self.selectSimbolo(this.dataset.simboloId); });
-        }
+        // --- Simbolos (Palette) ---
+        $document.on('click', '#cpp-simbolo-sesion-toolbar-btn', function() {
+            if (self.currentSesion) {
+                self.openSimboloPalette(this, self.currentSesion.id);
+            }
+        });
+        $document.on('click', '.cpp-symbol-palette .cpp-simbolo-item', function() {
+            self.selectSimbolo(this.dataset.simboloId);
+        });
 
         // --- Semana View Navigation ---
         $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
@@ -803,7 +799,31 @@
                                 this.fetchAndApplyFechas(this.currentEvaluacionId);
                             }
                         } else {
-                            this.render();
+                            // --- FIX: Targeted update on save to prevent scroll jump ---
+                            this.currentSesion = updatedSesion; // Ensure current session is the updated one
+
+                            // Re-render only the affected list item without touching the rest
+                            const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            const displayIndex = sesionesFiltradas.findIndex(s => s.id == updatedSesion.id);
+
+                            if (displayIndex !== -1) {
+                                const newItemHTML = this.renderSingleSesionItemHTML(updatedSesion, displayIndex);
+                                const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
+                                if (listItem) {
+                                    listItem.outerHTML = newItemHTML;
+                                    // Re-select the element as outerHTML replacement removes the original reference
+                                    const newListItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
+                                    if (newListItem) newListItem.classList.add('active');
+                                }
+                            }
+
+                            // Re-render the right column as its content is based on the current session
+                            const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                            if (rightCol) {
+                                rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                                this.makeActividadesSortable();
+                            }
+
                             this.fetchAndApplyFechas(this.currentEvaluacionId);
                         }
                     } else {
@@ -1790,52 +1810,60 @@
             });
     },
 
-    // --- Lógica de Símbolos ---
-    openSimboloModal(sesionId) {
+    // --- Lógica de Símbolos (Palette) ---
+    openSimboloPalette(button, sesionId) {
+        this.closeSimboloPalette(); // Cerrar cualquier paleta abierta
         this.currentSimboloEditingSesionId = sesionId;
-        this.renderSimboloModal();
-        this.simboloModal.element.style.display = 'block';
-    },
 
-    closeSimboloModal() {
-        this.simboloModal.element.style.display = 'none';
-        this.currentSimboloEditingSesionId = null;
-    },
+        const sesion = this.sesiones.find(s => s.id == sesionId);
+        if (!sesion) return;
+        const currentSimboloId = sesion.simbolo_id;
 
-    renderSimboloModal() {
-        if (!this.simbolos || Object.keys(this.simbolos).length === 0) {
-            this.simboloModal.grid.innerHTML = '<p>No hay símbolos definidos.</p>';
-            this.simboloModal.leyendasList.innerHTML = '';
-            return;
-        }
-
-        const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
-        const currentSimboloId = sesion ? sesion.simbolo_id : null;
+        const palette = document.createElement('div');
+        palette.className = 'cpp-symbol-palette';
+        palette.id = 'cpp-programador-symbol-palette';
 
         let gridHTML = '';
         for (const id in this.simbolos) {
             const simbolo = this.simbolos[id];
             const isActive = id === currentSimboloId;
-            gridHTML += `<div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="${simbolo.leyenda}">
+            gridHTML += `<div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="${simbolo.leyenda || ''}">
                             ${simbolo.simbolo}
                          </div>`;
         }
-        this.simboloModal.grid.innerHTML = gridHTML;
+        palette.innerHTML = `<div class="cpp-symbol-palette-grid">${gridHTML}</div>`;
 
-        let leyendasHTML = '';
-        for (const id in this.simbolos) {
-            const simbolo = this.simbolos[id];
-            leyendasHTML += `<li>
-                                <span class="leyenda-simbolo">${simbolo.simbolo}</span>
-                                <input type="text" class="leyenda-input" data-simbolo-id="${id}" value="${simbolo.leyenda}">
-                             </li>`;
+        document.body.appendChild(palette);
+
+        const btnRect = button.getBoundingClientRect();
+        palette.style.top = `${btnRect.bottom + window.scrollY}px`;
+        palette.style.left = `${btnRect.left + window.scrollX}px`;
+
+        // Close when clicking outside
+        setTimeout(() => {
+            document.addEventListener('click', this.closeSimboloPalette.bind(this), { once: true });
+        }, 0);
+    },
+
+    closeSimboloPalette(event) {
+        const palette = document.getElementById('cpp-programador-symbol-palette');
+        // Si el click fue dentro de la paleta, no la cerramos (a menos que sea en un simbolo)
+        if (event && palette && palette.contains(event.target) && !event.target.closest('.cpp-simbolo-item')) {
+            document.addEventListener('click', this.closeSimboloPalette.bind(this), { once: true });
+            return;
         }
-        this.simboloModal.leyendasList.innerHTML = leyendasHTML;
+        if (palette) {
+            palette.remove();
+        }
+        this.currentSimboloEditingSesionId = null;
     },
 
     selectSimbolo(simboloId) {
         const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
-        if (!sesion) return;
+        if (!sesion) {
+            this.closeSimboloPalette();
+            return;
+        }
 
         // Si se vuelve a pulsar el mismo símbolo, se quita.
         if (sesion.simbolo_id === simboloId) {
@@ -1844,40 +1872,22 @@
             sesion.simbolo_id = simboloId;
         }
 
-        this.closeSimboloModal();
-        this.render(); // Re-render to show the new symbol in the list
+        this.closeSimboloPalette();
 
-        // Save to backend
+        // Actualización selectiva del DOM
+        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+        const displayIndex = sesionesFiltradas.findIndex(s => s.id == sesion.id);
+        const newItemHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
+        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+        if (listItem) {
+            listItem.outerHTML = newItemHTML;
+            const newListItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+            if (newListItem) newListItem.classList.add('active');
+        }
+
+        // Guardar en el backend
         const { actividades_programadas, ...sesionToSave } = sesion;
         this.saveSesion(null, false, sesionToSave);
     },
-
-    saveSimboloLeyendas() {
-        const leyendas = {};
-        this.simboloModal.leyendasList.querySelectorAll('.leyenda-input').forEach(input => {
-            leyendas[input.dataset.simboloId] = input.value;
-        });
-
-        const data = new URLSearchParams({
-            action: 'cpp_save_programador_simbolos_leyendas',
-            nonce: cppFrontendData.nonce,
-            leyendas: JSON.stringify(leyendas)
-        });
-
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success) {
-                    this.showNotification('Leyendas guardadas.');
-                    // Refresh symbol data and re-render modal and list
-                    this.fetchSimbolos().then(() => {
-                        this.renderSimboloModal();
-                        this.render();
-                    });
-                } else {
-                    alert(result.data.message || 'Error al guardar las leyendas.');
-                }
-            });
-    }
     };
 })(jQuery);

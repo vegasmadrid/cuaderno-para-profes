@@ -620,37 +620,16 @@ td.cpp-semana-td-hora {
     transform: translateX(-50%) translateY(20px);
 }
 
-/* --- Estilos para el Modal de Símbolos de Sesión --- */
-.cpp-modal-simbolos-programador {
-    max-width: 700px; /* Un poco más ancho para el layout de dos columnas */
-}
-
-.cpp-modal-simbolos-programador .cpp-modal-body {
-    padding-top: 15px;
-}
-
-.cpp-simbolo-modal-container {
-    display: flex;
-    gap: 24px;
-}
-
-.cpp-simbolo-modal-grid-container {
-    flex: 2; /* Ocupa 2/3 del espacio */
-    padding-right: 24px;
-    border-right: 1px solid #e0e0e0;
-}
-
-.cpp-simbolo-modal-leyendas-container {
-    flex: 1; /* Ocupa 1/3 del espacio */
-}
-
-.cpp-simbolo-modal-grid-container h3,
-.cpp-simbolo-modal-leyendas-container h3 {
-    font-size: 16px;
-    font-weight: 500;
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #3c4043;
+/* --- Estilos para la Paleta de Símbolos (Pop-up) --- */
+.cpp-symbol-palette {
+    position: absolute;
+    z-index: 1010;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    padding: 12px;
+    width: 250px;
 }
 
 /* Reutilizando la clase del cuaderno para la paleta de símbolos */

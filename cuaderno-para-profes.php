@@ -484,30 +484,7 @@ function cpp_add_modals_to_footer() {
         </div>
     </div>
 
-    <!-- Modal para Símbolos de Sesión del Programador -->
-    <div id="cpp-sesion-simbolo-modal" class="cpp-modal">
-        <div class="cpp-modal-content cpp-modal-simbolos-programador">
-            <span class="cpp-modal-close">&times;</span>
-            <h2>Asignar Símbolo a la Sesión</h2>
-            <div class="cpp-modal-body">
-                <div class="cpp-simbolo-modal-container">
-                    <div class="cpp-simbolo-modal-grid-container">
-                        <h3>Símbolos</h3>
-                        <div id="cpp-simbolos-grid" class="cpp-symbol-palette-grid">
-                            <!-- Símbolos se cargarán aquí dinámicamente -->
-                        </div>
-                    </div>
-                    <div class="cpp-simbolo-modal-leyendas-container">
-                        <h3>Leyendas</h3>
-                        <ul id="cpp-simbolos-leyendas-list">
-                            <!-- Leyendas se cargarán aquí dinámicamente -->
-                        </ul>
-                        <button id="cpp-save-leyendas-btn" class="cpp-btn cpp-btn-primary">Guardar Leyendas</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- El modal de símbolos del programador se ha eliminado y se generará dinámicamente como una paleta. -->
     <?php
 }
 ?>
