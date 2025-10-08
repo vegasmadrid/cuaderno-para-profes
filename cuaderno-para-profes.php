@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.0.0');
+define('CPP_VERSION', '2.1.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -310,6 +310,19 @@ function cpp_migrate_add_final_eval_config_table_v2_0() {
     dbDelta($sql);
 }
 
+function cpp_migrate_add_symbol_id_to_sessions_v2_1() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'cpp_programador_sesiones';
+    $column_name = 'simbolo_id';
+
+    // Check if the column exists
+    $column_info = $wpdb->get_row($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+
+    if (!$column_info) {
+        $wpdb->query("ALTER TABLE `$table_name` ADD COLUMN `$column_name` VARCHAR(50) NULL DEFAULT NULL AFTER `seguimiento`;");
+    }
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -330,6 +343,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '2.0.0', '<')) {
         cpp_migrate_add_final_eval_config_table_v2_0();
+    }
+	if (version_compare($current_version, '2.1.0', '<')) {
+        cpp_migrate_add_symbol_id_to_sessions_v2_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
@@ -464,6 +480,26 @@ function cpp_add_modals_to_footer() {
             </div>
             <div class="cpp-modal-footer">
                 <button id="cpp-save-final-grade-evals-btn" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Símbolos de Sesión del Programador -->
+    <div id="cpp-sesion-simbolo-modal" class="cpp-modal">
+        <div class="cpp-modal-content">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Asignar Símbolo a la Sesión</h2>
+            <div class="cpp-simbolos-selector-container">
+                <div id="cpp-simbolos-grid" class="cpp-simbolos-grid">
+                    <!-- Símbolos se cargarán aquí dinámicamente -->
+                </div>
+                <div id="cpp-simbolos-leyendas" class="cpp-simbolos-leyendas">
+                    <h3>Leyendas</h3>
+                    <ul id="cpp-simbolos-leyendas-list">
+                        <!-- Leyendas se cargarán aquí dinámicamente -->
+                    </ul>
+                    <button id="cpp-save-leyendas-btn" class="cpp-btn cpp-btn-primary">Guardar Leyendas</button>
+                </div>
             </div>
         </div>
     </div>

@@ -124,6 +124,7 @@ function cpp_programador_save_sesion($data) {
     $sesion_id = isset($data['id']) ? intval($data['id']) : 0;
     $user_id = isset($data['user_id']) ? intval($data['user_id']) : 0;
     if (empty($user_id)) return false;
+
     $datos_a_guardar = [
         'user_id' => $user_id,
         'clase_id' => isset($data['clase_id']) ? intval($data['clase_id']) : 0,
@@ -133,8 +134,10 @@ function cpp_programador_save_sesion($data) {
         'objetivos' => isset($data['objetivos']) ? wp_kses_post($data['objetivos']) : '',
         'recursos' => isset($data['recursos']) ? wp_kses_post($data['recursos']) : '',
         'seguimiento' => isset($data['seguimiento']) ? wp_kses_post($data['seguimiento']) : '',
+        'simbolo_id' => isset($data['simbolo_id']) ? sanitize_text_field($data['simbolo_id']) : null,
     ];
-    $format = ['%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s'];
+    $format = ['%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s'];
+
     if ($sesion_id > 0) {
         $resultado = $wpdb->update($tabla_sesiones, $datos_a_guardar, ['id' => $sesion_id, 'user_id' => $user_id], $format, ['%d', '%d']);
         return $resultado !== false ? $sesion_id : false;

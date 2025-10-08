@@ -74,6 +74,16 @@ function cpp_ajax_save_programador_sesion() {
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     $sesion_data = isset($_POST['sesion']) ? json_decode(stripslashes($_POST['sesion']), true) : null;
     if (empty($sesion_data) || !isset($sesion_data['evaluacion_id'])) { wp_send_json_error(['message' => 'Datos de sesión no válidos.']); return; }
+
+    // --- AÑADIDO: Validar el simbolo_id ---
+    if (isset($sesion_data['simbolo_id'])) {
+        $default_symbols = cpp_get_default_programador_simbolos();
+        if (!array_key_exists($sesion_data['simbolo_id'], $default_symbols)) {
+            // Si el símbolo no es válido, se establece a null para evitar datos corruptos.
+            $sesion_data['simbolo_id'] = null;
+        }
+    }
+
     $sesion_data['user_id'] = get_current_user_id();
     $result = cpp_programador_save_sesion($sesion_data);
     if ($result) {
@@ -663,4 +673,80 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
     }
 
     return $fechas_calculadas;
+}
+
+// --- Nuevas acciones para los símbolos ---
+add_action('wp_ajax_cpp_get_programador_simbolos', 'cpp_ajax_get_programador_simbolos');
+add_action('wp_ajax_cpp_save_programador_simbolos_leyendas', 'cpp_ajax_save_programador_simbolos_leyendas');
+
+function cpp_get_default_programador_simbolos() {
+    return [
+        'examen' => ['simbolo' => '📝', 'leyenda' => 'Examen / Prueba'],
+        'proyecto' => ['simbolo' => '🏗️', 'leyenda' => 'Entrega de proyecto'],
+        'presentacion' => ['simbolo' => '🗣️', 'leyenda' => 'Presentación oral'],
+        'debate' => ['simbolo' => '⚖️', 'leyenda' => 'Debate'],
+        'laboratorio' => ['simbolo' => '🔬', 'leyenda' => 'Práctica de laboratorio'],
+        'salida' => ['simbolo' => '🚌', 'leyenda' => 'Salida / Excursión'],
+        'repaso' => ['simbolo' => '🔄', 'leyenda' => 'Sesión de repaso'],
+        'fiesta' => ['simbolo' => '🎉', 'leyenda' => 'Celebración / Evento especial']
+    ];
+}
+
+function cpp_ajax_get_programador_simbolos() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $leyendas_guardadas = get_user_meta($user_id, 'cpp_programador_simbolos_leyendas', true);
+    if (!is_array($leyendas_guardadas)) {
+        $leyendas_guardadas = [];
+    }
+
+    $simbolos_default = cpp_get_default_programador_simbolos();
+    $resultado = [];
+    foreach ($simbolos_default as $id => $data) {
+        $resultado[$id] = [
+            'simbolo' => $data['simbolo'],
+            'leyenda' => isset($leyendas_guardadas[$id]) ? esc_html($leyendas_guardadas[$id]) : $data['leyenda'],
+        ];
+    }
+
+    wp_send_json_success(['simbolos' => $resultado]);
+}
+
+function cpp_ajax_save_programador_simbolos_leyendas() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+
+    if (!isset($_POST['leyendas']) || !is_string($_POST['leyendas'])) {
+        wp_send_json_error(['message' => 'Datos de leyendas no válidos.'], 400);
+        return;
+    }
+
+    $leyendas_json = stripslashes($_POST['leyendas']);
+    $leyendas = json_decode($leyendas_json, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        wp_send_json_error(['message' => 'Formato de leyendas no válido.'], 400);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $simbolos_default = cpp_get_default_programador_simbolos();
+    $leyendas_sanitizadas = [];
+
+    foreach ($simbolos_default as $id => $data) {
+        if (isset($leyendas[$id])) {
+            $leyendas_sanitizadas[$id] = sanitize_text_field($leyendas[$id]);
+        }
+    }
+
+    update_user_meta($user_id, 'cpp_programador_simbolos_leyendas', $leyendas_sanitizadas);
+
+    wp_send_json_success(['message' => 'Leyendas guardadas con éxito.']);
 }
