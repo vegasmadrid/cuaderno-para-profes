@@ -105,8 +105,21 @@ function cpp_ajax_delete_programador_sesion() {
     $delete_activities = isset($_POST['delete_activities']) && $_POST['delete_activities'] === 'true'; // El 'true' viene como string
     if (empty($sesion_id)) { wp_send_json_error(['message' => 'ID de sesión no proporcionado.']); return; }
     $user_id = get_current_user_id();
-    if (cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities)) { wp_send_json_success(['message' => 'Sesión eliminada.']); }
-    else { wp_send_json_error(['message' => 'Error al eliminar la sesión.']); }
+
+    // --- AÑADIDO: Obtener info de la sesión ANTES de borrarla ---
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $sesion_info = $wpdb->get_row($wpdb->prepare("SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d AND user_id = %d", $sesion_id, $user_id));
+
+    if (cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities)) {
+        // --- AÑADIDO: Resincronizar fechas si la info de la sesión se obtuvo correctamente ---
+        if ($sesion_info) {
+            cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
+        }
+        wp_send_json_success(['message' => 'Sesión eliminada.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la sesión.']);
+    }
 }
 
 function cpp_ajax_save_sesiones_order() {
@@ -190,6 +203,12 @@ function cpp_ajax_add_inline_sesion() {
     if ($result) {
         // --- FIX: Devolver la sesión completa en lugar de recargar todo ---
         $sesion_completa = cpp_programador_get_sesion_by_id($result, $user_id);
+
+        // --- AÑADIDO: Resincronizar fechas de actividades después de añadir ---
+        if ($sesion_completa) {
+            cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_completa->clase_id, $sesion_completa->evaluacion_id);
+        }
+
         wp_send_json_success(['message' => 'Sesión añadida.', 'sesion' => $sesion_completa, 'after_sesion_id' => $after_sesion_id]);
     } else {
         wp_send_json_error(['message' => 'Error al añadir la sesión.']);
@@ -443,9 +462,25 @@ function cpp_ajax_delete_multiple_sesiones() {
         return;
     }
 
+    // --- AÑADIDO: Obtener info de TODAS las sesiones ANTES de borrarlas ---
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $placeholders = implode(',', array_fill(0, count($session_ids), '%d'));
+    $query = $wpdb->prepare(
+        "SELECT DISTINCT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id IN ($placeholders) AND user_id = %d",
+        array_merge($session_ids, [$user_id])
+    );
+    $affected_evaluations = $wpdb->get_results($query);
+
     $result = cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities);
 
     if ($result) {
+        // --- AÑADIDO: Resincronizar fechas para cada evaluación afectada ---
+        if (!empty($affected_evaluations)) {
+            foreach ($affected_evaluations as $eval_info) {
+                cpp_resincronizar_fechas_actividades_evaluables($user_id, $eval_info->clase_id, $eval_info->evaluacion_id);
+            }
+        }
         wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al eliminar una o más de las sesiones seleccionadas.']);
