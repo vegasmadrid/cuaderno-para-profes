@@ -990,7 +990,7 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success && result.data.fechas) {
-                    let changed = false;
+                    const changedSesiones = [];
                     this.sesiones.forEach(sesion => {
                         if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
                             const fechaData = result.data.fechas[sesion.id];
@@ -1000,13 +1000,33 @@
                             if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
                                 sesion.fecha_calculada = newFecha;
                                 sesion.notas_horario = newNotas;
-                                changed = true;
+                                changedSesiones.push(sesion);
                             }
                         }
                     });
-                    if (changed) {
-                        // Volvemos a renderizar solo si hubo cambios para evitar parpadeos
-                        this.render();
+
+                    if (changedSesiones.length > 0) {
+                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        if (!list) return;
+
+                        const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                        changedSesiones.forEach(sesion => {
+                            const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                            if (listItem) {
+                                const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
+                                listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
+                            }
+                        });
+
+                        // If the currently selected session was updated, re-render the right column
+                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id)) {
+                            const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                            if (rightCol) {
+                                rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                                this.makeActividadesSortable();
+                            }
+                        }
                     }
                 }
                 // No hacemos nada en caso de error para no molestar al usuario
