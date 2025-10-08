@@ -621,25 +621,47 @@ td.cpp-semana-td-hora {
 }
 
 /* --- Estilos para el Modal de Símbolos de Sesión --- */
-#cpp-sesion-simbolo-modal .cpp-modal-content {
-    max-width: 650px;
+.cpp-modal-simbolos-programador {
+    max-width: 700px; /* Un poco más ancho para el layout de dos columnas */
 }
 
-.cpp-simbolos-selector-container {
+.cpp-modal-simbolos-programador .cpp-modal-body {
+    padding-top: 15px;
+}
+
+.cpp-simbolo-modal-container {
     display: flex;
     gap: 24px;
 }
 
-#cpp-simbolos-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    flex-grow: 1;
-    border-right: 1px solid #e0e0e0;
+.cpp-simbolo-modal-grid-container {
+    flex: 2; /* Ocupa 2/3 del espacio */
     padding-right: 24px;
+    border-right: 1px solid #e0e0e0;
 }
 
-.cpp-simbolo-item {
+.cpp-simbolo-modal-leyendas-container {
+    flex: 1; /* Ocupa 1/3 del espacio */
+}
+
+.cpp-simbolo-modal-grid-container h3,
+.cpp-simbolo-modal-leyendas-container h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #3c4043;
+}
+
+/* Reutilizando la clase del cuaderno para la paleta de símbolos */
+.cpp-symbol-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+    gap: 10px;
+}
+
+/* Estilos para los items de la grid (anterior .cpp-simbolo-item) */
+.cpp-symbol-palette-grid .cpp-simbolo-item {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -651,29 +673,16 @@ td.cpp-semana-td-hora {
     transition: all 0.2s ease-in-out;
 }
 
-.cpp-simbolo-item:hover {
+.cpp-symbol-palette-grid .cpp-simbolo-item:hover {
     background-color: #f1f3f4;
     transform: scale(1.05);
 }
 
-.cpp-simbolo-item.active {
+.cpp-symbol-palette-grid .cpp-simbolo-item.active {
     background-color: #e8f0fe;
     border-color: #1a73e8;
     color: #1a73e8;
     box-shadow: 0 0 0 2px #1a73e8;
-}
-
-#cpp-simbolos-leyendas {
-    width: 250px;
-    flex-shrink: 0;
-}
-
-#cpp-simbolos-leyendas h3 {
-    font-size: 16px;
-    font-weight: 500;
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #3c4043;
 }
 
 #cpp-simbolos-leyendas-list {
@@ -682,7 +691,7 @@ td.cpp-semana-td-hora {
     margin: 0 0 15px 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px; /* Un poco más de espacio */
 }
 
 #cpp-simbolos-leyendas-list li {
@@ -691,22 +700,33 @@ td.cpp-semana-td-hora {
     gap: 10px;
 }
 
-.leyenda-simbolo {
-    font-size: 20px;
-    width: 25px;
+#cpp-simbolos-leyendas-list .leyenda-simbolo {
+    font-size: 22px;
+    width: 30px;
     text-align: center;
+    flex-shrink: 0;
+    color: #5f6368;
 }
 
-.leyenda-input {
+#cpp-simbolos-leyendas-list .leyenda-input {
     width: 100%;
     padding: 8px 10px;
     font-size: 13px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
+
+#cpp-simbolos-leyendas-list .leyenda-input:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 1px #1a73e8;
+}
+
 
 #cpp-save-leyendas-btn {
     width: 100%;
+    margin-top: 10px;
 }
 
 /* Aumentar tamaño del símbolo en la lista de sesiones */

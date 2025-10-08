@@ -486,19 +486,24 @@ function cpp_add_modals_to_footer() {
 
     <!-- Modal para Símbolos de Sesión del Programador -->
     <div id="cpp-sesion-simbolo-modal" class="cpp-modal">
-        <div class="cpp-modal-content">
+        <div class="cpp-modal-content cpp-modal-simbolos-programador">
             <span class="cpp-modal-close">&times;</span>
             <h2>Asignar Símbolo a la Sesión</h2>
-            <div class="cpp-simbolos-selector-container">
-                <div id="cpp-simbolos-grid" class="cpp-simbolos-grid">
-                    <!-- Símbolos se cargarán aquí dinámicamente -->
-                </div>
-                <div id="cpp-simbolos-leyendas" class="cpp-simbolos-leyendas">
-                    <h3>Leyendas</h3>
-                    <ul id="cpp-simbolos-leyendas-list">
-                        <!-- Leyendas se cargarán aquí dinámicamente -->
-                    </ul>
-                    <button id="cpp-save-leyendas-btn" class="cpp-btn cpp-btn-primary">Guardar Leyendas</button>
+            <div class="cpp-modal-body">
+                <div class="cpp-simbolo-modal-container">
+                    <div class="cpp-simbolo-modal-grid-container">
+                        <h3>Símbolos</h3>
+                        <div id="cpp-simbolos-grid" class="cpp-symbol-palette-grid">
+                            <!-- Símbolos se cargarán aquí dinámicamente -->
+                        </div>
+                    </div>
+                    <div class="cpp-simbolo-modal-leyendas-container">
+                        <h3>Leyendas</h3>
+                        <ul id="cpp-simbolos-leyendas-list">
+                            <!-- Leyendas se cargarán aquí dinámicamente -->
+                        </ul>
+                        <button id="cpp-save-leyendas-btn" class="cpp-btn cpp-btn-primary">Guardar Leyendas</button>
+                    </div>
                 </div>
             </div>
         </div>

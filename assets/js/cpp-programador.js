@@ -76,7 +76,7 @@
             }
 
             const sesionId = this.dataset.sesionId;
-            // Evitar re-render si ya está seleccionada
+            // Evitar procesamiento si ya está seleccionada
             if (self.currentSesion && self.currentSesion.id == sesionId) {
                 return;
             }
@@ -84,12 +84,40 @@
             // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
             if (self.selectedSesiones.length > 0) {
                 self.selectedSesiones = [];
+                // Ocultar la barra de acciones múltiples y desmarcar los checkboxes sin recargar toda la lista
+                self.updateBulkActionsUI();
+                self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
             }
 
             self.currentSesion = self.sesiones.find(s => s.id == sesionId);
 
-            // --- FIX: Re-renderizar toda la pestaña para actualizar el estado de los botones de la toolbar ---
-            self.render();
+            // --- FIX: Actualización selectiva del DOM para evitar el salto de scroll ---
+            // 1. Actualizar el estado activo en la lista de sesiones
+            const listContainer = this.closest('ul');
+            if (listContainer) {
+                const oldActive = listContainer.querySelector('.cpp-sesion-list-item.active');
+                if (oldActive) {
+                    oldActive.classList.remove('active');
+                }
+            }
+            this.classList.add('active');
+
+            // 2. Actualizar solo la columna derecha con los detalles de la sesión
+            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
+            if (rightCol) {
+                rightCol.innerHTML = self.renderProgramacionTabRightColumn();
+                self.makeActividadesSortable(); // Re-inicializar sortable para las actividades
+            }
+
+            // 3. Actualizar el estado de los botones de la barra de herramientas
+            const isSesionSelected = self.currentSesion !== null;
+            const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
+            if (toolbar) {
+                toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
+                toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
+                toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
+            }
+            // No se llama a scrollIntoView para que la vista no se mueva.
         });
 
         // Actividades
@@ -960,10 +988,8 @@
         if (!this.currentSesion) return;
         const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
         if (sesionElement) {
-            // --- FIX: Centrar el elemento seleccionado en la vista ---
-            // Usamos 'center' para asegurar que el elemento recién creado o seleccionado
-            // sea claramente visible para el usuario, en lugar de quedar en el borde.
-            sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+            // --- FIX: Ya no se hace scroll para centrar el elemento ---
+            // sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
         }
     },
 
