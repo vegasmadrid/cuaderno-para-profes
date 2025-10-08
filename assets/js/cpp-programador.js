@@ -820,14 +820,45 @@
                             }
                         }
                     } else {
-                        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                        const displayIndex = sesionesFiltradas.findIndex(s => s.id == this.currentSesion.id);
-                        const newItemHTML = this.renderSingleSesionItemHTML(this.currentSesion, displayIndex);
                         const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
                         if (listItem) {
-                            listItem.outerHTML = newItemHTML;
-                            const newListItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
-                            if (newListItem) newListItem.classList.add('active');
+                            // --- FIX: Update DOM without replacing the element to preserve scroll ---
+                            const s = this.currentSesion; // The updated session
+
+                            // Update Title and Date
+                            const titleElement = listItem.querySelector('.cpp-sesion-title');
+                            if (titleElement) {
+                                const fechaMostrada = s.fecha_calculada
+                                    ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                                    : '';
+                                const titleHTML = s.fecha_calculada
+                                    ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+                                    : s.titulo;
+                                titleElement.innerHTML = titleHTML;
+                            }
+
+                            // Update Symbol
+                            const simboloContainer = listItem.querySelector('.cpp-sesion-simbolo-container');
+                            if (simboloContainer) {
+                                const simboloData = (s.simbolo_id && this.simbolos && this.simbolos[s.simbolo_id]) ? this.simbolos[s.simbolo_id] : null;
+                                const simboloHTML = simboloData ? `<span class="cpp-sesion-simbolo">${simboloData.simbolo}</span>` : '';
+                                const simboloTitle = simboloData ? (simboloData.leyenda || '') : '';
+                                simboloContainer.innerHTML = simboloHTML;
+                                simboloContainer.title = simboloTitle;
+                            }
+
+                            // Update 'today' class
+                            const today = new Date();
+                            const todayYMD = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                            const isToday = s.fecha_calculada === todayYMD;
+                            if (isToday) {
+                                listItem.classList.add('cpp-sesion-hoy');
+                            } else {
+                                listItem.classList.remove('cpp-sesion-hoy');
+                            }
+
+                            // Ensure it remains active
+                            listItem.classList.add('active');
                         }
                     }
 
@@ -990,7 +1021,7 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success && result.data.fechas) {
-                    let changed = false;
+                    const changedSesiones = [];
                     this.sesiones.forEach(sesion => {
                         if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
                             const fechaData = result.data.fechas[sesion.id];
@@ -1000,13 +1031,33 @@
                             if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
                                 sesion.fecha_calculada = newFecha;
                                 sesion.notas_horario = newNotas;
-                                changed = true;
+                                changedSesiones.push(sesion);
                             }
                         }
                     });
-                    if (changed) {
-                        // Volvemos a renderizar solo si hubo cambios para evitar parpadeos
-                        this.render();
+
+                    if (changedSesiones.length > 0) {
+                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        if (!list) return;
+
+                        const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                        changedSesiones.forEach(sesion => {
+                            const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                            if (listItem) {
+                                const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
+                                listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
+                            }
+                        });
+
+                        // If the currently selected session was updated, re-render the right column
+                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id)) {
+                            const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                            if (rightCol) {
+                                rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                                this.makeActividadesSortable();
+                            }
+                        }
                     }
                 }
                 // No hacemos nada en caso de error para no molestar al usuario
