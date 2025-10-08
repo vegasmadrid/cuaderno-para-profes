@@ -714,3 +714,135 @@ td.cpp-semana-td-hora {
     width: 40px;
     text-align: center;
 }
+
+/* --- START: Styles for Programmer Symbol Palette --- */
+
+/* This is the modal overlay */
+.cpp-programador-symbol-palette {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+}
+
+/* This is the modal content box */
+.cpp-programador-symbol-palette .cpp-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 23px 5px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
+    max-width: 600px; /* Wider to accommodate two columns */
+    width: 90%;
+    padding: 24px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.cpp-programador-symbol-palette .cpp-modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 8px; /* Reduced margin */
+}
+
+.cpp-programador-symbol-palette .cpp-modal-content p {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+}
+
+.cpp-simbolos-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    gap: 25px; /* Space between grid and leyendas */
+    margin-top: 15px;
+}
+
+.cpp-simbolos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+    gap: 10px;
+    border-right: 1px solid #e0e0e0;
+    padding-right: 25px;
+}
+
+.cpp-simbolos-leyendas {
+    display: flex;
+    flex-direction: column;
+}
+
+.cpp-simbolos-leyendas h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.cpp-simbolos-leyendas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 300px; /* Or adjust as needed */
+}
+
+.cpp-programador-symbol-palette .cpp-simbolo-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 45px;
+    font-size: 22px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.cpp-programador-symbol-palette .cpp-simbolo-item:hover {
+    background-color: #f1f3f4;
+}
+
+.cpp-programador-symbol-palette .cpp-simbolo-item.active {
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px #1a73e8;
+}
+
+.cpp-symbol-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.leyenda-simbolo {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 30px;
+    text-align: center;
+}
+
+.leyenda-input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.cpp-programador-symbol-palette .cpp-modal-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* --- END: Styles for Programmer Symbol Palette --- */
