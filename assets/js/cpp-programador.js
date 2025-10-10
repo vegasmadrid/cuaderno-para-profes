@@ -203,8 +203,8 @@
             }
         });
         // Note: The class is specific to the programmer palette to avoid conflicts
-        $document.on('click', '.cpp-programador-symbol-palette .cpp-simbolo-item', function(e) {
-            self.selectSimbolo(e.currentTarget.dataset.simboloId);
+        $document.on('click', '.cpp-programador-symbol-palette .cpp-simbolo-item', function() {
+            self.selectSimbolo(this.dataset.simboloId);
         });
         $document.on('click', '#cpp-programador-save-leyendas-btn', () => self.saveSimboloLeyendas());
         // Close on click outside
@@ -1964,12 +1964,36 @@
         const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
         if (!sesion) return;
 
-        // Toggle selection
+        // Toggle selection in the data model
         sesion.simbolo_id = (sesion.simbolo_id == simboloId) ? null : simboloId;
         this.closeSimboloPalette();
-        this.render(); // Re-render to show the new symbol in the list
 
-        // Save to backend
+        // --- START: Targeted DOM Update ---
+        // 1. Update the list item in the left column
+        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+        if (listItem) {
+            const simboloContainer = listItem.querySelector('.cpp-sesion-simbolo-container');
+            if (simboloContainer) {
+                const simboloData = (sesion.simbolo_id && this.simbolos && this.simbolos[sesion.simbolo_id]) ? this.simbolos[sesion.simbolo_id] : null;
+                const simboloHTML = simboloData ? `<span class="cpp-sesion-simbolo">${this.escapeHtml(simboloData.simbolo)}</span>` : '';
+                const simboloTitle = simboloData ? this.escapeHtml(simboloData.leyenda || '') : '';
+
+                simboloContainer.innerHTML = simboloHTML;
+                simboloContainer.title = simboloTitle;
+            }
+        }
+
+        // 2. If the modified session is the currently selected one, re-render the right column as well
+        if (this.currentSesion && this.currentSesion.id == sesion.id) {
+            const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+            if (rightCol) {
+                rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                this.makeActividadesSortable(); // Re-initialize sortable for the activities list
+            }
+        }
+        // --- END: Targeted DOM Update ---
+
+        // Save the change to the backend
         const { actividades_programadas, ...sesionToSave } = sesion;
         this.saveSesion(null, false, sesionToSave);
     },
