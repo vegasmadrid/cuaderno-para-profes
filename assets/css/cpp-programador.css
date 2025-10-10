@@ -715,11 +715,11 @@ td.cpp-semana-td-hora {
     text-align: center;
 }
 
-/* --- START: Styles for Programmer Symbol Palette --- */
+/* --- START: Styles for Programmer Symbol Palette (Single Column Layout) --- */
 
 /* This is the modal overlay */
 .cpp-programador-symbol-palette {
-    display: flex;
+    display: flex; /* Handled by JS */
     position: fixed;
     top: 0;
     left: 0;
@@ -736,7 +736,7 @@ td.cpp-semana-td-hora {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 23px 5px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
-    max-width: 600px; /* Wider to accommodate two columns */
+    max-width: 560px;
     width: 90%;
     padding: 24px;
     position: relative;
@@ -748,7 +748,7 @@ td.cpp-semana-td-hora {
 
 .cpp-programador-symbol-palette .cpp-modal-content h2 {
     margin-top: 0;
-    margin-bottom: 8px; /* Reduced margin */
+    margin-bottom: 8px;
 }
 
 .cpp-programador-symbol-palette .cpp-modal-content p {
@@ -758,47 +758,28 @@ td.cpp-semana-td-hora {
     color: #555;
 }
 
-.cpp-simbolos-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Two equal columns */
-    gap: 25px; /* Space between grid and leyendas */
+/* Container for the new single-column list */
+.cpp-programador-symbol-palette .cpp-symbol-list-container {
     margin-top: 15px;
-}
-
-.cpp-simbolos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-    gap: 10px;
-    border-right: 1px solid #e0e0e0;
-    padding-right: 25px;
-}
-
-.cpp-simbolos-leyendas {
     display: flex;
     flex-direction: column;
+    gap: 15px;
 }
 
-.cpp-simbolos-leyendas h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.cpp-simbolos-leyendas-list {
+/* Each row contains a symbol and a legend input */
+.cpp-programador-symbol-palette .cpp-symbol-row {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex-grow: 1;
-    overflow-y: auto;
-    max-height: 300px; /* Or adjust as needed */
+    align-items: center;
+    gap: 15px;
 }
 
+/* The clickable symbol on the left */
 .cpp-programador-symbol-palette .cpp-simbolo-item {
+    flex: 0 0 45px; /* Fixed width */
+    height: 45px;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 45px;
     font-size: 22px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -808,6 +789,7 @@ td.cpp-semana-td-hora {
 
 .cpp-programador-symbol-palette .cpp-simbolo-item:hover {
     background-color: #f1f3f4;
+    border-color: #1a73e8;
 }
 
 .cpp-programador-symbol-palette .cpp-simbolo-item.active {
@@ -816,22 +798,10 @@ td.cpp-semana-td-hora {
     box-shadow: 0 0 0 2px #1a73e8;
 }
 
-.cpp-symbol-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.leyenda-simbolo {
-    font-size: 20px;
-    flex-shrink: 0;
-    width: 30px;
-    text-align: center;
-}
-
-.leyenda-input {
-    width: 100%;
-    padding: 8px 10px;
+/* The text input on the right */
+.cpp-programador-symbol-palette .leyenda-input {
+    flex: 1; /* Takes up remaining space */
+    padding: 10px 12px;
     font-size: 14px;
     border: 1px solid #ccc;
     border-radius: 4px;
