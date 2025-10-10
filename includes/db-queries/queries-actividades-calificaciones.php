@@ -200,3 +200,28 @@ function cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id) {
 
     return $resultado !== false;
 }
+function cpp_update_actividad_evaluable_fecha($actividad_id, $fecha, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+
+    // Verificación de propiedad
+    $actividad_owner = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_actividades WHERE id = %d", $actividad_id));
+    if ($actividad_owner != $user_id) {
+        return false; // El usuario no es el propietario
+    }
+
+    // Validación simple de formato de fecha
+    if (!preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $fecha)) {
+        return false; // Formato de fecha no válido
+    }
+
+    $resultado = $wpdb->update(
+        $tabla_actividades,
+        ['fecha_actividad' => $fecha],
+        ['id' => $actividad_id],
+        ['%s'],
+        ['%d']
+    );
+
+    return $resultado !== false;
+}

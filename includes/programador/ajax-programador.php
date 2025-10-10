@@ -105,8 +105,21 @@ function cpp_ajax_delete_programador_sesion() {
     $delete_activities = isset($_POST['delete_activities']) && $_POST['delete_activities'] === 'true'; // El 'true' viene como string
     if (empty($sesion_id)) { wp_send_json_error(['message' => 'ID de sesión no proporcionado.']); return; }
     $user_id = get_current_user_id();
-    if (cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities)) { wp_send_json_success(['message' => 'Sesión eliminada.']); }
-    else { wp_send_json_error(['message' => 'Error al eliminar la sesión.']); }
+
+    // --- AÑADIDO: Obtener info de la sesión ANTES de borrarla ---
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $sesion_info = $wpdb->get_row($wpdb->prepare("SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d AND user_id = %d", $sesion_id, $user_id));
+
+    if (cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities)) {
+        // --- AÑADIDO: Resincronizar fechas si la info de la sesión se obtuvo correctamente ---
+        if ($sesion_info) {
+            cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
+        }
+        wp_send_json_success(['message' => 'Sesión eliminada.', 'needs_gradebook_reload' => true]);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la sesión.']);
+    }
 }
 
 function cpp_ajax_save_sesiones_order() {
@@ -117,8 +130,13 @@ function cpp_ajax_save_sesiones_order() {
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
     $orden = isset($_POST['orden']) ? json_decode(stripslashes($_POST['orden'])) : [];
     if (empty($clase_id) || empty($evaluacion_id) || !is_array($orden)) { wp_send_json_error(['message' => 'Faltan datos para reordenar.']); return; }
-    if (cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden)) { wp_send_json_success(['message' => 'Orden guardado.']); }
-    else { wp_send_json_error(['message' => 'Error al guardar el orden.']); }
+    if (cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden)) {
+        // --- AÑADIDO: Resincronizar fechas de actividades al cambiar el orden ---
+        cpp_resincronizar_fechas_actividades_evaluables($user_id, $clase_id, $evaluacion_id);
+        wp_send_json_success(['message' => 'Orden guardado.', 'needs_gradebook_reload' => true]);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar el orden.']);
+    }
 }
 
 function cpp_ajax_save_start_date() {
@@ -142,9 +160,19 @@ function cpp_ajax_save_start_date() {
     }
 
     if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date)) {
-        wp_send_json_success(['message' => 'Fecha de inicio guardada.']);
+        // --- AÑADIDO: Resincronizar fechas de actividades al cambiar la fecha de inicio ---
+        // Necesitamos el clase_id. Lo obtenemos a partir de la evaluación.
+        global $wpdb;
+        $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+        $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM $tabla_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id, $user_id));
+
+        if ($clase_id) {
+            cpp_resincronizar_fechas_actividades_evaluables($user_id, $clase_id, $evaluacion_id);
+        }
+        wp_send_json_success(['message' => 'Fecha de inicio guardada.', 'needs_gradebook_reload' => true]);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar la fecha.']);
     }
-    else { wp_send_json_error(['message' => 'Error al guardar la fecha.']); }
 }
 
 function cpp_ajax_create_programador_example_data() {
@@ -175,7 +203,13 @@ function cpp_ajax_add_inline_sesion() {
     if ($result) {
         // --- FIX: Devolver la sesión completa en lugar de recargar todo ---
         $sesion_completa = cpp_programador_get_sesion_by_id($result, $user_id);
-        wp_send_json_success(['message' => 'Sesión añadida.', 'sesion' => $sesion_completa, 'after_sesion_id' => $after_sesion_id]);
+
+        // --- AÑADIDO: Resincronizar fechas de actividades después de añadir ---
+        if ($sesion_completa) {
+            cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_completa->clase_id, $sesion_completa->evaluacion_id);
+        }
+
+        wp_send_json_success(['message' => 'Sesión añadida.', 'sesion' => $sesion_completa, 'after_sesion_id' => $after_sesion_id, 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al añadir la sesión.']);
     }
@@ -428,10 +462,26 @@ function cpp_ajax_delete_multiple_sesiones() {
         return;
     }
 
+    // --- AÑADIDO: Obtener info de TODAS las sesiones ANTES de borrarlas ---
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $placeholders = implode(',', array_fill(0, count($session_ids), '%d'));
+    $query = $wpdb->prepare(
+        "SELECT DISTINCT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id IN ($placeholders) AND user_id = %d",
+        array_merge($session_ids, [$user_id])
+    );
+    $affected_evaluations = $wpdb->get_results($query);
+
     $result = cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities);
 
     if ($result) {
-        wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.']);
+        // --- AÑADIDO: Resincronizar fechas para cada evaluación afectada ---
+        if (!empty($affected_evaluations)) {
+            foreach ($affected_evaluations as $eval_info) {
+                cpp_resincronizar_fechas_actividades_evaluables($user_id, $eval_info->clase_id, $eval_info->evaluacion_id);
+            }
+        }
+        wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al eliminar una o más de las sesiones seleccionadas.']);
     }
@@ -673,6 +723,42 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
     }
 
     return $fechas_calculadas;
+}
+
+function cpp_resincronizar_fechas_actividades_evaluables($user_id, $clase_id, $evaluacion_id) {
+    global $wpdb;
+
+    // 1. Obtener las fechas calculadas más recientes para todas las sesiones de la evaluación.
+    $fechas_sesiones = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
+
+    if (empty($fechas_sesiones)) {
+        return; // No hay fechas que sincronizar.
+    }
+
+    // 2. Obtener todas las actividades evaluables vinculadas a esta evaluación que provienen del programador.
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $actividades_a_sincronizar = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, sesion_id FROM $tabla_actividades WHERE user_id = %d AND clase_id = %d AND evaluacion_id = %d AND sesion_id IS NOT NULL",
+        $user_id, $clase_id, $evaluacion_id
+    ));
+
+    if (empty($actividades_a_sincronizar)) {
+        return; // No hay actividades que sincronizar.
+    }
+
+    // 3. Iterar sobre las actividades y actualizar su fecha si corresponde.
+    foreach ($actividades_a_sincronizar as $actividad) {
+        $sesion_id = $actividad->sesion_id;
+        $actividad_id = $actividad->id;
+
+        // Comprobar si la sesión de la actividad tiene una fecha calculada en el nuevo mapa.
+        if (isset($fechas_sesiones[$sesion_id]) && !empty($fechas_sesiones[$sesion_id]['fecha'])) {
+            $nueva_fecha = $fechas_sesiones[$sesion_id]['fecha'];
+
+            // Usar la nueva función para actualizar la fecha de forma segura.
+            cpp_update_actividad_evaluable_fecha($actividad_id, $nueva_fecha, $user_id);
+        }
+    }
 }
 
 // --- Nuevas acciones para los símbolos ---
