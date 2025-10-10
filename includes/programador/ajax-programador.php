@@ -116,7 +116,7 @@ function cpp_ajax_delete_programador_sesion() {
         if ($sesion_info) {
             cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
         }
-        wp_send_json_success(['message' => 'Sesión eliminada.']);
+        wp_send_json_success(['message' => 'Sesión eliminada.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al eliminar la sesión.']);
     }
@@ -133,7 +133,7 @@ function cpp_ajax_save_sesiones_order() {
     if (cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden)) {
         // --- AÑADIDO: Resincronizar fechas de actividades al cambiar el orden ---
         cpp_resincronizar_fechas_actividades_evaluables($user_id, $clase_id, $evaluacion_id);
-        wp_send_json_success(['message' => 'Orden guardado.']);
+        wp_send_json_success(['message' => 'Orden guardado.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al guardar el orden.']);
     }
@@ -169,7 +169,7 @@ function cpp_ajax_save_start_date() {
         if ($clase_id) {
             cpp_resincronizar_fechas_actividades_evaluables($user_id, $clase_id, $evaluacion_id);
         }
-        wp_send_json_success(['message' => 'Fecha de inicio guardada.']);
+        wp_send_json_success(['message' => 'Fecha de inicio guardada.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al guardar la fecha.']);
     }
@@ -209,7 +209,7 @@ function cpp_ajax_add_inline_sesion() {
             cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_completa->clase_id, $sesion_completa->evaluacion_id);
         }
 
-        wp_send_json_success(['message' => 'Sesión añadida.', 'sesion' => $sesion_completa, 'after_sesion_id' => $after_sesion_id]);
+        wp_send_json_success(['message' => 'Sesión añadida.', 'sesion' => $sesion_completa, 'after_sesion_id' => $after_sesion_id, 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al añadir la sesión.']);
     }
@@ -481,7 +481,7 @@ function cpp_ajax_delete_multiple_sesiones() {
                 cpp_resincronizar_fechas_actividades_evaluables($user_id, $eval_info->clase_id, $eval_info->evaluacion_id);
             }
         }
-        wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.']);
+        wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al eliminar una o más de las sesiones seleccionadas.']);
     }

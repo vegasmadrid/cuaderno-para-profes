@@ -315,8 +315,10 @@
                     }
                     this.selectedSesiones = [];
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId);
-                    if (deleteActivities) {
-                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    if (result.data.needs_gradebook_reload) {
+                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                            cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        }
                     }
                 } else {
                     alert(result.data.message || 'Error al eliminar las sesiones.');
@@ -403,6 +405,13 @@
                     this.makeActividadesSortable();
                     this.scrollToSelectedSesion();
                     this.fetchAndApplyFechas(this.currentEvaluacionId);
+
+                    // --- AÑADIDO: Recargar cuaderno si es necesario ---
+                    if (result.data.needs_gradebook_reload) {
+                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                            cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        }
+                    }
 
                 } else if (result.success) { // Fallback
                     const newSesionId = result.data.new_sesion_id || null;
@@ -938,6 +947,12 @@
                 this.render();
                 // --- FIX: Recalcular y aplicar fechas ---
                 this.fetchAndApplyFechas(this.currentEvaluacionId);
+
+                if (result.data.needs_gradebook_reload) {
+                    if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                        cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                    }
+                }
             } else {
                 alert(result.data.message || 'Error al guardar la fecha.');
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
@@ -983,9 +998,11 @@
                 if (result.success) {
                     if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId);
-                    // Forzar recarga del cuaderno si se eliminaron actividades
-                    if (deleteActivities) {
-                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+
+                    if (result.data.needs_gradebook_reload) {
+                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                            cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        }
                     }
                 }
                 else { alert('Error al eliminar la sesión.'); }
@@ -998,10 +1015,15 @@
         const data = new URLSearchParams({ action: 'cpp_save_sesiones_order', nonce: cppFrontendData.nonce, clase_id: this.currentClase.id, evaluacion_id: this.currentEvaluacionId, orden: JSON.stringify(newOrder) });
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
-                this.fetchData(this.currentClase.id);
+                this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                if (result.data.needs_gradebook_reload) {
+                    if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                        cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                    }
+                }
             } else {
                 alert('Error al guardar el orden.');
-                this.fetchData(this.currentClase.id);
+                this.fetchData(this.currentClase.id, this.currentEvaluacionId);
             }
         });
     },
