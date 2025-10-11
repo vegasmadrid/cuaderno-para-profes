@@ -1909,8 +1909,8 @@
 
     // --- Lógica de Símbolos ---
     openSimboloPalette(buttonElement, sesionId) {
-        this.currentSimboloEditingSesionId = sesionId;
         this.closeSimboloPalette(); // Close any existing one
+        this.currentSimboloEditingSesionId = sesionId;
 
         const modal = document.createElement('div');
         // Use specific classes to avoid style collision with the gradebook palette
