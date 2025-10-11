@@ -815,4 +815,10 @@ td.cpp-semana-td-hora {
     justify-content: flex-end;
 }
 
+.cpp-semana-simbolo {
+    font-size: 0.9em;
+    margin-right: 4px;
+    display: inline-block;
+}
+
 /* --- END: Styles for Programmer Symbol Palette --- */

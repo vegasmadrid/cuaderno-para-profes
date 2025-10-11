@@ -1700,6 +1700,13 @@
                     eventos.forEach(evento => {
                         const clase = this.clases.find(c => c.id == evento.sesion.clase_id);
                         if (clase) {
+                            const simboloData = (evento.sesion.simbolo_id && this.simbolos[evento.sesion.simbolo_id])
+                                ? this.simbolos[evento.sesion.simbolo_id]
+                                : null;
+                            const simboloHTML = simboloData
+                                ? `<span class="cpp-semana-simbolo" title="${this.escapeHtml(simboloData.leyenda || '')}">${this.escapeHtml(simboloData.simbolo)}</span>`
+                                : '';
+
                             let actividadesHTML = '';
                             if (evento.sesion.actividades_programadas && evento.sesion.actividades_programadas.length > 0) {
                                 actividadesHTML = `<ul class="cpp-semana-actividades-list">
@@ -1712,7 +1719,7 @@
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
-                                <p>${evento.sesion.titulo}</p>
+                                <p>${simboloHTML} ${evento.sesion.titulo}</p>
                                 ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;
@@ -1921,7 +1928,19 @@
         const currentSimboloId = sesion ? sesion.simbolo_id : null;
 
         let paletteRowsHTML = '';
+
+        // Opción para quitar el símbolo
+        const noSymbolIsActive = currentSimboloId == null;
+        paletteRowsHTML += `
+            <div class="cpp-symbol-row">
+                <div class="cpp-simbolo-item ${noSymbolIsActive ? 'active' : ''}" data-simbolo-id="null" title="Quitar símbolo">
+                    Sin Símbolo
+                </div>
+            </div>
+        `;
+
         if (this.simbolos && Object.keys(this.simbolos).length > 0) {
+            paletteRowsHTML += '<hr class="cpp-symbol-separator">'; // Separador visual
             for (const id in this.simbolos) {
                 const simbolo = this.simbolos[id];
                 const isActive = id == currentSimboloId;
@@ -1933,8 +1952,6 @@
                         <input type="text" class="leyenda-input" data-simbolo-id="${id}" value="${this.escapeHtml(simbolo.leyenda || '')}" placeholder="Significado...">
                     </div>`;
             }
-        } else {
-            paletteRowsHTML = '<p>No hay símbolos definidos.</p>';
         }
 
         modal.innerHTML = `
@@ -1964,8 +1981,13 @@
         const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
         if (!sesion) return;
 
-        // Toggle selection
-        sesion.simbolo_id = (sesion.simbolo_id == simboloId) ? null : simboloId;
+        // Si el ID es "null" (desde el botón "Sin Símbolo"), se desasigna.
+        // Si no, se aplica la lógica de toggle: si se pulsa el mismo símbolo, se quita; si es otro, se asigna.
+        if (simboloId === 'null') {
+            sesion.simbolo_id = null;
+        } else {
+            sesion.simbolo_id = (sesion.simbolo_id == simboloId) ? null : simboloId;
+        }
 
         // Close the modal. The subsequent saveSesion call will handle the smart UI update.
         this.closeSimboloPalette();
