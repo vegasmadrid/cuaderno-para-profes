@@ -203,8 +203,8 @@
             }
         });
         // Note: The class is specific to the programmer palette to avoid conflicts
-        $document.on('click', '.cpp-programador-symbol-palette .cpp-simbolo-item', function(e) {
-            self.selectSimbolo(e.currentTarget.dataset.simboloId);
+        $document.on('click', '.cpp-programador-symbol-palette .cpp-simbolo-item', function() {
+            self.selectSimbolo(this.dataset.simboloId);
         });
         $document.on('click', '#cpp-programador-save-leyendas-btn', () => self.saveSimboloLeyendas());
         // Close on click outside
@@ -1920,46 +1920,31 @@
         const sesion = this.sesiones.find(s => s.id == this.currentSimboloEditingSesionId);
         const currentSimboloId = sesion ? sesion.simbolo_id : null;
 
-        let simbolosGridHTML = '';
+        let paletteRowsHTML = '';
         if (this.simbolos && Object.keys(this.simbolos).length > 0) {
             for (const id in this.simbolos) {
                 const simbolo = this.simbolos[id];
                 const isActive = id == currentSimboloId;
-                simbolosGridHTML += `
-                    <div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="${this.escapeHtml(simbolo.leyenda || '')}">
-                        ${this.escapeHtml(simbolo.simbolo)}
-                    </div>`;
-            }
-        } else {
-            simbolosGridHTML = '<p>No hay símbolos definidos.</p>';
-        }
-
-        let leyendasListHTML = '';
-        if (this.simbolos && Object.keys(this.simbolos).length > 0) {
-            for (const id in this.simbolos) {
-                const simbolo = this.simbolos[id];
-                leyendasListHTML += `
+                paletteRowsHTML += `
                     <div class="cpp-symbol-row">
-                        <span class="leyenda-simbolo">${this.escapeHtml(simbolo.simbolo)}</span>
+                        <div class="cpp-simbolo-item ${isActive ? 'active' : ''}" data-simbolo-id="${id}" title="Asignar este símbolo">
+                            ${this.escapeHtml(simbolo.simbolo)}
+                        </div>
                         <input type="text" class="leyenda-input" data-simbolo-id="${id}" value="${this.escapeHtml(simbolo.leyenda || '')}" placeholder="Significado...">
                     </div>`;
             }
+        } else {
+            paletteRowsHTML = '<p>No hay símbolos definidos.</p>';
         }
 
         modal.innerHTML = `
             <div class="cpp-modal-content">
                 <span class="cpp-modal-close">&times;</span>
                 <h2>Asignar Símbolo</h2>
-                <p>Haz clic en un símbolo para asignarlo. Edita las leyendas y pulsa Guardar.</p>
-                <div class="cpp-simbolos-container">
-                    <div class="cpp-simbolos-grid">${simbolosGridHTML}</div>
-                    <div class="cpp-simbolos-leyendas">
-                        <h4>Leyendas</h4>
-                        <div class="cpp-simbolos-leyendas-list">${leyendasListHTML}</div>
-                         <div class="cpp-modal-actions">
-                            <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-programador-save-leyendas-btn">Guardar Leyendas</button>
-                        </div>
-                    </div>
+                <p>Haz clic en un símbolo a la izquierda para asignarlo/desasignarlo. Edita las leyendas y pulsa Guardar.</p>
+                <div class="cpp-symbol-list-container">${paletteRowsHTML}</div>
+                <div class="cpp-modal-actions">
+                    <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-programador-save-leyendas-btn">Guardar Leyendas</button>
                 </div>
             </div>
         `;
@@ -1981,8 +1966,11 @@
 
         // Toggle selection
         sesion.simbolo_id = (sesion.simbolo_id == simboloId) ? null : simboloId;
+
+        // Close the modal and re-render the entire view to ensure all UI parts are updated.
+        // This is less efficient but more robust than a targeted DOM update.
         this.closeSimboloPalette();
-        this.render(); // Re-render to show the new symbol in the list
+        this.render();
 
         // Save to backend
         const { actividades_programadas, ...sesionToSave } = sesion;
