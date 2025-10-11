@@ -1931,16 +1931,17 @@
 
         // Opción para quitar el símbolo
         const noSymbolIsActive = currentSimboloId == null;
+        const noSymbolSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px; opacity: 0.6;"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M4.93,4.93l14.14,14.14L17.66,20.5 L3.51,6.34L4.93,4.93z"></path></svg>';
         paletteRowsHTML += `
-            <div class="cpp-symbol-row">
+            <div class="cpp-symbol-row no-leyenda">
                 <div class="cpp-simbolo-item ${noSymbolIsActive ? 'active' : ''}" data-simbolo-id="null" title="Quitar símbolo">
-                    Sin Símbolo
+                    ${noSymbolSVG}
                 </div>
+                <span class="leyenda-label">Quitar símbolo</span>
             </div>
         `;
 
         if (this.simbolos && Object.keys(this.simbolos).length > 0) {
-            paletteRowsHTML += '<hr class="cpp-symbol-separator">'; // Separador visual
             for (const id in this.simbolos) {
                 const simbolo = this.simbolos[id];
                 const isActive = id == currentSimboloId;
