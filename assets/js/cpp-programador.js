@@ -1967,12 +1967,10 @@
         // Toggle selection
         sesion.simbolo_id = (sesion.simbolo_id == simboloId) ? null : simboloId;
 
-        // Close the modal and re-render the entire view to ensure all UI parts are updated.
-        // This is less efficient but more robust than a targeted DOM update.
+        // Close the modal. The subsequent saveSesion call will handle the smart UI update.
         this.closeSimboloPalette();
-        this.render();
 
-        // Save to backend
+        // Save to backend. This will trigger a selective re-render of the session item.
         const { actividades_programadas, ...sesionToSave } = sesion;
         this.saveSesion(null, false, sesionToSave);
     },
