@@ -546,6 +546,7 @@
 
             // --- Eventos de la Pestaña de Configuración (Ahora dentro de la página de ajustes de clase) ---
             $classSettingsPage.on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
+            $('#cpp-general-settings-page-container').on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
 
             // Guardar/Eliminar desde la página de configuración de clase
             $classSettingsPage.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });

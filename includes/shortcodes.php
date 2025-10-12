@@ -111,42 +111,53 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <h2>Ajustes Generales</h2>
             </div>
             <div class="cpp-fullscreen-settings-content">
-                <div id="cpp-config-tab-calendario" class="cpp-config-tab-content active">
-                    <h2>Configuración del Calendario</h2>
-                    <form id="cpp-config-form">
-                        <div class="cpp-form-section">
-                            <h3>Días lectivos</h3>
-                            <div id="cpp-working-days" class="cpp-form-group">
-                                <label><input type="checkbox" name="working_days" value="mon"> Lunes</label>
-                                <label><input type="checkbox" name="working_days" value="tue"> Martes</label>
-                                <label><input type="checkbox" name="working_days" value="wed"> Miércoles</label>
-                                <label><input type="checkbox" name="working_days" value="thu"> Jueves</label>
-                                <label><input type="checkbox" name="working_days" value="fri"> Viernes</label>
-                                <label><input type="checkbox" name="working_days" value="sat"> Sábado</label>
-                                <label><input type="checkbox" name="working_days" value="sun"> Domingo</label>
-                            </div>
+                <div class="cpp-config-container">
+                    <div class="cpp-config-sidebar">
+                        <a href="#" class="cpp-config-tab-link active" data-config-tab="calendario">
+                            <span class="dashicons dashicons-calendar-alt"></span>
+                            <span>Calendario</span>
+                        </a>
+                        <!-- Futuras opciones generales irían aquí -->
+                    </div>
+                    <div class="cpp-config-content-area">
+                        <div id="cpp-config-tab-calendario" class="cpp-config-tab-content active">
+                            <h2>Configuración del Calendario</h2>
+                            <form id="cpp-config-form">
+                                <div class="cpp-form-section">
+                                    <h3>Días lectivos</h3>
+                                    <div id="cpp-working-days" class="cpp-form-group">
+                                        <label><input type="checkbox" name="working_days" value="mon"> Lunes</label>
+                                        <label><input type="checkbox" name="working_days" value="tue"> Martes</label>
+                                        <label><input type="checkbox" name="working_days" value="wed"> Miércoles</label>
+                                        <label><input type="checkbox" name="working_days" value="thu"> Jueves</label>
+                                        <label><input type="checkbox" name="working_days" value="fri"> Viernes</label>
+                                        <label><input type="checkbox" name="working_days" value="sat"> Sábado</label>
+                                        <label><input type="checkbox" name="working_days" value="sun"> Domingo</label>
+                                    </div>
+                                </div>
+                                <div class="cpp-form-section">
+                                    <h3>Días festivos</h3>
+                                    <div id="cpp-holidays-list" class="cpp-dynamic-list"></div>
+                                    <div class="cpp-form-group">
+                                        <input type="date" id="cpp-new-holiday-date">
+                                        <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir festivo</button>
+                                    </div>
+                                </div>
+                                <div class="cpp-form-section">
+                                    <h3>Periodos de vacaciones</h3>
+                                    <div id="cpp-vacations-list" class="cpp-dynamic-list"></div>
+                                    <div class="cpp-form-group">
+                                        <label>Inicio: <input type="date" id="cpp-new-vacation-start"></label>
+                                        <label>Fin: <input type="date" id="cpp-new-vacation-end"></label>
+                                        <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir vacaciones</button>
+                                    </div>
+                                </div>
+                                <div class="cpp-config-actions">
+                                    <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="cpp-form-section">
-                            <h3>Días festivos</h3>
-                            <div id="cpp-holidays-list" class="cpp-dynamic-list"></div>
-                            <div class="cpp-form-group">
-                                <input type="date" id="cpp-new-holiday-date">
-                                <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir festivo</button>
-                            </div>
-                        </div>
-                        <div class="cpp-form-section">
-                            <h3>Periodos de vacaciones</h3>
-                            <div id="cpp-vacations-list" class="cpp-dynamic-list"></div>
-                            <div class="cpp-form-group">
-                                <label>Inicio: <input type="date" id="cpp-new-vacation-start"></label>
-                                <label>Fin: <input type="date" id="cpp-new-vacation-end"></label>
-                                <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir vacaciones</button>
-                            </div>
-                        </div>
-                        <div class="cpp-config-actions">
-                            <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
