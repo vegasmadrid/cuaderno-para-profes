@@ -807,12 +807,30 @@ td.cpp-semana-td-hora {
     border-radius: 4px;
 }
 
+/* Styles for the "No Symbol" row */
+.cpp-programador-symbol-palette .cpp-symbol-row.no-leyenda {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+}
+.cpp-programador-symbol-palette .cpp-symbol-row.no-leyenda .leyenda-label {
+    flex: 1;
+    font-size: 14px;
+    color: #555;
+    font-style: italic;
+}
+
 .cpp-programador-symbol-palette .cpp-modal-actions {
     margin-top: 20px;
     padding-top: 15px;
     border-top: 1px solid #e0e0e0;
     display: flex;
     justify-content: flex-end;
+}
+
+.cpp-semana-simbolo {
+    font-size: 0.9em;
+    margin-right: 4px;
+    display: inline-block;
 }
 
 /* --- END: Styles for Programmer Symbol Palette --- */
