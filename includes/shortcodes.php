@@ -24,6 +24,133 @@ function cpp_shortcode_cuaderno_notas_classroom() {
     ob_start();
     ?>
     <div class="cpp-cuaderno-viewport-classroom">
+
+        <!-- Contenedor para la página de ajustes de clase (inicialmente oculto) -->
+        <div id="cpp-class-settings-page-container" class="cpp-fullscreen-settings-page" style="display: none;">
+            <div class="cpp-fullscreen-settings-header">
+                <button id="cpp-close-class-settings-btn" class="cpp-btn-icon cpp-close-fullscreen-btn" title="Volver al cuaderno">
+                    <span class="dashicons dashicons-arrow-left-alt"></span>
+                </button>
+                <h2 id="cpp-class-settings-page-title">Ajustes de la Clase</h2>
+            </div>
+            <div class="cpp-fullscreen-settings-content">
+                <div class="cpp-config-container">
+                    <div class="cpp-config-sidebar">
+                        <a href="#" class="cpp-config-tab-link active" data-config-tab="clase">
+                            <span class="dashicons dashicons-admin-settings"></span>
+                            <span>Clase</span>
+                        </a>
+                        <a href="#" class="cpp-config-tab-link" data-config-tab="evaluaciones">
+                            <span class="dashicons dashicons-chart-bar"></span>
+                            <span>Evaluaciones</span>
+                        </a>
+                    </div>
+                    <div class="cpp-config-content-area">
+                        <div id="cpp-config-tab-clase" class="cpp-config-tab-content active">
+                            <form id="cpp-form-clase" novalidate>
+                                <input type="hidden" id="clase_id_editar" name="clase_id_editar" value="">
+                                <h2 id="cpp-config-clase-titulo">Configuración de la Clase</h2>
+
+                                <h3>Información General</h3>
+                                <div class="cpp-form-group">
+                                    <label for="nombre_clase_config">Nombre de la clase (máx. 16 caracteres):</label>
+                                    <input type="text" id="nombre_clase_config" name="nombre_clase" required maxlength="16">
+                                </div>
+                                <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container" style="display: none;">
+                                    <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
+                                        <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
+                                        Rellenar la clase con datos de ejemplo
+                                    </label>
+                                </div>
+                                <div class="cpp-form-group">
+                                    <label>Color de la clase:</label>
+                                    <div class="cpp-color-swatches-container">
+                                        <?php foreach ($milan_vivid_colors as $hex => $name): ?>
+                                            <span class="cpp-color-swatch <?php echo (strtoupper($hex) === strtoupper($default_class_color_hex)) ? 'selected' : ''; ?>" data-color="<?php echo esc_attr($hex); ?>" style="background-color: <?php echo esc_attr($hex); ?>;" title="<?php echo esc_attr($name); ?>"></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <input type="hidden" id="color_clase_hidden_config" name="color_clase" value="<?php echo esc_attr($default_class_color_hex); ?>">
+                                </div>
+                                <div class="cpp-form-group">
+                                    <label for="base_nota_final_clase_config">Base Nota Final (ej: 10, 100):</label>
+                                    <input type="number" id="base_nota_final_clase_config" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
+                                    <small>La nota final de los alumnos se calculará sobre esta base.</small>
+                                </div>
+                                <div class="cpp-form-group">
+                                    <label for="nota_aprobado_clase_config">Nota mínima para aprobar (ej: 5, 50):</label>
+                                    <input type="number" id="nota_aprobado_clase_config" name="nota_aprobado_clase" value="50" step="0.01" min="0" required>
+                                    <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
+                                </div>
+
+                                <div class="cpp-config-actions">
+                                    <button type="submit" class="cpp-btn cpp-btn-primary cpp-config-submit-btn" id="cpp-submit-clase-btn-config"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
+                                    <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-config-btn" style="display: none; margin-left: auto;"><span class="dashicons dashicons-trash"></span> Eliminar Clase</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="cpp-config-tab-evaluaciones" class="cpp-config-tab-content">
+                            <div id="cpp-config-evaluaciones-container" class="cpp-config-section">
+                                <p>Cargando evaluaciones...</p>
+                            </div>
+                            <hr class="cpp-config-divider">
+                            <div id="cpp-config-ponderaciones-container" class="cpp-config-section">
+                                <p>Selecciona una evaluación para ver sus ponderaciones.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenedor para la página de ajustes generales (inicialmente oculto) -->
+        <div id="cpp-general-settings-page-container" class="cpp-fullscreen-settings-page" style="display: none;">
+            <div class="cpp-fullscreen-settings-header">
+                <button id="cpp-close-general-settings-btn" class="cpp-btn-icon cpp-close-fullscreen-btn" title="Volver al cuaderno">
+                    <span class="dashicons dashicons-arrow-left-alt"></span>
+                </button>
+                <h2>Ajustes Generales</h2>
+            </div>
+            <div class="cpp-fullscreen-settings-content">
+                <div id="cpp-config-tab-calendario" class="cpp-config-tab-content active">
+                    <h2>Configuración del Calendario</h2>
+                    <form id="cpp-config-form">
+                        <div class="cpp-form-section">
+                            <h3>Días lectivos</h3>
+                            <div id="cpp-working-days" class="cpp-form-group">
+                                <label><input type="checkbox" name="working_days" value="mon"> Lunes</label>
+                                <label><input type="checkbox" name="working_days" value="tue"> Martes</label>
+                                <label><input type="checkbox" name="working_days" value="wed"> Miércoles</label>
+                                <label><input type="checkbox" name="working_days" value="thu"> Jueves</label>
+                                <label><input type="checkbox" name="working_days" value="fri"> Viernes</label>
+                                <label><input type="checkbox" name="working_days" value="sat"> Sábado</label>
+                                <label><input type="checkbox" name="working_days" value="sun"> Domingo</label>
+                            </div>
+                        </div>
+                        <div class="cpp-form-section">
+                            <h3>Días festivos</h3>
+                            <div id="cpp-holidays-list" class="cpp-dynamic-list"></div>
+                            <div class="cpp-form-group">
+                                <input type="date" id="cpp-new-holiday-date">
+                                <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir festivo</button>
+                            </div>
+                        </div>
+                        <div class="cpp-form-section">
+                            <h3>Periodos de vacaciones</h3>
+                            <div id="cpp-vacations-list" class="cpp-dynamic-list"></div>
+                            <div class="cpp-form-group">
+                                <label>Inicio: <input type="date" id="cpp-new-vacation-start"></label>
+                                <label>Fin: <input type="date" id="cpp-new-vacation-end"></label>
+                                <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir vacaciones</button>
+                            </div>
+                        </div>
+                        <div class="cpp-config-actions">
+                            <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <div class="cpp-cuaderno-sidebar-classroom" id="cpp-cuaderno-sidebar">
             <div class="cpp-sidebar-header-placeholder">
                 <button class="cpp-header-menu-btn" id="cpp-sidebar-close-btn" title="Cerrar Menú">
@@ -79,13 +206,15 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <div class="cpp-top-bar-center cpp-tabs-clase-specific">
                     <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
                     <button class="cpp-main-tab-link" data-tab="programacion">Programación</button>
-                    <button class="cpp-main-tab-link" data-tab="configuracion">Configuración</button>
                 </div>
                 <div class="cpp-top-bar-right">
                     <div class="cpp-tabs-general">
                         <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
                         <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
                     </div>
+                    <button class="cpp-btn-icon cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">
+                        <span class="dashicons dashicons-admin-generic"></span>
+                    </button>
                     <div class="cpp-user-menu-container">
                         <button class="cpp-user-menu-avatar-btn">
                             <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
@@ -130,114 +259,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-semana" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-horario" class="cpp-main-tab-content"></div>
-                    <div id="cpp-main-tab-configuracion" class="cpp-main-tab-content">
-                        <div class="cpp-config-container">
-                            <div class="cpp-config-sidebar">
-                                <a href="#" class="cpp-config-tab-link active" data-config-tab="clase">
-                                    <span class="dashicons dashicons-admin-settings"></span>
-                                    <span>Clase</span>
-                                </a>
-                                <a href="#" class="cpp-config-tab-link" data-config-tab="evaluaciones">
-                                    <span class="dashicons dashicons-chart-bar"></span>
-                                    <span>Evaluaciones</span>
-                                </a>
-                                <a href="#" class="cpp-config-tab-link" data-config-tab="calendario">
-                                    <span class="dashicons dashicons-calendar-alt"></span>
-                                    <span>Calendario</span>
-                                </a>
-                            </div>
-                            <div class="cpp-config-content-area">
-                                <div id="cpp-config-tab-clase" class="cpp-config-tab-content active">
-                                    <form id="cpp-form-clase" novalidate>
-                                        <input type="hidden" id="clase_id_editar" name="clase_id_editar" value="">
-                                        <h2 id="cpp-config-clase-titulo">Configuración de la Clase</h2>
-
-                                        <h3>Información General</h3>
-                                        <div class="cpp-form-group">
-                                            <label for="nombre_clase_config">Nombre de la clase (máx. 16 caracteres):</label>
-                                            <input type="text" id="nombre_clase_config" name="nombre_clase" required maxlength="16">
-                                        </div>
-                                        <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container" style="display: none;">
-                                            <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
-                                                <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
-                                                Rellenar la clase con datos de ejemplo
-                                            </label>
-                                        </div>
-                                        <div class="cpp-form-group">
-                                            <label>Color de la clase:</label>
-                                            <div class="cpp-color-swatches-container">
-                                                <?php foreach ($milan_vivid_colors as $hex => $name): ?>
-                                                    <span class="cpp-color-swatch <?php echo (strtoupper($hex) === strtoupper($default_class_color_hex)) ? 'selected' : ''; ?>" data-color="<?php echo esc_attr($hex); ?>" style="background-color: <?php echo esc_attr($hex); ?>;" title="<?php echo esc_attr($name); ?>"></span>
-                                                <?php endforeach; ?>
-                                            </div>
-                                            <input type="hidden" id="color_clase_hidden_config" name="color_clase" value="<?php echo esc_attr($default_class_color_hex); ?>">
-                                        </div>
-                                        <div class="cpp-form-group">
-                                            <label for="base_nota_final_clase_config">Base Nota Final (ej: 10, 100):</label>
-                                            <input type="number" id="base_nota_final_clase_config" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
-                                            <small>La nota final de los alumnos se calculará sobre esta base.</small>
-                                        </div>
-                                        <div class="cpp-form-group">
-                                            <label for="nota_aprobado_clase_config">Nota mínima para aprobar (ej: 5, 50):</label>
-                                            <input type="number" id="nota_aprobado_clase_config" name="nota_aprobado_clase" value="50" step="0.01" min="0" required>
-                                            <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
-                                        </div>
-
-                                        <div class="cpp-config-actions">
-                                            <button type="submit" class="cpp-btn cpp-btn-primary cpp-config-submit-btn" id="cpp-submit-clase-btn-config"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
-                                            <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-config-btn" style="display: none; margin-left: auto;"><span class="dashicons dashicons-trash"></span> Eliminar Clase</button>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div id="cpp-config-tab-evaluaciones" class="cpp-config-tab-content">
-                                    <div id="cpp-config-evaluaciones-container" class="cpp-config-section">
-                                        <p>Cargando evaluaciones...</p>
-                                    </div>
-                                    <hr class="cpp-config-divider">
-                                    <div id="cpp-config-ponderaciones-container" class="cpp-config-section">
-                                        <p>Selecciona una evaluación para ver sus ponderaciones.</p>
-                                    </div>
-                                </div>
-                                <div id="cpp-config-tab-calendario" class="cpp-config-tab-content">
-                                    <h2>Configuración del Calendario</h2>
-                                    <form id="cpp-config-form">
-                                        <div class="cpp-form-section">
-                                            <h3>Días lectivos</h3>
-                                            <div id="cpp-working-days" class="cpp-form-group">
-                                                <label><input type="checkbox" name="working_days" value="mon"> Lunes</label>
-                                                <label><input type="checkbox" name="working_days" value="tue"> Martes</label>
-                                                <label><input type="checkbox" name="working_days" value="wed"> Miércoles</label>
-                                                <label><input type="checkbox" name="working_days" value="thu"> Jueves</label>
-                                                <label><input type="checkbox" name="working_days" value="fri"> Viernes</label>
-                                                <label><input type="checkbox" name="working_days" value="sat"> Sábado</label>
-                                                <label><input type="checkbox" name="working_days" value="sun"> Domingo</label>
-                                            </div>
-                                        </div>
-                                        <div class="cpp-form-section">
-                                            <h3>Días festivos</h3>
-                                            <div id="cpp-holidays-list" class="cpp-dynamic-list"></div>
-                                            <div class="cpp-form-group">
-                                                <input type="date" id="cpp-new-holiday-date">
-                                                <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir festivo</button>
-                                            </div>
-                                        </div>
-                                        <div class="cpp-form-section">
-                                            <h3>Periodos de vacaciones</h3>
-                                            <div id="cpp-vacations-list" class="cpp-dynamic-list"></div>
-                                            <div class="cpp-form-group">
-                                                <label>Inicio: <input type="date" id="cpp-new-vacation-start"></label>
-                                                <label>Fin: <input type="date" id="cpp-new-vacation-end"></label>
-                                                <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir vacaciones</button>
-                                            </div>
-                                        </div>
-                                        <div class="cpp-config-actions">
-                                            <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <div id="cpp-sesion-modal" class="cpp-modal" style="display:none;">
                     <div class="cpp-modal-content">

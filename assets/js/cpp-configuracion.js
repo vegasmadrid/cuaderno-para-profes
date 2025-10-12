@@ -128,75 +128,95 @@
             });
         },
 
-        showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
+        showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) {
             if (e && typeof e.preventDefault === 'function') {
-                e.preventDefault(); e.stopPropagation();
+                e.preventDefault();
+                e.stopPropagation();
             }
+
             let claseId = claseIdFromParam;
-            if (!claseId && e && $(e.currentTarget).data('clase-id')) { 
+            if (!claseId && e && $(e.currentTarget).data('clase-id')) {
                 claseId = $(e.currentTarget).data('clase-id');
             }
-            if (!claseId && cpp.currentClaseIdCuaderno) { 
+            if (!claseId && cpp.currentClaseIdCuaderno) {
                 claseId = cpp.currentClaseIdCuaderno;
             }
-            
-            if (!claseId) { alert('Error: No se pudo identificar la clase para editar.'); return; }
-            
-            // Cambiar a la pestaña de configuración
-            $('.cpp-main-tab-link[data-tab="configuracion"]').trigger('click');
 
-            // Cerrar el sidebar si está abierto
+            if (!claseId) {
+                alert('Error: No se pudo identificar la clase para editar.');
+                return;
+            }
+
+            // Mostrar la página de configuración de clase y ocultar el contenido principal
+            $('#cpp-cuaderno-main-content').hide();
+            const $settingsPage = $('#cpp-class-settings-page-container');
+            $settingsPage.show();
+            $('body').addClass('cpp-fullscreen-active');
+
             if (cpp.sidebar && cpp.sidebar.isSidebarVisible) {
                 cpp.sidebar.toggle();
             }
 
-            const $configTab = $('#cpp-main-tab-configuracion');
-            const $form = $configTab.find('#cpp-form-clase');
-            
-            this.resetForm();
+            const $form = $settingsPage.find('#cpp-form-clase');
             this.currentClaseIdForConfig = claseId;
 
-            $('#cpp-opcion-clase-ejemplo-container').hide();
+            // No es necesario llamar a resetForm, ya que cargaremos datos nuevos
+            // y el estado del formulario se sobreescribirá.
+
+            $settingsPage.find('#cpp-opcion-clase-ejemplo-container').hide();
 
             $.ajax({
-                url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
-                data: { action: 'cpp_obtener_datos_clase_completa', nonce: cppFrontendData.nonce, clase_id: claseId },
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_obtener_datos_clase_completa',
+                    nonce: cppFrontendData.nonce,
+                    clase_id: claseId
+                },
                 success: (response) => {
                     if (response.success && response.data.clase) {
                         const clase = response.data.clase;
-                        if (!$configTab.length || !$form.length) { return; }
-                        
+
                         $form.find('#clase_id_editar').val(clase.id);
                         $form.find('#nombre_clase_config').val(clase.nombre);
-                        
-                        const $classSwatchesContainer = $configTab.find('.cpp-color-swatches-container:not(.cpp-category-color-swatches)');
+
+                        const $classSwatchesContainer = $settingsPage.find('.cpp-color-swatches-container:not(.cpp-category-color-swatches)');
                         let colorParaSeleccionar = clase.color || $classSwatchesContainer.find('.cpp-color-swatch:first').data('color') || '#2962FF';
-                        
-                        $('#color_clase_hidden_config').val(colorParaSeleccionar);
+
+                        $settingsPage.find('#color_clase_hidden_config').val(colorParaSeleccionar);
                         $classSwatchesContainer.find('.cpp-color-swatch').removeClass('selected');
                         $classSwatchesContainer.find(`.cpp-color-swatch[data-color="${colorParaSeleccionar.toUpperCase()}"]`).addClass('selected');
 
                         $form.find('#base_nota_final_clase_config').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
                         $form.find('#nota_aprobado_clase_config').val(clase.nota_aprobado ? parseFloat(clase.nota_aprobado).toFixed(2) : '50.00');
-                        $configTab.find('#cpp-config-clase-titulo').text(`Editar Clase: ${clase.nombre}`);
-                        $configTab.find('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
-                        $('#cpp-eliminar-clase-config-btn').show();
+                        // Actualizar el título de la página de ajustes
+                        $settingsPage.find('#cpp-class-settings-page-title').text(`Ajustes: ${clase.nombre}`);
+                        $form.find('#cpp-config-clase-titulo').text('Información General'); // El título del H2 dentro del form
                         
+                        $form.find('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
+                        $form.find('#cpp-eliminar-clase-config-btn').show();
+
+                        // Asegurarse de que la pestaña "Clase" esté activa
                         this.handleConfigTabClick(null, 'clase');
                         $form.find('#nombre_clase_config').focus();
 
-                        // Cargar datos en las otras pestañas
                         this.loadEvaluacionesData(claseId);
 
                     } else {
                         alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron cargar datos.'));
-                        this.resetForm();
+                        // Ocultar la página si falla la carga
+                        $('#cpp-class-settings-page-container').hide();
+                        $('#cpp-cuaderno-main-content').show();
+                        $('body').removeClass('cpp-fullscreen-active');
                     }
                 },
                 error: () => {
                     alert('Error de conexión al obtener datos.');
-                    this.resetForm();
+                    $('#cpp-class-settings-page-container').hide();
+                    $('#cpp-cuaderno-main-content').show();
+                    $('body').removeClass('cpp-fullscreen-active');
                 }
             });
         },
@@ -487,15 +507,49 @@
         },
 
         bindEvents: function() {
-            const $mainContent = $('#cpp-cuaderno-main-content');
             const $body = $('body');
+            const $classSettingsPage = $('#cpp-class-settings-page-container');
 
-            // --- Eventos de la Pestaña de Configuración ---
-            $mainContent.on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
+            // --- Eventos de las Páginas de Configuración ---
 
-            // Guardar/Eliminar desde la pestaña de configuración
-            $mainContent.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
-            $mainContent.on('click', '#cpp-eliminar-clase-config-btn', (e) => { this.eliminarDesdeConfig(e); });
+            // Abrir y cerrar la página de Ajustes Generales
+            $body.on('click', '#cpp-general-settings-btn', () => {
+                $('#cpp-cuaderno-main-content').hide();
+                $('#cpp-general-settings-page-container').show();
+                $('body').addClass('cpp-fullscreen-active');
+                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.populateConfigModal === 'function') {
+                    CppProgramadorApp.populateConfigModal();
+                }
+            });
+            $body.on('click', '#cpp-close-general-settings-btn', () => {
+                $('#cpp-general-settings-page-container').hide();
+                $('#cpp-cuaderno-main-content').show();
+                $('body').removeClass('cpp-fullscreen-active');
+            });
+
+            // Abrir la página de Ajustes de Clase desde el botón del sidebar
+            $body.on('click', '.cpp-sidebar-clase-settings-btn', (e) => {
+                this.showParaEditar(e);
+            });
+
+            // Cerrar la página de Ajustes de Clase
+            $body.on('click', '#cpp-close-class-settings-btn', () => {
+                $('#cpp-class-settings-page-container').hide();
+                $('#cpp-cuaderno-main-content').show();
+                $('body').removeClass('cpp-fullscreen-active');
+            });
+
+            // Abrir la página de Ajustes de Clase desde el botón del sidebar
+            $body.on('click', '.cpp-sidebar-clase-settings-btn', (e) => {
+                this.showParaEditar(e);
+            });
+
+            // --- Eventos de la Pestaña de Configuración (Ahora dentro de la página de ajustes de clase) ---
+            $classSettingsPage.on('click', '.cpp-config-tab-link', (e) => { this.handleConfigTabClick(e); });
+
+            // Guardar/Eliminar desde la página de configuración de clase
+            $classSettingsPage.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
+            $classSettingsPage.on('click', '#cpp-eliminar-clase-config-btn', (e) => { this.eliminarDesdeConfig(e); });
 
             // --- Eventos del Modal de Crear Clase ---
             $body.on('submit', '#cpp-form-crear-clase', (e) => { this.guardarDesdeModal(e); });
@@ -507,30 +561,28 @@
             });
             $body.on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
 
-            // --- Eventos Comunes de Evaluaciones / Ponderaciones (dentro de la pestaña de config) ---
-            $mainContent.on('change', '#cpp-ponderaciones-eval-selector', (e) => {
+            // --- Eventos Comunes de Evaluaciones / Ponderaciones (dentro de la página de config de clase) ---
+            $classSettingsPage.on('change', '#cpp-ponderaciones-eval-selector', (e) => {
                 const evaluacionId = $(e.currentTarget).val();
-                const $settingsContainer = $('#cpp-ponderaciones-settings-content');
+                const $settingsContainer = $classSettingsPage.find('#cpp-ponderaciones-settings-content');
                 if (evaluacionId) {
                     $settingsContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
                     if (cpp.modals.evaluacion && typeof cpp.modals.evaluacion.refreshCategoriasList === 'function') {
-                        cpp.modals.evaluacion.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
+                        cpp.modals.evaluacion.refreshCategoriasList(evaluacionId, '#cpp-class-settings-page-container #cpp-ponderaciones-settings-content');
                     }
                 } else {
                     $settingsContainer.empty();
                 }
             });
 
-            $('body').on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
-
             const evaluacionContainerSelector = '#cpp-config-evaluaciones-container';
 
-            $mainContent.on('click', `${evaluacionContainerSelector} #cpp-btn-add-evaluacion`, (e) => {
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} #cpp-btn-add-evaluacion`, (e) => {
                 const $button = $(e.currentTarget);
-                const $input = $('#cpp-nombre-nueva-evaluacion');
+                const $input = $classSettingsPage.find('#cpp-nombre-nueva-evaluacion');
                 const nombre = $input.val().trim();
                 const claseId = $button.data('clase-id') || this.currentClaseIdForConfig;
-                const sourceEvalId = $('#cpp-copy-from-eval-select').val() || '0';
+                const sourceEvalId = $classSettingsPage.find('#cpp-copy-from-eval-select').val() || '0';
 
                 if (!nombre) { alert('El nombre de la evaluación no puede estar vacío.'); $input.focus(); return; }
                 if (!claseId) { alert('Error: no se ha podido identificar la clase.'); return; }
@@ -554,7 +606,7 @@
                 });
             });
 
-            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-eliminar-evaluacion`, (e) => {
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-eliminar-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 const evaluacionId = $li.data('evaluacion-id');
@@ -575,7 +627,7 @@
                 }
             });
             
-            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-editar-evaluacion`, (e) => {
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-editar-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 $li.find('.cpp-evaluacion-nombre, .cpp-evaluacion-actions').hide();
@@ -589,14 +641,14 @@
                 $li.find('input[type="text"]').focus().select();
             });
 
-            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-cancel-edit-evaluacion`, (e) => {
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-cancel-edit-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 $li.find('.cpp-evaluacion-edit-form').remove();
                 $li.find('.cpp-evaluacion-nombre, .cpp-evaluacion-actions').show();
             });
 
-            $mainContent.on('click', `${evaluacionContainerSelector} .cpp-btn-save-evaluacion`, (e) => {
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-save-evaluacion`, (e) => {
                 e.preventDefault();
                 const $li = $(e.currentTarget).closest('li');
                 const evaluacionId = $li.data('evaluacion-id');
