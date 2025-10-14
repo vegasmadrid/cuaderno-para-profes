@@ -100,14 +100,14 @@
         },
 
         renderEvaluacionesDropdown: function(evaluaciones, evaluacionActivaId) {
-            const $container = $('#cpp-evaluacion-selector-container');
+            const $container = $('#cpp-global-evaluacion-selector-container');
             if (!$container.length) return;
             $container.empty();
             if (!evaluaciones || evaluaciones.length === 0) {
                 $container.html('<span class="cpp-no-evaluaciones-msg">Sin evaluaciones</span>');
                 return;
             }
-            let selectHtml = '<select id="cpp-evaluacion-selector">';
+            let selectHtml = '<select id="cpp-global-evaluacion-selector">';
             evaluaciones.forEach(function(evaluacion) {
                 const selected = evaluacion.id == evaluacionActivaId ? 'selected' : '';
                 selectHtml += `<option value="${evaluacion.id}" ${selected}>${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
@@ -384,12 +384,32 @@
                 }
             });
 
-            $document.on('change', '#cpp-evaluacion-selector', function(e) {
+            $document.on('change', '#cpp-global-evaluacion-selector', function(e) {
                 const nuevaEvaluacionId = $(this).val();
                 if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
+
+                    // Guardar la nueva evaluación en localStorage para persistencia
+                    const localStorageKey = self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
+                    try {
+                        localStorage.setItem(localStorageKey, nuevaEvaluacionId);
+                    } catch (err) {
+                        console.warn("No se pudo guardar la evaluación en localStorage:", err);
+                    }
+
+                    // Determinar qué vista está activa y recargarla
+                    const activeTab = $('.cpp-main-tab-link.active').data('tab');
+
+                    if (activeTab === 'cuaderno') {
+                        const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
+                        self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
+                    } else if (activeTab === 'programacion') {
+                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                            // Cargar la nueva evaluación en el programador.
+                            // La función loadClass ya se encarga de actualizar el currentEvaluacionId y renderizar.
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, nuevaEvaluacionId);
+                        }
+                    }
                 }
             });
 
