@@ -2038,3 +2038,71 @@ body.cpp-no-text-select {
     -ms-transform: translateX(22px);
     transform: translateX(22px);
 }
+
+/* Estilos para las nuevas páginas de configuración a pantalla completa */
+.cpp-fullscreen-settings-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f2f5;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.cpp-fullscreen-settings-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+    flex-shrink: 0;
+}
+
+.cpp-fullscreen-settings-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.cpp-close-fullscreen-btn {
+    margin-right: 15px;
+    color: #555;
+}
+
+.cpp-fullscreen-settings-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0; /* El padding lo maneja el contenedor interno */
+}
+
+/* Ocultar la barra de color de la clase cuando una página de ajustes está activa */
+body.cpp-fullscreen-active .cpp-cuaderno-main-content-classroom .cpp-fixed-top-bar {
+    border-top-color: transparent !important;
+}
+body.cpp-fullscreen-active .cpp-fixed-top-bar {
+    box-shadow: none !important;
+}
+
+
+/* Estilos para el nuevo botón de ajustes generales en la barra superior */
+.cpp-btn-general-settings {
+    margin-left: 10px;
+    color: #5f6368;
+    padding: 8px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.cpp-btn-general-settings:hover {
+    background-color: rgba(0,0,0,0.06);
+}
+.cpp-btn-general-settings .dashicons {
+    font-size: 22px;
+}

@@ -180,11 +180,14 @@
         // Modales
         this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
         this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
-        $document.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
-        $document.on('click', '.cpp-remove-holiday-btn', function() { self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
-        $document.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
-        $document.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
-        $document.on('submit', '#cpp-config-form', e => this.saveConfig(e));
+
+        // --- Eventos de Configuración General (delegados desde body) ---
+        const $body = $('body');
+        $body.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
+        $body.on('click', '.cpp-remove-holiday-btn', function() { self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
+        $body.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
         $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); });
