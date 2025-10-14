@@ -265,6 +265,10 @@ function cpp_ajax_save_programador_actividad() {
         $tabla_actividades = $wpdb->prefix . 'cpp_programador_actividades';
         $actividad_guardada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $result_id), ARRAY_A);
 
+        if ($actividad_guardada) {
+            $actividad_guardada['tipo'] = 'no_evaluable';
+        }
+
         wp_send_json_success(['message' => 'Actividad guardada.', 'actividad' => $actividad_guardada, 'needs_gradebook_reload' => true]);
 
     } else {

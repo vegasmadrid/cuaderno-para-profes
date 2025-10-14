@@ -117,6 +117,7 @@
         $document.on('click', '#cpp-add-actividad-no-evaluable-btn', function() { self.addNonEvaluableActividad(this.dataset.sesionId); });
         $document.on('click', '#cpp-add-actividad-evaluable-btn', function() { self.addEvaluableActividad(this.dataset.sesionId); });
         $document.on('click', '.cpp-edit-evaluable-btn', function() { self.editEvaluableActividad(this.dataset.actividadId); });
+        $document.on('click', '.cpp-edit-no-evaluable-btn', function() { self.editNonEvaluableActividad(this.dataset.actividadId); });
         $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
         $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
 
@@ -1284,6 +1285,9 @@
         let actionsHTML = '';
         if (isEvaluable) {
             actionsHTML = `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
+        } else {
+            // --- AÑADIDO: Botón de editar para actividades no evaluables ---
+            actionsHTML = `<button class="cpp-edit-no-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar">${editIconSVG}</button>`;
         }
 
         actionsHTML += `<button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="Eliminar">
@@ -1374,6 +1378,18 @@
                     this.showNotification(result.data.message || 'Error al cargar los datos de la actividad.', 'error');
                 }
             });
+    },
+
+    editNonEvaluableActividad(actividadId) {
+        const titleElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${actividadId}"]`);
+        if (titleElement) {
+            titleElement.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(titleElement);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
     },
 
     deleteActividad(actividadId, tipo) {
