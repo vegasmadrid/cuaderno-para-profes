@@ -383,9 +383,14 @@
                     }
                     this.currentSesion = newSesion;
 
-                    // --- DOM OPTIMIZATION ---
+                    // --- DOM OPTIMIZATION & CONDITIONAL SCROLL ---
                     const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                     const afterElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${afterId}"]`);
+
+                    // Comprobar si la sesión de referencia es la última ANTES de añadir la nueva
+                    const allSessionItems = list.querySelectorAll('.cpp-sesion-list-item');
+                    const isAfterLast = afterElement && allSessionItems.length > 0 && afterElement === allSessionItems[allSessionItems.length - 1];
+
                     const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                     const newDisplayIndex = sesionesFiltradas.findIndex(s => s.id == newSesion.id);
                     const newItemHTML = this.renderSingleSesionItemHTML(newSesion, newDisplayIndex);
@@ -402,12 +407,18 @@
 
                     const oldActive = list.querySelector('.cpp-sesion-list-item.active');
                     if (oldActive) oldActive.classList.remove('active');
+
                     const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
-                    if (newActiveElement) newActiveElement.classList.add('active');
+                    if (newActiveElement) {
+                        newActiveElement.classList.add('active');
+                        // Hacer scroll solo si se añadió después de la que era la última
+                        if (isAfterLast) {
+                            newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }
 
                     this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
                     this.makeActividadesSortable();
-                    this.scrollToSelectedSesion();
                     this.fetchAndApplyFechas(this.currentEvaluacionId);
 
                     // --- AÑADIDO: Recargar cuaderno si es necesario ---
@@ -1088,15 +1099,6 @@
                 }
                 // No hacemos nada en caso de error para no molestar al usuario
             }).catch(error => console.error('Error fetching session dates:', error));
-    },
-
-    scrollToSelectedSesion() {
-        if (!this.currentSesion) return;
-        const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
-        if (sesionElement) {
-            // --- FIX: Ya no se hace scroll para centrar el elemento ---
-            // sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
-        }
     },
 
     makeSesionesSortable() {
