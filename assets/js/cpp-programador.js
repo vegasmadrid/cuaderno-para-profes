@@ -117,6 +117,7 @@
         $document.on('click', '#cpp-add-actividad-no-evaluable-btn', function() { self.addNonEvaluableActividad(this.dataset.sesionId); });
         $document.on('click', '#cpp-add-actividad-evaluable-btn', function() { self.addEvaluableActividad(this.dataset.sesionId); });
         $document.on('click', '.cpp-edit-evaluable-btn', function() { self.editEvaluableActividad(this.dataset.actividadId); });
+        $document.on('click', '.cpp-edit-no-evaluable-btn', function() { self.editNonEvaluableActividad(this.dataset.actividadId); });
         $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
         $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
 
@@ -382,9 +383,14 @@
                     }
                     this.currentSesion = newSesion;
 
-                    // --- DOM OPTIMIZATION ---
+                    // --- DOM OPTIMIZATION & CONDITIONAL SCROLL ---
                     const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                     const afterElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${afterId}"]`);
+
+                    // Comprobar si la sesión de referencia es la última ANTES de añadir la nueva
+                    const allSessionItems = list.querySelectorAll('.cpp-sesion-list-item');
+                    const isAfterLast = afterElement && allSessionItems.length > 0 && afterElement === allSessionItems[allSessionItems.length - 1];
+
                     const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                     const newDisplayIndex = sesionesFiltradas.findIndex(s => s.id == newSesion.id);
                     const newItemHTML = this.renderSingleSesionItemHTML(newSesion, newDisplayIndex);
@@ -401,12 +407,18 @@
 
                     const oldActive = list.querySelector('.cpp-sesion-list-item.active');
                     if (oldActive) oldActive.classList.remove('active');
+
                     const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
-                    if (newActiveElement) newActiveElement.classList.add('active');
+                    if (newActiveElement) {
+                        newActiveElement.classList.add('active');
+                        // Hacer scroll solo si se añadió después de la que era la última
+                        if (isAfterLast) {
+                            newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }
 
                     this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
                     this.makeActividadesSortable();
-                    this.scrollToSelectedSesion();
                     this.fetchAndApplyFechas(this.currentEvaluacionId);
 
                     // --- AÑADIDO: Recargar cuaderno si es necesario ---
@@ -988,6 +1000,18 @@
         if (this.isProcessing) return;
         this.isProcessing = true;
 
+        // --- LÓGICA PARA SELECCIONAR LA SESIÓN ANTERIOR ---
+        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+        const currentIndex = sesionesFiltradas.findIndex(s => s.id == sesionId);
+        let nextSesionToSelect = null;
+        if (currentIndex > 0) {
+            nextSesionToSelect = sesionesFiltradas[currentIndex - 1];
+        } else if (sesionesFiltradas.length > 1) {
+            // Si se borra la primera y hay más, seleccionar la siguiente
+            nextSesionToSelect = sesionesFiltradas[1];
+        }
+        // Si no, nextSesionToSelect será null, que es el comportamiento deseado (ninguna seleccionada)
+
         const data = new URLSearchParams({
             action: 'cpp_delete_programador_sesion',
             nonce: cppFrontendData.nonce,
@@ -999,9 +1023,16 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    // Actualizar el array local de sesiones
+                    this.sesiones = this.sesiones.filter(s => s.id != sesionId);
 
+                    // Asignar la nueva sesión actual
+                    this.currentSesion = nextSesionToSelect;
+
+                    // Re-renderizar la UI
+                    this.render();
+
+                    // Forzar recarga del cuaderno si es necesario
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
                             cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
@@ -1087,15 +1118,6 @@
                 }
                 // No hacemos nada en caso de error para no molestar al usuario
             }).catch(error => console.error('Error fetching session dates:', error));
-    },
-
-    scrollToSelectedSesion() {
-        if (!this.currentSesion) return;
-        const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
-        if (sesionElement) {
-            // --- FIX: Ya no se hace scroll para centrar el elemento ---
-            // sesionElement.scrollIntoView({ behavior: 'auto', block: 'center' });
-        }
     },
 
     makeSesionesSortable() {
@@ -1284,6 +1306,9 @@
         let actionsHTML = '';
         if (isEvaluable) {
             actionsHTML = `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
+        } else {
+            // --- AÑADIDO: Botón de editar para actividades no evaluables ---
+            actionsHTML = `<button class="cpp-edit-no-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar">${editIconSVG}</button>`;
         }
 
         actionsHTML += `<button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="Eliminar">
@@ -1374,6 +1399,18 @@
                     this.showNotification(result.data.message || 'Error al cargar los datos de la actividad.', 'error');
                 }
             });
+    },
+
+    editNonEvaluableActividad(actividadId) {
+        const titleElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${actividadId}"]`);
+        if (titleElement) {
+            titleElement.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(titleElement);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
     },
 
     deleteActividad(actividadId, tipo) {
