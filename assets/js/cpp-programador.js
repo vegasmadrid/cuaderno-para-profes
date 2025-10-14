@@ -1000,6 +1000,18 @@
         if (this.isProcessing) return;
         this.isProcessing = true;
 
+        // --- LÓGICA PARA SELECCIONAR LA SESIÓN ANTERIOR ---
+        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+        const currentIndex = sesionesFiltradas.findIndex(s => s.id == sesionId);
+        let nextSesionToSelect = null;
+        if (currentIndex > 0) {
+            nextSesionToSelect = sesionesFiltradas[currentIndex - 1];
+        } else if (sesionesFiltradas.length > 1) {
+            // Si se borra la primera y hay más, seleccionar la siguiente
+            nextSesionToSelect = sesionesFiltradas[1];
+        }
+        // Si no, nextSesionToSelect será null, que es el comportamiento deseado (ninguna seleccionada)
+
         const data = new URLSearchParams({
             action: 'cpp_delete_programador_sesion',
             nonce: cppFrontendData.nonce,
@@ -1011,9 +1023,16 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    if (this.currentSesion && this.currentSesion.id == sesionId) this.currentSesion = null;
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    // Actualizar el array local de sesiones
+                    this.sesiones = this.sesiones.filter(s => s.id != sesionId);
 
+                    // Asignar la nueva sesión actual
+                    this.currentSesion = nextSesionToSelect;
+
+                    // Re-renderizar la UI
+                    this.render();
+
+                    // Forzar recarga del cuaderno si es necesario
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
                             cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
