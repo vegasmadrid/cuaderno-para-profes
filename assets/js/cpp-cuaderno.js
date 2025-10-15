@@ -322,8 +322,17 @@
                         console.error("Error: El objeto CppProgramadorApp no está disponible.");
                         $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
                     }
+                }
+
+                // --- Lógica de Sincronización ---
+                if (globalEvalId === 'final') {
+                    // Si es la Evaluación Final, forzar el renderizado del mensaje especial
+                    if (typeof CppProgramadorApp !== 'undefined') {
+                        CppProgramadorApp.currentEvaluacionId = 'final';
+                        CppProgramadorApp.renderProgramacionTab();
+                    }
                 } else {
-                    // Si ya está inicializado, forzar recarga si la clase o la evaluación no coinciden
+                    // Para cualquier otra evaluación, usar la lógica de carga normal
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
                         const claseNoCoincide = !CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno;
                         const evaluacionNoCoincide = CppProgramadorApp.currentEvaluacionId != globalEvalId;
@@ -333,7 +342,8 @@
                         }
                     }
                 }
-                // Renderizar la pestaña de la semana bajo demanda
+
+                // Renderizar la pestaña de la semana bajo demanda, si aplica
                 if (tabName === 'semana' && typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
                     CppProgramadorApp.renderSemanaTab();
                 }
