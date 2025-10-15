@@ -304,63 +304,43 @@
             }
 
             // 3. Lógica específica de la pestaña (efectos secundarios)
+            const globalEvalId = $('#cpp-global-evaluacion-selector').val();
             const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
+
             if (isProgramadorTab) {
-                // Inicializar el programador si es la primera vez que se accede a una de sus pestañas
+                // Inicializar el programador si es la primera vez
                 if (!this.programadorInicializado) {
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
                         if (cpp.currentClaseIdCuaderno) {
                             CppProgramadorApp.init(cpp.currentClaseIdCuaderno);
                             this.programadorInicializado = true;
                         } else {
-                            // Mostrar mensaje en todas las pestañas del programador si no hay clase
                             $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero.</p>');
                         }
                     } else {
                         console.error("Error: El objeto CppProgramadorApp no está disponible.");
-                         $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
+                        $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
                     }
                 } else {
-                    // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
+                    // Si ya está inicializado, forzar recarga si la clase o la evaluación no coinciden
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                        // Solo cargar la clase si es diferente a la actual para no perder el estado
-                        if (!CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno) {
-                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        const claseNoCoincide = !CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno;
+                        const evaluacionNoCoincide = CppProgramadorApp.currentEvaluacionId != globalEvalId;
+
+                        if (claseNoCoincide || evaluacionNoCoincide) {
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, globalEvalId);
                         }
                     }
                 }
-                    // Renderizar la pestaña de la semana bajo demanda
-                    if (tabName === 'semana') {
-                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
-                            CppProgramadorApp.renderSemanaTab();
-                        }
-                    }
-            } else if (tabName === 'configuracion') {
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    if (cpp.currentClaseIdCuaderno) {
-                        cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
-                    } else {
-                        // Si no hay clase abierta, la pestaña de configuración muestra por defecto
-                        // el formulario para crear una nueva clase, así que reseteamos a ese estado.
-                        cpp.config.resetForm();
-                    }
+                // Renderizar la pestaña de la semana bajo demanda
+                if (tabName === 'semana' && typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
+                    CppProgramadorApp.renderSemanaTab();
                 }
             } else if (tabName === 'cuaderno') {
-                // Sincronizar el cuaderno si la evaluación ha cambiado en otra pestaña
-                if (cpp.currentClaseIdCuaderno) {
-                    const localStorageKey = this.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
-                    let lastEvalIdFromStorage = null;
-                    try {
-                        lastEvalIdFromStorage = localStorage.getItem(localStorageKey);
-                    } catch (e) {
-                        console.warn("No se pudo leer de localStorage:", e);
-                    }
-
-                    if (lastEvalIdFromStorage && lastEvalIdFromStorage !== cpp.currentEvaluacionId) {
-                        console.log(`Sincronizando cuaderno a la evaluación ${lastEvalIdFromStorage} desde localStorage.`);
-                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                        this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, lastEvalIdFromStorage);
-                    }
+                // Forzar recarga del cuaderno si la evaluación activa no coincide con la del selector global
+                if (cpp.currentClaseIdCuaderno && cpp.currentEvaluacionId != globalEvalId) {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
                 }
             }
         },
