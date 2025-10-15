@@ -1132,6 +1132,19 @@
             content.innerHTML = '<p>Selecciona una clase para ver la programación.</p>';
             return;
         }
+
+        // --- AÑADIDO: Manejar el caso especial de "Evaluación Final" ---
+        if (this.currentEvaluacionId === 'final') {
+            content.innerHTML = `
+                <div class="cpp-no-alumnos-container cpp-no-sesiones-container">
+                    <div class="cpp-no-alumnos-emoji">🤖</div>
+                    <h3 class="cpp-no-alumnos-titulo">¡Vista solo para robots!</h3>
+                    <p class="cpp-no-alumnos-texto">La Evaluación Final se calcula automáticamente y no necesita que planifiques sesiones. ¡Relájate y deja que la magia de las mates haga su trabajo! ✨</p>
+                </div>
+            `;
+            return;
+        }
+
         let evaluacionOptions = '', startDate = '';
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         if (this.currentClase.evaluaciones.length > 0) {
