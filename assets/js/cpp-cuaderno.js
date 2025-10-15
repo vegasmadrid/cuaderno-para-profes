@@ -158,6 +158,7 @@
 
                             // Cargar solo el contenido de la tabla en su contenedor
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
+                            $contenidoCuaderno.attr('data-active-eval', response.data.evaluacion_activa_id);
 
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
@@ -337,8 +338,9 @@
                     CppProgramadorApp.renderSemanaTab();
                 }
             } else if (tabName === 'cuaderno') {
-                // Forzar recarga del cuaderno si la evaluación activa no coincide con la del selector global
-                if (cpp.currentClaseIdCuaderno && cpp.currentEvaluacionId != globalEvalId) {
+                // Forzar recarga del cuaderno si la evaluación activa del contenedor no coincide con la del selector global
+                const activeEvalInCuaderno = $('#cpp-cuaderno-contenido').attr('data-active-eval');
+                if (cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
                 }
