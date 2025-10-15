@@ -429,7 +429,7 @@
         }
 
         // Priorizar el ID de evaluación pasado explícitamente (o desde pendingNavigation)
-        if (evaluacionIdToSelect && this.currentClase.evaluaciones.some(e => e.id == evaluacionIdToSelect)) {
+        if (evaluacionIdToSelect && (evaluacionIdToSelect === 'final' || this.currentClase.evaluaciones.some(e => e.id == evaluacionIdToSelect))) {
             this.currentEvaluacionId = evaluacionIdToSelect;
         } else {
             // Si no hay uno explícito, usar el de localStorage
