@@ -143,31 +143,6 @@
         });
         $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
         $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
-        $document.on('change', '#cpp-programador-app #cpp-programacion-evaluacion-selector', function() {
-            const newEvalId = this.value;
-            self.currentEvaluacionId = newEvalId;
-
-            // Guardar en localStorage
-            if (self.currentClase) {
-                const localStorageKey = 'cpp_last_opened_eval_clase_' + self.currentClase.id;
-                try {
-                    localStorage.setItem(localStorageKey, newEvalId);
-                } catch (e) {
-                    console.warn("No se pudo guardar en localStorage:", e);
-                }
-            }
-
-            // Sincronizar con el estado global
-            if (typeof cpp !== 'undefined') {
-                cpp.currentEvaluacionId = newEvalId;
-            }
-
-            self.currentSesion = null;
-            self.selectedSesiones = [];
-            self.render();
-            // --- FIX: Cargar fechas en segundo plano ---
-            self.fetchAndApplyFechas(self.currentEvaluacionId);
-        });
         $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
         // Edición Inline
@@ -454,7 +429,7 @@
         }
 
         // Priorizar el ID de evaluación pasado explícitamente (o desde pendingNavigation)
-        if (evaluacionIdToSelect && this.currentClase.evaluaciones.some(e => e.id == evaluacionIdToSelect)) {
+        if (evaluacionIdToSelect && (evaluacionIdToSelect === 'final' || this.currentClase.evaluaciones.some(e => e.id == evaluacionIdToSelect))) {
             this.currentEvaluacionId = evaluacionIdToSelect;
         } else {
             // Si no hay uno explícito, usar el de localStorage
@@ -1157,10 +1132,22 @@
             content.innerHTML = '<p>Selecciona una clase para ver la programación.</p>';
             return;
         }
+
+        // --- AÑADIDO: Manejar el caso especial de "Evaluación Final" ---
+        if (this.currentEvaluacionId === 'final') {
+            content.innerHTML = `
+                <div class="cpp-no-alumnos-container cpp-no-sesiones-container">
+                    <div class="cpp-no-alumnos-emoji">🤖</div>
+                    <h3 class="cpp-no-alumnos-titulo">¡Vista solo para robots!</h3>
+                    <p class="cpp-no-alumnos-texto">La Evaluación Final se calcula automáticamente y no necesita que planifiques sesiones. ¡Relájate y deja que la magia de las mates haga su trabajo! ✨</p>
+                </div>
+            `;
+            return;
+        }
+
         let evaluacionOptions = '', startDate = '';
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
         if (this.currentClase.evaluaciones.length > 0) {
-            evaluacionOptions = this.currentClase.evaluaciones.map(e => `<option value="${e.id}" ${e.id == this.currentEvaluacionId ? 'selected' : ''}>${e.nombre_evaluacion}</option>`).join('');
             if (currentEval) startDate = currentEval.start_date || '';
         }
 
@@ -1170,7 +1157,6 @@
         let controlsHTML = `
             <div class="cpp-programacion-controls">
                 <div class="cpp-programacion-main-controls">
-                    <label>Evaluación: <select id="cpp-programacion-evaluacion-selector" ${!evaluacionOptions ? 'disabled' : ''}>${evaluacionOptions || '<option>Sin evaluaciones</option>'}</select></label>
                     <label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label>
                 </div>
                 <div class="cpp-programacion-action-controls">

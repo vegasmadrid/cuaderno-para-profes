@@ -213,6 +213,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
                     </button>
                     <span id="cpp-cuaderno-nombre-clase-activa-a1" class="cpp-top-bar-class-name"></span>
+                    <div id="cpp-global-evaluacion-selector-container" class="cpp-global-evaluacion-selector"></div>
                 </div>
                 <div class="cpp-top-bar-center cpp-tabs-clase-specific">
                     <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>

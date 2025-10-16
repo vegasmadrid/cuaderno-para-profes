@@ -100,14 +100,14 @@
         },
 
         renderEvaluacionesDropdown: function(evaluaciones, evaluacionActivaId) {
-            const $container = $('#cpp-evaluacion-selector-container');
+            const $container = $('#cpp-global-evaluacion-selector-container');
             if (!$container.length) return;
             $container.empty();
             if (!evaluaciones || evaluaciones.length === 0) {
                 $container.html('<span class="cpp-no-evaluaciones-msg">Sin evaluaciones</span>');
                 return;
             }
-            let selectHtml = '<select id="cpp-evaluacion-selector">';
+            let selectHtml = '<select id="cpp-global-evaluacion-selector">';
             evaluaciones.forEach(function(evaluacion) {
                 const selected = evaluacion.id == evaluacionActivaId ? 'selected' : '';
                 selectHtml += `<option value="${evaluacion.id}" ${selected}>${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
@@ -158,6 +158,7 @@
 
                             // Cargar solo el contenido de la tabla en su contenedor
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
+                            $contenidoCuaderno.attr('data-active-eval', response.data.evaluacion_activa_id);
 
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
@@ -304,63 +305,54 @@
             }
 
             // 3. Lógica específica de la pestaña (efectos secundarios)
+            const globalEvalId = $('#cpp-global-evaluacion-selector').val();
             const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
+
             if (isProgramadorTab) {
-                // Inicializar el programador si es la primera vez que se accede a una de sus pestañas
+                // Inicializar el programador si es la primera vez
                 if (!this.programadorInicializado) {
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
                         if (cpp.currentClaseIdCuaderno) {
                             CppProgramadorApp.init(cpp.currentClaseIdCuaderno);
                             this.programadorInicializado = true;
                         } else {
-                            // Mostrar mensaje en todas las pestañas del programador si no hay clase
                             $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero.</p>');
                         }
                     } else {
                         console.error("Error: El objeto CppProgramadorApp no está disponible.");
-                         $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
+                        $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
+                    }
+                }
+
+                // --- Lógica de Sincronización ---
+                if (globalEvalId === 'final') {
+                    // Si es la Evaluación Final, forzar el renderizado del mensaje especial
+                    if (typeof CppProgramadorApp !== 'undefined') {
+                        CppProgramadorApp.currentEvaluacionId = 'final';
+                        CppProgramadorApp.renderProgramacionTab();
                     }
                 } else {
-                    // Si ya está inicializado, solo asegúrate de que tiene la clase correcta
+                    // Para cualquier otra evaluación, usar la lógica de carga normal
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                        // Solo cargar la clase si es diferente a la actual para no perder el estado
-                        if (!CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno) {
-                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno);
+                        const claseNoCoincide = !CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno;
+                        const evaluacionNoCoincide = CppProgramadorApp.currentEvaluacionId != globalEvalId;
+
+                        if (claseNoCoincide || evaluacionNoCoincide) {
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, globalEvalId);
                         }
                     }
                 }
-                    // Renderizar la pestaña de la semana bajo demanda
-                    if (tabName === 'semana') {
-                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
-                            CppProgramadorApp.renderSemanaTab();
-                        }
-                    }
-            } else if (tabName === 'configuracion') {
-                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
-                    if (cpp.currentClaseIdCuaderno) {
-                        cpp.config.showParaEditar(null, false, cpp.currentClaseIdCuaderno);
-                    } else {
-                        // Si no hay clase abierta, la pestaña de configuración muestra por defecto
-                        // el formulario para crear una nueva clase, así que reseteamos a ese estado.
-                        cpp.config.resetForm();
-                    }
+
+                // Renderizar la pestaña de la semana bajo demanda, si aplica
+                if (tabName === 'semana' && typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
+                    CppProgramadorApp.renderSemanaTab();
                 }
             } else if (tabName === 'cuaderno') {
-                // Sincronizar el cuaderno si la evaluación ha cambiado en otra pestaña
-                if (cpp.currentClaseIdCuaderno) {
-                    const localStorageKey = this.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
-                    let lastEvalIdFromStorage = null;
-                    try {
-                        lastEvalIdFromStorage = localStorage.getItem(localStorageKey);
-                    } catch (e) {
-                        console.warn("No se pudo leer de localStorage:", e);
-                    }
-
-                    if (lastEvalIdFromStorage && lastEvalIdFromStorage !== cpp.currentEvaluacionId) {
-                        console.log(`Sincronizando cuaderno a la evaluación ${lastEvalIdFromStorage} desde localStorage.`);
-                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                        this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, lastEvalIdFromStorage);
-                    }
+                // Forzar recarga del cuaderno si la evaluación activa del contenedor no coincide con la del selector global
+                const activeEvalInCuaderno = $('#cpp-cuaderno-contenido').attr('data-active-eval');
+                if (cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId) {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
                 }
             }
         },
@@ -384,12 +376,32 @@
                 }
             });
 
-            $document.on('change', '#cpp-evaluacion-selector', function(e) {
+            $document.on('change', '#cpp-global-evaluacion-selector', function(e) {
                 const nuevaEvaluacionId = $(this).val();
                 if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
+
+                    // Guardar la nueva evaluación en localStorage para persistencia
+                    const localStorageKey = self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno;
+                    try {
+                        localStorage.setItem(localStorageKey, nuevaEvaluacionId);
+                    } catch (err) {
+                        console.warn("No se pudo guardar la evaluación en localStorage:", err);
+                    }
+
+                    // Determinar qué vista está activa y recargarla
+                    const activeTab = $('.cpp-main-tab-link.active').data('tab');
+
+                    if (activeTab === 'cuaderno') {
+                        const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
+                        self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
+                    } else if (activeTab === 'programacion') {
+                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                            // Cargar la nueva evaluación en el programador.
+                            // La función loadClass ya se encarga de actualizar el currentEvaluacionId y renderizar.
+                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, nuevaEvaluacionId);
+                        }
+                    }
                 }
             });
 

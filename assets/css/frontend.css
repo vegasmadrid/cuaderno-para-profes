@@ -470,6 +470,38 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     gap: 15px;
 }
 
+.cpp-global-evaluacion-selector {
+    margin-left: 16px;
+}
+
+#cpp-global-evaluacion-selector {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    max-width: 250px;
+}
+
+#cpp-global-evaluacion-selector:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+#cpp-global-evaluacion-selector:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+#cpp-global-evaluacion-selector option {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
 .cpp-symbol-item {
     flex: 0 0 40px; /* Ancho fijo para el símbolo */
     height: 40px;
@@ -1567,37 +1599,6 @@ body.cpp-no-text-select {
     align-items: stretch; /* Estirar items */
     height: 100%;
     padding: 8px;
-}
-
-.cpp-a1-evaluacion-selector {
-    width: 100%;
-    margin-bottom: 8px;
-}
-
-#cpp-evaluacion-selector {
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 13px;
-    font-weight: 500;
-    border-radius: 4px;
-    background-color: #f1f3f4;
-    color: #3c4043;
-    border: 1px solid #e0e0e0;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
-    background-size: 1em;
-    padding-right: 2rem;
-    cursor: pointer;
-}
-
-#cpp-evaluacion-selector:focus {
-    outline: none;
-    border-color: #1a73e8;
-    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
 }
 
 .cpp-a1-icons-row {
