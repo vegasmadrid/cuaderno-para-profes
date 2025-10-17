@@ -170,6 +170,8 @@
         $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
+        $document.on('click', '#cpp-fijar-selected-btn', () => self.toggleSesionFijada(true));
+        $document.on('click', '#cpp-desfijar-selected-btn', () => self.toggleSesionFijada(false));
         $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
@@ -1221,8 +1223,11 @@
         const simboloHTML = simboloData ? `<span class="cpp-sesion-simbolo">${simboloData.simbolo}</span>` : '';
         const simboloTitle = simboloData ? simboloData.leyenda : '';
 
+        const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${new Date(s.fecha_fijada + 'T12:00:00Z').toLocaleDateString('es-ES')}">📌</span>` : '';
+
         return `
         <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''} ${todayClass}" data-sesion-id="${s.id}">
+            ${fijadaIconHTML}
             <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
             <span class="cpp-sesion-handle">⠿</span>
             <span class="cpp-sesion-number">${index + 1}.</span>
@@ -1846,7 +1851,19 @@
 
         if (this.selectedSesiones.length > 0) {
             const count = this.selectedSesiones.length;
+
+            // Comprobar si alguna de las sesiones seleccionadas ya está fijada
+            const algunaFijada = this.selectedSesiones.some(id => {
+                const sesion = this.sesiones.find(s => s.id == id);
+                return sesion && sesion.fecha_fijada;
+            });
+
+            const botonFijarHTML = `<button id="cpp-fijar-selected-btn" class="cpp-btn cpp-btn-secondary" title="Fijar la fecha calculada actual para estas sesiones">Fijar Fecha</button>`;
+            const botonDesfijarHTML = `<button id="cpp-desfijar-selected-btn" class="cpp-btn cpp-btn-secondary" title="Permitir que estas sesiones se muevan de nuevo">Desfijar Fecha</button>`;
+
             container.innerHTML = `
+                ${!algunaFijada ? botonFijarHTML : ''}
+                ${algunaFijada ? botonDesfijarHTML : ''}
                 <button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-primary">Copiar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
@@ -1856,6 +1873,61 @@
             container.innerHTML = '';
             container.classList.add('hidden');
         }
+    },
+
+    toggleSesionFijada(fijar) {
+        if (this.selectedSesiones.length === 0) {
+            return;
+        }
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const data = new URLSearchParams({
+            action: 'cpp_toggle_sesion_fijada',
+            nonce: cppFrontendData.nonce,
+            session_ids: JSON.stringify(this.selectedSesiones),
+            fijar: fijar
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification(result.data.message || 'Operación completada.');
+
+                    // Actualizar los datos locales de las sesiones afectadas
+                    this.selectedSesiones.forEach(id => {
+                        const sesion = this.sesiones.find(s => s.id == id);
+                        if (sesion) {
+                            // Si la operación fue fijar, la nueva fecha fijada vendrá en la respuesta
+                            if (fijar && result.data.fechas && result.data.fechas[id]) {
+                                sesion.fecha_fijada = result.data.fechas[id].fecha;
+                            } else {
+                                sesion.fecha_fijada = null;
+                            }
+                        }
+                    });
+
+                    // Limpiar selección y actualizar UI
+                    this.selectedSesiones = [];
+                    this.updateBulkActionsUI();
+
+                    // Re-renderizar la lista y aplicar las nuevas fechas
+                    this.renderProgramacionTab();
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+
+                    if (result.data.needs_gradebook_reload) {
+                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                            cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        }
+                    }
+                } else {
+                    alert(result.data.message || 'Error al realizar la operación.');
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+            });
     },
 
     openCopySesionModal() {

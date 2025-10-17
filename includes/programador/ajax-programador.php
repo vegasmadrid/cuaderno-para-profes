@@ -17,6 +17,7 @@ add_action('wp_ajax_cpp_check_schedule_conflict', 'cpp_ajax_check_schedule_confl
 add_action('wp_ajax_cpp_copy_multiple_sesiones', 'cpp_ajax_copy_sessions');
 add_action('wp_ajax_cpp_delete_multiple_sesiones', 'cpp_ajax_delete_multiple_sesiones');
 add_action('wp_ajax_cpp_get_fechas_evaluacion', 'cpp_ajax_get_fechas_evaluacion');
+add_action('wp_ajax_cpp_toggle_sesion_fijada', 'cpp_ajax_toggle_sesion_fijada');
 
 
 // Handlers para Actividades
@@ -508,6 +509,55 @@ function cpp_ajax_get_fechas_evaluacion() {
 
     $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
     wp_send_json_success(['fechas' => $fechas]);
+}
+
+function cpp_ajax_toggle_sesion_fijada() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $session_ids = isset($_POST['session_ids']) ? json_decode(stripslashes($_POST['session_ids']), true) : null;
+    $fijar = isset($_POST['fijar']) ? ($_POST['fijar'] === 'true') : false; // 'true' o 'false' como string
+
+    if (empty($session_ids) || !is_array($session_ids)) {
+        wp_send_json_error(['message' => 'No se han proporcionado IDs de sesión válidos.']);
+        return;
+    }
+
+    // Obtener la información de la primera sesión para saber a qué evaluación pertenece
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $first_sesion_id = intval($session_ids[0]);
+    $sesion_info = $wpdb->get_row($wpdb->prepare(
+        "SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d AND user_id = %d",
+        $first_sesion_id, $user_id
+    ));
+
+    if (!$sesion_info) {
+        wp_send_json_error(['message' => 'No se encontró la sesión o no tienes permisos.']);
+        return;
+    }
+
+    $result = cpp_programador_toggle_sesion_fijada($session_ids, $fijar, $user_id);
+
+    if ($result) {
+        // Resincronizar las fechas de toda la evaluación afectada
+        cpp_resincronizar_fechas_actividades_evaluables($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
+
+        // Devolver las nuevas fechas para actualizar la UI
+        $fechas_actualizadas = cpp_programador_get_fechas_for_evaluacion($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
+
+        wp_send_json_success([
+            'message' => 'Estado de fijación actualizado.',
+            'needs_gradebook_reload' => true,
+            'fechas' => $fechas_actualizadas
+        ]);
+    } else {
+        wp_send_json_error(['message' => 'Error al actualizar el estado de fijación.']);
+    }
 }
 
 
