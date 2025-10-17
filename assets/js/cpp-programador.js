@@ -381,13 +381,47 @@
                             return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
                         });
 
-                        // Re-renderizar todo para reflejar el nuevo orden
-                        this.renderProgramacionTab();
+                        // --- FIX v2: Reordenar el DOM en lugar de redibujar para evitar el salto de scroll ---
 
-                        // Asegurarse de que el elemento recién añadido es visible
-                        const newActiveElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
-                        if (newActiveElement) {
-                            newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        if (list) {
+                            // 1. Añadir el nuevo elemento al DOM (puede estar en la posición incorrecta temporalmente)
+                            const sesionesFiltradasAntes = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            const lastSesionElement = list.querySelector('.cpp-sesion-list-item:last-child');
+                            const newItemHTML = this.renderSingleSesionItemHTML(newSesion, sesionesFiltradasAntes.length); // Renderizar como si fuera el último
+                            list.insertAdjacentHTML('beforeend', newItemHTML);
+
+                            // 2. Reordenar el array de datos
+                             this.sesiones.sort((a, b) => {
+                                if (!a.fecha_calculada) return 1;
+                                if (!b.fecha_calculada) return -1;
+                                return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
+                            });
+
+                            // 3. Reordenar el DOM basándose en el array de datos
+                            const sesionesFiltradasDespues = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            sesionesFiltradasDespues.forEach((sesion, index) => {
+                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                                if (item) {
+                                    item.style.order = index;
+                                    item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
+                                }
+                            });
+                            list.style.display = 'flex';
+                            list.style.flexDirection = 'column';
+
+                             // 4. Actualizar estado y hacer scroll
+                            const oldActive = list.querySelector('.cpp-sesion-list-item.active');
+                            if (oldActive) oldActive.classList.remove('active');
+
+                            const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
+                             if (newActiveElement) {
+                                newActiveElement.classList.add('active');
+                                newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+
+                            this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
+                            this.makeActividadesSortable();
                         }
                     });
 
@@ -1905,8 +1939,20 @@
                         }
                     }
 
+                    // --- FIX: Forzar la actualización del item para que el icono de la chincheta aparezca/desaparezca ---
+                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    if (list) {
+                        const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                        if (listItem) {
+                             const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                             const displayIndex = sesionesFiltradas.findIndex(s => s.id == sesion.id);
+                             listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
+                        }
+                    }
+
                     // 2. Refrescar solo las fechas, que a su vez actualiza el HTML del item
                     this.fetchAndApplyFechas(this.currentEvaluacionId);
+
 
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
