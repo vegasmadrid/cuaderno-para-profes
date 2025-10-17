@@ -212,6 +212,60 @@ function cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities 
     return true;
 }
 
+function cpp_programador_toggle_sesion_fijada($session_ids, $fijar, $user_id) {
+    global $wpdb;
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+
+    if (empty($session_ids) || !is_array($session_ids)) {
+        return false;
+    }
+
+    $wpdb->query('START TRANSACTION');
+
+    foreach ($session_ids as $sesion_id) {
+        $sesion_id = intval($sesion_id);
+
+        // Verificar que el usuario es el propietario
+        $owner_check = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+        if ($owner_check != $user_id) {
+            $wpdb->query('ROLLBACK');
+            return false;
+        }
+
+        if ($fijar) {
+            // Obtener la fecha calculada actual para fijarla
+            // Necesitamos todos los datos para llamar a la función de cálculo
+            $sesion_info = $wpdb->get_row($wpdb->prepare("SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d", $sesion_id));
+            if (!$sesion_info) continue; // Si no se encuentra, saltar
+
+            $fechas_evaluacion = cpp_programador_get_fechas_for_evaluacion($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
+
+            if (isset($fechas_evaluacion[$sesion_id]['fecha'])) {
+                $fecha_a_fijar = $fechas_evaluacion[$sesion_id]['fecha'];
+                $wpdb->update(
+                    $tabla_sesiones,
+                    ['fecha_fijada' => $fecha_a_fijar],
+                    ['id' => $sesion_id],
+                    ['%s'],
+                    ['%d']
+                );
+            }
+        } else {
+            // Desfijar la sesión poniendo la fecha a NULL
+            $wpdb->update(
+                $tabla_sesiones,
+                ['fecha_fijada' => null],
+                ['id' => $sesion_id],
+                [null],
+                ['%d']
+            );
+        }
+    }
+
+    $wpdb->query('COMMIT');
+    return true;
+}
+
 function cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities) {
     global $wpdb;
     if (empty($session_ids) || !is_array($session_ids)) {
@@ -565,20 +619,37 @@ function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluaci
         return [];
     }
 
-    $schedule = [];
+    $sesiones_fijadas = [];
+    $sesiones_no_fijadas = [];
+    foreach ($sesiones_en_evaluacion as $sesion) {
+        if (!empty($sesion->fecha_fijada)) {
+            $sesiones_fijadas[] = $sesion;
+        } else {
+            $sesiones_no_fijadas[] = $sesion;
+        }
+    }
 
+    $occupied_slots_by_fixed_sessions = [];
+    foreach ($sesiones_fijadas as $sesion_fijada) {
+        // Asumimos que la sesión fijada ocupa todos los slots de ese día para esa clase, para simplificar y evitar conflictos.
+        // Una mejora futura podría ser más granular si se necesita.
+        $occupied_slots_by_fixed_sessions[] = $sesion_fijada->fecha_fijada;
+    }
+    $occupied_slots_by_fixed_sessions = array_unique($occupied_slots_by_fixed_sessions);
+
+    $schedule = [];
     try {
         $current_date = new DateTime($start_date_str . 'T12:00:00Z');
     } catch (Exception $e) {
-        return []; // Invalid date format
+        return []; // Formato de fecha inválido
     }
 
     $session_index = 0;
     $safety_counter = 0;
-    $max_iterations = 365 * 5; // 5 years of margin
+    $max_iterations = 365 * 5;
 
-    while ($session_index < count($sesiones_en_evaluacion) && $safety_counter < $max_iterations) {
-        $day_key = strtolower($current_date->format('D')); // mon, tue, etc.
+    while ($session_index < count($sesiones_no_fijadas) && $safety_counter < $max_iterations) {
+        $day_key = strtolower($current_date->format('D'));
         $ymd = $current_date->format('Y-m-d');
 
         $is_working_day = in_array($day_key, $calendar_config['working_days']);
@@ -593,14 +664,19 @@ function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluaci
             }
         }
 
-        if ($is_working_day && !$is_holiday && !$is_vacation && isset($horario[$day_key])) {
+        // --- LÓGICA CLAVE ---
+        // Saltar el día si está ocupado por una sesión fijada
+        $is_occupied_by_fixed = in_array($ymd, $occupied_slots_by_fixed_sessions);
+
+        if ($is_working_day && !$is_holiday && !$is_vacation && !$is_occupied_by_fixed && isset($horario[$day_key])) {
             $slots_del_dia = $horario[$day_key];
             ksort($slots_del_dia);
 
             foreach ($slots_del_dia as $slot => $slot_data) {
                 if (isset($slot_data['claseId']) && strval($slot_data['claseId']) === strval($clase_id)) {
-                    if ($session_index < count($sesiones_en_evaluacion)) {
-                        $schedule[] = $ymd . '_' . $slot;
+                    if ($session_index < count($sesiones_no_fijadas)) {
+                        // Importante: Guardar el ID de la sesión junto con su fecha calculada
+                        $schedule[$sesiones_no_fijadas[$session_index]->id] = $ymd . '_' . $slot;
                         $session_index++;
                     }
                 }
@@ -611,7 +687,34 @@ function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluaci
         $safety_counter++;
     }
 
-    return $schedule;
+    // Añadir las sesiones fijadas al schedule
+    foreach ($sesiones_fijadas as $sesion_fijada) {
+        // Para las sesiones fijadas, necesitamos encontrar un slot válido en su día fijado.
+        // Usaremos el primer slot disponible para esa clase en ese día.
+        $day_key_fijado = strtolower((new DateTime($sesion_fijada->fecha_fijada))->format('D'));
+        $slot_encontrado = '00:00'; // Fallback
+        if (isset($horario[$day_key_fijado])) {
+             $slots_del_dia_fijado = $horario[$day_key_fijado];
+             ksort($slots_del_dia_fijado);
+             foreach($slots_del_dia_fijado as $slot => $slot_data) {
+                 if (isset($slot_data['claseId']) && strval($slot_data['claseId']) === strval($clase_id)) {
+                     $slot_encontrado = $slot;
+                     break;
+                 }
+             }
+        }
+        $schedule[$sesion_fijada->id] = $sesion_fijada->fecha_fijada . '_' . $slot_encontrado;
+    }
+
+    // Finalmente, necesitamos devolver un array ordenado según el `orden` original de las sesiones.
+    $final_ordered_schedule = [];
+    foreach ($sesiones_en_evaluacion as $sesion) {
+        if (isset($schedule[$sesion->id])) {
+            $final_ordered_schedule[] = $schedule[$sesion->id];
+        }
+    }
+
+    return $final_ordered_schedule;
 }
 
 /**
