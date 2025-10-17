@@ -367,12 +367,24 @@ function cpp_ajax_guardar_calificacion_alumno() {
     if ($base_nota_final_clase <= 0) { $base_nota_final_clase = 100.00; }
 
     $calculo_result = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
-    $nota_final_alumno_0_100 = $calculo_result['nota']; // Acceder a la nota desde el array
 
-    $nota_final_reescalada = ($nota_final_alumno_0_100 / 100) * $base_nota_final_clase;
+    // Preparar el objeto de respuesta completo
+    $nota_final_reescalada = ($calculo_result['nota'] / 100) * $base_nota_final_clase;
     $decimales_nota_final = 2;
-    if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) { $decimales_nota_final = 0; }
-    wp_send_json_success([ 'message' => 'Calificación guardada.', 'alumno_id' => $alumno_id, 'nota_final_alumno' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final) ]);
+    if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) {
+        $decimales_nota_final = 0;
+    }
+
+    $response_data = [
+        'message' => 'Calificación guardada.',
+        'alumno_id' => $alumno_id,
+        'nota_final_alumno_display' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final),
+        'is_incomplete' => $calculo_result['is_incomplete'],
+        'used_categories' => $calculo_result['used_categories'],
+        'missing_categories' => $calculo_result['missing_categories']
+    ];
+
+    wp_send_json_success($response_data);
 }
 
 add_action('wp_ajax_cpp_eliminar_actividad', 'cpp_ajax_eliminar_actividad');

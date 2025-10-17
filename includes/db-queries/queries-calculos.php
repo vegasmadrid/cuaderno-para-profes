@@ -106,6 +106,11 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         $missing_categories_names = [];
         $is_incomplete = false;
         foreach ($map_categorias as $id => $cat_data) {
+            // Ignorar la categoría "Sin categoría" en la lógica de advertencia
+            if ($cat_data['nombre'] === 'Sin categoría') {
+                continue;
+            }
+
             if (isset($categorias_con_nota[$id])) {
                 $used_categories_names[] = $cat_data['nombre'];
             } else {
