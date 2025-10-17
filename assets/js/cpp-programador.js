@@ -371,43 +371,25 @@
                     }
                     this.currentSesion = newSesion;
 
-                    // --- DOM OPTIMIZATION & CONDITIONAL SCROLL ---
-                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
-                    const afterElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${afterId}"]`);
+                    // --- FIX: Reordenar y redibujar para asegurar orden cronológico ---
+                    this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
+                        // Reordenar el array de sesiones principal por fecha
+                        this.sesiones.sort((a, b) => {
+                            // Poner sesiones sin fecha al final
+                            if (!a.fecha_calculada) return 1;
+                            if (!b.fecha_calculada) return -1;
+                            return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
+                        });
 
-                    // Comprobar si la sesión de referencia es la última ANTES de añadir la nueva
-                    const allSessionItems = list.querySelectorAll('.cpp-sesion-list-item');
-                    const isAfterLast = afterElement && allSessionItems.length > 0 && afterElement === allSessionItems[allSessionItems.length - 1];
+                        // Re-renderizar todo para reflejar el nuevo orden
+                        this.renderProgramacionTab();
 
-                    const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                    const newDisplayIndex = sesionesFiltradas.findIndex(s => s.id == newSesion.id);
-                    const newItemHTML = this.renderSingleSesionItemHTML(newSesion, newDisplayIndex);
-
-                    if (afterElement) {
-                        afterElement.insertAdjacentHTML('afterend', newItemHTML);
-                    } else {
-                        list.insertAdjacentHTML('beforeend', newItemHTML);
-                    }
-
-                    list.querySelectorAll('.cpp-sesion-list-item').forEach((item, index) => {
-                        item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
-                    });
-
-                    const oldActive = list.querySelector('.cpp-sesion-list-item.active');
-                    if (oldActive) oldActive.classList.remove('active');
-
-                    const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
-                    if (newActiveElement) {
-                        newActiveElement.classList.add('active');
-                        // Hacer scroll solo si se añadió después de la que era la última
-                        if (isAfterLast) {
+                        // Asegurarse de que el elemento recién añadido es visible
+                        const newActiveElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
+                        if (newActiveElement) {
                             newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }
-                    }
-
-                    this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
-                    this.makeActividadesSortable();
-                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+                    });
 
                     // --- AÑADIDO: Recargar cuaderno si es necesario ---
                     if (result.data.needs_gradebook_reload) {
@@ -1052,7 +1034,7 @@
 
     // --- Renderizado y UI ---
     fetchAndApplyFechas(evaluacionId) {
-        if (!evaluacionId || !this.currentClase) return;
+        if (!evaluacionId || !this.currentClase) return Promise.resolve();
 
         const data = new URLSearchParams({
             action: 'cpp_get_fechas_evaluacion',
@@ -1061,7 +1043,7 @@
             clase_id: this.currentClase.id
         });
 
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success && result.data.fechas) {
@@ -1221,7 +1203,7 @@
     renderSingleSesionItemHTML(s, index) {
         const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${new Date(s.fecha_fijada + 'T12:00:00Z').toLocaleDateString('es-ES')}">📌</span>` : '';
         const fechaMostrada = s.fecha_calculada
-            ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+            ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
             : '';
 
         const titleHTML = s.fecha_calculada
@@ -1910,8 +1892,20 @@
                         }
                     }
 
-                    // Re-renderizar la lista y aplicar las nuevas fechas
-                    this.renderProgramacionTab();
+                    // --- FIX: Actualización selectiva para evitar salto de scroll ---
+                    // 1. Actualizar el botón de la barra de herramientas
+                    const fijarBtn = this.appElement.querySelector('#cpp-fijar-sesion-toolbar-btn');
+                    if (fijarBtn) {
+                        if (sesion.fecha_fijada) {
+                            fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
+                            fijarBtn.title = 'Desfijar fecha';
+                        } else {
+                            fijarBtn.innerHTML = '<span class="dashicons dashicons-admin-post"></span>';
+                            fijarBtn.title = 'Fijar fecha';
+                        }
+                    }
+
+                    // 2. Refrescar solo las fechas, que a su vez actualiza el HTML del item
                     this.fetchAndApplyFechas(this.currentEvaluacionId);
 
                     if (result.data.needs_gradebook_reload) {
