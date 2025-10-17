@@ -631,7 +631,6 @@ function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluaci
 
     $occupied_slots_by_fixed_sessions = [];
     foreach ($sesiones_fijadas as $sesion_fijada) {
-        // Asumimos que la sesión fijada ocupa todos los slots de ese día para esa clase, para simplificar y evitar conflictos.
         // Una mejora futura podría ser más granular si se necesita.
         $occupied_slots_by_fixed_sessions[] = $sesion_fijada->fecha_fijada;
     }

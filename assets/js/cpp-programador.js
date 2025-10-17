@@ -109,6 +109,18 @@
                 toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
+
+                const fijarBtn = toolbar.querySelector('#cpp-fijar-sesion-toolbar-btn');
+                fijarBtn.disabled = !isSesionSelected;
+                if (isSesionSelected) {
+                    if (self.currentSesion.fecha_fijada) {
+                        fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
+                        fijarBtn.title = 'Desfijar fecha';
+                    } else {
+                        fijarBtn.innerHTML = '<span class="dashicons dashicons-admin-post"></span>';
+                        fijarBtn.title = 'Fijar fecha';
+                    }
+                }
             }
             // No se llama a scrollIntoView para que la vista no se mueva.
         });
@@ -170,8 +182,7 @@
         $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
-        $document.on('click', '#cpp-fijar-selected-btn', () => self.toggleSesionFijada(true));
-        $document.on('click', '#cpp-desfijar-selected-btn', () => self.toggleSesionFijada(false));
+        $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
         $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
@@ -1168,6 +1179,9 @@
                     <button id="cpp-delete-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Eliminar la sesión seleccionada">
                         <span class="dashicons dashicons-trash"></span>
                     </button>
+                    <button id="cpp-fijar-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Fijar fecha">
+                        <span class="dashicons dashicons-admin-post"></span>
+                    </button>
                     <button id="cpp-simbolo-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Asignar o cambiar símbolo">
                         <span class="dashicons dashicons-star-filled"></span>
                     </button>
@@ -1205,12 +1219,13 @@
         // Scroll to selected session only if it's a new one, handled in addInlineSesion
     },
     renderSingleSesionItemHTML(s, index) {
+        const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${new Date(s.fecha_fijada + 'T12:00:00Z').toLocaleDateString('es-ES')}">📌</span>` : '';
         const fechaMostrada = s.fecha_calculada
             ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
             : '';
 
         const titleHTML = s.fecha_calculada
-            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada} ${fijadaIconHTML}</small>`
             : s.titulo;
 
         const isChecked = this.selectedSesiones.includes(s.id.toString());
@@ -1223,11 +1238,8 @@
         const simboloHTML = simboloData ? `<span class="cpp-sesion-simbolo">${simboloData.simbolo}</span>` : '';
         const simboloTitle = simboloData ? simboloData.leyenda : '';
 
-        const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${new Date(s.fecha_fijada + 'T12:00:00Z').toLocaleDateString('es-ES')}">📌</span>` : '';
-
         return `
         <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''} ${todayClass}" data-sesion-id="${s.id}">
-            ${fijadaIconHTML}
             <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
             <span class="cpp-sesion-handle">⠿</span>
             <span class="cpp-sesion-number">${index + 1}.</span>
@@ -1851,19 +1863,7 @@
 
         if (this.selectedSesiones.length > 0) {
             const count = this.selectedSesiones.length;
-
-            // Comprobar si alguna de las sesiones seleccionadas ya está fijada
-            const algunaFijada = this.selectedSesiones.some(id => {
-                const sesion = this.sesiones.find(s => s.id == id);
-                return sesion && sesion.fecha_fijada;
-            });
-
-            const botonFijarHTML = `<button id="cpp-fijar-selected-btn" class="cpp-btn cpp-btn-secondary" title="Fijar la fecha calculada actual para estas sesiones">Fijar Fecha</button>`;
-            const botonDesfijarHTML = `<button id="cpp-desfijar-selected-btn" class="cpp-btn cpp-btn-secondary" title="Permitir que estas sesiones se muevan de nuevo">Desfijar Fecha</button>`;
-
             container.innerHTML = `
-                ${!algunaFijada ? botonFijarHTML : ''}
-                ${algunaFijada ? botonDesfijarHTML : ''}
                 <button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-primary">Copiar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
@@ -1875,17 +1875,22 @@
         }
     },
 
+    handleFijarSesionClick() {
+        if (!this.currentSesion) return;
+        const fijar = !this.currentSesion.fecha_fijada;
+        this.toggleSesionFijada(fijar);
+    },
+
     toggleSesionFijada(fijar) {
-        if (this.selectedSesiones.length === 0) {
-            return;
-        }
+        if (!this.currentSesion) return;
+
         if (this.isProcessing) return;
         this.isProcessing = true;
 
         const data = new URLSearchParams({
             action: 'cpp_toggle_sesion_fijada',
             nonce: cppFrontendData.nonce,
-            session_ids: JSON.stringify(this.selectedSesiones),
+            session_ids: JSON.stringify([this.currentSesion.id]),
             fijar: fijar
         });
 
@@ -1895,22 +1900,15 @@
                 if (result.success) {
                     this.showNotification(result.data.message || 'Operación completada.');
 
-                    // Actualizar los datos locales de las sesiones afectadas
-                    this.selectedSesiones.forEach(id => {
-                        const sesion = this.sesiones.find(s => s.id == id);
-                        if (sesion) {
-                            // Si la operación fue fijar, la nueva fecha fijada vendrá en la respuesta
-                            if (fijar && result.data.fechas && result.data.fechas[id]) {
-                                sesion.fecha_fijada = result.data.fechas[id].fecha;
-                            } else {
-                                sesion.fecha_fijada = null;
-                            }
+                    // Actualizar los datos locales de la sesión afectada
+                    const sesion = this.sesiones.find(s => s.id == this.currentSesion.id);
+                    if (sesion) {
+                        if (fijar && result.data.fechas && result.data.fechas[sesion.id]) {
+                            sesion.fecha_fijada = result.data.fechas[sesion.id].fecha;
+                        } else {
+                            sesion.fecha_fijada = null;
                         }
-                    });
-
-                    // Limpiar selección y actualizar UI
-                    this.selectedSesiones = [];
-                    this.updateBulkActionsUI();
+                    }
 
                     // Re-renderizar la lista y aplicar las nuevas fechas
                     this.renderProgramacionTab();

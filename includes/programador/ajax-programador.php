@@ -682,23 +682,12 @@ function cpp_programador_calculate_activity_date($sesion_id, $user_id) {
 }
 
 function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id) {
+    global $wpdb;
+
+    // 1. Obtener datos básicos
     $all_data = cpp_programador_get_all_data($user_id);
-    $fechas_calculadas = [];
-
-    $sesiones_en_evaluacion = array_filter($all_data['sesiones'], function($s) use ($clase_id, $evaluacion_id) {
-        return $s->clase_id == $clase_id && $s->evaluacion_id == $evaluacion_id;
-    });
-
-    // Re-indexar el array para asegurar que las claves son numéricas consecutivas
-    $sesiones_en_evaluacion = array_values($sesiones_en_evaluacion);
-
-    if (empty($sesiones_en_evaluacion)) {
-        return [];
-    }
-
     $horario = $all_data['config']['horario'];
     $calendar_config = $all_data['config']['calendar_config'];
-    $day_mapping = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
     $start_date_str = null;
     foreach ($all_data['clases'] as $clase) {
@@ -712,58 +701,67 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
         }
     }
 
-    if (!$start_date_str) {
+    $sesiones_en_evaluacion = array_filter($all_data['sesiones'], function($s) use ($clase_id, $evaluacion_id) {
+        return $s->clase_id == $clase_id && $s->evaluacion_id == $evaluacion_id;
+    });
+    $sesiones_en_evaluacion = array_values($sesiones_en_evaluacion);
+
+    if (empty($sesiones_en_evaluacion) || !$start_date_str) {
         return [];
     }
 
-    $clase_tiene_horario = false;
-    foreach ($horario as $day => $slots) {
-        foreach ($slots as $slot => $data) {
-            if ($data['claseId'] == $clase_id) {
-                $clase_tiene_horario = true;
-                break 2;
-            }
+    // 2. Separar sesiones fijadas y no fijadas, y registrar fechas ocupadas
+    $sesiones_fijadas = [];
+    $sesiones_no_fijadas = [];
+    $fechas_ocupadas = [];
+    $resultados = [];
+
+    foreach ($sesiones_en_evaluacion as $sesion) {
+        if (!empty($sesion->fecha_fijada)) {
+            $sesiones_fijadas[] = $sesion;
+            $fechas_ocupadas[] = $sesion->fecha_fijada;
+        } else {
+            $sesiones_no_fijadas[] = $sesion;
         }
     }
 
-    if (!$clase_tiene_horario) {
-        return [];
-    }
-
+    // 3. Calcular fechas para sesiones NO fijadas
     try {
         $current_date = new DateTime($start_date_str . 'T12:00:00Z');
     } catch (Exception $e) {
-        // Si la fecha no es válida, no podemos calcular nada.
         return [];
     }
 
     $session_index = 0;
     $safety_counter = 0;
-    $max_iterations = 365 * 5;
+    $max_iterations = 365 * 5; // 5 años de margen
 
-    while ($session_index < count($sesiones_en_evaluacion) && $safety_counter < $max_iterations) {
-        $day_key = $day_mapping[$current_date->format('w')];
+    while ($session_index < count($sesiones_no_fijadas) && $safety_counter < $max_iterations) {
+        $day_key = strtolower($current_date->format('D'));
         $ymd = $current_date->format('Y-m-d');
 
         $is_working_day = in_array($day_key, $calendar_config['working_days']);
         $is_holiday = in_array($ymd, $calendar_config['holidays']);
         $is_vacation = false;
-        foreach ($calendar_config['vacations'] as $v) {
-            if ($ymd >= $v['start'] && $ymd <= $v['end']) {
-                $is_vacation = true;
-                break;
+        if (!empty($calendar_config['vacations'])) {
+            foreach ($calendar_config['vacations'] as $v) {
+                if ($ymd >= $v['start'] && $ymd <= $v['end']) {
+                    $is_vacation = true;
+                    break;
+                }
             }
         }
+        $is_occupied = in_array($ymd, $fechas_ocupadas);
 
-        if ($is_working_day && !$is_holiday && !$is_vacation && isset($horario[$day_key])) {
+        if ($is_working_day && !$is_holiday && !$is_vacation && !$is_occupied && isset($horario[$day_key])) {
             $slots_del_dia = $horario[$day_key];
             ksort($slots_del_dia);
 
             foreach ($slots_del_dia as $slot => $data) {
                 if ($data['claseId'] == $clase_id) {
-                    if (isset($sesiones_en_evaluacion[$session_index])) {
-                        $sesion_actual_id = $sesiones_en_evaluacion[$session_index]->id;
-                        $fechas_calculadas[$sesion_actual_id] = [
+                    if (isset($sesiones_no_fijadas[$session_index])) {
+                        $sesion_actual = $sesiones_no_fijadas[$session_index];
+                        $resultados[$sesion_actual->id] = [
                             'fecha' => $ymd,
                             'notas' => !empty($data['notas']) ? $data['notas'] : ''
                         ];
@@ -776,7 +774,27 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
         $safety_counter++;
     }
 
-    return $fechas_calculadas;
+    // 4. Añadir las sesiones fijadas al resultado
+    foreach ($sesiones_fijadas as $sesion_fijada) {
+        $day_key_fijado = strtolower((new DateTime($sesion_fijada->fecha_fijada))->format('D'));
+        $notas = '';
+        if (isset($horario[$day_key_fijado])) {
+             $slots_del_dia_fijado = $horario[$day_key_fijado];
+             ksort($slots_del_dia_fijado);
+             foreach($slots_del_dia_fijado as $slot => $data) {
+                 if ($data['claseId'] == $clase_id) {
+                     $notas = !empty($data['notas']) ? $data['notas'] : '';
+                     break;
+                 }
+             }
+        }
+        $resultados[$sesion_fijada->id] = [
+            'fecha' => $sesion_fijada->fecha_fijada,
+            'notas' => $notas
+        ];
+    }
+
+    return $resultados;
 }
 
 function cpp_resincronizar_fechas_actividades_evaluables($user_id, $clase_id, $evaluacion_id) {
