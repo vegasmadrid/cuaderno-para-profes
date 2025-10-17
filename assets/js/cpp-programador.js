@@ -1766,6 +1766,8 @@
                                 ? `<span class="cpp-semana-simbolo" title="${this.escapeHtml(simboloData.leyenda || '')}">${this.escapeHtml(simboloData.simbolo)}</span>`
                                 : '';
 
+                            const fijadaIconHTML = evento.sesion.fecha_fijada ? `<span class="cpp-semana-fijada-icon" title="Fecha fijada">📌</span>` : '';
+
                             let actividadesHTML = '';
                             if (evento.sesion.actividades_programadas && evento.sesion.actividades_programadas.length > 0) {
                                 actividadesHTML = `<ul class="cpp-semana-actividades-list">
@@ -1778,7 +1780,7 @@
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
-                                <p>${simboloHTML} ${evento.sesion.titulo}</p>
+                                <p>${simboloHTML} ${fijadaIconHTML} ${evento.sesion.titulo}</p>
                                 ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;

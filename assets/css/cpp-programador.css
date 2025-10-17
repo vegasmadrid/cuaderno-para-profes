@@ -840,4 +840,11 @@ td.cpp-semana-td-hora {
     display: inline-block;
 }
 
+.cpp-semana-fijada-icon {
+    font-size: 0.8em;
+    cursor: help;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 /* --- END: Styles for Programmer Symbol Palette --- */
