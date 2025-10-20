@@ -109,6 +109,18 @@
                 toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
+
+                const fijarBtn = toolbar.querySelector('#cpp-fijar-sesion-toolbar-btn');
+                fijarBtn.disabled = !isSesionSelected;
+                if (isSesionSelected) {
+                    if (self.currentSesion.fecha_fijada) {
+                        fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
+                        fijarBtn.title = 'Desfijar fecha';
+                    } else {
+                        fijarBtn.innerHTML = '<span class="dashicons dashicons-admin-post"></span>';
+                        fijarBtn.title = 'Fijar fecha';
+                    }
+                }
             }
             // No se llama a scrollIntoView para que la vista no se mueva.
         });
@@ -170,6 +182,7 @@
         $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
+        $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
         $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
@@ -358,43 +371,59 @@
                     }
                     this.currentSesion = newSesion;
 
-                    // --- DOM OPTIMIZATION & CONDITIONAL SCROLL ---
-                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
-                    const afterElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${afterId}"]`);
+                    // --- FIX: Reordenar y redibujar para asegurar orden cronológico ---
+                    this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
+                        // Reordenar el array de sesiones principal por fecha
+                        this.sesiones.sort((a, b) => {
+                            // Poner sesiones sin fecha al final
+                            if (!a.fecha_calculada) return 1;
+                            if (!b.fecha_calculada) return -1;
+                            return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
+                        });
 
-                    // Comprobar si la sesión de referencia es la última ANTES de añadir la nueva
-                    const allSessionItems = list.querySelectorAll('.cpp-sesion-list-item');
-                    const isAfterLast = afterElement && allSessionItems.length > 0 && afterElement === allSessionItems[allSessionItems.length - 1];
+                        // --- FIX v2: Reordenar el DOM en lugar de redibujar para evitar el salto de scroll ---
 
-                    const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                    const newDisplayIndex = sesionesFiltradas.findIndex(s => s.id == newSesion.id);
-                    const newItemHTML = this.renderSingleSesionItemHTML(newSesion, newDisplayIndex);
+                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        if (list) {
+                            // 1. Añadir el nuevo elemento al DOM (puede estar en la posición incorrecta temporalmente)
+                            const sesionesFiltradasAntes = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            const lastSesionElement = list.querySelector('.cpp-sesion-list-item:last-child');
+                            const newItemHTML = this.renderSingleSesionItemHTML(newSesion, sesionesFiltradasAntes.length); // Renderizar como si fuera el último
+                            list.insertAdjacentHTML('beforeend', newItemHTML);
 
-                    if (afterElement) {
-                        afterElement.insertAdjacentHTML('afterend', newItemHTML);
-                    } else {
-                        list.insertAdjacentHTML('beforeend', newItemHTML);
-                    }
+                            // 2. Reordenar el array de datos
+                             this.sesiones.sort((a, b) => {
+                                if (!a.fecha_calculada) return 1;
+                                if (!b.fecha_calculada) return -1;
+                                return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
+                            });
 
-                    list.querySelectorAll('.cpp-sesion-list-item').forEach((item, index) => {
-                        item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
-                    });
+                            // 3. Reordenar el DOM basándose en el array de datos
+                            const sesionesFiltradasDespues = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            sesionesFiltradasDespues.forEach((sesion, index) => {
+                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                                if (item) {
+                                    item.style.order = index;
+                                    item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
+                                }
+                            });
+                            list.style.display = 'flex';
+                            list.style.flexDirection = 'column';
 
-                    const oldActive = list.querySelector('.cpp-sesion-list-item.active');
-                    if (oldActive) oldActive.classList.remove('active');
+                             // 4. Actualizar estado y hacer scroll
+                            const oldActive = list.querySelector('.cpp-sesion-list-item.active');
+                            if (oldActive) oldActive.classList.remove('active');
 
-                    const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
-                    if (newActiveElement) {
-                        newActiveElement.classList.add('active');
-                        // Hacer scroll solo si se añadió después de la que era la última
-                        if (isAfterLast) {
-                            newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
+                             if (newActiveElement) {
+                                newActiveElement.classList.add('active');
+                                newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+
+                            this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
+                            this.makeActividadesSortable();
                         }
-                    }
-
-                    this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
-                    this.makeActividadesSortable();
-                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+                    });
 
                     // --- AÑADIDO: Recargar cuaderno si es necesario ---
                     if (result.data.needs_gradebook_reload) {
@@ -1039,7 +1068,7 @@
 
     // --- Renderizado y UI ---
     fetchAndApplyFechas(evaluacionId) {
-        if (!evaluacionId || !this.currentClase) return;
+        if (!evaluacionId || !this.currentClase) return Promise.resolve();
 
         const data = new URLSearchParams({
             action: 'cpp_get_fechas_evaluacion',
@@ -1048,7 +1077,7 @@
             clase_id: this.currentClase.id
         });
 
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success && result.data.fechas) {
@@ -1166,6 +1195,9 @@
                     <button id="cpp-delete-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Eliminar la sesión seleccionada">
                         <span class="dashicons dashicons-trash"></span>
                     </button>
+                    <button id="cpp-fijar-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Fijar fecha">
+                        <span class="dashicons dashicons-admin-post"></span>
+                    </button>
                     <button id="cpp-simbolo-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Asignar o cambiar símbolo">
                         <span class="dashicons dashicons-star-filled"></span>
                     </button>
@@ -1203,12 +1235,13 @@
         // Scroll to selected session only if it's a new one, handled in addInlineSesion
     },
     renderSingleSesionItemHTML(s, index) {
+        const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${new Date(s.fecha_fijada + 'T12:00:00Z').toLocaleDateString('es-ES')}">📌</span>` : '';
         const fechaMostrada = s.fecha_calculada
-            ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+            ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
             : '';
 
         const titleHTML = s.fecha_calculada
-            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
+            ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada} ${fijadaIconHTML}</small>`
             : s.titulo;
 
         const isChecked = this.selectedSesiones.includes(s.id.toString());
@@ -1733,6 +1766,8 @@
                                 ? `<span class="cpp-semana-simbolo" title="${this.escapeHtml(simboloData.leyenda || '')}">${this.escapeHtml(simboloData.simbolo)}</span>`
                                 : '';
 
+                            const fijadaIconHTML = evento.sesion.fecha_fijada ? `<span class="cpp-semana-fijada-icon" title="Fecha fijada">📌</span>` : '';
+
                             let actividadesHTML = '';
                             if (evento.sesion.actividades_programadas && evento.sesion.actividades_programadas.length > 0) {
                                 actividadesHTML = `<ul class="cpp-semana-actividades-list">
@@ -1745,7 +1780,7 @@
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
                                                  style="border-left-color: ${clase.color};">
                                 <strong>${clase.nombre}</strong>
-                                <p>${simboloHTML} ${evento.sesion.titulo}</p>
+                                <p>${simboloHTML} ${fijadaIconHTML} ${evento.sesion.titulo}</p>
                                 ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
                                 ${actividadesHTML}
                             </div>`;
@@ -1856,6 +1891,83 @@
             container.innerHTML = '';
             container.classList.add('hidden');
         }
+    },
+
+    handleFijarSesionClick() {
+        if (!this.currentSesion) return;
+        const fijar = !this.currentSesion.fecha_fijada;
+        this.toggleSesionFijada(fijar);
+    },
+
+    toggleSesionFijada(fijar) {
+        if (!this.currentSesion) return;
+
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const data = new URLSearchParams({
+            action: 'cpp_toggle_sesion_fijada',
+            nonce: cppFrontendData.nonce,
+            session_ids: JSON.stringify([this.currentSesion.id]),
+            fijar: fijar
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    this.showNotification(result.data.message || 'Operación completada.');
+
+                    // Actualizar los datos locales de la sesión afectada
+                    const sesion = this.sesiones.find(s => s.id == this.currentSesion.id);
+                    if (sesion) {
+                        if (fijar && result.data.fechas && result.data.fechas[sesion.id]) {
+                            sesion.fecha_fijada = result.data.fechas[sesion.id].fecha;
+                        } else {
+                            sesion.fecha_fijada = null;
+                        }
+                    }
+
+                    // --- FIX: Actualización selectiva para evitar salto de scroll ---
+                    // 1. Actualizar el botón de la barra de herramientas
+                    const fijarBtn = this.appElement.querySelector('#cpp-fijar-sesion-toolbar-btn');
+                    if (fijarBtn) {
+                        if (sesion.fecha_fijada) {
+                            fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
+                            fijarBtn.title = 'Desfijar fecha';
+                        } else {
+                            fijarBtn.innerHTML = '<span class="dashicons dashicons-admin-post"></span>';
+                            fijarBtn.title = 'Fijar fecha';
+                        }
+                    }
+
+                    // --- FIX: Forzar la actualización del item para que el icono de la chincheta aparezca/desaparezca ---
+                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    if (list) {
+                        const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                        if (listItem) {
+                             const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                             const displayIndex = sesionesFiltradas.findIndex(s => s.id == sesion.id);
+                             listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
+                        }
+                    }
+
+                    // 2. Refrescar solo las fechas, que a su vez actualiza el HTML del item
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+
+
+                    if (result.data.needs_gradebook_reload) {
+                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
+                            cpp.gradebook.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        }
+                    }
+                } else {
+                    alert(result.data.message || 'Error al realizar la operación.');
+                }
+            })
+            .finally(() => {
+                this.isProcessing = false;
+            });
     },
 
     openCopySesionModal() {

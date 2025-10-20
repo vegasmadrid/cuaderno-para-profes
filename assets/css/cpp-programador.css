@@ -89,6 +89,13 @@
 .cpp-sesion-list-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; position: relative; }
 .cpp-sesion-list-item:hover { background-color: #f7f7f7; }
 .cpp-sesion-list-item.active { background-color: #e8f0fe; font-weight: 500; color: #1a73e8; }
+
+.cpp-sesion-date .cpp-sesion-fijada-icon {
+    font-size: 12px; /* Más pequeño para que encaje con el texto de la fecha */
+    cursor: help;
+    display: inline-block; /* Para que se alinee bien con el texto */
+    margin-left: 4px;
+}
 .cpp-sesion-list-item.cpp-sesion-hoy { border-left: 3px solid #28a745; }
 .cpp-sesion-handle { cursor: move; color: #999; padding: 0 5px; }
 .cpp-sesion-number { font-size: 13px; color: #888; }
@@ -831,6 +838,13 @@ td.cpp-semana-td-hora {
     font-size: 0.9em;
     margin-right: 4px;
     display: inline-block;
+}
+
+.cpp-semana-fijada-icon {
+    font-size: 0.8em;
+    cursor: help;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* --- END: Styles for Programmer Symbol Palette --- */

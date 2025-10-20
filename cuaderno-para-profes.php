@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.1.0');
+define('CPP_VERSION', '2.2.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -323,6 +323,20 @@ function cpp_migrate_add_symbol_id_to_sessions_v2_1() {
     }
 }
 
+function cpp_migrate_add_fixed_date_to_sessions_v2_2() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'cpp_programador_sesiones';
+    $column_name = 'fecha_fijada';
+
+    // Comprobar si la columna ya existe
+    $column_info = $wpdb->get_row($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+
+    if (!$column_info) {
+        // Añadir la columna de tipo DATE que puede ser NULL
+        $wpdb->query("ALTER TABLE `$table_name` ADD COLUMN `$column_name` DATE NULL DEFAULT NULL AFTER `simbolo_id`;");
+    }
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -346,6 +360,9 @@ function cpp_run_migrations() {
     }
 	if (version_compare($current_version, '2.1.0', '<')) {
         cpp_migrate_add_symbol_id_to_sessions_v2_1();
+    }
+    if (version_compare($current_version, '2.2.0', '<')) {
+        cpp_migrate_add_fixed_date_to_sessions_v2_2();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
