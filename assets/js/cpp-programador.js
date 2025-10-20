@@ -11,6 +11,7 @@
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
     selectedSesiones: [],
+    lastClickedSesionId: null,
     originalContent: '', semanaDate: new Date(),
     isProcessing: false,
 
@@ -63,29 +64,32 @@
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
 
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
-            // Evitar que el click en el checkbox de selección múltiple dispare la selección de sesión individual.
-            if (e.target.closest('.cpp-sesion-checkbox')) {
-                return;
+            const sesionId = this.dataset.sesionId;
+            const isCheckboxClick = e.target.closest('.cpp-sesion-checkbox');
+
+            if (e.shiftKey && self.lastClickedSesionId && !isCheckboxClick) {
+                self.handleShiftSelection(sesionId);
+                return; // Detener la ejecución para no anular la selección de rango
             }
 
-            const sesionId = this.dataset.sesionId;
-            // Evitar procesamiento si ya está seleccionada
+            // Actualizar el último clickeado, solo si no es un click en el checkbox
+            if (!isCheckboxClick) {
+                self.lastClickedSesionId = sesionId;
+            }
+
+
+            if (isCheckboxClick) {
+                return;
+            }
             if (self.currentSesion && self.currentSesion.id == sesionId) {
                 return;
             }
-
-            // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
             if (self.selectedSesiones.length > 0) {
                 self.selectedSesiones = [];
-                // Ocultar la barra de acciones múltiples y desmarcar los checkboxes sin recargar toda la lista
                 self.updateBulkActionsUI();
                 self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
             }
-
             self.currentSesion = self.sesiones.find(s => s.id == sesionId);
-
-            // --- FIX: Actualización selectiva del DOM para evitar el salto de scroll ---
-            // 1. Actualizar el estado activo en la lista de sesiones
             const listContainer = this.closest('ul');
             if (listContainer) {
                 const oldActive = listContainer.querySelector('.cpp-sesion-list-item.active');
@@ -94,22 +98,17 @@
                 }
             }
             this.classList.add('active');
-
-            // 2. Actualizar solo la columna derecha con los detalles de la sesión
             const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
             if (rightCol) {
                 rightCol.innerHTML = self.renderProgramacionTabRightColumn();
-                self.makeActividadesSortable(); // Re-inicializar sortable para las actividades
+                self.makeActividadesSortable();
             }
-
-            // 3. Actualizar el estado de los botones de la barra de herramientas
             const isSesionSelected = self.currentSesion !== null;
             const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
             if (toolbar) {
                 toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
-
                 const fijarBtn = toolbar.querySelector('#cpp-fijar-sesion-toolbar-btn');
                 fijarBtn.disabled = !isSesionSelected;
                 if (isSesionSelected) {
@@ -122,7 +121,6 @@
                     }
                 }
             }
-            // No se llama a scrollIntoView para que la vista no se mueva.
         });
 
         // Actividades
@@ -326,6 +324,35 @@
         this.selectedSesiones = [];
         this.updateBulkActionsUI();
         this.renderProgramacionTab(); // Re-render to uncheck all boxes
+    },
+    handleShiftSelection(endSesionId) {
+        const sesionElements = Array.from(this.appElement.querySelectorAll('.cpp-sesion-list-item'));
+        const allSesionIds = sesionElements.map(el => el.dataset.sesionId);
+
+        const startIndex = allSesionIds.indexOf(this.lastClickedSesionId);
+        const endIndex = allSesionIds.indexOf(endSesionId);
+
+        if (startIndex === -1 || endIndex === -1) {
+            return;
+        }
+
+        const [start, end] = [startIndex, endIndex].sort((a, b) => a - b);
+        const idsToSelect = allSesionIds.slice(start, end + 1);
+
+        // Añadir a la selección actual sin duplicados
+        const currentSelection = new Set(this.selectedSesiones);
+        idsToSelect.forEach(id => currentSelection.add(id));
+        this.selectedSesiones = Array.from(currentSelection);
+
+        // Actualizar checkboxes
+        sesionElements.forEach(el => {
+            const checkbox = el.querySelector('.cpp-sesion-checkbox');
+            if (checkbox && this.selectedSesiones.includes(el.dataset.sesionId)) {
+                checkbox.checked = true;
+            }
+        });
+
+        this.updateBulkActionsUI();
     },
 
     // --- Lógica de la App ---
@@ -2024,11 +2051,17 @@
         const originalBtnHtml = $btn.innerHTML;
         $btn.disabled = true;
         $btn.innerHTML = '<span class="dashicons dashicons-update dashicons-spin"></span> Copiando...';
+        const sesionesFiltradas = this.sesiones
+            .filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId)
+            .map(s => s.id.toString());
+
+        const orderedSelectedIds = sesionesFiltradas.filter(id => this.selectedSesiones.includes(id));
+
 
         const data = new URLSearchParams({
             action: 'cpp_copy_multiple_sesiones',
             nonce: cppFrontendData.nonce,
-            session_ids: JSON.stringify(this.selectedSesiones),
+            session_ids: JSON.stringify(orderedSelectedIds),
             destination_clase_id: destClaseId,
             destination_evaluacion_id: destEvaluacionId
         });
