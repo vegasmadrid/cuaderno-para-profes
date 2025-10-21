@@ -65,71 +65,67 @@
 
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
             const sesionId = this.dataset.sesionId;
+            const isCheckboxClick = e.target.closest('.cpp-sesion-checkbox');
 
-            // Shift-click logic: always takes precedence
-            if (e.shiftKey && self.lastClickedSesionId) {
-                e.preventDefault(); // Stop checkbox from toggling, stop text selection
+            // Shift-click on the row (but not on the checkbox)
+            if (e.shiftKey && self.lastClickedSesionId && !isCheckboxClick) {
+                e.preventDefault();
                 self.handleShiftSelection(sesionId);
                 return;
             }
 
-            // Normal click logic
-            self.lastClickedSesionId = sesionId; // Update anchor for the next shift-click
+            // If it's a click on the checkbox, do nothing.
+            // It's handled by its own 'click' and 'change' handlers.
+            if (isCheckboxClick) {
+                return;
+            }
 
-            const isCheckboxClick = e.target.closest('.cpp-sesion-checkbox');
+            // Normal click on the row
+            self.lastClickedSesionId = sesionId;
 
-            if (!isCheckboxClick) {
-                // This is a click on the row, not the checkbox. Select this session exclusively.
-                if (self.currentSesion && self.currentSesion.id == sesionId) {
-                    return; // Avoid reprocessing if already selected
-                }
+            if (self.currentSesion && self.currentSesion.id == sesionId) {
+                return;
+            }
 
-                // Clear any previous multi-selection
-                if (self.selectedSesiones.length > 0) {
-                    self.selectedSesiones = [];
-                    self.updateBulkActionsUI();
-                    self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
-                }
+            if (self.selectedSesiones.length > 0) {
+                self.selectedSesiones = [];
+                self.updateBulkActionsUI();
+                self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
+            }
 
-                self.currentSesion = self.sesiones.find(s => s.id == sesionId);
+            self.currentSesion = self.sesiones.find(s => s.id == sesionId);
 
-                // --- Selective DOM update ---
-                const listContainer = this.closest('ul');
-                if (listContainer) {
-                    const oldActive = listContainer.querySelector('.cpp-sesion-list-item.active');
-                    if (oldActive) oldActive.classList.remove('active');
-                }
-                this.classList.add('active');
+            const listContainer = this.closest('ul');
+            if (listContainer) {
+                const oldActive = listContainer.querySelector('.cpp-sesion-list-item.active');
+                if (oldActive) oldActive.classList.remove('active');
+            }
+            this.classList.add('active');
 
-                const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
-                if (rightCol) {
-                    rightCol.innerHTML = self.renderProgramacionTabRightColumn();
-                    self.makeActividadesSortable();
-                }
+            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
+            if (rightCol) {
+                rightCol.innerHTML = self.renderProgramacionTabRightColumn();
+                self.makeActividadesSortable();
+            }
 
-                // Update toolbar state
-                const isSesionSelected = self.currentSesion !== null;
-                const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
-                if (toolbar) {
-                    toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
-                    toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
-                    toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
-                    const fijarBtn = toolbar.querySelector('#cpp-fijar-sesion-toolbar-btn');
-                    fijarBtn.disabled = !isSesionSelected;
-                    if (isSesionSelected) {
-                        if (self.currentSesion.fecha_fijada) {
-                            fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
-                            fijarBtn.title = 'Desfijar fecha';
-                        } else {
-                            fijarBtn.innerHTML = '<span class="dashicons dashicons-admin-post"></span>';
-                            fijarBtn.title = 'Fijar fecha';
-                        }
+            const isSesionSelected = self.currentSesion !== null;
+            const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
+            if (toolbar) {
+                toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
+                toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
+                toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
+                const fijarBtn = toolbar.querySelector('#cpp-fijar-sesion-toolbar-btn');
+                fijarBtn.disabled = !isSesionSelected;
+                if (isSesionSelected) {
+                    if (self.currentSesion.fecha_fijada) {
+                        fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
+                        fijarBtn.title = 'Desfijar fecha';
+                    } else {
+                        fijarBtn.innerHTML = '<span class="dashicons dashicons-admin-post"></span>';
+                        fijarBtn.title = 'Fijar fecha';
                     }
                 }
             }
-            // If it IS a checkbox click, we do nothing here.
-            // The default browser action will toggle the checkbox, which then fires the separate 'change' event handler.
-            // That handler (`.on('change', '.cpp-sesion-checkbox'...)`) will update the `selectedSesiones` array.
         });
 
         // Actividades
@@ -185,8 +181,17 @@
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
-        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); });
-        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
+        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
+            // Handle shift-click on checkbox for range selection
+            if (e.shiftKey && self.lastClickedSesionId) {
+                e.preventDefault(); // Prevent default checkbox toggle
+                self.handleShiftSelection(this.dataset.sesionId);
+            }
+        });
+        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() {
+            // Handle single checkbox toggle and update anchor
+            self.handleSesionSelection(this.dataset.sesionId, this.checked);
+        });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
         $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
