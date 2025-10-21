@@ -181,10 +181,10 @@
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
-        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
-            // Handle shift-click on checkbox for range selection
+        $document.on('mousedown', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
+            // Use mousedown to catch shift-click before the default 'change' event fires and messes up the selection.
             if (e.shiftKey && self.lastClickedSesionId) {
-                e.preventDefault(); // Prevent default checkbox toggle
+                e.preventDefault(); // This is crucial. It stops the checkbox from toggling on its own.
                 self.handleShiftSelection(this.dataset.sesionId);
             }
         });
