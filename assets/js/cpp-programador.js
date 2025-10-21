@@ -339,16 +339,14 @@
         const [start, end] = [startIndex, endIndex].sort((a, b) => a - b);
         const idsToSelect = allSesionIds.slice(start, end + 1);
 
-        // Añadir a la selección actual sin duplicados
-        const currentSelection = new Set(this.selectedSesiones);
-        idsToSelect.forEach(id => currentSelection.add(id));
-        this.selectedSesiones = Array.from(currentSelection);
+        // Reemplazar la selección actual con el nuevo rango
+        this.selectedSesiones = idsToSelect;
 
         // Actualizar checkboxes
         sesionElements.forEach(el => {
             const checkbox = el.querySelector('.cpp-sesion-checkbox');
-            if (checkbox && this.selectedSesiones.includes(el.dataset.sesionId)) {
-                checkbox.checked = true;
+            if (checkbox) {
+                checkbox.checked = this.selectedSesiones.includes(el.dataset.sesionId);
             }
         });
 
@@ -1889,6 +1887,7 @@
 
     // --- Copy Sessions Logic ---
     handleSesionSelection(sesionId, isChecked) {
+        this.lastClickedSesionId = sesionId;
         if (isChecked) {
             if (!this.selectedSesiones.includes(sesionId)) {
                 this.selectedSesiones.push(sesionId);
