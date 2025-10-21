@@ -187,7 +187,11 @@
                 e.preventDefault();
                 self.isShiftSelecting = true;
                 self.handleShiftSelection(this.dataset.sesionId);
-                self.isShiftSelecting = false;
+                // Use a timeout to reset the flag after the current event loop,
+                // allowing the 'change' event to be correctly ignored.
+                setTimeout(() => {
+                    self.isShiftSelecting = false;
+                }, 0);
             }
         });
 
@@ -198,7 +202,7 @@
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
         $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
-        $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
+        $document.on('click', '#cpp-deselect-all-btn', () => self.cancelSelection());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
@@ -339,8 +343,8 @@
 
     cancelSelection() {
         this.selectedSesiones = [];
+        this.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
         this.updateBulkActionsUI();
-        this.renderProgramacionTab(); // Re-render to uncheck all boxes
     },
     handleShiftSelection(endSesionId) {
         const sesionElements = Array.from(this.appElement.querySelectorAll('.cpp-sesion-list-item'));
@@ -1927,7 +1931,7 @@
             container.innerHTML = `
                 <button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-primary">Copiar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
-                <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
+                <button id="cpp-deselect-all-btn" class="cpp-btn cpp-btn-secondary">Deseleccionar todo</button>
             `;
             container.classList.remove('hidden');
         } else {
