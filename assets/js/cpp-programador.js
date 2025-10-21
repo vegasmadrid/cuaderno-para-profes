@@ -14,6 +14,7 @@
     lastClickedSesionId: null,
     originalContent: '', semanaDate: new Date(),
     isProcessing: false,
+    isShiftSelecting: false,
 
     // --- Inicialización ---
     init(initialClaseId) {
@@ -181,15 +182,17 @@
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
-        $document.on('mousedown', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
-            // Use mousedown to catch shift-click before the default 'change' event fires and messes up the selection.
+        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
             if (e.shiftKey && self.lastClickedSesionId) {
-                e.preventDefault(); // This is crucial. It stops the checkbox from toggling on its own.
+                e.preventDefault();
+                self.isShiftSelecting = true;
                 self.handleShiftSelection(this.dataset.sesionId);
+                self.isShiftSelecting = false;
             }
         });
+
         $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() {
-            // Handle single checkbox toggle and update anchor
+            if (self.isShiftSelecting) return;
             self.handleSesionSelection(this.dataset.sesionId, this.checked);
         });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
