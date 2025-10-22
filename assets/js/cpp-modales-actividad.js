@@ -133,17 +133,14 @@
             $form.find('#nota_maxima_actividad_cuaderno_input').val(parseFloat(notaMaxima).toFixed(2));
 
             const $fechaInput = $form.find('#fecha_actividad_cuaderno_input');
-            const $fechaDisplay = $form.find('#cpp-fecha-actividad-display');
+            const $fechaGroup = $fechaInput.closest('.cpp-form-group');
             const fechaValor = fechaActividad ? fechaActividad.split(' ')[0] : '';
             $fechaInput.val(fechaValor);
 
             if (sesionId && sesionId !== 'null' && sesionId !== '') {
-                $fechaInput.hide();
-                const fechaFormateada = fechaValor ? new Date(fechaValor + 'T00:00:00').toLocaleDateString('es-ES') : 'No asignada';
-                $fechaDisplay.html(`<strong>${fechaFormateada}</strong><br><small>La fecha se gestiona desde la Programación y no es editable aquí.</small>`).show();
+                $fechaGroup.hide();
             } else {
-                $fechaInput.show();
-                $fechaDisplay.hide();
+                $fechaGroup.show();
             }
 
             $form.find('#descripcion_actividad_cuaderno_textarea').val(descripcionActividad);
@@ -264,11 +261,9 @@
             $fechaInput.val(actividad.fecha_actividad ? actividad.fecha_actividad.split(' ')[0] : '');
 
             if (actividad.sesion_id && actividad.sesion_id != '0') {
-                $fechaInput.prop('readonly', true);
-                $fechaGroup.addClass('cpp-readonly').attr('title', 'La fecha es gestionada automáticamente por la Programación.');
+                $fechaGroup.hide();
             } else {
-                $fechaInput.prop('readonly', false);
-                $fechaGroup.removeClass('cpp-readonly').attr('title', '');
+                $fechaGroup.show();
             }
 
             $form.find('#descripcion_actividad_cuaderno_textarea').val(actividad.descripcion_actividad);
