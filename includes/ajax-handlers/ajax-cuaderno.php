@@ -439,7 +439,19 @@ function cpp_ajax_get_evaluable_activity_data() {
     ), ARRAY_A);
 
     if ($actividad) {
-        wp_send_json_success($actividad);
+        // Envolver la actividad en un array para poder usar la función de hidratación
+        $actividades_a_hidratar = [$actividad];
+
+        // Llamar a la función de hidratación
+        $actividades_hidratadas = cpp_hidratar_fechas_de_actividades(
+            $actividades_a_hidratar,
+            $actividad['clase_id'],
+            $actividad['evaluacion_id'],
+            $user_id
+        );
+
+        // Devolver la primera (y única) actividad del array hidratado
+        wp_send_json_success($actividades_hidratadas[0]);
     } else {
         wp_send_json_error(['message' => 'Actividad no encontrada o no tienes permiso.']);
     }
