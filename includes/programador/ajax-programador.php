@@ -446,6 +446,8 @@ function cpp_ajax_copy_sessions() {
     $result = cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id);
 
     if ($result) {
+        // --- AÑADIDO: Resincronizar fechas en la clase de destino después de copiar ---
+        cpp_resincronizar_fechas_actividades_evaluables($user_id, $destination_clase_id, $destination_evaluacion_id);
         wp_send_json_success(['message' => 'Sesiones copiadas correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al copiar las sesiones.']);
