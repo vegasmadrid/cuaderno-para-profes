@@ -11,8 +11,10 @@
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
     selectedSesiones: [],
+    lastClickedSesionId: null,
     originalContent: '', semanaDate: new Date(),
     isProcessing: false,
+    isShiftSelecting: false,
 
     // --- Inicialización ---
     init(initialClaseId) {
@@ -63,53 +65,56 @@
         $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
 
         $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
-            // Evitar que el click en el checkbox de selección múltiple dispare la selección de sesión individual.
-            if (e.target.closest('.cpp-sesion-checkbox')) {
+            const sesionId = this.dataset.sesionId;
+            const isCheckboxClick = e.target.closest('.cpp-sesion-checkbox');
+
+            // Shift-click on the row (but not on the checkbox)
+            if (e.shiftKey && self.lastClickedSesionId && !isCheckboxClick) {
+                e.preventDefault();
+                self.handleShiftSelection(sesionId);
                 return;
             }
 
-            const sesionId = this.dataset.sesionId;
-            // Evitar procesamiento si ya está seleccionada
+            // If it's a click on the checkbox, do nothing.
+            // It's handled by its own 'click' and 'change' handlers.
+            if (isCheckboxClick) {
+                return;
+            }
+
+            // Normal click on the row
+            self.lastClickedSesionId = sesionId;
+
             if (self.currentSesion && self.currentSesion.id == sesionId) {
                 return;
             }
 
-            // Si había una selección múltiple, se cancela al seleccionar una nueva sesión.
             if (self.selectedSesiones.length > 0) {
                 self.selectedSesiones = [];
-                // Ocultar la barra de acciones múltiples y desmarcar los checkboxes sin recargar toda la lista
                 self.updateBulkActionsUI();
                 self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
             }
 
             self.currentSesion = self.sesiones.find(s => s.id == sesionId);
 
-            // --- FIX: Actualización selectiva del DOM para evitar el salto de scroll ---
-            // 1. Actualizar el estado activo en la lista de sesiones
             const listContainer = this.closest('ul');
             if (listContainer) {
                 const oldActive = listContainer.querySelector('.cpp-sesion-list-item.active');
-                if (oldActive) {
-                    oldActive.classList.remove('active');
-                }
+                if (oldActive) oldActive.classList.remove('active');
             }
             this.classList.add('active');
 
-            // 2. Actualizar solo la columna derecha con los detalles de la sesión
             const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
             if (rightCol) {
                 rightCol.innerHTML = self.renderProgramacionTabRightColumn();
-                self.makeActividadesSortable(); // Re-inicializar sortable para las actividades
+                self.makeActividadesSortable();
             }
 
-            // 3. Actualizar el estado de los botones de la barra de herramientas
             const isSesionSelected = self.currentSesion !== null;
             const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
             if (toolbar) {
                 toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-simbolo-sesion-toolbar-btn').disabled = !isSesionSelected;
-
                 const fijarBtn = toolbar.querySelector('#cpp-fijar-sesion-toolbar-btn');
                 fijarBtn.disabled = !isSesionSelected;
                 if (isSesionSelected) {
@@ -122,7 +127,6 @@
                     }
                 }
             }
-            // No se llama a scrollIntoView para que la vista no se mueva.
         });
 
         // Actividades
@@ -178,12 +182,27 @@
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
-        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) { e.stopPropagation(); });
-        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() { self.handleSesionSelection(this.dataset.sesionId, this.checked); });
+        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
+            if (e.shiftKey && self.lastClickedSesionId) {
+                e.preventDefault();
+                self.isShiftSelecting = true;
+                self.handleShiftSelection(this.dataset.sesionId);
+                // Use a timeout to reset the flag after the current event loop,
+                // allowing the 'change' event to be correctly ignored.
+                setTimeout(() => {
+                    self.isShiftSelecting = false;
+                }, 0);
+            }
+        });
+
+        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() {
+            if (self.isShiftSelecting) return;
+            self.handleSesionSelection(this.dataset.sesionId, this.checked);
+        });
         $document.on('click', '#cpp-copy-selected-btn', () => self.openCopySesionModal());
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
         $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
-        $document.on('click', '#cpp-cancel-selection-btn', () => self.cancelSelection());
+        $document.on('click', '#cpp-deselect-all-btn', () => self.cancelSelection());
         this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
         this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
         this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
@@ -324,8 +343,35 @@
 
     cancelSelection() {
         this.selectedSesiones = [];
+        this.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
         this.updateBulkActionsUI();
-        this.renderProgramacionTab(); // Re-render to uncheck all boxes
+    },
+    handleShiftSelection(endSesionId) {
+        const sesionElements = Array.from(this.appElement.querySelectorAll('.cpp-sesion-list-item'));
+        const allSesionIds = sesionElements.map(el => el.dataset.sesionId);
+
+        const startIndex = allSesionIds.indexOf(this.lastClickedSesionId);
+        const endIndex = allSesionIds.indexOf(endSesionId);
+
+        if (startIndex === -1 || endIndex === -1) {
+            return;
+        }
+
+        const [start, end] = [startIndex, endIndex].sort((a, b) => a - b);
+        const idsToSelect = allSesionIds.slice(start, end + 1);
+
+        // Reemplazar la selección actual con el nuevo rango
+        this.selectedSesiones = idsToSelect;
+
+        // Actualizar checkboxes
+        sesionElements.forEach(el => {
+            const checkbox = el.querySelector('.cpp-sesion-checkbox');
+            if (checkbox) {
+                checkbox.checked = this.selectedSesiones.includes(el.dataset.sesionId);
+            }
+        });
+
+        this.updateBulkActionsUI();
     },
 
     // --- Lógica de la App ---
@@ -1862,6 +1908,7 @@
 
     // --- Copy Sessions Logic ---
     handleSesionSelection(sesionId, isChecked) {
+        this.lastClickedSesionId = sesionId;
         if (isChecked) {
             if (!this.selectedSesiones.includes(sesionId)) {
                 this.selectedSesiones.push(sesionId);
@@ -1884,7 +1931,7 @@
             container.innerHTML = `
                 <button id="cpp-copy-selected-btn" class="cpp-btn cpp-btn-primary">Copiar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
                 <button id="cpp-delete-selected-btn" class="cpp-btn cpp-btn-danger">Eliminar ${count} ${count > 1 ? 'sesiones' : 'sesión'}</button>
-                <button id="cpp-cancel-selection-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
+                <button id="cpp-deselect-all-btn" class="cpp-btn cpp-btn-secondary">Deseleccionar todo</button>
             `;
             container.classList.remove('hidden');
         } else {
@@ -2024,11 +2071,17 @@
         const originalBtnHtml = $btn.innerHTML;
         $btn.disabled = true;
         $btn.innerHTML = '<span class="dashicons dashicons-update dashicons-spin"></span> Copiando...';
+        const sesionesFiltradas = this.sesiones
+            .filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId)
+            .map(s => s.id.toString());
+
+        const orderedSelectedIds = sesionesFiltradas.filter(id => this.selectedSesiones.includes(id));
+
 
         const data = new URLSearchParams({
             action: 'cpp_copy_multiple_sesiones',
             nonce: cppFrontendData.nonce,
-            session_ids: JSON.stringify(this.selectedSesiones),
+            session_ids: JSON.stringify(orderedSelectedIds),
             destination_clase_id: destClaseId,
             destination_evaluacion_id: destEvaluacionId
         });
