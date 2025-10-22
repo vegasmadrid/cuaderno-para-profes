@@ -256,6 +256,12 @@ function cpp_ajax_guardar_actividad_evaluable() {
     $descripcion_actividad = isset($_POST['descripcion_actividad']) ? sanitize_textarea_field($_POST['descripcion_actividad']) : '';
     $actividad_id_editar = isset($_POST['actividad_id_editar']) ? intval($_POST['actividad_id_editar']) : 0;
     $sesion_id = isset($_POST['sesion_id']) ? intval($_POST['sesion_id']) : null;
+
+    // Si la actividad está vinculada a una sesión de programación, su fecha debe ser NULL
+    // para que la herede de la sesión.
+    if ($sesion_id && $sesion_id > 0) {
+        $fecha_actividad = null;
+    }
     
     $categoria_id = isset($_POST['categoria_id_actividad']) && $_POST['categoria_id_actividad'] !== '' ? intval($_POST['categoria_id_actividad']) : 0;
 

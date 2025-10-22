@@ -5,6 +5,55 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 // --- FUNCIONES PARA ACTIVIDADES Y CALIFICACIONES ---
 
+/**
+ * Hidrata un array de actividades con las fechas calculadas de sus sesiones, si es necesario.
+ * Esta es la "fuente única de verdad" para las fechas de actividades programadas.
+ *
+ * @param array $actividades Array de actividades a procesar.
+ * @param int $clase_id El ID de la clase actual.
+ * @param int $evaluacion_id El ID de la evaluación actual.
+ * @param int $user_id El ID del usuario actual.
+ * @return array El array de actividades con las fechas actualizadas.
+ */
+function cpp_hidratar_fechas_de_actividades($actividades, $clase_id, $evaluacion_id, $user_id) {
+    if (empty($actividades) || empty($clase_id) || empty($evaluacion_id)) {
+        return $actividades;
+    }
+
+    $actividades_a_hidratar = [];
+    foreach ($actividades as $actividad) {
+        if (empty($actividad['fecha_actividad']) && !empty($actividad['sesion_id'])) {
+            $actividades_a_hidratar[$actividad['id']] = $actividad['sesion_id'];
+        }
+    }
+
+    if (empty($actividades_a_hidratar)) {
+        return $actividades;
+    }
+
+    // Si hay actividades que necesitan fecha, obtenemos el mapa de fechas de la programación.
+    // Esta función ya es eficiente y calcula las fechas para toda una evaluación de una vez.
+    $fechas_sesiones = cpp_programador_get_fechas_for_evaluacion($evaluacion_id, $clase_id, $user_id);
+
+    if (empty($fechas_sesiones)) {
+        return $actividades;
+    }
+
+    // Recorremos el array original de actividades y actualizamos las fechas donde sea necesario.
+    foreach ($actividades as $index => $actividad) {
+        $actividad_id = $actividad['id'];
+        if (isset($actividades_a_hidratar[$actividad_id])) {
+            $sesion_id_correspondiente = $actividades_a_hidratar[$actividad_id];
+            if (isset($fechas_sesiones[$sesion_id_correspondiente]['fecha'])) {
+                $actividades[$index]['fecha_actividad'] = $fechas_sesiones[$sesion_id_correspondiente]['fecha'];
+            }
+        }
+    }
+
+    return $actividades;
+}
+
+
 function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) {
     global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
@@ -23,15 +72,34 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
         return [];
     }
     
-    // Se añade `a.id_actividad_programada` a la consulta
-    return $wpdb->get_results( $wpdb->prepare(
+    // 1. Obtener las actividades de la base de datos
+    $actividades = $wpdb->get_results( $wpdb->prepare(
         "SELECT a.*, cat.nombre_categoria, cat.color AS categoria_color
          FROM $tabla_actividades a
          LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id
-         WHERE a.clase_id = %d AND a.user_id = %d AND a.evaluacion_id = %d
-         ORDER BY a.fecha_actividad ASC, a.nombre_actividad ASC",
+         WHERE a.clase_id = %d AND a.user_id = %d AND a.evaluacion_id = %d",
         $clase_id, $user_id, $evaluacion_id
     ), ARRAY_A );
+
+    // 2. Hidratar las fechas de las actividades que lo necesiten
+    $actividades = cpp_hidratar_fechas_de_actividades($actividades, $clase_id, $evaluacion_id, $user_id);
+
+    // 3. Ordenar las actividades CON LAS FECHAS YA HIDRATADAS
+    usort($actividades, function($a, $b) {
+        $fecha_a = strtotime($a['fecha_actividad']);
+        $fecha_b = strtotime($b['fecha_actividad']);
+
+        if ($fecha_a == $fecha_b) {
+            return strcmp($a['nombre_actividad'], $b['nombre_actividad']);
+        }
+        // Si una fecha es nula o inválida, la ponemos al final
+        if ($fecha_a === false) return 1;
+        if ($fecha_b === false) return -1;
+
+        return $fecha_a - $fecha_b;
+    });
+
+    return $actividades;
 }
 
 function cpp_guardar_actividad_evaluable($datos) {
