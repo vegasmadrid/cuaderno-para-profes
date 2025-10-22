@@ -209,6 +209,10 @@ function cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities 
     }
 
     $wpdb->query('COMMIT');
+
+    // Después de copiar, recalcular las fechas para la evaluación de destino.
+    cpp_resincronizar_fechas_actividades_evaluables($user_id, $destination_clase_id, $destination_evaluacion_id);
+
     return true;
 }
 
