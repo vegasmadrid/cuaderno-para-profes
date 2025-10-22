@@ -385,6 +385,12 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
             $new_activity_data['evaluacion_id'] = $destination_evaluacion_id;
             $new_activity_data['sesion_id'] = $new_session_id;
 
+            // Forzar la fecha a NULL para que herede la fecha de la nueva sesión.
+            // Esta es la corrección clave para la regresión.
+            if (!empty($new_activity_data['sesion_id'])) {
+                $new_activity_data['fecha_actividad'] = null;
+            }
+
             // Handle category mapping
             $original_category_name = $wpdb->get_var($wpdb->prepare("SELECT nombre_categoria FROM $tabla_categorias WHERE id = %d", $activity['categoria_id']));
             if ($original_category_name) {
