@@ -378,7 +378,13 @@ function cpp_run_migrations() {
         cpp_migrate_nullify_scheduled_activity_dates_v2_2_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
-
+    // --- IMPORTANTE: Limpiar caché después de las migraciones ---
+    // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.
+    if (version_compare($current_version, CPP_VERSION, '<')) {
+        // Forzamos la limpieza de la caché de datos del programador para todos los usuarios
+        // para asegurar que los datos se regeneran con la nueva estructura.
+        delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
+    }
     update_option('cpp_version', CPP_VERSION);
 }
 

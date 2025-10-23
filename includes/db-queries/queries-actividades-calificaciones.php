@@ -33,7 +33,7 @@ function cpp_hidratar_fechas_de_actividades($actividades, $clase_id, $evaluacion
 
     // Si hay actividades que necesitan fecha, obtenemos el mapa de fechas de la programación.
     // Esta función ya es eficiente y calcula las fechas para toda una evaluación de una vez.
-    $fechas_sesiones = cpp_programador_get_fechas_for_evaluacion($evaluacion_id, $clase_id, $user_id);
+    $fechas_sesiones = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
 
     if (empty($fechas_sesiones)) {
         return $actividades;

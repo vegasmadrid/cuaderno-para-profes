@@ -12,6 +12,15 @@ function cpp_programador_save_config_value($user_id, $clave, $valor) {
 }
 
 function cpp_programador_get_all_data($user_id) {
+    // --- Lógica de Caché ---
+    $cached_data = get_user_meta($user_id, 'cpp_programador_all_data_cache', true);
+    if (!empty($cached_data) && is_array($cached_data)) {
+        // Podríamos añadir un timestamp a la caché si necesitara expirar,
+        // pero para este caso de uso, una limpieza manual en la migración es suficiente.
+        return $cached_data;
+    }
+    // --- Fin de Lógica de Caché ---
+
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
@@ -113,8 +122,10 @@ function cpp_programador_get_all_data($user_id) {
             }
         }
     }
-
-    return ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones), 'debug_evaluables' => $actividades_evaluables];
+    $final_data = ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones), 'debug_evaluables' => $actividades_evaluables];
+    // Guardar en caché antes de devolver
+    update_user_meta($user_id, 'cpp_programador_all_data_cache', $final_data);
+    return $final_data;
 }
 
 
