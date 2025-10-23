@@ -4,6 +4,13 @@
 defined('ABSPATH') or die('Acceso no permitido');
 
 
+function cpp_clear_programador_cache($user_id) {
+    if (empty($user_id)) {
+        return false;
+    }
+    return delete_user_meta($user_id, 'cpp_programador_all_data_cache');
+}
+
 function cpp_programador_save_config_value($user_id, $clave, $valor) {
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';
@@ -12,6 +19,15 @@ function cpp_programador_save_config_value($user_id, $clave, $valor) {
 }
 
 function cpp_programador_get_all_data($user_id) {
+    // --- Lógica de Caché ---
+    $cached_data = get_user_meta($user_id, 'cpp_programador_all_data_cache', true);
+    if (!empty($cached_data) && is_array($cached_data)) {
+        // Podríamos añadir un timestamp a la caché si necesitara expirar,
+        // pero para este caso de uso, una limpieza manual en la migración es suficiente.
+        return $cached_data;
+    }
+    // --- Fin de Lógica de Caché ---
+
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
@@ -113,8 +129,10 @@ function cpp_programador_get_all_data($user_id) {
             }
         }
     }
-
-    return ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones), 'debug_evaluables' => $actividades_evaluables];
+    $final_data = ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones), 'debug_evaluables' => $actividades_evaluables];
+    // Guardar en caché antes de devolver
+    update_user_meta($user_id, 'cpp_programador_all_data_cache', $final_data);
+    return $final_data;
 }
 
 
@@ -384,6 +402,12 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
             $new_activity_data['clase_id'] = $destination_clase_id;
             $new_activity_data['evaluacion_id'] = $destination_evaluacion_id;
             $new_activity_data['sesion_id'] = $new_session_id;
+
+            // Forzar la fecha a NULL para que herede la fecha de la nueva sesión.
+            // Esta es la corrección clave para la regresión.
+            if (!empty($new_activity_data['sesion_id'])) {
+                $new_activity_data['fecha_actividad'] = null;
+            }
 
             // Handle category mapping
             $original_category_name = $wpdb->get_var($wpdb->prepare("SELECT nombre_categoria FROM $tabla_categorias WHERE id = %d", $activity['categoria_id']));

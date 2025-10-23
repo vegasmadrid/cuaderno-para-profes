@@ -256,6 +256,12 @@ function cpp_ajax_guardar_actividad_evaluable() {
     $descripcion_actividad = isset($_POST['descripcion_actividad']) ? sanitize_textarea_field($_POST['descripcion_actividad']) : '';
     $actividad_id_editar = isset($_POST['actividad_id_editar']) ? intval($_POST['actividad_id_editar']) : 0;
     $sesion_id = isset($_POST['sesion_id']) ? intval($_POST['sesion_id']) : null;
+
+    // Si la actividad está vinculada a una sesión de programación, su fecha debe ser NULL
+    // para que la herede de la sesión.
+    if ($sesion_id && $sesion_id > 0) {
+        $fecha_actividad = null;
+    }
     
     $categoria_id = isset($_POST['categoria_id_actividad']) && $_POST['categoria_id_actividad'] !== '' ? intval($_POST['categoria_id_actividad']) : 0;
 
@@ -433,7 +439,19 @@ function cpp_ajax_get_evaluable_activity_data() {
     ), ARRAY_A);
 
     if ($actividad) {
-        wp_send_json_success($actividad);
+        // Envolver la actividad en un array para poder usar la función de hidratación
+        $actividades_a_hidratar = [$actividad];
+
+        // Llamar a la función de hidratación
+        $actividades_hidratadas = cpp_hidratar_fechas_de_actividades(
+            $actividades_a_hidratar,
+            $actividad['clase_id'],
+            $actividad['evaluacion_id'],
+            $user_id
+        );
+
+        // Devolver la primera (y única) actividad del array hidratado
+        wp_send_json_success($actividades_hidratadas[0]);
     } else {
         wp_send_json_error(['message' => 'Actividad no encontrada o no tienes permiso.']);
     }
