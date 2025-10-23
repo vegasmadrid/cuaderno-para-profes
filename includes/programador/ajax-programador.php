@@ -421,7 +421,13 @@ function cpp_ajax_copy_sessions() {
     $result = cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id);
 
     if ($result) {
-        wp_send_json_success(['message' => 'Sesiones copiadas correctamente.']);
+        // --- FIX: Devolver las nuevas fechas para actualizar la UI del destino ---
+        $fechas_actualizadas = cpp_programador_get_fechas_for_evaluacion($user_id, $destination_clase_id, $destination_evaluacion_id);
+        wp_send_json_success([
+            'message' => 'Sesiones copiadas correctamente.',
+            'needs_gradebook_reload' => true,
+            'fechas' => $fechas_actualizadas
+        ]);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al copiar las sesiones.']);
     }
