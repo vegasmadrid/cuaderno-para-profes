@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.2.0');
+define('CPP_VERSION', '2.2.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -337,6 +337,16 @@ function cpp_migrate_add_fixed_date_to_sessions_v2_2() {
     }
 }
 
+function cpp_migrate_nullify_scheduled_activity_dates_v2_2_1() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'cpp_actividades_evaluables';
+
+    // Pone a NULL la fecha de todas las actividades que están vinculadas a una sesión
+    $wpdb->query(
+        "UPDATE $table_name SET fecha_actividad = NULL WHERE sesion_id IS NOT NULL"
+    );
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -363,6 +373,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '2.2.0', '<')) {
         cpp_migrate_add_fixed_date_to_sessions_v2_2();
+    }
+     if (version_compare($current_version, '2.2.1', '<')) {
+        cpp_migrate_nullify_scheduled_activity_dates_v2_2_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
 
