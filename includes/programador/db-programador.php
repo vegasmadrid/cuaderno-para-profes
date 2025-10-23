@@ -4,6 +4,13 @@
 defined('ABSPATH') or die('Acceso no permitido');
 
 
+function cpp_clear_programador_cache($user_id) {
+    if (empty($user_id)) {
+        return false;
+    }
+    return delete_user_meta($user_id, 'cpp_programador_all_data_cache');
+}
+
 function cpp_programador_save_config_value($user_id, $clave, $valor) {
     global $wpdb;
     $tabla_config = $wpdb->prefix . 'cpp_programador_config';
