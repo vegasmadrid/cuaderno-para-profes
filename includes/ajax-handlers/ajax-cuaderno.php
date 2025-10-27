@@ -9,6 +9,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     
     $user_id = get_current_user_id();
+    cpp_clear_programador_cache($user_id);
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     $evaluacion_id_solicitada = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : null;
     $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : 'apellidos';
