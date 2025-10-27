@@ -1550,6 +1550,31 @@
             });
     },
 
+    addActivityToCurrentSession(actividad) {
+        if (!this.currentSesion) {
+            console.error("No hay una sesión activa para añadir la actividad.");
+            return;
+        }
+
+        if (!this.currentSesion.actividades_programadas) {
+            this.currentSesion.actividades_programadas = [];
+        }
+
+        const existingIndex = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividad.id && a.tipo === actividad.tipo);
+
+        if (existingIndex > -1) {
+            this.currentSesion.actividades_programadas[existingIndex] = actividad;
+        } else {
+            this.currentSesion.actividades_programadas.push(actividad);
+        }
+
+        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+        if (rightCol) {
+            rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+            this.makeActividadesSortable();
+        }
+    },
+
     refreshCurrentView(callback) {
         const currentSesionId = this.currentSesion ? this.currentSesion.id : null;
         this.fetchDataFromServer().then(result => {

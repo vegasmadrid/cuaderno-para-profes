@@ -200,21 +200,24 @@
                 success: function(response) {
                     if (response.success) {
                         const $modal = $('#cpp-modal-actividad-evaluable-cuaderno');
-                        $modal.data('saved', true); // Marcar como guardado para el observer
+                        $modal.data('saved', true);
                         $modal.fadeOut();
 
-                        // Recargar Cuaderno si está visible
+                        // Optimistic update for Programador
+                        if (response.data.actividad && typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase && ajaxData.sesion_id) {
+                            CppProgramadorApp.addActivityToCurrentSession(response.data.actividad);
+                        } else if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
+                            // Fallback to refresh if the new object is not returned
+                            CppProgramadorApp.refreshCurrentView();
+                        }
+
+                        // Always refresh gradebook as it's a separate view
                         if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
                             cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
                         }
 
-                        // Recargar Programador si existe en la página
-                        if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
-                           CppProgramadorApp.refreshCurrentView();
-                        }
-
-                        // Compatibilidad con tutorial
+                        // Tutorial compatibility
                         if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 10) {
                             setTimeout(() => cpp.tutorial.nextStep(), 500);
                         }
