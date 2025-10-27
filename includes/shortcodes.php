@@ -227,6 +227,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <button class="cpp-btn-icon cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">
                         <span class="dashicons dashicons-admin-generic"></span>
                     </button>
+                    <button class="cpp-btn-icon" id="cpp-toggle-fullscreen-btn" title="Pantalla Completa">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
                     <div class="cpp-user-menu-container">
                         <button class="cpp-user-menu-avatar-btn">
                             <img src="<?php echo esc_url(get_avatar_url($user_id)); ?>" alt="Avatar de usuario">
