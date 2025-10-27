@@ -475,8 +475,8 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 #cpp-global-evaluacion-selector {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: inherit;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: black;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
     padding: 6px 12px;
@@ -547,11 +547,11 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 /* Ajuste para que la sección de color ocupe más espacio */
 .cpp-top-bar-left {
-    flex-grow: 1;
+    flex-grow: 0;
     flex-shrink: 0;
 }
 .cpp-top-bar-center.cpp-tabs-clase-specific {
-    flex-grow: 10; /* Más espacio para las pestañas */
+    flex-grow: 0; /* Más espacio para las pestañas */
     justify-content: flex-start;
     gap: 0; /* Sin espacio entre pestañas */
 }
@@ -559,7 +559,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 /* Pestañas de la clase */
 .cpp-tabs-clase-specific .cpp-main-tab-link {
     height: 100%; /* Ocupar toda la altura */
-    border-radius: 0 !important; /* Sin bordes redondeados */
+    border-radius: 10px 10px 0 0 !important;
     padding: 0 25px;
     font-size: 15px; /* Tamaño de letra ajustado */
     font-weight: 600; /* Letra más destacada */
@@ -577,7 +577,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 .cpp-tabs-clase-specific .cpp-main-tab-link.active {
-    background-color: #fff !important;
+    background-color: white !important;
     color: #333 !important;
     box-shadow: none; /* Sin sombra en la pestaña activa */
 }
