@@ -568,6 +568,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     background-color: transparent;
     border: none;
     border-right: 1px solid rgba(0,0,0,0.1); /* Separador sutil */
+    border-bottom: 1px solid rgba(0,0,0,0.1);
     transition: all 0.2s ease-in-out;
 }
 
@@ -580,6 +581,10 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     background-color: white !important;
     color: #333 !important;
     box-shadow: none; /* Sin sombra en la pestaña activa */
+    position: relative;
+    margin-bottom: -1px;
+    border-bottom: 1px solid white;
+    border-right: none;
 }
 
 /* Sección blanca (derecha) */
