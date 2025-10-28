@@ -557,7 +557,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 /* Pestañas de la clase */
 .cpp-tabs-clase-specific .cpp-main-tab-link {
-    height: 90%; /* Ocupar toda la altura */
+    height: 85%; /* Ocupar toda la altura */
     border-radius: 10px 10px 0 0 !important;
     padding: 0 25px;
     font-size: 15px; /* Tamaño de letra ajustado */
@@ -569,7 +569,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     border-right: 1px solid rgba(0,0,0,0.1); /* Separador sutil */
     border-bottom: 1px solid rgba(0,0,0,0.1);
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 -5px 10px -5px rgba(0,0,0,0.2);
+    box-shadow: 0 -5px 10px -3px rgba(0,0,0,0.3);
 }
 
 .cpp-tabs-clase-specific .cpp-main-tab-link:hover {
