@@ -475,8 +475,8 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 #cpp-global-evaluacion-selector {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: inherit;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: black;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
     padding: 6px 12px;
@@ -540,26 +540,25 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-top-bar-left, .cpp-top-bar-center.cpp-tabs-clase-specific {
     height: 100%;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     background-color: inherit; /* Hereda el color de la clase */
-    box-shadow: 0 4px 8px -2px rgba(0,0,0,0.2); /* Sombra solo en la parte de color */
 }
 
 /* Ajuste para que la sección de color ocupe más espacio */
 .cpp-top-bar-left {
-    flex-grow: 1;
+    flex-grow: 0;
     flex-shrink: 0;
 }
 .cpp-top-bar-center.cpp-tabs-clase-specific {
-    flex-grow: 10; /* Más espacio para las pestañas */
+    flex-grow: 0; /* Más espacio para las pestañas */
     justify-content: flex-start;
     gap: 0; /* Sin espacio entre pestañas */
 }
 
 /* Pestañas de la clase */
 .cpp-tabs-clase-specific .cpp-main-tab-link {
-    height: 100%; /* Ocupar toda la altura */
-    border-radius: 0 !important; /* Sin bordes redondeados */
+    height: 85%; /* Ocupar toda la altura */
+    border-radius: 10px 10px 0 0 !important;
     padding: 0 25px;
     font-size: 15px; /* Tamaño de letra ajustado */
     font-weight: 600; /* Letra más destacada */
@@ -568,7 +567,9 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     background-color: transparent;
     border: none;
     border-right: 1px solid rgba(0,0,0,0.1); /* Separador sutil */
+    border-bottom: 1px solid rgba(0,0,0,0.1);
     transition: all 0.2s ease-in-out;
+    box-shadow: 0 -5px 10px -3px rgba(0,0,0,0.3);
 }
 
 .cpp-tabs-clase-specific .cpp-main-tab-link:hover {
@@ -577,9 +578,13 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 .cpp-tabs-clase-specific .cpp-main-tab-link.active {
-    background-color: #fff !important;
+    background-color: white !important;
     color: #333 !important;
     box-shadow: none; /* Sin sombra en la pestaña activa */
+    position: relative;
+    margin-bottom: -1px;
+    border-bottom: 1px solid white;
+    border-right: none;
 }
 
 /* Sección blanca (derecha) */
