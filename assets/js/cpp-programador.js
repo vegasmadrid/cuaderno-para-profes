@@ -942,7 +942,35 @@
                         rightCol.innerHTML = this.renderProgramacionTabRightColumn();
                         this.makeActividadesSortable();
                     }
-                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+                    this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
+                        // --- FIX: Reordenar después de guardar para mantener el orden cronológico ---
+                        if (!isNew) { // Solo reordenar si no es una sesión nueva (las nuevas ya lo gestionan)
+                            this.sesiones.sort((a, b) => {
+                                if (!a.fecha_calculada) return 1;
+                                if (!b.fecha_calculada) return -1;
+                                return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
+                            });
+
+                            const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                            if (list) {
+                                list.style.display = 'flex';
+                                list.style.flexDirection = 'column';
+
+                                const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                                sesionesFiltradas.forEach((sesion, index) => {
+                                    const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                                    if (item) {
+                                        item.style.order = index;
+                                        const numberElement = item.querySelector('.cpp-sesion-number');
+                                        if (numberElement) {
+                                            numberElement.textContent = `${index + 1}.`;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
 
                 } else {
                     alert(result.data.message || 'Error al guardar.');
