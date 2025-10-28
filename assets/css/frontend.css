@@ -540,9 +540,8 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-top-bar-left, .cpp-top-bar-center.cpp-tabs-clase-specific {
     height: 100%;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     background-color: inherit; /* Hereda el color de la clase */
-    box-shadow: 0 4px 8px -2px rgba(0,0,0,0.2); /* Sombra solo en la parte de color */
 }
 
 /* Ajuste para que la sección de color ocupe más espacio */
@@ -558,7 +557,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 /* Pestañas de la clase */
 .cpp-tabs-clase-specific .cpp-main-tab-link {
-    height: 100%; /* Ocupar toda la altura */
+    height: 90%; /* Ocupar toda la altura */
     border-radius: 10px 10px 0 0 !important;
     padding: 0 25px;
     font-size: 15px; /* Tamaño de letra ajustado */
@@ -570,6 +569,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     border-right: 1px solid rgba(0,0,0,0.1); /* Separador sutil */
     border-bottom: 1px solid rgba(0,0,0,0.1);
     transition: all 0.2s ease-in-out;
+    box-shadow: 0 -5px 10px -5px rgba(0,0,0,0.2);
 }
 
 .cpp-tabs-clase-specific .cpp-main-tab-link:hover {
