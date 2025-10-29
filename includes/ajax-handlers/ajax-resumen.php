@@ -4,6 +4,7 @@
 defined('ABSPATH') or die('Acceso no permitido');
 
 // Incluir los ficheros de consultas necesarios
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
 require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
 require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-evaluaciones.php';
 require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-calculos.php';
