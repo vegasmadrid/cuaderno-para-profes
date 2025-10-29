@@ -86,8 +86,9 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
 
     // 3. Ordenar las actividades CON LAS FECHAS YA HIDRATADAS
     usort($actividades, function($a, $b) {
-        $fecha_a = strtotime($a['fecha_actividad']);
-        $fecha_b = strtotime($b['fecha_actividad']);
+        // Añadir comprobaciones para evitar pasar null a strtotime()
+        $fecha_a = !empty($a['fecha_actividad']) ? strtotime($a['fecha_actividad']) : false;
+        $fecha_b = !empty($b['fecha_actividad']) ? strtotime($b['fecha_actividad']) : false;
 
         if ($fecha_a == $fecha_b) {
             return strcmp($a['nombre_actividad'], $b['nombre_actividad']);
