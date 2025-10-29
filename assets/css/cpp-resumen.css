@@ -1,0 +1,126 @@
+/* assets/css/cpp-resumen.css */
+
+.cpp-resumen-container {
+    padding: 25px;
+    background-color: #f9f9f9;
+}
+
+.cpp-resumen-main-title {
+    font-size: 28px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.cpp-resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.cpp-resumen-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+}
+
+.cpp-resumen-card h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #444;
+}
+
+/* Estadísticas Generales */
+.cpp-stats-general {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.cpp-stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.cpp-stat-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.cpp-stat-label {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+/* Ranking de Clases */
+.cpp-ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cpp-ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.cpp-ranking-item:last-child {
+    border-bottom: none;
+}
+
+.cpp-ranking-position {
+    font-weight: bold;
+    color: #3498db;
+    margin-right: 15px;
+    font-size: 1.2em;
+    width: 25px;
+    text-align: center;
+}
+
+.cpp-ranking-name {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.cpp-ranking-score {
+    font-weight: bold;
+    color: #2ecc71;
+}
+
+/* Tabla de Suspensos */
+.cpp-table-responsive-wrapper {
+    overflow-x: auto;
+}
+
+.cpp-resumen-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cpp-resumen-table th, .cpp-resumen-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.cpp-resumen-table th {
+    background-color: #f7f7f7;
+    font-weight: 600;
+}
+
+.cpp-resumen-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+.cpp-nota-suspenso {
+    color: #e74c3c;
+    font-weight: bold;
+}

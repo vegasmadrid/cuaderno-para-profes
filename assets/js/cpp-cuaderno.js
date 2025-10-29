@@ -354,6 +354,13 @@
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
                 }
+            } else if (tabName === 'resumen') {
+                if (window.cppResumenApp && typeof window.cppResumenApp.render === 'function') {
+                    window.cppResumenApp.render();
+                } else {
+                    console.error("Error: El objeto cppResumenApp no está disponible o no se pudo cargar.");
+                    $('#cpp-main-tab-resumen').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente de resumen.</p>');
+                }
             }
         },
 
