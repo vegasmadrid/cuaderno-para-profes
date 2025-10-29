@@ -3,7 +3,7 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
-// Incluir los ficheros de consultas necesarios
+// Incluir los ficheros de consultas necesarios para que el manejador sea autosuficiente
 require_once CPP_PLUGIN_DIR . 'includes/utils.php';
 require_once CPP_PLUGIN_DIR . 'includes/db.php';
 require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
