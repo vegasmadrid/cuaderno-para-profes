@@ -19,17 +19,6 @@ define('CPP_PLUGIN_URL', plugin_dir_url(__FILE__));
 // Incluir archivos
 require_once CPP_PLUGIN_DIR . 'includes/utils.php';
 require_once CPP_PLUGIN_DIR . 'includes/db.php';
-
-// Incluir todos los ficheros de consultas de base de datos
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-evaluaciones.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-categorias.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-calculos.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-asistencia.php';
-
-
 require_once CPP_PLUGIN_DIR . 'includes/shortcodes.php';
 require_once CPP_PLUGIN_DIR . 'includes/ajax.php';
 require_once CPP_PLUGIN_DIR . 'includes/excel-export.php'; 

@@ -3,6 +3,17 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+// Incluir los ficheros de consultas necesarios para que el manejador sea autosuficiente
+require_once CPP_PLUGIN_DIR . 'includes/utils.php';
+require_once CPP_PLUGIN_DIR . 'includes/db.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-evaluaciones.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-calculos.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-categorias.php';
+
+
 add_action('wp_ajax_cpp_get_resumen_data', 'cpp_ajax_get_resumen_data');
 
 function cpp_ajax_get_resumen_data()
