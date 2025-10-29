@@ -1816,7 +1816,8 @@
 
         const weekDates = this.getWeekDates(this.semanaDate);
         const allDays = { mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo' };
-        const daysToRender = calendarConfig.working_days.reduce((acc, dayKey) => {
+        const workingDays = (calendarConfig && Array.isArray(calendarConfig.working_days)) ? calendarConfig.working_days : [];
+        const daysToRender = workingDays.reduce((acc, dayKey) => {
             if (allDays[dayKey]) {
                 acc[dayKey] = allDays[dayKey];
             }
