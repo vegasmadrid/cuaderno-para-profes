@@ -1,11 +1,6 @@
 <?php
 // /includes/ajax-handlers/ajax-resumen.php
 
-// FORZAR LA VISUALIZACIÓN DE ERRORES PARA DEPURACIÓN
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 defined('ABSPATH') or die('Acceso no permitido');
 
 // Incluir los ficheros de consultas necesarios para que el manejador sea autosuficiente
@@ -61,7 +56,7 @@ function cpp_ajax_get_resumen_data()
         $nota_aprobado = isset($clase['nota_aprobado']) ? floatval($clase['nota_aprobado']) : 50.0;
 
         // 2. Obtener los alumnos de la clase
-        $alumnos = cpp_obtener_alumnos_por_clase($clase_id, $user_id);
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id);
         $totalAlumnos += count($alumnos);
 
         if (empty($alumnos)) {
