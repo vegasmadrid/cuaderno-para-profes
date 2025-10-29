@@ -1,6 +1,11 @@
 <?php
 // /includes/ajax-handlers/ajax-resumen.php
 
+// FORZAR LA VISUALIZACIÓN DE ERRORES PARA DEPURACIÓN
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 defined('ABSPATH') or die('Acceso no permitido');
 
 // Incluir los ficheros de consultas necesarios para que el manejador sea autosuficiente
