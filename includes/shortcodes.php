@@ -6,6 +6,10 @@ defined('ABSPATH') or die('Acceso no permitido');
 // --- SHORTCODE [cuaderno] (ÚNICO PUNTO DE ENTRADA DEL FRONTEND) ---
 add_shortcode('cuaderno', 'cpp_shortcode_cuaderno_notas_classroom');
 function cpp_shortcode_cuaderno_notas_classroom() {
+    // Enqueue assets specifically for this shortcode
+    wp_enqueue_style('cpp-resumen-css');
+    wp_enqueue_script('cpp-resumen-js');
+
     if (!is_user_logged_in()) {
         return '<div class="cpp-mensaje">Por favor, inicia sesión para acceder al cuaderno de notas.</div>';
     }
@@ -223,6 +227,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <div class="cpp-tabs-general">
                         <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
                         <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
+                        <button class="cpp-main-tab-link" data-tab="resumen">Resumen</button>
                     </div>
                     <button class="cpp-btn-icon cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">
                         <span class="dashicons dashicons-admin-generic"></span>
@@ -274,6 +279,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-semana" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-horario" class="cpp-main-tab-content"></div>
+                    <div id="cpp-main-tab-resumen" class="cpp-main-tab-content"></div>
                 </div>
                 <div id="cpp-sesion-modal" class="cpp-modal" style="display:none;">
                     <div class="cpp-modal-content">
