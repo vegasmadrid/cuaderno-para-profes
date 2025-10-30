@@ -152,9 +152,17 @@ function cpp_get_evaluaciones_para_media($clase_id, $user_id) {
         // Filtramos para quitar valores vacíos por si la cadena es ""
         return array_filter(array_map('intval', explode(',', $config_row)));
     } else {
-        // Si no hay configuración, por defecto se usan TODAS las evaluaciones
+        // Si no hay configuración, por defecto se usan TODAS las evaluaciones, EXCEPTO la final.
         $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
-        return wp_list_pluck($todas_las_evaluaciones, 'id');
+
+        $evaluaciones_filtradas = [];
+        foreach ($todas_las_evaluaciones as $evaluacion) {
+            if ($evaluacion['nombre_evaluacion'] !== 'Evaluación Final') {
+                $evaluaciones_filtradas[] = $evaluacion;
+            }
+        }
+
+        return wp_list_pluck($evaluaciones_filtradas, 'id');
     }
 }
 

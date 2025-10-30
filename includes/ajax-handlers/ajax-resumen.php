@@ -53,10 +53,13 @@ function cpp_ajax_get_resumen_data()
 
     foreach ($clases as $clase) {
         $clase_id = $clase['id'];
-        $nota_aprobado = isset($clase['nota_aprobado']) ? floatval($clase['nota_aprobado']) : 50.0;
+        // Usar la nota de aprobado específica de la clase, con un fallback a 50
+        $nota_aprobado_clase = isset($clase['nota_aprobado']) ? floatval($clase['nota_aprobado']) : 50.0;
+        // La nota se calcula sobre 100, así que la nota de aprobado también debe estar en esa escala
+        $nota_aprobado_100 = ($nota_aprobado_clase / floatval($clase['base_nota_final'])) * 100;
 
         // 2. Obtener los alumnos de la clase
-        $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id);
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, 'apellidos');
         $totalAlumnos += count($alumnos);
 
         if (empty($alumnos)) {
@@ -68,59 +71,38 @@ function cpp_ajax_get_resumen_data()
         $alumnosConNota = 0;
         $aprobadosClase = 0;
 
-        // 3. Obtener todas las evaluaciones de la clase
-        $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
-        if (empty($evaluaciones)) {
-            $rankingClases[] = ['nombre' => $clase['nombre'], 'notaMedia' => 0, 'tasaAprobados' => 0];
-            continue;
-        }
-
         foreach ($alumnos as $alumno) {
-            $sumaNotasAlumno = 0;
-            $evaluacionesConNota = 0;
+            // 3. Calcular la nota media final del alumno, respetando la configuración de la clase
+            $mediaAlumno = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
 
-            foreach ($evaluaciones as $evaluacion) {
-                // 4. Calcular la nota final del alumno en la evaluación
-                $resultado_nota = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
-                $nota_final_100 = $resultado_nota['nota'];
+            $sumaNotasClase += $mediaAlumno;
+            $sumaNotasGlobal += $mediaAlumno;
+            $alumnosConNota++;
+            $totalNotasComputadas++;
 
-                if ($nota_final_100 !== null) {
-                    $sumaNotasAlumno += $nota_final_100;
-                    $evaluacionesConNota++;
-                }
+            if ($mediaAlumno < $nota_aprobado_100) {
+                $alumnosSuspensos[] = [
+                    'nombre' => $alumno['nombre'],
+                    'apellidos' => $alumno['apellidos'],
+                    'clase' => $clase['nombre'],
+                    'notaFinal' => $mediaAlumno,
+                ];
+            } else {
+                $aprobadosClase++;
+                $totalAprobados++;
             }
 
-            if ($evaluacionesConNota > 0) {
-                $mediaAlumno = $sumaNotasAlumno / $evaluacionesConNota;
-                $sumaNotasClase += $mediaAlumno;
-                $sumaNotasGlobal += $mediaAlumno;
-                $alumnosConNota++;
-                $totalNotasComputadas++;
-
-                if ($mediaAlumno < $nota_aprobado) {
-                    $alumnosSuspensos[] = [
-                        'nombre' => $alumno['nombre'],
-                        'apellidos' => $alumno['apellidos'],
-                        'clase' => $clase['nombre'],
-                        'notaFinal' => $mediaAlumno,
-                    ];
-                } else {
-                    $aprobadosClase++;
-                    $totalAprobados++;
-                }
-
-                // Clasificar la nota para el gráfico de distribución
-                if ($mediaAlumno >= 90) {
-                    $distribucionNotas['sobresaliente']++;
-                } elseif ($mediaAlumno >= 70) {
-                    $distribucionNotas['notable']++;
-                } elseif ($mediaAlumno >= 60) {
-                    $distribucionNotas['bien']++;
-                } elseif ($mediaAlumno >= 50) {
-                    $distribucionNotas['suficiente']++;
-                } else {
-                    $distribucionNotas['insuficiente']++;
-                }
+            // Clasificar la nota para el gráfico de distribución
+            if ($mediaAlumno >= 90) {
+                $distribucionNotas['sobresaliente']++;
+            } elseif ($mediaAlumno >= 70) {
+                $distribucionNotas['notable']++;
+            } elseif ($mediaAlumno >= 60) {
+                $distribucionNotas['bien']++;
+            } elseif ($mediaAlumno >= 50) {
+                $distribucionNotas['suficiente']++;
+            } else {
+                $distribucionNotas['insuficiente']++;
             }
         }
 
@@ -129,12 +111,12 @@ function cpp_ajax_get_resumen_data()
         $rankingClases[] = ['nombre' => $clase['nombre'], 'notaMedia' => $notaMediaClase, 'tasaAprobados' => $tasaAprobadosClase];
     }
 
-    // 5. Ordenar el ranking de clases
+    // 4. Ordenar el ranking de clases
     usort($rankingClases, function ($a, $b) {
         return $b['notaMedia'] <=> $a['notaMedia'];
     });
 
-    // 6. Calcular estadísticas adicionales
+    // 5. Calcular estadísticas adicionales
     $promedioGeneral = ($totalNotasComputadas > 0) ? $sumaNotasGlobal / $totalNotasComputadas : 0;
     $tasaAprobados = ($totalAlumnos > 0) ? ($totalAprobados / $totalAlumnos) * 100 : 0;
 
