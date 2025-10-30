@@ -179,9 +179,10 @@ class CppResumenApp {
                     }]
                 },
                 options: {
+                    indexAxis: 'y', // Eje principal ahora es Y
                     responsive: true,
                     scales: {
-                        y: {
+                        x: { // Configuramos el eje X
                             beginAtZero: true,
                             max: 100
                         }
