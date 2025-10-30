@@ -225,6 +225,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 </div>
                 <div class="cpp-top-bar-right">
                     <div class="cpp-tabs-general">
+                        <button class="cpp-main-tab-link" data-tab="alumnos">Alumnos</button>
                         <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
                         <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
                         <button class="cpp-main-tab-link" data-tab="resumen">Resumen</button>
@@ -277,6 +278,30 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         </div>
                     </div>
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
+                    <div id="cpp-main-tab-alumnos" class="cpp-main-tab-content">
+                        <div class="cpp-alumnos-view-container">
+                            <div class="cpp-alumnos-view-sidebar">
+                                <div class="cpp-alumnos-search-bar">
+                                    <input type="text" id="cpp-alumnos-search-input" placeholder="Buscar alumno por nombre...">
+                                    <button id="cpp-alumnos-search-btn" class="cpp-btn"><span class="dashicons dashicons-search"></span></button>
+                                </div>
+                                <div class="cpp-alumnos-filters">
+                                    <select id="cpp-alumnos-filter-clase">
+                                        <option value="">Todas las clases</option>
+                                        <!-- Opciones de clase se cargarán aquí -->
+                                    </select>
+                                </div>
+                                <div id="cpp-alumnos-search-results" class="cpp-alumnos-list">
+                                    <!-- Los resultados de la búsqueda aparecerán aquí -->
+                                    <p class="cpp-empty-panel">Usa el buscador para encontrar un alumno.</p>
+                                </div>
+                            </div>
+                            <div id="cpp-alumnos-view-main" class="cpp-alumnos-view-content">
+                                <!-- La ficha del alumno seleccionado se mostrará aquí -->
+                                <p class="cpp-empty-panel">Selecciona un alumno de la lista para ver su ficha completa.</p>
+                            </div>
+                        </div>
+                    </div>
                     <div id="cpp-main-tab-semana" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-horario" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-resumen" class="cpp-main-tab-content"></div>

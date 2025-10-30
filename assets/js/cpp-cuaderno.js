@@ -361,6 +361,8 @@
                     console.error("Error: El objeto cppResumenApp no está disponible o no se pudo cargar.");
                     $('#cpp-main-tab-resumen').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente de resumen.</p>');
                 }
+            } else if (tabName === 'alumnos') {
+                // No specific action needed here for now, content is already in the DOM
             }
         },
 
