@@ -35,11 +35,6 @@ register_activation_hook(__FILE__, 'cpp_crear_tablas');
 // Cargar assets
 add_action('wp_enqueue_scripts', 'cpp_cargar_assets');
 function cpp_cargar_assets() {
-    global $post;
-    // Solo cargar los assets si el shortcode [cuaderno] está presente
-    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
-        return;
-    }
 
     $plugin_version = defined('WP_DEBUG') && WP_DEBUG ? time() : CPP_VERSION;
 
