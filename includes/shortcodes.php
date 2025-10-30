@@ -6,6 +6,10 @@ defined('ABSPATH') or die('Acceso no permitido');
 // --- SHORTCODE [cuaderno] (ÚNICO PUNTO DE ENTRADA DEL FRONTEND) ---
 add_shortcode('cuaderno', 'cpp_shortcode_cuaderno_notas_classroom');
 function cpp_shortcode_cuaderno_notas_classroom() {
+    // Enqueue assets specifically for this shortcode
+    wp_enqueue_style('cpp-resumen-css');
+    wp_enqueue_script('cpp-resumen-js');
+
     if (!is_user_logged_in()) {
         return '<div class="cpp-mensaje">Por favor, inicia sesión para acceder al cuaderno de notas.</div>';
     }
