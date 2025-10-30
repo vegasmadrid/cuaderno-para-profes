@@ -38,14 +38,15 @@
 
 /* Estadísticas Generales */
 .cpp-stats-general {
-    display: flex;
-    justify-content: space-around;
-    text-align: center;
+    text-align: center; /* Mantenemos el centrado del texto */
 }
 
 .cpp-stat-item {
-    display: flex;
-    flex-direction: column;
+    margin-bottom: 20px; /* Añadimos espacio vertical */
+}
+
+.cpp-stat-item:last-child {
+    margin-bottom: 0; /* Eliminamos el margen del último elemento */
 }
 
 .cpp-stat-value {
