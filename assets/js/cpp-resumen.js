@@ -66,7 +66,7 @@ class CppResumenApp {
                                 <span class="cpp-stat-label">Alumnos Totales</span>
                             </div>
                             <div class="cpp-stat-item">
-                                <span class="cpp-stat-value">${estadisticasAdicionales.promedioGeneral.toFixed(2)}%</span>
+                                <span class="cpp-stat-value">${estadisticasAdicionales.promedioGeneral.toFixed(2)}</span>
                                 <span class="cpp-stat-label">Nota Media General</span>
                             </div>
                             <div class="cpp-stat-item">
