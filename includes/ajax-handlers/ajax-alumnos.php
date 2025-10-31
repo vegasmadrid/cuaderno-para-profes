@@ -156,7 +156,9 @@ function cpp_ajax_get_alumno_ficha() {
     $alumnos_clase = $wpdb->get_results($wpdb->prepare("SELECT id FROM $tabla_alumnos WHERE clase_id = %d", $alumno->clase_id));
     $notas_finales = [];
     foreach ($alumnos_clase as $a) {
-        $notas_finales[$a->id] = cpp_calcular_nota_final_alumno($a->id, $alumno->clase_id)['nota'];
+        // FIX: Utilizar la función correcta que calcula la media de las evaluaciones configuradas
+        // y pasar todos los argumentos necesarios (user_id).
+        $notas_finales[$a->id] = cpp_calcular_nota_media_final_alumno($a->id, $alumno->clase_id, $user_id);
     }
     arsort($notas_finales);
     $ranking = array_search($alumno_id, array_keys($notas_finales)) + 1;
