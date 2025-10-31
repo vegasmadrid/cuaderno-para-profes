@@ -9,10 +9,18 @@
     }
 
     cpp.alumnos = {
+        _charts: [], // Almacenar instancias de gráficos para destruirlas después
+
         init: function() {
             console.log("CPP Alumnos Module Initializing...");
             this.bindEvents();
             this.loadClasesIntoFilter();
+        },
+
+        // --- Función para destruir gráficos ---
+        destroyCharts: function() {
+            this._charts.forEach(chart => chart.destroy());
+            this._charts = [];
         },
 
         loadClasesIntoFilter: function() {
@@ -182,6 +190,7 @@
         },
 
         renderAlumnoFicha: function(fichaData) {
+            this.destroyCharts(); // Destruir gráficos antiguos antes de renderizar nuevos
             const $fichaContainer = $('#cpp-alumnos-view-main');
 
             let anotacionesHtml = '<p>No hay anotaciones registradas.</p>';
@@ -296,7 +305,7 @@
             const data = rendimientoData.map(d => d.nota_percent);
             const pointColors = rendimientoData.map(d => this.getNotaColor(d.nota_percent));
 
-            new Chart(ctx, {
+            const chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -341,6 +350,7 @@
                     }
                 }
             });
+            this._charts.push(chart);
         },
 
         renderPromedioCharts: function(promedios) {
@@ -351,7 +361,7 @@
                 const promedio = p.promedio;
                 const color = this.getNotaColor(promedio);
 
-                new Chart(ctx, {
+                const chart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         datasets: [{
@@ -383,6 +393,7 @@
                         }
                     }
                 });
+                this._charts.push(chart);
             });
         },
 
