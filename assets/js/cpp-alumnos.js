@@ -38,16 +38,23 @@
             });
         },
 
+        debounce: function(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        },
+
         bindEvents: function() {
             console.log("Binding Alumnos events...");
             const $document = $(document);
 
+            const debouncedSearch = this.debounce(this.handleSearch, 300);
+
             $document.on('click', '#cpp-alumnos-search-btn', this.handleSearch.bind(this));
-            $document.on('keyup', '#cpp-alumnos-search-input', function(e) {
-                if (e.key === 'Enter') {
-                    this.handleSearch();
-                }
-            }.bind(this));
+            $document.on('keyup', '#cpp-alumnos-search-input', debouncedSearch.bind(this));
 
             $document.on('change', '#cpp-alumnos-filter-clase', this.handleSearch.bind(this));
 
@@ -176,7 +183,25 @@
 
         renderAlumnoFicha: function(fichaData) {
             const $fichaContainer = $('#cpp-alumnos-view-main');
-            // TODO: Fetch and display anotaciones, ausencias, and statistics
+
+            let anotacionesHtml = '<p>No hay anotaciones registradas.</p>';
+            if (fichaData.anotaciones.length > 0) {
+                anotacionesHtml = '<ul>';
+                fichaData.anotaciones.forEach(function(anotacion) {
+                    anotacionesHtml += `<li><strong>${anotacion.fecha}:</strong> ${anotacion.anotacion}</li>`;
+                });
+                anotacionesHtml += '</ul>';
+            }
+
+            let ausenciasHtml = '<p>No hay ausencias registradas.</p>';
+            if (fichaData.ausencias.length > 0) {
+                ausenciasHtml = '<ul>';
+                fichaData.ausencias.forEach(function(ausencia) {
+                    ausenciasHtml += `<li><strong>${ausencia.fecha}:</strong> ${ausencia.estado}</li>`;
+                });
+                ausenciasHtml += '</ul>';
+            }
+
             const fichaHtml = `
                 <div id="cpp-alumno-ficha-view-mode">
                     <button id="cpp-edit-alumno-btn" class="cpp-btn cpp-btn-secondary" data-alumno-id="${fichaData.id}">Editar</button>
@@ -184,15 +209,15 @@
                     <p><strong>Clase:</strong> ${fichaData.clase_nombre}</p>
                     <div class="cpp-alumno-ficha-section">
                         <h3>Anotaciones</h3>
-                        <p>No hay anotaciones registradas.</p>
+                        ${anotacionesHtml}
                     </div>
                     <div class="cpp-alumno-ficha-section">
                         <h3>Ausencias</h3>
-                        <p>No hay ausencias registradas.</p>
+                        ${ausenciasHtml}
                     </div>
                     <div class="cpp-alumno-ficha-section">
-                        <h3>Estadísticas</h3>
-                        <p>Las estadísticas no están disponibles.</p>
+                        <h3>Estadísticas de Calificaciones</h3>
+                        <canvas id="cpp-alumno-calificaciones-chart" width="400" height="200"></canvas>
                     </div>
                 </div>
                 <div id="cpp-alumno-ficha-edit-mode" style="display: none;">
@@ -213,6 +238,38 @@
                 </div>
             `;
             $fichaContainer.html(fichaHtml);
+
+            this.renderCalificacionesChart(fichaData.estadisticas.calificaciones);
+        },
+
+        renderCalificacionesChart: function(calificaciones) {
+            const ctx = document.getElementById('cpp-alumno-calificaciones-chart');
+            if (!ctx) return;
+
+            const labels = calificaciones.map((c, i) => `Actividad ${i + 1}`);
+            const data = calificaciones.map(c => (c.nota / c.nota_maxima) * 100);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '% de Acierto',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
         }
     };
 

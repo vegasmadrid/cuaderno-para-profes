@@ -25,7 +25,7 @@ function cpp_ajax_search_alumnos() {
     $query = "SELECT a.id, a.nombre, a.apellidos, c.nombre AS clase_nombre
               FROM $tabla_alumnos a
               JOIN $tabla_clases c ON a.clase_id = c.id
-              WHERE a.user_id = %d";
+              WHERE c.user_id = %d";
 
     $params = [$user_id];
 
@@ -73,15 +73,37 @@ function cpp_ajax_get_alumno_ficha() {
         wp_send_json_error(['message' => 'Alumno no encontrado.']);
     }
 
-    // TODO: Recopilar más datos para la ficha (asistencias, notas, etc.)
+    // Recopilar datos adicionales
+    $tabla_anotaciones = $wpdb->prefix . 'cpp_anotaciones';
+    $tabla_asistencia = $wpdb->prefix . 'cpp_asistencia';
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+
+    $anotaciones = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_anotaciones WHERE alumno_id = %d ORDER BY fecha DESC", $alumno_id));
+    $ausencias = $wpdb->get_results($wpdb->prepare("SELECT fecha, estado FROM $tabla_asistencia WHERE alumno_id = %d ORDER BY fecha DESC", $alumno_id));
+
+    $calificaciones = $wpdb->get_results($wpdb->prepare("
+        SELECT ca.nota, ae.nota_maxima
+        FROM $tabla_calificaciones ca
+        JOIN $tabla_actividades ae ON ca.actividad_id = ae.id
+        WHERE ca.alumno_id = %d
+    ", $alumno_id));
+
+    $estadisticas = [
+        'total_anotaciones' => count($anotaciones),
+        'total_ausencias' => count(array_filter($ausencias, function($a) { return $a->estado === 'ausente'; })),
+        'total_calificaciones' => count($calificaciones),
+        'calificaciones' => $calificaciones
+    ];
+
     $ficha_data = [
         'id' => $alumno->id,
         'nombre' => $alumno->nombre,
         'apellidos' => $alumno->apellidos,
         'clase_nombre' => $alumno->clase_nombre,
-        'anotaciones' => [], // Placeholder
-        'ausencias' => [],   // Placeholder
-        'estadisticas' => [] // Placeholder
+        'anotaciones' => $anotaciones,
+        'ausencias' => $ausencias,
+        'estadisticas' => $estadisticas
     ];
 
     wp_send_json_success(['ficha' => $ficha_data]);

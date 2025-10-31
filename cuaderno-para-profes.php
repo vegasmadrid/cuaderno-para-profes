@@ -47,6 +47,7 @@ function cpp_cargar_assets() {
     wp_enqueue_style('dashicons');
     wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
     wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $plugin_version);
+    wp_enqueue_style('cpp-alumnos-css', CPP_PLUGIN_URL . 'assets/css/cpp-alumnos.css', [], $plugin_version);
     wp_register_style('cpp-resumen-css', CPP_PLUGIN_URL . 'assets/css/cpp-resumen.css', [], $plugin_version);
 
     // Scripts de librerías
