@@ -202,11 +202,40 @@
                 ausenciasHtml += '</ul>';
             }
 
+            let calificacionesHtml = '';
+            if (fichaData.estadisticas.calificaciones_por_evaluacion.length > 0) {
+                fichaData.estadisticas.calificaciones_por_evaluacion.forEach(function(evaluacion) {
+                    calificacionesHtml += `<h4>${evaluacion.evaluacion_nombre}</h4>`;
+                    if (evaluacion.actividades.length > 0) {
+                        calificacionesHtml += '<ul>';
+                        evaluacion.actividades.forEach(function(actividad) {
+                            calificacionesHtml += `<li>${actividad.nombre_actividad}: <strong>${actividad.nota || 'N/A'}</strong> / ${actividad.nota_maxima}</li>`;
+                        });
+                        calificacionesHtml += '</ul>';
+                    } else {
+                        calificacionesHtml += '<p>No hay actividades en esta evaluación.</p>';
+                    }
+                });
+            } else {
+                calificacionesHtml = '<p>No hay calificaciones registradas.</p>';
+            }
+
+            const fotoHtml = fichaData.foto ? `<img src="${fichaData.foto}" alt="Foto del alumno" class="cpp-alumno-foto">` : '<div class="cpp-alumno-avatar-inicial"></div>';
+
             const fichaHtml = `
                 <div id="cpp-alumno-ficha-view-mode">
-                    <button id="cpp-edit-alumno-btn" class="cpp-btn cpp-btn-secondary" data-alumno-id="${fichaData.id}">Editar</button>
-                    <h2>${fichaData.nombre} ${fichaData.apellidos}</h2>
-                    <p><strong>Clase:</strong> ${fichaData.clase_nombre}</p>
+                    <div class="cpp-alumno-ficha-header">
+                        ${fotoHtml}
+                        <div>
+                            <h2 class="cpp-alumno-ficha-nombre">${fichaData.nombre} ${fichaData.apellidos} <button id="cpp-edit-alumno-btn" class="cpp-btn-icon" data-alumno-id="${fichaData.id}"><span class="dashicons dashicons-edit"></span></button></h2>
+                            <p><strong>Clase:</strong> ${fichaData.clase_nombre}</p>
+                            <p><strong>Ranking:</strong> ${fichaData.ranking} de ${fichaData.total_alumnos}</p>
+                        </div>
+                    </div>
+                    <div class="cpp-alumno-ficha-section">
+                        <h3>Calificaciones por Evaluación</h3>
+                        ${calificacionesHtml}
+                    </div>
                     <div class="cpp-alumno-ficha-section">
                         <h3>Anotaciones</h3>
                         ${anotacionesHtml}
@@ -239,15 +268,15 @@
             `;
             $fichaContainer.html(fichaHtml);
 
-            this.renderCalificacionesChart(fichaData.estadisticas.calificaciones);
+            this.renderCalificacionesChart(fichaData.estadisticas.promedios_por_evaluacion);
         },
 
-        renderCalificacionesChart: function(calificaciones) {
+        renderCalificacionesChart: function(promedios) {
             const ctx = document.getElementById('cpp-alumno-calificaciones-chart');
             if (!ctx) return;
 
-            const labels = calificaciones.map((c, i) => `Actividad ${i + 1}`);
-            const data = calificaciones.map(c => (c.nota / c.nota_maxima) * 100);
+            const labels = promedios.map(p => p.evaluacion_nombre);
+            const data = promedios.map(p => p.promedio);
 
             new Chart(ctx, {
                 type: 'bar',

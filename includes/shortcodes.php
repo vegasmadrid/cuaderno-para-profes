@@ -225,9 +225,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 </div>
                 <div class="cpp-top-bar-right">
                     <div class="cpp-tabs-general">
-                        <button class="cpp-main-tab-link" data-tab="alumnos">Alumnos</button>
                         <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
                         <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
+                        <button class="cpp-main-tab-link" data-tab="alumnos">Alumnos</button>
                         <button class="cpp-main-tab-link" data-tab="resumen">Resumen</button>
                     </div>
                     <button class="cpp-btn-icon cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">

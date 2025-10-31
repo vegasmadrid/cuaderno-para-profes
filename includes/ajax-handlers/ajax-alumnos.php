@@ -62,7 +62,7 @@ function cpp_ajax_get_alumno_ficha() {
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
 
-    $query = "SELECT a.id, a.nombre, a.apellidos, c.nombre AS clase_nombre
+    $query = "SELECT a.id, a.nombre, a.apellidos, a.foto, c.nombre AS clase_nombre, c.id AS clase_id
               FROM $tabla_alumnos a
               JOIN $tabla_clases c ON a.clase_id = c.id
               WHERE a.id = %d AND c.user_id = %d";
@@ -89,22 +89,69 @@ function cpp_ajax_get_alumno_ficha() {
         WHERE ca.alumno_id = %d
     ", $alumno_id));
 
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $evaluaciones = $wpdb->get_results($wpdb->prepare("SELECT * FROM $tabla_evaluaciones WHERE clase_id = %d ORDER BY orden", $alumno->clase_id));
+
+    $calificaciones_por_evaluacion = [];
+    foreach ($evaluaciones as $evaluacion) {
+        $actividades_evaluacion = $wpdb->get_results($wpdb->prepare("
+            SELECT ae.id, ae.nombre_actividad, ca.nota, ae.nota_maxima
+            FROM $tabla_actividades ae
+            LEFT JOIN $tabla_calificaciones ca ON ae.id = ca.actividad_id AND ca.alumno_id = %d
+            WHERE ae.evaluacion_id = %d
+            ORDER BY ae.orden
+        ", $alumno_id, $evaluacion->id));
+        $calificaciones_por_evaluacion[] = [
+            'evaluacion_nombre' => $evaluacion->nombre_evaluacion,
+            'actividades' => $actividades_evaluacion
+        ];
+    }
+
+    $promedios_por_evaluacion = [];
+    foreach ($calificaciones_por_evaluacion as $eval_data) {
+        $notas = [];
+        foreach ($eval_data['actividades'] as $actividad) {
+            if (is_numeric($actividad->nota) && is_numeric($actividad->nota_maxima) && $actividad->nota_maxima > 0) {
+                $notas[] = ($actividad->nota / $actividad->nota_maxima) * 100;
+            }
+        }
+        $promedio = count($notas) > 0 ? array_sum($notas) / count($notas) : 0;
+        $promedios_por_evaluacion[] = [
+            'evaluacion_nombre' => $eval_data['evaluacion_nombre'],
+            'promedio' => $promedio
+        ];
+    }
+
     $estadisticas = [
         'total_anotaciones' => count($anotaciones),
         'total_ausencias' => count(array_filter($ausencias, function($a) { return $a->estado === 'ausente'; })),
-        'total_calificaciones' => count($calificaciones),
-        'calificaciones' => $calificaciones
+        'calificaciones_por_evaluacion' => $calificaciones_por_evaluacion,
+        'promedios_por_evaluacion' => $promedios_por_evaluacion
     ];
 
     $ficha_data = [
         'id' => $alumno->id,
         'nombre' => $alumno->nombre,
         'apellidos' => $alumno->apellidos,
+        'foto' => $alumno->foto,
         'clase_nombre' => $alumno->clase_nombre,
         'anotaciones' => $anotaciones,
         'ausencias' => $ausencias,
         'estadisticas' => $estadisticas
     ];
+
+    // Calcular ranking
+    require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-calculos.php';
+    $alumnos_clase = $wpdb->get_results($wpdb->prepare("SELECT id FROM $tabla_alumnos WHERE clase_id = %d", $alumno->clase_id));
+    $notas_finales = [];
+    foreach ($alumnos_clase as $a) {
+        $notas_finales[$a->id] = cpp_calcular_nota_final_alumno($a->id, $alumno->clase_id)['nota'];
+    }
+    arsort($notas_finales);
+    $ranking = array_search($alumno_id, array_keys($notas_finales)) + 1;
+    $ficha_data['ranking'] = $ranking;
+    $ficha_data['total_alumnos'] = count($alumnos_clase);
+
 
     wp_send_json_success(['ficha' => $ficha_data]);
 }
