@@ -3,9 +3,16 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
-require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-categorias.php';
+// Dependencias
+require_once CPP_PLUGIN_DIR . 'includes/utils.php';
+require_once CPP_PLUGIN_DIR . 'includes/db.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
 require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-evaluaciones.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-categorias.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-calculos.php';
+require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+require_once CPP_PLUGIN_DIR . 'includes/programador/ajax-programador.php';
 
 add_action('wp_ajax_cpp_get_all_clases_for_user', 'cpp_ajax_get_all_clases_for_user');
 function cpp_ajax_get_all_clases_for_user() {
