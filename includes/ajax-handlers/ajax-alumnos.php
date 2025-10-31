@@ -65,7 +65,7 @@ function cpp_ajax_get_alumno_ficha() {
     $query = "SELECT a.id, a.nombre, a.apellidos, c.nombre AS clase_nombre
               FROM $tabla_alumnos a
               JOIN $tabla_clases c ON a.clase_id = c.id
-              WHERE a.id = %d AND a.user_id = %d";
+              WHERE a.id = %d AND c.user_id = %d";
 
     $alumno = $wpdb->get_row($wpdb->prepare($query, $alumno_id, $user_id));
 
@@ -123,13 +123,22 @@ function cpp_ajax_update_alumno() {
 
     global $wpdb;
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    // Verify user ownership of the student before updating
+    $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM $tabla_alumnos WHERE id = %d", $alumno_id));
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $clase_id));
+
+    if ($owner_id != $user_id) {
+        wp_send_json_error(['message' => 'No tienes permiso para editar este alumno.']);
+    }
 
     $result = $wpdb->update(
         $tabla_alumnos,
         ['nombre' => $nombre, 'apellidos' => $apellidos],
-        ['id' => $alumno_id, 'user_id' => $user_id],
+        ['id' => $alumno_id],
         ['%s', '%s'],
-        ['%d', '%d']
+        ['%d']
     );
 
     if ($result === false) {
