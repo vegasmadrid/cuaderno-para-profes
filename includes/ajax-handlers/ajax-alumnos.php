@@ -133,11 +133,52 @@ function cpp_ajax_get_alumno_ficha() {
         ];
     }
 
+    // --- NUEVO: Preparar datos para el gráfico de rendimiento ---
+    $actividades_calificadas_raw = $wpdb->get_results($wpdb->prepare("
+        SELECT
+            act.id, act.sesion_id, act.evaluacion_id, act.fecha_actividad,
+            act.nota_maxima, cal.nota, act.nombre_actividad
+        FROM {$wpdb->prefix}cpp_actividades_evaluables AS act
+        JOIN {$wpdb->prefix}cpp_calificaciones_alumnos AS cal ON act.id = cal.actividad_id
+        WHERE act.clase_id = %d AND cal.alumno_id = %d
+    ", $alumno->clase_id, $alumno_id), ARRAY_A);
+
+    $actividades_por_evaluacion_para_hidratar = [];
+    foreach ($actividades_calificadas_raw as $actividad) {
+        if (cpp_extraer_numero_de_calificacion($actividad['nota']) !== null) {
+            $actividades_por_evaluacion_para_hidratar[$actividad['evaluacion_id']][] = $actividad;
+        }
+    }
+
+    $actividades_hidratadas = [];
+    foreach ($actividades_por_evaluacion_para_hidratar as $eval_id => $actividades) {
+        $hidratadas = cpp_hidratar_fechas_de_actividades($actividades, $alumno->clase_id, $eval_id, $user_id);
+        $actividades_hidratadas = array_merge($actividades_hidratadas, $hidratadas);
+    }
+
+    $rendimiento_data = [];
+    foreach ($actividades_hidratadas as $actividad) {
+        if (!empty($actividad['fecha_actividad'])) {
+            $nota_numerica = cpp_extraer_numero_de_calificacion($actividad['nota']);
+            $nota_maxima = !empty($actividad['nota_maxima']) && floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+            $rendimiento_data[] = [
+                'fecha' => $actividad['fecha_actividad'],
+                'nota_percent' => round(($nota_numerica / $nota_maxima) * 100, 2),
+                'nombre_actividad' => $actividad['nombre_actividad'],
+            ];
+        }
+    }
+
+    usort($rendimiento_data, function($a, $b) {
+        return strtotime($a['fecha']) - strtotime($b['fecha']);
+    });
+
     $estadisticas = [
         'total_anotaciones' => count($anotaciones),
         'total_ausencias' => count(array_filter($ausencias, function($a) { return $a->estado === 'ausente'; })),
         'calificaciones_por_evaluacion' => $calificaciones_por_evaluacion,
-        'promedios_por_evaluacion' => $promedios_por_evaluacion
+        'promedios_por_evaluacion' => $promedios_por_evaluacion,
+        'rendimiento_data' => $rendimiento_data
     ];
 
     $ficha_data = [

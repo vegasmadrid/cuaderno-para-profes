@@ -202,53 +202,69 @@
                 ausenciasHtml += '</ul>';
             }
 
-            let calificacionesHtml = '';
-            if (fichaData.estadisticas.calificaciones_por_evaluacion.length > 0) {
-                fichaData.estadisticas.calificaciones_por_evaluacion.forEach(function(evaluacion) {
-                    calificacionesHtml += `<h4>${evaluacion.evaluacion_nombre}</h4>`;
-                    if (evaluacion.actividades.length > 0) {
-                        calificacionesHtml += '<ul>';
-                        evaluacion.actividades.forEach(function(actividad) {
-                            calificacionesHtml += `<li>${actividad.nombre_actividad}: <strong>${actividad.nota || 'N/A'}</strong> / ${actividad.nota_maxima}</li>`;
-                        });
-                        calificacionesHtml += '</ul>';
-                    } else {
-                        calificacionesHtml += '<p>No hay actividades en esta evaluación.</p>';
-                    }
-                });
-            } else {
-                calificacionesHtml = '<p>No hay calificaciones registradas.</p>';
-            }
+            const fotoHtml = fichaData.foto ? `<img src="${fichaData.foto}" alt="Foto del alumno" class="cpp-alumno-foto">` : `<div class="cpp-alumno-avatar-inicial">${fichaData.nombre.charAt(0)}</div>`;
 
-            const fotoHtml = fichaData.foto ? `<img src="${fichaData.foto}" alt="Foto del alumno" class="cpp-alumno-foto">` : '<div class="cpp-alumno-avatar-inicial"></div>';
+            const promediosHtml = fichaData.estadisticas.promedios_por_evaluacion.map((p, index) => `
+                <div class="cpp-promedio-eval-wrapper">
+                    <canvas id="cpp-promedio-chart-${index}" width="100" height="100"></canvas>
+                    <div class="cpp-promedio-eval-label">${p.evaluacion_nombre}</div>
+                </div>
+            `).join('');
 
             const fichaHtml = `
-                <div id="cpp-alumno-ficha-view-mode">
-                    <div class="cpp-alumno-ficha-header">
-                        ${fotoHtml}
-                        <div>
-                            <h2 class="cpp-alumno-ficha-nombre">${fichaData.nombre} ${fichaData.apellidos} <button id="cpp-edit-alumno-btn" class="cpp-btn-icon" data-alumno-id="${fichaData.id}"><span class="dashicons dashicons-edit"></span></button></h2>
-                            <p><strong>Clase:</strong> ${fichaData.clase_nombre}</p>
-                            <p><strong>Ranking:</strong> ${fichaData.ranking} de ${fichaData.total_alumnos}</p>
+            <div class="cpp-alumno-ficha-card">
+                <div id="cpp-alumno-ficha-view-mode" class="cpp-ficha-grid-container">
+
+                    <!-- Columna Izquierda -->
+                    <div class="cpp-ficha-col-izquierda">
+                        <div class="cpp-alumno-ficha-header">
+                            ${fotoHtml}
+                            <div class="cpp-alumno-info-header">
+                                <h2 class="cpp-alumno-ficha-nombre">${fichaData.nombre} ${fichaData.apellidos}</h2>
+                                <div class="cpp-alumno-meta">
+                                    <span><strong>Clase:</strong> ${fichaData.clase_nombre}</span>
+                                    <span class="cpp-alumno-ranking"><strong>Ranking:</strong> ${fichaData.ranking} de ${fichaData.total_alumnos}</span>
+                                </div>
+                            </div>
+                            <button id="cpp-edit-alumno-btn" class="cpp-btn-icon" title="Editar Alumno" data-alumno-id="${fichaData.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+                        </div>
+
+                        <div class="cpp-divider"></div>
+
+                        <h3>Promedio por Evaluación</h3>
+                        <div class="cpp-promedios-container">
+                            ${promediosHtml}
+                        </div>
+
+                        <div class="cpp-divider"></div>
+
+                        <div class="cpp-alumno-ficha-section">
+                            <h3>Anotaciones</h3>
+                            <div class="cpp-ficha-lista-scroll">
+                                ${anotacionesHtml}
+                            </div>
+                        </div>
+
+                        <div class="cpp-divider"></div>
+
+                        <div class="cpp-alumno-ficha-section">
+                            <h3>Registro de Ausencias</h3>
+                            <div class="cpp-ficha-lista-scroll">
+                                ${ausenciasHtml}
+                            </div>
                         </div>
                     </div>
-                    <div class="cpp-alumno-ficha-section">
-                        <h3>Calificaciones por Evaluación</h3>
-                        ${calificacionesHtml}
-                    </div>
-                    <div class="cpp-alumno-ficha-section">
-                        <h3>Anotaciones</h3>
-                        ${anotacionesHtml}
-                    </div>
-                    <div class="cpp-alumno-ficha-section">
-                        <h3>Ausencias</h3>
-                        ${ausenciasHtml}
-                    </div>
-                    <div class="cpp-alumno-ficha-section">
-                        <h3>Estadísticas de Calificaciones</h3>
-                        <canvas id="cpp-alumno-calificaciones-chart" width="400" height="200"></canvas>
+
+                    <!-- Columna Derecha -->
+                    <div class="cpp-ficha-col-derecha">
+                        <h3>Rendimiento Académico</h3>
+                        <div class="cpp-rendimiento-chart-container">
+                             <canvas id="cpp-alumno-rendimiento-chart"></canvas>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Modo Edición (oculto por defecto) -->
                 <div id="cpp-alumno-ficha-edit-mode" style="display: none;">
                     <h3>Editando Alumno</h3>
                     <form id="cpp-edit-alumno-form">
@@ -268,37 +284,113 @@
             `;
             $fichaContainer.html(fichaHtml);
 
-            this.renderCalificacionesChart(fichaData.estadisticas.promedios_por_evaluacion);
+            this.renderPromedioCharts(fichaData.estadisticas.promedios_por_evaluacion);
+            this.renderRendimientoChart(fichaData.estadisticas.rendimiento_data);
         },
 
-        renderCalificacionesChart: function(promedios) {
-            const ctx = document.getElementById('cpp-alumno-calificaciones-chart');
-            if (!ctx) return;
+        renderRendimientoChart: function(rendimientoData) {
+            const ctx = document.getElementById('cpp-alumno-rendimiento-chart');
+            if (!ctx || rendimientoData.length === 0) return;
 
-            const labels = promedios.map(p => p.evaluacion_nombre);
-            const data = promedios.map(p => p.promedio);
+            const labels = rendimientoData.map(d => new Date(d.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+            const data = rendimientoData.map(d => d.nota_percent);
+            const pointColors = rendimientoData.map(d => this.getNotaColor(d.nota_percent));
 
             new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '% de Acierto',
+                        label: 'Rendimiento',
                         data: data,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
+                        borderColor: '#5a98d3',
+                        backgroundColor: 'rgba(90, 152, 211, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: pointColors,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
-                            max: 100
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const dataPoint = rendimientoData[context.dataIndex];
+                                    return `${dataPoint.nombre_actividad}: ${dataPoint.nota_percent}%`;
+                                }
+                            }
                         }
                     }
                 }
             });
+        },
+
+        renderPromedioCharts: function(promedios) {
+            promedios.forEach((p, index) => {
+                const ctx = document.getElementById(`cpp-promedio-chart-${index}`);
+                if (!ctx) return;
+
+                const promedio = p.promedio;
+                const color = this.getNotaColor(promedio);
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [promedio, 100 - promedio],
+                            backgroundColor: [color, '#f0f0f0'],
+                            borderWidth: 0,
+                            hoverBackgroundColor: [color, '#e9e9e9']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false },
+                            title: {
+                                display: true,
+                                text: `${Math.round(promedio)}%`,
+                                position: 'bottom',
+                                align: 'center',
+                                font: {
+                                    size: 18,
+                                    weight: 'bold'
+                                },
+                                color: color,
+                                padding: { top: -45 }
+                            }
+                        }
+                    }
+                });
+            });
+        },
+
+        getNotaColor: function(nota) {
+            if (nota >= 90) return '#4CAF50'; // Verde oscuro (sobresaliente)
+            if (nota >= 70) return '#8BC34A'; // Verde claro (notable)
+            if (nota >= 50) return '#FFC107'; // Ámbar (aprobado)
+            return '#F44336'; // Rojo (suspenso)
         }
     };
 
