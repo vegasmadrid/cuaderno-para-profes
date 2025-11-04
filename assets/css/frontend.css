@@ -1944,6 +1944,7 @@ body.cpp-no-text-select {
 .cpp-main-tab-content.active {
     display: flex; /* Usar flex para que el contenido se expanda */
     flex-direction: column;
+    flex-grow: 1; /* Añadido para que ocupe el espacio sobrante */
 }
 
 /* Ajustes para que el programador y el cuaderno encajen bien */
