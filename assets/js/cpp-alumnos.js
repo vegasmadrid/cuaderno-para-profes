@@ -369,7 +369,6 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
                         cutout: '75%',
                         plugins: {
                             legend: { display: false },
