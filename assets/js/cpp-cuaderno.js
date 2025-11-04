@@ -308,7 +308,12 @@
             const globalEvalId = $('#cpp-global-evaluacion-selector').val();
             const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
 
-            if (isProgramadorTab) {
+            // FIX: Asegurarse de que la pestaña "Alumnos" no active la lógica del programador
+            if (tabName === 'alumnos') {
+                // La pestaña de alumnos ahora tiene su propio JS y es autónoma.
+                // No necesita ninguna lógica especial aquí, ya que su contenido ya está en el DOM
+                // y su inicialización se dispara una vez al cargar la página.
+            } else if (isProgramadorTab) {
                 // Inicializar el programador si es la primera vez
                 if (!this.programadorInicializado) {
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {

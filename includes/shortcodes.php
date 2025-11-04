@@ -282,10 +282,15 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <div class="cpp-alumnos-view-container">
                             <div class="cpp-alumnos-view-sidebar">
                                 <div class="cpp-alumnos-search-bar">
-                                    <input type="text" id="cpp-alumnos-search-input" placeholder="Buscar alumno por nombre...">
-                                    <button id="cpp-alumnos-search-btn" class="cpp-btn"><span class="dashicons dashicons-search"></span></button>
+                                    <h3>Buscador</h3>
+                                    <div class="cpp-form-group">
+                                        <label for="cpp-alumnos-search-input" class="screen-reader-text">Buscar alumno</label>
+                                        <input type="text" id="cpp-alumnos-search-input" placeholder="Nombre o apellidos...">
+                                        <button id="cpp-alumnos-search-btn" title="Buscar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                                    </div>
                                 </div>
                                 <div class="cpp-alumnos-filters">
+                                    <h3>Filtros</h3>
                                     <select id="cpp-alumnos-filter-clase">
                                         <option value="">Todas las clases</option>
                                         <!-- Opciones de clase se cargarán aquí -->

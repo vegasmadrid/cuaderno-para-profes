@@ -222,53 +222,49 @@
 
             const fichaHtml = `
             <div class="cpp-alumno-ficha-card">
-                <div id="cpp-alumno-ficha-view-mode" class="cpp-ficha-grid-container">
+                <div id="cpp-alumno-ficha-view-mode" class="cpp-ficha-container">
 
-                    <!-- Columna Izquierda -->
-                    <div class="cpp-ficha-col-izquierda">
-                        <div class="cpp-alumno-ficha-header">
-                            ${fotoHtml}
-                            <div class="cpp-alumno-info-header">
-                                <h2 class="cpp-alumno-ficha-nombre">${fichaData.nombre} ${fichaData.apellidos}</h2>
-                                <div class="cpp-alumno-meta">
-                                    <span><strong>Clase:</strong> ${fichaData.clase_nombre}</span>
-                                    <span class="cpp-alumno-ranking"><strong>Ranking:</strong> ${fichaData.ranking} de ${fichaData.total_alumnos}</span>
-                                </div>
-                            </div>
-                            <button id="cpp-edit-alumno-btn" class="cpp-btn-icon" title="Editar Alumno" data-alumno-id="${fichaData.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
-                        </div>
-
-                        <div class="cpp-divider"></div>
-
-                        <h3>Promedio por Evaluación</h3>
-                        <div class="cpp-promedios-container">
-                            ${promediosHtml}
-                        </div>
-
-                        <div class="cpp-divider"></div>
-
-                        <div class="cpp-alumno-ficha-section">
-                            <h3>Anotaciones</h3>
-                            <div class="cpp-ficha-lista-scroll">
-                                ${anotacionesHtml}
+                    <div class="cpp-alumno-ficha-header">
+                        ${fotoHtml}
+                        <div class="cpp-alumno-info-header">
+                            <h2 class="cpp-alumno-ficha-nombre">${fichaData.nombre} ${fichaData.apellidos}</h2>
+                            <div class="cpp-alumno-meta">
+                                <span><strong>Clase:</strong> ${fichaData.clase_nombre}</span>
+                                <span class="cpp-alumno-ranking"><strong>Ranking:</strong> ${fichaData.ranking} de ${fichaData.total_alumnos}</span>
                             </div>
                         </div>
+                        <button id="cpp-edit-alumno-btn" class="cpp-btn-icon" title="Editar Alumno" data-alumno-id="${fichaData.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+                    </div>
 
-                        <div class="cpp-divider"></div>
+                    <div class="cpp-divider"></div>
 
-                        <div class="cpp-alumno-ficha-section">
-                            <h3>Registro de Ausencias</h3>
-                            <div class="cpp-ficha-lista-scroll">
-                                ${ausenciasHtml}
-                            </div>
+                    <h3>Rendimiento Académico</h3>
+                    <div class="cpp-rendimiento-chart-container">
+                            <canvas id="cpp-alumno-rendimiento-chart"></canvas>
+                    </div>
+
+                    <div class="cpp-divider"></div>
+
+                    <h3>Promedio por Evaluación</h3>
+                    <div class="cpp-promedios-container">
+                        ${promediosHtml}
+                    </div>
+
+                    <div class="cpp-divider"></div>
+
+                    <div class="cpp-alumno-ficha-section">
+                        <h3>Anotaciones</h3>
+                        <div class="cpp-ficha-lista-scroll">
+                            ${anotacionesHtml}
                         </div>
                     </div>
 
-                    <!-- Columna Derecha -->
-                    <div class="cpp-ficha-col-derecha">
-                        <h3>Rendimiento Académico</h3>
-                        <div class="cpp-rendimiento-chart-container">
-                             <canvas id="cpp-alumno-rendimiento-chart"></canvas>
+                    <div class="cpp-divider"></div>
+
+                    <div class="cpp-alumno-ficha-section">
+                        <h3>Registro de Ausencias</h3>
+                        <div class="cpp-ficha-lista-scroll">
+                            ${ausenciasHtml}
                         </div>
                     </div>
                 </div>
