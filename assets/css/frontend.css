@@ -174,6 +174,11 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     display: flex; flex-direction: column; flex-grow: 1;
     min-height: 0; overflow: hidden;
 }
+
+/* Anulación específica para la pestaña Cuaderno para permitir 'position: sticky' */
+#cpp-main-tab-cuaderno.active #cpp-cuaderno-contenido {
+    overflow: visible;
+}
 .cpp-cuaderno-tabla-wrapper {
     flex-grow: 1; min-height: 0; overflow: auto !important;
     position: relative; background-color: #fff; border: none;
@@ -723,9 +728,6 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-tab-content.active { display: block; }
 #cpp-clase-modal-categorias-container .cpp-form-group { margin-top: 20px; }
 
-.cpp-alumnos-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.cpp-alumnos-header h3 { margin:0; font-size: 18px; font-weight: 500; }
-.cpp-alumnos-list { margin-bottom: 20px; max-height: 300px; overflow-y: auto; padding-right: 5px;}
 .cpp-alumno-card { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #e9ecef; }
 .cpp-alumno-card:last-child { border-bottom: none; }
 .cpp-alumno-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; margin-right: 12px; background-color: #e9ecef; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
