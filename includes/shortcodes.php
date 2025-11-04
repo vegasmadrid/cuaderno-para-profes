@@ -227,6 +227,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <div class="cpp-tabs-general">
                         <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
                         <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
+                        <button class="cpp-main-tab-link" data-tab="alumnos">Alumnos</button>
                         <button class="cpp-main-tab-link" data-tab="resumen">Resumen</button>
                     </div>
                     <button class="cpp-btn-icon cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">
@@ -277,6 +278,35 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         </div>
                     </div>
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
+                    <div id="cpp-main-tab-alumnos" class="cpp-main-tab-content">
+                        <div class="cpp-alumnos-view-container">
+                            <div class="cpp-alumnos-view-sidebar">
+                                <div class="cpp-alumnos-search-bar">
+                                    <h3>Buscador</h3>
+                                    <div class="cpp-form-group">
+                                        <label for="cpp-alumnos-search-input" class="screen-reader-text">Buscar alumno</label>
+                                        <input type="text" id="cpp-alumnos-search-input" placeholder="Nombre o apellidos...">
+                                        <button id="cpp-alumnos-search-btn" title="Buscar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+                                    </div>
+                                </div>
+                                <div class="cpp-alumnos-filters">
+                                    <h3>Filtros</h3>
+                                    <select id="cpp-alumnos-filter-clase">
+                                        <option value="">Todas las clases</option>
+                                        <!-- Opciones de clase se cargarán aquí -->
+                                    </select>
+                                </div>
+                                <div id="cpp-alumnos-search-results" class="cpp-alumnos-list">
+                                    <!-- Los resultados de la búsqueda aparecerán aquí -->
+                                    <p class="cpp-empty-panel">Usa el buscador para encontrar un alumno.</p>
+                                </div>
+                            </div>
+                            <div id="cpp-alumnos-view-main" class="cpp-alumnos-view-content">
+                                <!-- La ficha del alumno seleccionado se mostrará aquí -->
+                                <p class="cpp-empty-panel">Selecciona un alumno de la lista para ver su ficha completa.</p>
+                            </div>
+                        </div>
+                    </div>
                     <div id="cpp-main-tab-semana" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-horario" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-resumen" class="cpp-main-tab-content"></div>
