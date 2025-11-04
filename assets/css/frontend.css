@@ -1944,12 +1944,15 @@ body.cpp-no-text-select {
 .cpp-main-tab-content.active {
     display: flex; /* Usar flex para que el contenido se expanda */
     flex-direction: column;
-    flex-grow: 1; /* Añadido para que ocupe el espacio sobrante */
 }
 
 /* Ajustes para que el programador y el cuaderno encajen bien */
+#cpp-main-tab-programador, #cpp-main-tab-cuaderno, #cpp-main-tab-alumnos {
+    padding: 20px; /* Añade un margen interior general */
+}
+
 #cpp-main-tab-programador, #cpp-main-tab-cuaderno {
-    padding: 0; /* Los componentes internos ya tienen sus propios paddings */
+    padding: 0; /* Anula el padding para estos dos que lo gestionan internamente */
 }
 
 #cpp-programador-app, #cpp-cuaderno-tabla-area {

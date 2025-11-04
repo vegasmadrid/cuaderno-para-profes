@@ -383,7 +383,7 @@
                                     weight: 'bold'
                                 },
                                 color: color,
-                                padding: { top: -25 }
+                                padding: { top: -55 }
                             }
                         }
                     }
