@@ -1684,7 +1684,8 @@ body.cpp-no-text-select {
 /* --- END: Student Management in Settings --- */
 
 /* --- START: Evaluation Settings Tab Redesign --- */
-#cpp-config-tab-evaluaciones .cpp-config-section {
+#cpp-config-tab-evaluaciones #cpp-config-evaluaciones-container,
+#cpp-config-tab-evaluaciones #cpp-config-ponderaciones-container {
     background-color: transparent;
     border: none;
     padding: 0;

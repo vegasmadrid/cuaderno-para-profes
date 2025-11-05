@@ -97,16 +97,16 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             </form>
                         </div>
                         <div id="cpp-config-tab-evaluaciones" class="cpp-config-tab-content">
-                            <div id="cpp-config-evaluaciones-container" class="cpp-config-section">
+                             <div id="cpp-config-evaluaciones-container">
                                 <p>Cargando evaluaciones...</p>
                             </div>
                             <hr class="cpp-config-divider">
-                            <div id="cpp-config-ponderaciones-container" class="cpp-config-section">
+                            <div id="cpp-config-ponderaciones-container">
                                 <p>Selecciona una evaluación para ver sus ponderaciones.</p>
                             </div>
                         </div>
                         <div id="cpp-config-tab-alumnos" class="cpp-config-tab-content">
-                             <div id="cpp-config-alumnos-container" class="cpp-config-section">
+                             <div id="cpp-config-alumnos-container">
                                 <p>Cargando alumnos...</p>
                             </div>
                         </div>
