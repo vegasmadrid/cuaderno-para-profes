@@ -17,7 +17,7 @@
 
 .cpp-alumnos-view-main {
     flex-grow: 1;
-    width: 100%;
+    width: 100% !important;
 }
 
 /* Estilos de la barra de búsqueda y filtros */
