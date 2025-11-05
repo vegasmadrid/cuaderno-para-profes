@@ -180,7 +180,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     overflow: visible;
 }
 .cpp-cuaderno-tabla-wrapper {
-    flex-grow: 1; min-height: 0; overflow: auto !important;
+    flex-grow: 1; min-height: 0; 
     position: relative; background-color: #fff; border: none;
     cursor: default;
 }
