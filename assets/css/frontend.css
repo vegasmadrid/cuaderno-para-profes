@@ -172,7 +172,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
 }
 #cpp-cuaderno-contenido {
     display: flex; flex-direction: column; flex-grow: 1;
-    min-height: 0; overflow: hidden;
+    min-height: 0;
 }
 
 /* Anulación específica para la pestaña Cuaderno para permitir 'position: sticky' */
@@ -1946,6 +1946,7 @@ body.cpp-no-text-select {
 .cpp-main-tab-content.active {
     display: flex; /* Usar flex para que el contenido se expanda */
     flex-direction: column;
+    flex-grow: 1; /* Para que ocupe el espacio disponible */
 }
 
 /* Ajustes para que el programador y el cuaderno encajen bien */

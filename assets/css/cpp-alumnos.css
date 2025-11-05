@@ -4,7 +4,6 @@
 .cpp-alumnos-view-container {
     display: flex;
     gap: 20px;
-    width: 100%;
 }
 
 .cpp-alumnos-view-sidebar {
