@@ -325,7 +325,7 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            max: 100,
+                            suggestedMax: 105,
                             ticks: {
                                 callback: function(value) {
                                     return value + '%';
@@ -383,7 +383,7 @@
                                     weight: 'bold'
                                 },
                                 color: color,
-                                padding: { top: -41 }
+                                padding: { top: -55 }
                             }
                         }
                     }
