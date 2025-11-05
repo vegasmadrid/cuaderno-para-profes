@@ -260,4 +260,4 @@
 
 .cpp-alumnos-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .cpp-alumnos-header h3 { margin:0; font-size: 18px; font-weight: 500; }
-.cpp-alumnos-list { margin-bottom: 20px; max-height: 300px; overflow-y: auto; padding-right: 5px;}
+.cpp-alumnos-list { margin-bottom: 20px; max-height: 300px; padding-right: 5px;}
