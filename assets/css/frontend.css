@@ -1644,6 +1644,45 @@ body.cpp-no-text-select {
     color: #1a73e8 !important;
 }
 
+/* --- START: Student Management in Settings --- */
+#cpp-config-alumnos-container {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+}
+
+#cpp-config-alumnos-container .cpp-alumnos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 15px;
+}
+
+#cpp-config-alumnos-container .cpp-alumnos-header h3 {
+    margin: 0;
+}
+
+#cpp-config-alumnos-container .cpp-alumnos-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.cpp-modern-form {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.cpp-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+/* --- END: Student Management in Settings --- */
+
 /* --- END: Final Grade Button Styles --- */
 
 /* --- START: Ficha Alumno Tabs --- */

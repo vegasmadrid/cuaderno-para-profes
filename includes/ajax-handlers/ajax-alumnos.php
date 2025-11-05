@@ -275,9 +275,14 @@ function cpp_ajax_obtener_alumnos_handler() {
     ?>
     <div class="cpp-alumnos-header">
         <h3>Alumnos de la clase</h3>
-        <button id="cpp-nuevo-alumno-btn" class="cpp-btn cpp-btn-primary">
-            <span class="dashicons dashicons-plus"></span> Añadir Alumno
-        </button>
+        <div>
+            <button id="cpp-importar-alumnos-excel-btn" class="cpp-btn cpp-btn-secondary">
+                <span class="dashicons dashicons-upload"></span> Importar desde Excel
+            </button>
+            <button id="cpp-nuevo-alumno-btn" class="cpp-btn cpp-btn-primary">
+                <span class="dashicons dashicons-plus"></span> Añadir Alumno
+            </button>
+        </div>
     </div>
     <div class="cpp-alumnos-list">
         <?php if (empty($alumnos)) : ?>
@@ -303,23 +308,27 @@ function cpp_ajax_obtener_alumnos_handler() {
     </div>
     <div id="cpp-form-alumno" style="display:none;">
         <h3 id="cpp-form-alumno-titulo">Añadir Nuevo Alumno</h3>
-        <form id="cpp-form-nuevo-alumno">
+        <form id="cpp-form-nuevo-alumno" class="cpp-modern-form">
             <input type="hidden" name="clase_id_form_alumno" value="<?php echo esc_attr($clase_id); ?>">
             <input type="hidden" id="alumno_id_editar" name="alumno_id_editar" value="">
 
-            <div class="cpp-form-field">
-                <label for="nombre_alumno">Nombre</label>
-                <input type="text" id="nombre_alumno" name="nombre_alumno" required>
+            <div class="cpp-form-grid">
+                <div class="cpp-form-group">
+                    <label for="nombre_alumno">Nombre</label>
+                    <input type="text" id="nombre_alumno" name="nombre_alumno" required>
+                </div>
+                <div class="cpp-form-group">
+                    <label for="apellidos_alumno">Apellidos</label>
+                    <input type="text" id="apellidos_alumno" name="apellidos_alumno" required>
+                </div>
             </div>
-            <div class="cpp-form-field">
-                <label for="apellidos_alumno">Apellidos</label>
-                <input type="text" id="apellidos_alumno" name="apellidos_alumno" required>
-            </div>
-             <div class="cpp-form-field">
+
+            <div class="cpp-form-group">
                 <label for="foto_alumno">URL de la foto (opcional)</label>
                 <input type="text" id="foto_alumno" name="foto_alumno">
                 <div id="cpp-foto-actual-preview" style="margin-top:10px;"></div>
             </div>
+
             <div class="cpp-form-actions">
                  <button type="submit" id="cpp-submit-alumno-btn" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar Alumno</button>
                  <button type="button" id="cpp-cancel-edit-alumno-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>

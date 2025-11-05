@@ -865,6 +865,14 @@
             $classSettingsPage.on('click', `${alumnosContainerSelector} #cpp-cancel-edit-alumno-btn`, (e) => {
                 this.cancelarEdicionAlumno(e);
             });
+
+            $classSettingsPage.on('click', '#cpp-importar-alumnos-excel-btn', function(e) {
+                if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') {
+                    cpp.modals.excel.showImportStudents(e);
+                } else {
+                    console.error("Función cpp.modals.excel.showImportStudents no encontrada.");
+                }
+            });
             // --- END: NEW STUDENT MANAGEMENT EVENT BINDINGS ---
         }
     };
