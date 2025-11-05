@@ -48,6 +48,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <span class="dashicons dashicons-chart-bar"></span>
                             <span>Evaluaciones</span>
                         </a>
+                        <a href="#" class="cpp-config-tab-link" data-config-tab="alumnos">
+                            <span class="dashicons dashicons-admin-users"></span>
+                            <span>Alumnos</span>
+                        </a>
                     </div>
                     <div class="cpp-config-content-area">
                         <div id="cpp-config-tab-clase" class="cpp-config-tab-content active">
@@ -99,6 +103,11 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <hr class="cpp-config-divider">
                             <div id="cpp-config-ponderaciones-container" class="cpp-config-section">
                                 <p>Selecciona una evaluación para ver sus ponderaciones.</p>
+                            </div>
+                        </div>
+                        <div id="cpp-config-tab-alumnos" class="cpp-config-tab-content">
+                             <div id="cpp-config-alumnos-container" class="cpp-config-section">
+                                <p>Cargando alumnos...</p>
                             </div>
                         </div>
                     </div>
@@ -417,13 +426,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             </div>
             <?php
             do_action('cpp_modal_crear_clase_outputted');
-        }
-
-        if (empty(did_action('cpp_modal_alumnos_outputted'))) {
-            ?>
-            <div class="cpp-modal" id="cpp-modal-alumnos"><div class="cpp-modal-content"><span class="cpp-modal-close">&times;</span><h2 id="cpp-modal-alumnos-title">Gestión de Alumnos</h2><div id="cpp-alumnos-container"></div></div></div>
-            <?php
-            do_action('cpp_modal_alumnos_outputted');
         }
         
         if (empty(did_action('cpp_modal_actividad_cuaderno_outputted'))) { 

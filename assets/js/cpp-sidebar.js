@@ -170,10 +170,11 @@
             });
 
             $document.on('click', '.cpp-sidebar-clase-alumnos-btn', function(e){
-                if (cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.mostrar === 'function') {
-                    cpp.modals.alumnos.mostrar(e); 
+                if (cpp.config && typeof cpp.config.showParaEditar === 'function') {
+                    // Pass a third argument to indicate the target tab
+                    cpp.config.showParaEditar(e, 'alumnos');
                 } else {
-                    console.error("Función cpp.modals.alumnos.mostrar no encontrada.");
+                    console.error("Función cpp.config.showParaEditar no encontrada.");
                 }
             });
 
