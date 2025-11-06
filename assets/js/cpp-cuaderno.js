@@ -300,7 +300,10 @@
                 const $fullscreenContainer = $('#cpp-fullscreen-tab-container');
 
                 if ($content.length && $fullscreenContent.length) {
-                    $fullscreenContent.append($content);
+                    // Limpiar el contenedor antes de añadir nuevo contenido
+                    $fullscreenContent.empty();
+                    // Mover el contenido y añadir la clase 'active' para asegurar que sea visible
+                    $fullscreenContent.append($content.addClass('active'));
                     $('#cpp-fullscreen-tab-title').text($tab.text());
                     $('#cpp-cuaderno-main-content').hide();
                     $fullscreenContainer.show();
@@ -402,7 +405,7 @@
                 const $originalParent = $('.cpp-main-tabs-content');
 
                 if ($fullscreenContent.children().length > 0) {
-                    $originalParent.append($fullscreenContent.children());
+                    $originalParent.append($fullscreenContent.children().removeClass('active'));
                 }
 
                 $fullscreenContainer.hide();
