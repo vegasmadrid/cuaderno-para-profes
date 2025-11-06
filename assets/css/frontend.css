@@ -556,7 +556,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 .cpp-top-bar-center.cpp-tabs-clase-specific {
     flex-grow: 0; /* Más espacio para las pestañas */
-    justify-content: left;
+    justify-content: flex-end;
     gap: 0; /* Sin espacio entre pestañas */
 }
 
