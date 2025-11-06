@@ -248,3 +248,95 @@ function cpp_ajax_update_alumno() {
 
     wp_send_json_success();
 }
+
+add_action('wp_ajax_cpp_obtener_alumnos', 'cpp_ajax_obtener_alumnos_handler');
+function cpp_ajax_obtener_alumnos_handler() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+
+    if (empty($clase_id)) {
+        wp_send_json_error(['message' => 'ID de clase no proporcionado.']);
+    }
+
+    // Security check: Make sure the user owns the class
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $clase_id));
+
+    if ($owner_id != $user_id) {
+        wp_send_json_error(['message' => 'No tienes permiso para ver estos alumnos.']);
+    }
+
+    require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
+    $alumnos = cpp_obtener_alumnos_clase($clase_id);
+
+    ob_start();
+    ?>
+    <div class="cpp-alumnos-header">
+        <h3>Alumnos de la clase</h3>
+        <div>
+            <button id="cpp-importar-alumnos-excel-btn" class="cpp-btn cpp-btn-secondary">
+                <span class="dashicons dashicons-upload"></span> Importar desde Excel
+            </button>
+            <button id="cpp-nuevo-alumno-btn" class="cpp-btn cpp-btn-primary">
+                <span class="dashicons dashicons-plus"></span> Añadir Alumno
+            </button>
+        </div>
+    </div>
+    <div class="cpp-alumnos-list">
+        <?php if (empty($alumnos)) : ?>
+            <p>No hay alumnos en esta clase todavía.</p>
+        <?php else : ?>
+            <?php foreach ($alumnos as $alumno) : ?>
+                <div class="cpp-alumno-card">
+                    <div class="cpp-alumno-info">
+                        <img src="<?php echo esc_url(cpp_get_avatar_url($alumno)); ?>" alt="Avatar" class="cpp-alumno-avatar">
+                        <h4><?php echo esc_html($alumno['nombre'] . ' ' . $alumno['apellidos']); ?></h4>
+                    </div>
+                    <div class="cpp-alumno-actions">
+                        <button class="cpp-btn-icon cpp-btn-editar" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" title="Editar">
+                            <span class="dashicons dashicons-edit"></span>
+                        </button>
+                        <button class="cpp-btn-icon cpp-btn-eliminar-alumno" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" title="Eliminar">
+                            <span class="dashicons dashicons-trash"></span>
+                        </button>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+    <div id="cpp-form-alumno" style="display:none;">
+        <h3 id="cpp-form-alumno-titulo">Añadir Nuevo Alumno</h3>
+        <form id="cpp-form-nuevo-alumno" class="cpp-modern-form">
+            <input type="hidden" name="clase_id_form_alumno" value="<?php echo esc_attr($clase_id); ?>">
+            <input type="hidden" id="alumno_id_editar" name="alumno_id_editar" value="">
+
+            <div class="cpp-form-grid">
+                <div class="cpp-form-group">
+                    <label for="nombre_alumno">Nombre</label>
+                    <input type="text" id="nombre_alumno" name="nombre_alumno" required>
+                </div>
+                <div class="cpp-form-group">
+                    <label for="apellidos_alumno">Apellidos</label>
+                    <input type="text" id="apellidos_alumno" name="apellidos_alumno" required>
+                </div>
+            </div>
+
+            <div class="cpp-form-group">
+                <label for="foto_alumno">URL de la foto (opcional)</label>
+                <input type="text" id="foto_alumno" name="foto_alumno">
+                <div id="cpp-foto-actual-preview" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="cpp-form-actions">
+                 <button type="submit" id="cpp-submit-alumno-btn" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar Alumno</button>
+                 <button type="button" id="cpp-cancel-edit-alumno-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
+            </div>
+        </form>
+    </div>
+    <?php
+    $html = ob_get_clean();
+
+    wp_send_json_success(['html' => $html]);
+}

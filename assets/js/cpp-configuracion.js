@@ -128,7 +128,7 @@
             });
         },
 
-        showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) {
+        showParaEditar: function(e, targetTab = 'clase', claseIdFromParam = null) {
             if (e && typeof e.preventDefault === 'function') {
                 e.preventDefault();
                 e.stopPropagation();
@@ -198,9 +198,11 @@
                         $form.find('#cpp-submit-clase-btn-config').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         $form.find('#cpp-eliminar-clase-config-btn').show();
 
-                        // Asegurarse de que la pestaña "Clase" esté activa
-                        this.handleConfigTabClick(null, 'clase');
-                        $form.find('#nombre_clase_config').focus();
+                        // Switch to the correct tab
+                        this.handleConfigTabClick(null, targetTab);
+                        if (targetTab === 'clase') {
+                            $form.find('#nombre_clase_config').focus();
+                        }
 
                         this.loadEvaluacionesData(claseId);
 
@@ -217,6 +219,39 @@
                     $('#cpp-class-settings-page-container').hide();
                     $('#cpp-cuaderno-main-content').show();
                     $('body').removeClass('cpp-fullscreen-active');
+                }
+            });
+        },
+
+        loadAlumnosData: function(claseId) {
+            const $container = $('#cpp-config-alumnos-container');
+            if (!claseId) {
+                $container.html('<p>Por favor, guarda la clase antes de añadir alumnos.</p>');
+                return;
+            }
+
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando alumnos...</p>');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_obtener_alumnos',
+                    nonce: cppFrontendData.nonce,
+                    clase_id: claseId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $container.html(response.data.html);
+                        // Make sure the student form is not visible by default
+                        $container.find('#cpp-form-alumno').hide();
+                    } else {
+                        $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar alumnos.'}</p>`);
+                    }
+                },
+                error: function() {
+                    $container.html('<p class="cpp-error-message">Error de conexión al cargar alumnos.</p>');
                 }
             });
         },
@@ -353,6 +388,141 @@
             }
         },
 
+        // --- START: NEW STUDENT MANAGEMENT FUNCTIONS ---
+        mostrarFormAlumno: function(event, alumnoData = null) {
+            if(event) event.preventDefault();
+
+            const $configContent = $('#cpp-config-tab-alumnos');
+            const $formContainer = $configContent.find('#cpp-form-alumno');
+            const $form = $formContainer.find('form#cpp-form-nuevo-alumno');
+            const $tituloForm = $formContainer.find('#cpp-form-alumno-titulo');
+            const $submitBtn = $formContainer.find('#cpp-submit-alumno-btn');
+            const $fotoPreview = $formContainer.find('#cpp-foto-actual-preview');
+
+            $form.trigger('reset');
+            $fotoPreview.empty().hide();
+            $form.find('[name="clase_id_form_alumno"]').val(this.currentClaseIdForConfig);
+
+            if (alumnoData && alumnoData.id) { // Editando
+                $tituloForm.text(`Editar Alumno: ${alumnoData.nombre} ${alumnoData.apellidos}`);
+                $form.find('#alumno_id_editar').val(alumnoData.id);
+                $form.find('[name="nombre_alumno"]').val(alumnoData.nombre);
+                $form.find('[name="apellidos_alumno"]').val(alumnoData.apellidos);
+                if (alumnoData.foto) {
+                    $fotoPreview.html(`<p><small>Foto actual:</small></p><img src="${$('<div>').text(alumnoData.foto).html()}" alt="Foto actual" style="max-width:100px; max-height:100px; border-radius:50%;">`).show();
+                }
+                $submitBtn.html('<span class="dashicons dashicons-edit"></span> Actualizar Alumno');
+            } else { // Creando
+                $tituloForm.text('Añadir Nuevo Alumno');
+                $form.find('#alumno_id_editar').val('');
+                $submitBtn.html('<span class="dashicons dashicons-saved"></span> Guardar Alumno');
+            }
+
+            $configContent.find('.cpp-alumnos-list, .cpp-alumnos-header').hide();
+            $formContainer.show().find('[name="nombre_alumno"]').focus();
+        },
+
+        guardarAlumno: function(event) {
+            event.preventDefault();
+            const formElement = event.target;
+            const $form = $(formElement);
+            const $btn = $form.find('button[type="submit"]');
+            const formData = new FormData(formElement);
+
+            formData.append('action', 'cpp_guardar_alumno');
+            formData.append('nonce', cppFrontendData.nonce);
+
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
+            const self = this;
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl, type: 'POST', data: formData,
+                processData: false, contentType: false, dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        self.loadAlumnosData(self.currentClaseIdForConfig);
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo guardar.'));
+                    }
+                },
+                error: function() { alert('Error de conexión al guardar alumno.'); },
+                complete: function() { $btn.prop('disabled', false).html(originalBtnHtml); }
+            });
+        },
+
+        cargarAlumnoParaEditar: function(event) {
+            event.preventDefault();
+            const alumnoId = $(event.currentTarget).data('alumno-id');
+            if (!alumnoId) return;
+            const self = this;
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                data: {
+                    action: 'cpp_obtener_datos_alumno',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: alumnoId
+                },
+                success: function(response) {
+                    if (response.success && response.data.alumno) {
+                        self.mostrarFormAlumno(null, response.data.alumno);
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo cargar.'));
+                    }
+                },
+                error: function() { alert('Error de conexión al cargar datos.'); }
+            });
+        },
+
+        eliminarAlumno: function(event) {
+            event.preventDefault();
+            const $btn = $(event.currentTarget);
+            const alumnoId = $btn.data('alumno-id');
+            const alumnoNombre = $btn.closest('.cpp-alumno-card').find('.cpp-alumno-info h4').text() || 'este alumno';
+            const self = this;
+
+            if (!alumnoId || !this.currentClaseIdForConfig) {
+                alert('Error: Falta información para eliminar al alumno.');
+                return;
+            }
+
+            if (confirm(`¿Estás seguro de que quieres eliminar a ${alumnoNombre}?\nEsta acción también eliminará todas sus calificaciones.`)) {
+                const originalBtnHtml = $btn.html();
+                $btn.prop('disabled',true).html('<span class="dashicons dashicons-update dashicons-spin"></span>');
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: {
+                        action: 'cpp_eliminar_alumno',
+                        nonce: cppFrontendData.nonce,
+                        alumno_id: alumnoId,
+                        clase_id_actual: self.currentClaseIdForConfig
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            self.loadAlumnosData(self.currentClaseIdForConfig);
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo eliminar.'));
+                            $btn.prop('disabled',false).html(originalBtnHtml);
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión al eliminar alumno.');
+                        $btn.prop('disabled',false).html(originalBtnHtml);
+                    }
+                });
+            }
+        },
+
+        cancelarEdicionAlumno: function(event) {
+            if (event) event.preventDefault();
+            const $configContent = $('#cpp-config-tab-alumnos');
+            $configContent.find('#cpp-form-alumno').hide();
+            $configContent.find('.cpp-alumnos-list, .cpp-alumnos-header').show();
+        },
+        // --- END: NEW STUDENT MANAGEMENT FUNCTIONS ---
+
         crearClaseEjemplo: function(event, nombreClase, colorClase) {
             event.preventDefault();
             const self = this;
@@ -403,6 +573,9 @@
                 if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.populateConfigModal === 'function') {
                     CppProgramadorApp.populateConfigModal();
                 }
+            }
+            if (tabId === 'alumnos') {
+                this.loadAlumnosData(this.currentClaseIdForConfig);
             }
         },
 
@@ -669,6 +842,38 @@
                     }
                 });
             });
+
+            // --- START: NEW STUDENT MANAGEMENT EVENT BINDINGS ---
+            const alumnosContainerSelector = '#cpp-config-alumnos-container';
+
+            $classSettingsPage.on('click', `${alumnosContainerSelector} #cpp-nuevo-alumno-btn`, (e) => {
+                this.mostrarFormAlumno(e, null);
+            });
+
+            $classSettingsPage.on('submit', `${alumnosContainerSelector} #cpp-form-nuevo-alumno`, (e) => {
+                this.guardarAlumno(e);
+            });
+
+            $classSettingsPage.on('click', `${alumnosContainerSelector} .cpp-btn-editar`, (e) => {
+                this.cargarAlumnoParaEditar(e);
+            });
+
+            $classSettingsPage.on('click', `${alumnosContainerSelector} .cpp-btn-eliminar-alumno`, (e) => {
+                this.eliminarAlumno(e);
+            });
+
+            $classSettingsPage.on('click', `${alumnosContainerSelector} #cpp-cancel-edit-alumno-btn`, (e) => {
+                this.cancelarEdicionAlumno(e);
+            });
+
+            $classSettingsPage.on('click', '#cpp-importar-alumnos-excel-btn', function(e) {
+                if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showImportStudents === 'function') {
+                    cpp.modals.excel.showImportStudents(e);
+                } else {
+                    console.error("Función cpp.modals.excel.showImportStudents no encontrada.");
+                }
+            });
+            // --- END: NEW STUDENT MANAGEMENT EVENT BINDINGS ---
         }
     };
 

@@ -48,6 +48,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <span class="dashicons dashicons-chart-bar"></span>
                             <span>Evaluaciones</span>
                         </a>
+                        <a href="#" class="cpp-config-tab-link" data-config-tab="alumnos">
+                            <span class="dashicons dashicons-admin-users"></span>
+                            <span>Alumnos</span>
+                        </a>
                     </div>
                     <div class="cpp-config-content-area">
                         <div id="cpp-config-tab-clase" class="cpp-config-tab-content active">
@@ -93,12 +97,17 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             </form>
                         </div>
                         <div id="cpp-config-tab-evaluaciones" class="cpp-config-tab-content">
-                            <div id="cpp-config-evaluaciones-container" class="cpp-config-section">
+                             <div id="cpp-config-evaluaciones-container">
                                 <p>Cargando evaluaciones...</p>
                             </div>
                             <hr class="cpp-config-divider">
-                            <div id="cpp-config-ponderaciones-container" class="cpp-config-section">
+                            <div id="cpp-config-ponderaciones-container">
                                 <p>Selecciona una evaluación para ver sus ponderaciones.</p>
+                            </div>
+                        </div>
+                        <div id="cpp-config-tab-alumnos" class="cpp-config-tab-content">
+                             <div id="cpp-config-alumnos-container">
+                                <p>Cargando alumnos...</p>
                             </div>
                         </div>
                     </div>
@@ -419,13 +428,48 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             do_action('cpp_modal_crear_clase_outputted');
         }
 
-        if (empty(did_action('cpp_modal_alumnos_outputted'))) {
+        if (empty(did_action('cpp_modal_import_students_outputted'))) {
             ?>
-            <div class="cpp-modal" id="cpp-modal-alumnos"><div class="cpp-modal-content"><span class="cpp-modal-close">&times;</span><h2 id="cpp-modal-alumnos-title">Gestión de Alumnos</h2><div id="cpp-alumnos-container"></div></div></div>
+            <div class="cpp-modal" id="cpp-modal-import-students">
+                <div class="cpp-modal-content">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2 id="cpp-modal-import-students-titulo">Importar Alumnos desde Excel</h2>
+                    <div id="cpp-import-step-1-upload">
+                        <p>Sube un archivo Excel (.xlsx o .xls) con los datos de los alumnos. La primera fila debe contener las cabeceras "Nombre" y "Apellidos".</p>
+                        <div class="cpp-form-group">
+                            <label for="cpp-btn-download-student-template" style="display:block; margin-bottom:5px;">Descarga una plantilla de ejemplo:</label>
+                            <button type="button" class="cpp-btn cpp-btn-info" id="cpp-btn-download-student-template"><span class="dashicons dashicons-media-spreadsheet"></span> Descargar Plantilla</button>
+                        </div>
+                        <hr style="margin: 20px 0;">
+                        <div class="cpp-form-group">
+                            <label for="student_excel_file_input">Selecciona el archivo Excel:</label>
+                            <input type="file" id="student_excel_file_input" name="student_excel_file" accept=".xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                            <small>Formatos permitidos: .xlsx, .xls</small>
+                        </div>
+                        <div id="cpp-upload-status-message" style="margin-top:10px; font-style: italic;"></div>
+                        <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-btn-upload-excel-file" disabled><span class="dashicons dashicons-upload"></span> Subir y Validar Archivo</button>
+                    </div>
+                    <div id="cpp-import-step-2-options" style="display:none; margin-top:20px;">
+                        <h4>Archivo subido: <span id="cpp-uploaded-file-name-display"></span></h4>
+                        <p>¿Cómo deseas importar los alumnos a la clase actual (<strong id="cpp-import-target-class-name"></strong>)?</p>
+                        <div class="cpp-form-group">
+                            <label style="font-weight:normal; margin-bottom: 5px;"><input type="radio" name="import_mode" value="add" checked> Añadir alumnos a la lista existente.</label><br>
+                            <label style="font-weight:normal;"><input type="radio" name="import_mode" value="replace"> Reemplazar la lista actual de alumnos (¡borrará los alumnos y notas existentes!).</label>
+                        </div>
+                        <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-btn-confirm-student-import"><span class="dashicons dashicons-database-import"></span> Confirmar Importación</button>
+                        <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-cancel-excel-import" style="margin-left:10px;">Cancelar</button>
+                    </div>
+                    <div id="cpp-import-results" style="display:none; margin-top:20px; padding:10px; border:1px solid #ccc; background-color:#f9f9f9;">
+                        <h4>Resultados de la Importación:</h4>
+                        <div id="cpp-import-results-message" style="margin-bottom:10px;"></div>
+                        <ul id="cpp-import-errors-list" style="max-height: 150px; overflow-y: auto; margin-top:10px; padding-left:20px;"></ul>
+                    </div>
+                </div>
+            </div>
             <?php
-            do_action('cpp_modal_alumnos_outputted');
+            do_action('cpp_modal_import_students_outputted');
         }
-        
+
         if (empty(did_action('cpp_modal_actividad_cuaderno_outputted'))) { 
             ?>
             <div class="cpp-modal" id="cpp-modal-actividad-evaluable-cuaderno">
