@@ -1940,7 +1940,7 @@ body.cpp-no-text-select {
 
 .cpp-top-bar-center.cpp-tabs-clase-specific {
     flex-grow: 10; /* Darle más espacio para centrar las pestañas */
-    justify-content: center;
+    justify-content: left;
     display: flex;
     gap: 8px;
 }
