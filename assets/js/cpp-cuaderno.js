@@ -18,6 +18,7 @@
         failedStudentsHighlighted: false,
         notaAprobado: 50, // Default, se actualiza al cargar la clase
         programadorInicializado: false,
+        lastActiveTab: 'cuaderno',
 
         // --- Propiedades para la paleta de símbolos ---
         availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', '📝', '❓', '⭐'],
@@ -287,15 +288,34 @@
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
 
-            if ($tab.hasClass('active')) {
-                return; // Ya está activo
+            if ($tab.hasClass('active') && !$tab.hasClass('cpp-main-tab-right')) {
+                return;
             }
 
-            // 1. Manejar estado visual
-            $('.cpp-main-tab-link').removeClass('active');
-            $('.cpp-main-tab-content').removeClass('active');
-            $tab.addClass('active');
-            $('#cpp-main-tab-' + tabName).addClass('active');
+            const isRightTab = ['semana', 'horario', 'alumnos', 'resumen'].includes(tabName);
+
+            if (isRightTab) {
+                const $content = $('#cpp-main-tab-' + tabName);
+                const $fullscreenContent = $('#cpp-fullscreen-tab-content');
+                const $fullscreenContainer = $('#cpp-fullscreen-tab-container');
+
+                if ($content.length && $fullscreenContent.length) {
+                    $fullscreenContent.append($content);
+                    $('#cpp-fullscreen-tab-title').text($tab.text());
+                    $('#cpp-cuaderno-main-content').hide();
+                    $fullscreenContainer.show();
+                    $('body').addClass('cpp-fullscreen-active');
+                }
+
+                // No activar/desactivar visualmente las pestañas derechas
+            } else {
+                this.lastActiveTab = tabName;
+                // Lógica original para pestañas izquierdas
+                $('.cpp-main-tab-link').removeClass('active');
+                $('.cpp-main-tab-content').removeClass('active');
+                $tab.addClass('active');
+                $('#cpp-main-tab-' + tabName).addClass('active');
+            }
 
             // 2. Guardar estado en localStorage
             try {
@@ -375,6 +395,25 @@
             console.log("Binding Gradebook (cuaderno) events...");
             const $document = $(document);
             const self = this;
+
+            $document.on('click', '#cpp-close-fullscreen-tab-btn', function() {
+                const $fullscreenContainer = $('#cpp-fullscreen-tab-container');
+                const $fullscreenContent = $('#cpp-fullscreen-tab-content');
+                const $originalParent = $('.cpp-main-tabs-content');
+
+                if ($fullscreenContent.children().length > 0) {
+                    $originalParent.append($fullscreenContent.children());
+                }
+
+                $fullscreenContainer.hide();
+                $('#cpp-cuaderno-main-content').show();
+                $('body').removeClass('cpp-fullscreen-active');
+
+                // Restaurar la pestaña activa
+                if (self.lastActiveTab) {
+                    $('.cpp-main-tab-link[data-tab="' + self.lastActiveTab + '"]').trigger('click');
+                }
+            });
 
             // --- Listener para las pestañas principales (Cuaderno/Programador) ---
             $document.on('click', '.cpp-main-tab-link', function(e) {

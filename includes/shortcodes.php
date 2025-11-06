@@ -28,6 +28,18 @@ function cpp_shortcode_cuaderno_notas_classroom() {
     ob_start();
     ?>
     <div class="cpp-cuaderno-viewport-classroom">
+        <!-- Contenedor para las pestañas de la derecha en pantalla completa -->
+        <div id="cpp-fullscreen-tab-container" class="cpp-fullscreen-settings-page" style="display: none;">
+            <div class="cpp-fullscreen-settings-header">
+                <button id="cpp-close-fullscreen-tab-btn" class="cpp-btn-icon cpp-close-fullscreen-btn" title="Volver al cuaderno">
+                    <span class="dashicons dashicons-arrow-left-alt"></span>
+                </button>
+                <h2 id="cpp-fullscreen-tab-title"></h2>
+            </div>
+            <div id="cpp-fullscreen-tab-content" class="cpp-fullscreen-settings-content">
+                <!-- El contenido de la pestaña activa se moverá aquí -->
+            </div>
+        </div>
 
         <!-- Contenedor para la página de ajustes de clase (inicialmente oculto) -->
         <div id="cpp-class-settings-page-container" class="cpp-fullscreen-settings-page" style="display: none;">
