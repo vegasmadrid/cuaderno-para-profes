@@ -151,15 +151,15 @@
                 self.updateBulkActionsUI();
             }, 0);
         });
-        $document.on('click', '#cpp-programador-app #cpp-horario-config-btn', function() {
+        $document.on('click', 'body #cpp-horario-config-btn', function() {
             $('.cpp-main-tab-link[data-tab="configuracion"]').click();
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
                 cpp.config.handleConfigTabClick(null, 'calendario');
             }
         });
-        $document.on('click', '#cpp-programador-app .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
-        $document.on('click', '#cpp-programador-app .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
-        $document.on('change', '#cpp-programador-app #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
+        $document.on('click', 'body .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
+        $document.on('click', 'body .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
+        $document.on('change', 'body #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
         // Edición Inline
         $document.on('focusin', '#cpp-programador-app [contenteditable]', function() { self.originalContent = this.innerHTML; });
