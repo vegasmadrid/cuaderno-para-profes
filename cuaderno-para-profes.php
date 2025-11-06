@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.2.1');
+define('CPP_VERSION', '2.3.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -350,6 +350,67 @@ function cpp_migrate_nullify_scheduled_activity_dates_v2_2_1() {
     );
 }
 
+function cpp_migrate_alumnos_many_to_many_v2_3() {
+    global $wpdb;
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
+    // 1. Crear la nueva tabla de unión
+    $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        alumno_id mediumint(9) UNSIGNED NOT NULL,
+        clase_id mediumint(9) UNSIGNED NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY alumno_clase_unique (alumno_id, clase_id),
+        KEY alumno_id (alumno_id),
+        KEY clase_id (clase_id)
+    ) $charset_collate;";
+    dbDelta($sql_alumnos_clases);
+
+    // 2. Añadir la columna user_id a la tabla de alumnos si no existe
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'user_id'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NOT NULL AFTER `id`, ADD KEY `user_id` (`user_id`);");
+    }
+
+    // 3. Migrar los datos
+    $alumnos_a_migrar = $wpdb->get_results("SELECT id, clase_id FROM $tabla_alumnos WHERE clase_id IS NOT NULL AND clase_id != 0");
+
+    foreach ($alumnos_a_migrar as $alumno) {
+        // Obtener el user_id de la clase a la que pertenecía el alumno
+        $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $alumno->clase_id));
+
+        if ($user_id) {
+            // Actualizar el alumno con su nuevo user_id
+            $wpdb->update(
+                $tabla_alumnos,
+                ['user_id' => $user_id],
+                ['id' => $alumno->id],
+                ['%d'],
+                ['%d']
+            );
+
+            // Insertar la relación en la nueva tabla
+            $wpdb->insert(
+                $tabla_alumnos_clases,
+                [
+                    'alumno_id' => $alumno->id,
+                    'clase_id' => $alumno->clase_id,
+                ],
+                ['%d', '%d']
+            );
+        }
+    }
+
+    // 4. Eliminar la columna clase_id de la tabla de alumnos si existe
+    if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'clase_id'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` DROP COLUMN `clase_id`;");
+    }
+}
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -379,6 +440,9 @@ function cpp_run_migrations() {
     }
      if (version_compare($current_version, '2.2.1', '<')) {
         cpp_migrate_nullify_scheduled_activity_dates_v2_2_1();
+    }
+    if (version_compare($current_version, '2.3.0', '<')) {
+        cpp_migrate_alumnos_many_to_many_v2_3();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
