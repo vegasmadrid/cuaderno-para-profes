@@ -20,7 +20,18 @@ function cpp_ajax_search_alumnos() {
     $user_id = get_current_user_id();
     $search_term = isset($_POST['search_term']) ? sanitize_text_field($_POST['search_term']) : '';
 
+    // --- DIAGNOSTICS ---
+    error_log('[DEBUG] AJAX: cpp_ajax_search_alumnos triggered.');
+    error_log('[DEBUG] User ID: ' . $user_id);
+    error_log('[DEBUG] Search Term: ' . $search_term);
+
     $alumnos = cpp_obtener_todos_alumnos_usuario($user_id, 'apellidos', $search_term);
+
+    // --- DIAGNOSTICS ---
+    global $wpdb;
+    error_log('[DEBUG] SQL Error: ' . $wpdb->last_error);
+    error_log('[DEBUG] Alumnos found: ' . count($alumnos));
+    error_log('[DEBUG] Alumnos data: ' . print_r($alumnos, true));
 
     // Para cada alumno, obtenemos sus clases
     foreach ($alumnos as &$alumno) {
