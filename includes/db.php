@@ -63,13 +63,13 @@ function cpp_crear_tablas() {
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $sql_alumnos = "CREATE TABLE $tabla_alumnos (
         id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
-        user_id bigint(20) UNSIGNED NOT NULL,
+        clase_id mediumint(9) UNSIGNED NOT NULL,
         nombre varchar(50) NOT NULL,
         apellidos varchar(100) NOT NULL,
         foto varchar(255),
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        KEY user_id (user_id)
+        KEY clase_id (clase_id)
     ) $charset_collate;";
 
     $tabla_actividades_evaluables_nombre = $wpdb->prefix . 'cpp_actividades_evaluables';

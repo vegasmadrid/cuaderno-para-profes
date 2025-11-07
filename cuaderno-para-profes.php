@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.3.1');
+define('CPP_VERSION', '2.3.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -350,7 +350,7 @@ function cpp_migrate_nullify_scheduled_activity_dates_v2_2_1() {
     );
 }
 
-function cpp_migrate_alumnos_many_to_many_v2_3() {
+function cpp_migrate_alumnos_to_many_to_many_v2_3_0_final() {
     global $wpdb;
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
@@ -359,12 +359,7 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
     $charset_collate = $wpdb->get_charset_collate();
 
-    // --- PASO 1: FORZAR la existencia de la columna `user_id` ---
-    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'user_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `id`, ADD KEY `user_id` (`user_id`);");
-    }
-
-    // --- PASO 2: Crear tabla de unión (dbDelta es seguro para esto) ---
+    // -- PASO 1: Crear la tabla de unión (dbDelta es seguro para esto)
     $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         alumno_id mediumint(9) UNSIGNED NOT NULL,
@@ -376,19 +371,28 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     ) $charset_collate;";
     dbDelta($sql_alumnos_clases);
 
-    // --- PASO 3: Migrar los datos si la columna antigua `clase_id` todavía existe ---
-    if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'clase_id'"))) {
+    // -- PASO 2: Forzar la adición de la columna `user_id` con SQL directo si no existe
+    $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'user_id'"));
+    if (!$column_exists) {
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `id`;");
+    }
 
+    // -- PASO 3: Forzar la adición del índice `user_id` con SQL directo si no existe
+    $index_exists = $wpdb->get_var($wpdb->prepare("SHOW INDEX FROM `$tabla_alumnos` WHERE Key_name = 'user_id'"));
+    if (!$index_exists) {
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD KEY `user_id` (`user_id`);");
+    }
+
+    // -- PASO 4: Migrar los datos si la columna antigua `clase_id` todavía existe
+    if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'clase_id'"))) {
         $alumnos_a_migrar = $wpdb->get_results("SELECT id, clase_id FROM $tabla_alumnos WHERE clase_id IS NOT NULL AND clase_id > 0");
 
         foreach ($alumnos_a_migrar as $alumno) {
             $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $alumno->clase_id));
-
             if ($user_id) {
-                // Rellenar el user_id del alumno
+                // Rellenar user_id
                 $wpdb->update($tabla_alumnos, ['user_id' => $user_id], ['id' => $alumno->id]);
-
-                // Crear la entrada en la tabla de unión
+                // Rellenar tabla de unión
                 $wpdb->query($wpdb->prepare(
                     "INSERT IGNORE INTO $tabla_alumnos_clases (alumno_id, clase_id) VALUES (%d, %d)",
                     $alumno->id, $alumno->clase_id
@@ -396,10 +400,11 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
             }
         }
 
-        // Eliminar la columna antigua después de migrar todos los datos
+        // Finalmente, eliminar la columna antigua
         $wpdb->query("ALTER TABLE `$tabla_alumnos` DROP COLUMN `clase_id`;");
     }
 }
+
 
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
@@ -432,7 +437,7 @@ function cpp_run_migrations() {
         cpp_migrate_nullify_scheduled_activity_dates_v2_2_1();
     }
     if (version_compare($current_version, '2.3.0', '<')) {
-        cpp_migrate_alumnos_many_to_many_v2_3();
+        cpp_migrate_alumnos_to_many_to_many_v2_3_0_final();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
