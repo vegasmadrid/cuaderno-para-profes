@@ -1,5 +1,4 @@
 <?php
-<?php
 // /includes/ajax-handlers/ajax-alumnos.php
 // --- REFACTORIZADO PARA GESTIÓN GLOBAL DE ALUMNOS ---
 
