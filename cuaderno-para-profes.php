@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.3.0');
+define('CPP_VERSION', '2.3.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -411,6 +411,48 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     }
 }
 
+function cpp_repair_orphan_students_v2_3_1() {
+    global $wpdb;
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
+    // Buscar alumnos 'huérfanos' (sin user_id asignado)
+    $orphan_alumnos = $wpdb->get_results("SELECT id FROM $tabla_alumnos WHERE user_id IS NULL OR user_id = 0");
+
+    if (empty($orphan_alumnos)) {
+        return; // No hay nada que reparar
+    }
+
+    foreach ($orphan_alumnos as $alumno) {
+        // Encontrar la primera clase a la que este alumno está vinculado
+        $clase_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT clase_id FROM $tabla_alumnos_clases WHERE alumno_id = %d LIMIT 1",
+            $alumno->id
+        ));
+
+        if ($clase_id) {
+            // A partir de la clase, encontrar el user_id del profesor
+            $user_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT user_id FROM $tabla_clases WHERE id = %d",
+                $clase_id
+            ));
+
+            if ($user_id) {
+                // Asignar el user_id correcto al alumno huérfano
+                $wpdb->update(
+                    $tabla_alumnos,
+                    ['user_id' => $user_id],
+                    ['id' => $alumno->id],
+                    ['%d'],
+                    ['%d']
+                );
+            }
+        }
+    }
+}
+
+
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
@@ -443,6 +485,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_many_to_many_v2_3();
+    }
+    if (version_compare($current_version, '2.3.1', '<')) {
+        cpp_repair_orphan_students_v2_3_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
