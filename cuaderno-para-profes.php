@@ -359,10 +359,12 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
     $charset_collate = $wpdb->get_charset_collate();
 
-    // La creación de la columna user_id ahora la gestiona dbDelta a través de db.php
-    // Aquí solo nos centramos en la migración de datos si la columna antigua aún existe.
+    // --- PASO 1: FORZAR la existencia de la columna `user_id` ---
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'user_id'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `id`, ADD KEY `user_id` (`user_id`);");
+    }
 
-    // Crear la tabla de unión si no existe (esto es seguro repetirlo)
+    // --- PASO 2: Crear tabla de unión (dbDelta es seguro para esto) ---
     $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         alumno_id mediumint(9) UNSIGNED NOT NULL,
@@ -374,10 +376,9 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     ) $charset_collate;";
     dbDelta($sql_alumnos_clases);
 
-    // Solo proceder si la columna antigua 'clase_id' todavía existe
+    // --- PASO 3: Migrar los datos si la columna antigua `clase_id` todavía existe ---
     if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'clase_id'"))) {
 
-        // Obtener todos los alumnos que tienen una clase asignada en el formato antiguo
         $alumnos_a_migrar = $wpdb->get_results("SELECT id, clase_id FROM $tabla_alumnos WHERE clase_id IS NOT NULL AND clase_id > 0");
 
         foreach ($alumnos_a_migrar as $alumno) {
