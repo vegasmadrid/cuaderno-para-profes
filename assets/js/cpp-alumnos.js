@@ -354,8 +354,7 @@
                 <div class="cpp-empty-panel">
                     <span class="dashicons dashicons-groups"></span>
                     <h2>Gestión Global de Alumnos</h2>
-                    <p>Selecciona un alumno de la lista para ver su ficha, editar sus datos y asignarlo a tus clases.</p>
-                    <p>O pulsa <strong>"Nuevo Alumno"</strong> para empezar.</p>
+                    <p>Selecciona un alumno de la lista para ver su ficha, editar sus datos y asignarlo a tus clases.<br><br>O pulsa <strong>"Nuevo Alumno"</strong> para empezar.</p>
                 </div>`;
         }
     };
