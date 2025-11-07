@@ -359,7 +359,9 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
 
-    // 1. Crear la nueva tabla de unión
+    // --- PASO 1: Asegurarse de que la nueva estructura de tablas y columnas existe ---
+
+    // Crear la tabla de unión si no existe
     $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         alumno_id mediumint(9) UNSIGNED NOT NULL,
@@ -371,75 +373,23 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     ) $charset_collate;";
     dbDelta($sql_alumnos_clases);
 
-    // 2. Añadir la columna user_id a la tabla de alumnos si no existe
+    // Añadir la columna user_id a la tabla de alumnos si no existe
     if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'user_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NOT NULL AFTER `id`, ADD KEY `user_id` (`user_id`);");
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `id`, ADD KEY `user_id` (`user_id`);");
     }
 
-    // 3. Migrar los datos
-    $alumnos_a_migrar = $wpdb->get_results("SELECT id, clase_id FROM $tabla_alumnos WHERE clase_id IS NOT NULL AND clase_id != 0");
+    // --- PASO 2: Migrar datos si la columna antigua `clase_id` todavía existe ---
 
-    foreach ($alumnos_a_migrar as $alumno) {
-        // Obtener el user_id de la clase a la que pertenecía el alumno
-        $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $alumno->clase_id));
-
-        if ($user_id) {
-            // Actualizar el alumno con su nuevo user_id
-            $wpdb->update(
-                $tabla_alumnos,
-                ['user_id' => $user_id],
-                ['id' => $alumno->id],
-                ['%d'],
-                ['%d']
-            );
-
-            // Insertar la relación en la nueva tabla
-            $wpdb->insert(
-                $tabla_alumnos_clases,
-                [
-                    'alumno_id' => $alumno->id,
-                    'clase_id' => $alumno->clase_id,
-                ],
-                ['%d', '%d']
-            );
-        }
-    }
-
-    // 4. Eliminar la columna clase_id de la tabla de alumnos si existe
     if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'clase_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_alumnos` DROP COLUMN `clase_id`;");
-    }
-}
+        // Obtener todos los alumnos que tienen una clase asignada en el formato antiguo
+        $alumnos_a_migrar = $wpdb->get_results("SELECT id, clase_id FROM $tabla_alumnos WHERE clase_id IS NOT NULL AND clase_id > 0");
 
-function cpp_repair_orphan_students_v2_3_1() {
-    global $wpdb;
-    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
-
-    // Buscar alumnos 'huérfanos' (sin user_id asignado)
-    $orphan_alumnos = $wpdb->get_results("SELECT id FROM $tabla_alumnos WHERE user_id IS NULL OR user_id = 0");
-
-    if (empty($orphan_alumnos)) {
-        return; // No hay nada que reparar
-    }
-
-    foreach ($orphan_alumnos as $alumno) {
-        // Encontrar la primera clase a la que este alumno está vinculado
-        $clase_id = $wpdb->get_var($wpdb->prepare(
-            "SELECT clase_id FROM $tabla_alumnos_clases WHERE alumno_id = %d LIMIT 1",
-            $alumno->id
-        ));
-
-        if ($clase_id) {
-            // A partir de la clase, encontrar el user_id del profesor
-            $user_id = $wpdb->get_var($wpdb->prepare(
-                "SELECT user_id FROM $tabla_clases WHERE id = %d",
-                $clase_id
-            ));
+        foreach ($alumnos_a_migrar as $alumno) {
+            // Obtener el user_id de la clase a la que pertenecía el alumno
+            $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $alumno->clase_id));
 
             if ($user_id) {
-                // Asignar el user_id correcto al alumno huérfano
+                // Actualizar el alumno con su nuevo user_id
                 $wpdb->update(
                     $tabla_alumnos,
                     ['user_id' => $user_id],
@@ -447,11 +397,19 @@ function cpp_repair_orphan_students_v2_3_1() {
                     ['%d'],
                     ['%d']
                 );
+
+                // Insertar la relación en la nueva tabla (ignorando duplicados si los hubiera)
+                $wpdb->query($wpdb->prepare(
+                    "INSERT IGNORE INTO $tabla_alumnos_clases (alumno_id, clase_id) VALUES (%d, %d)",
+                    $alumno->id, $alumno->clase_id
+                ));
             }
         }
+
+        // Una vez migrados los datos, eliminar la columna antigua
+        $wpdb->query("ALTER TABLE `$tabla_alumnos` DROP COLUMN `clase_id`;");
     }
 }
-
 
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
@@ -485,9 +443,6 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_many_to_many_v2_3();
-    }
-    if (version_compare($current_version, '2.3.1', '<')) {
-        cpp_repair_orphan_students_v2_3_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
