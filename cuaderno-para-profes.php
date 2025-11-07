@@ -353,15 +353,16 @@ function cpp_migrate_nullify_scheduled_activity_dates_v2_2_1() {
 function cpp_migrate_alumnos_many_to_many_v2_3() {
     global $wpdb;
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    $charset_collate = $wpdb->get_charset_collate();
 
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $charset_collate = $wpdb->get_charset_collate();
 
-    // --- PASO 1: Asegurarse de que la nueva estructura de tablas y columnas existe ---
+    // La creación de la columna user_id ahora la gestiona dbDelta a través de db.php
+    // Aquí solo nos centramos en la migración de datos si la columna antigua aún existe.
 
-    // Crear la tabla de unión si no existe
+    // Crear la tabla de unión si no existe (esto es seguro repetirlo)
     $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         alumno_id mediumint(9) UNSIGNED NOT NULL,
@@ -373,32 +374,20 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
     ) $charset_collate;";
     dbDelta($sql_alumnos_clases);
 
-    // Añadir la columna user_id a la tabla de alumnos si no existe
-    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'user_id'"))) {
-        $wpdb->query("ALTER TABLE `$tabla_alumnos` ADD `user_id` BIGINT(20) UNSIGNED NULL DEFAULT NULL AFTER `id`, ADD KEY `user_id` (`user_id`);");
-    }
-
-    // --- PASO 2: Migrar datos si la columna antigua `clase_id` todavía existe ---
-
+    // Solo proceder si la columna antigua 'clase_id' todavía existe
     if ($wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_alumnos` LIKE 'clase_id'"))) {
+
         // Obtener todos los alumnos que tienen una clase asignada en el formato antiguo
         $alumnos_a_migrar = $wpdb->get_results("SELECT id, clase_id FROM $tabla_alumnos WHERE clase_id IS NOT NULL AND clase_id > 0");
 
         foreach ($alumnos_a_migrar as $alumno) {
-            // Obtener el user_id de la clase a la que pertenecía el alumno
             $user_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $alumno->clase_id));
 
             if ($user_id) {
-                // Actualizar el alumno con su nuevo user_id
-                $wpdb->update(
-                    $tabla_alumnos,
-                    ['user_id' => $user_id],
-                    ['id' => $alumno->id],
-                    ['%d'],
-                    ['%d']
-                );
+                // Rellenar el user_id del alumno
+                $wpdb->update($tabla_alumnos, ['user_id' => $user_id], ['id' => $alumno->id]);
 
-                // Insertar la relación en la nueva tabla (ignorando duplicados si los hubiera)
+                // Crear la entrada en la tabla de unión
                 $wpdb->query($wpdb->prepare(
                     "INSERT IGNORE INTO $tabla_alumnos_clases (alumno_id, clase_id) VALUES (%d, %d)",
                     $alumno->id, $alumno->clase_id
@@ -406,7 +395,7 @@ function cpp_migrate_alumnos_many_to_many_v2_3() {
             }
         }
 
-        // Una vez migrados los datos, eliminar la columna antigua
+        // Eliminar la columna antigua después de migrar todos los datos
         $wpdb->query("ALTER TABLE `$tabla_alumnos` DROP COLUMN `clase_id`;");
     }
 }
