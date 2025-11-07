@@ -1,8 +1,17 @@
 <?php
+<?php
 // /includes/ajax-handlers/ajax-alumnos.php
 // --- REFACTORIZADO PARA GESTIÓN GLOBAL DE ALUMNOS ---
 
 defined('ABSPATH') or die('Acceso no permitido');
+
+// Dependencias críticas para que las funciones de consulta estén disponibles
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-evaluaciones.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-actividades-calificaciones.php';
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-calculos.php';
+require_once CPP_PLUGIN_DIR . 'includes/utils.php';
 
 // --- BÚSQUEDA Y OBTENCIÓN DE DATOS GLOBALES ---
 

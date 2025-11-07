@@ -246,7 +246,39 @@
         handleCellMouseDown: function(e) { const clickedInput = this; const self = cpp.gradebook; if (e.shiftKey && self.selectionStartCellInput) { self.updateSelectionRange(self.selectionStartCellInput, clickedInput); e.preventDefault(); } else { if (self.currentSelectedInputs.length > 1 || (self.currentSelectedInputs.length === 1 && self.currentSelectedInputs[0] !== clickedInput)) { self.clearCellSelection(); } self.selectionStartCellInput = clickedInput; if (!$(clickedInput).hasClass('cpp-cell-selected')) { if (!(self.currentSelectedInputs.length === 1 && self.currentSelectedInputs[0] === clickedInput)) { self.clearCellSelection(); } $(clickedInput).addClass('cpp-cell-selected'); self.currentSelectedInputs = [clickedInput]; } } let dragHasStarted = false; $(document).off('mousemove.cppCellSelection mouseup.cppCellSelection'); $(document).on('mousemove.cppCellSelection', function(moveEvent) { if (!self.selectionStartCellInput) { return; } if (!dragHasStarted) { dragHasStarted = true; self.isDraggingSelection = true; $('body').addClass('cpp-no-text-select'); } if (self.isDraggingSelection) { moveEvent.preventDefault(); let $hoveredTd = $(moveEvent.target).closest('td.cpp-cuaderno-td-nota'); if ($hoveredTd.length) { let hoveredInput = $hoveredTd.find('.cpp-input-nota')[0]; if (hoveredInput) { self.updateSelectionRange(self.selectionStartCellInput, hoveredInput); } } } }); $(document).on('mouseup.cppCellSelection', function(upEvent) { if (dragHasStarted) { $('body').removeClass('cpp-no-text-select'); } self.isDraggingSelection = false; $(document).off('mousemove.cppCellSelection mouseup.cppCellSelection'); }); },
         handleCopyCells: function(e) { if (cpp.gradebook.currentSelectedInputs && cpp.gradebook.currentSelectedInputs.length > 0) { let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity; const cellData = []; const $tbody = $('.cpp-cuaderno-tabla tbody'); $(cpp.gradebook.currentSelectedInputs).each(function() { const $input = $(this); const $td = $input.closest('td'); const $tr = $td.closest('tr'); const r = $tbody.find('tr:visible').index($tr); const c = $tr.find('td.cpp-cuaderno-td-nota').index($td); if (r !== -1 && c !== -1) { minRow = Math.min(minRow, r); maxRow = Math.max(maxRow, r); minCol = Math.min(minCol, c); maxCol = Math.max(maxCol, c); cellData.push({ row: r, col: c, value: $input.val() }); } }); if (cellData.length === 0) return; const numRows = maxRow - minRow + 1; const numCols = maxCol - minCol + 1; const dataMatrix = Array(numRows).fill(null).map(() => Array(numCols).fill('')); cellData.forEach(cell => { dataMatrix[cell.row - minRow][cell.col - minCol] = cell.value; }); const tsvString = dataMatrix.map(row => row.join('\t')).join('\n'); if (e.originalEvent && e.originalEvent.clipboardData) { e.originalEvent.clipboardData.setData('text/plain', tsvString); e.preventDefault(); console.log("Celdas copiadas al portapapeles (TSV):", tsvString); } else { console.warn("Clipboard API no disponible directamente. No se pudo copiar."); } } },
         handlePasteCells: function(e) { e.preventDefault(); const self = cpp.gradebook; const $startInput = $(this); const $startTd = $startInput.closest('td'); const $startTr = $startInput.closest('tr'); const $tbody = $('.cpp-cuaderno-tabla tbody'); const startRowVisibleIndex = $tbody.find('tr:visible').index($startTr); const startColVisibleIndex = $startTr.find('td.cpp-cuaderno-td-nota').index($startTd); if (startRowVisibleIndex === -1 || startColVisibleIndex === -1) { console.error("Celda de inicio para pegar no válida."); return; } let pastedData = ''; if (e.originalEvent && e.originalEvent.clipboardData) { pastedData = e.originalEvent.clipboardData.getData('text/plain'); } else if (window.clipboardData) { pastedData = window.clipboardData.getData('Text'); } if (!pastedData) return; const rows = pastedData.split(/\r\n|\n|\r/); self.clearCellSelection(); const $allVisibleTrs = $tbody.find('tr:visible'); const newSelectedInputs = []; for (let i = 0; i < rows.length; i++) { const cells = rows[i].split('\t'); const targetRowIndex = startRowVisibleIndex + i; if (targetRowIndex >= $allVisibleTrs.length) break; const $targetTr = $($allVisibleTrs[targetRowIndex]); const $targetTdsNotas = $targetTr.find('td.cpp-cuaderno-td-nota'); for (let j = 0; j < cells.length; j++) { const targetColIndex = startColVisibleIndex + j; if (targetColIndex >= $targetTdsNotas.length) break; const $targetTd = $($targetTdsNotas[targetColIndex]); const $targetInput = $targetTd.find('.cpp-input-nota'); if ($targetInput.length) { const pastedValue = cells[j]; $targetInput.val(pastedValue); newSelectedInputs.push($targetInput[0]); const mockEvent = { type: 'paste', target: $targetInput[0] }; self.guardarNotaDesdeInput.call($targetInput[0], mockEvent, function(success, saved) {}); } } } if (newSelectedInputs.length > 0) { self.currentSelectedInputs = newSelectedInputs; $(newSelectedInputs).addClass('cpp-cell-selected'); } },
-        handleClickAlumnoCell: function(e) { e.preventDefault(); const $td = $(this); const $tr = $td.closest('tr'); const alumnoId = $tr.data('alumno-id'); if (alumnoId && cpp.currentClaseIdCuaderno) { if (cpp.modals && cpp.modals.fichaAlumno && typeof cpp.modals.fichaAlumno.mostrar === 'function') { console.log(`Abriendo ficha para alumno ID: ${alumnoId}, Clase ID: ${cpp.currentClaseIdCuaderno}`); cpp.modals.fichaAlumno.mostrar(alumnoId, cpp.currentClaseIdCuaderno); } else { console.error("Función cpp.modals.fichaAlumno.mostrar no encontrada."); } } else { console.warn("No se pudo obtener alumnoId o claseId actual para abrir ficha."); } },
+        handleClickAlumnoCell: function(e) {
+            e.preventDefault();
+            const $td = $(this);
+            const $tr = $td.closest('tr');
+            const alumnoId = $tr.data('alumno-id');
+
+            if (!alumnoId) {
+                console.warn("No se pudo obtener el ID del alumno para abrir la ficha.");
+                return;
+            }
+
+            // 1. Cambiar a la pestaña de Alumnos
+            $('.cpp-main-tab-link[data-tab="alumnos"]').trigger('click');
+
+            // 2. Abrir la ficha del alumno.
+            // Usamos un timeout para dar tiempo a la pestaña de alumnos a inicializarse
+            // y cargar la lista de alumnos si es la primera vez.
+            setTimeout(() => {
+                if (cpp.alumnos && typeof cpp.alumnos.displayAlumnoFicha === 'function') {
+                    cpp.alumnos.displayAlumnoFicha(alumnoId);
+
+                    // Opcional: hacer scroll para asegurar que la ficha sea visible si es necesario
+                    const $fichaContainer = $('#cpp-alumnos-view-main');
+                    if ($fichaContainer.length) {
+                        $('html, body').animate({
+                            scrollTop: $fichaContainer.offset().top - 100 // 100px offset from top
+                        }, 300);
+                    }
+                } else {
+                    console.error("Función cpp.alumnos.displayAlumnoFicha no encontrada.");
+                }
+            }, 150); // Un pequeño retardo es suficiente
+        },
         handleClickNotaFinalHeader: function(e) { if (e.target !== this && $(e.target).closest(this).length) { if ($(e.target).is('button, a, input') || $(e.target).closest('button, a, input').length) { return; } } e.preventDefault(); if (!cpp.currentClaseIdCuaderno) { alert('Por favor, selecciona una clase primero.'); return; } if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaEditar === 'function') { cpp.modals.clase.showParaEditar(null, true, cpp.currentClaseIdCuaderno); } else { console.error("Función cpp.modals.clase.showParaEditar no encontrada."); } },
 
         handleFinalGradeSort: function(e) {

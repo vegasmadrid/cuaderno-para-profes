@@ -27,7 +27,7 @@ const cpp = {
 
         const modulesToInitialize = [
             'utils', 'sidebar', 'gradebook',
-            'modals.general', 'config', 'modals.alumnos',
+            'modals.general', 'config',
             'modals.actividades', 'modals.excel', 'modals.asistencia',
             'modals.fichaAlumno', 'modals.evaluacion'
         ];

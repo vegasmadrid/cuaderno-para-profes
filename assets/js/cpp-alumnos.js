@@ -154,6 +154,25 @@
             const alumno = isNew ? {} : fichaData.alumno;
             const $fichaContainer = $('#cpp-alumnos-view-main');
 
+            // Guardar datos iniciales para la lógica de confirmación
+            if (!isNew) {
+                const mapNombreClaseAId = fichaData.todas_las_clases.reduce((acc, clase) => {
+                    acc[clase.nombre] = clase.id;
+                    return acc;
+                }, {});
+
+                const classIdsWithGrades = fichaData.calificaciones_agrupadas
+                    .map(claseData => mapNombreClaseAId[claseData.clase_nombre])
+                    .filter(id => id !== undefined);
+
+                // Adjuntar datos al botón de guardar para usarlos en el handler
+                setTimeout(() => {
+                    $('#cpp-guardar-clases-alumno-btn')
+                        .data('initial-ids', fichaData.clases_del_alumno_ids)
+                        .data('ids-with-grades', classIdsWithGrades);
+                }, 0);
+            }
+
             // --- HTML para el formulario de detalles del alumno ---
             const formDetailsHtml = `
                 <form id="cpp-ficha-alumno-form" class="cpp-modern-form">
@@ -279,10 +298,23 @@
         },
 
         handleUpdateAlumnoClases: function(e) {
-            const alumnoId = $(e.currentTarget).data('alumno-id');
-            const clasesIds = $('input[name="clases_ids[]"]:checked').map(function() {
-                return $(this).val();
+            const $button = $(e.currentTarget);
+            const alumnoId = $button.data('alumno-id');
+            const initialIds = $button.data('initial-ids') || [];
+            const idsWithGrades = $button.data('ids-with-grades') || [];
+
+            const newClasesIds = $('input[name="clases_ids[]"]:checked').map(function() {
+                return parseInt($(this).val(), 10);
             }).get();
+
+            const unselectedIds = initialIds.filter(id => !newClasesIds.includes(id));
+            const unselectedWithGrades = unselectedIds.filter(id => idsWithGrades.includes(id));
+
+            if (unselectedWithGrades.length > 0) {
+                if (!confirm('ADVERTENCIA:\n\nEstás a punto de desasignar al alumno de una o más clases donde ya tiene calificaciones. Si guardas los cambios, todas las notas de esas clases se eliminarán PERMANENTEMENTE.\n\n¿Deseas continuar?')) {
+                    return; // Abortar si el usuario cancela
+                }
+            }
 
             cpp.showSpinner();
 
@@ -354,7 +386,8 @@
                 <div class="cpp-empty-panel">
                     <span class="dashicons dashicons-groups"></span>
                     <h2>Gestión Global de Alumnos</h2>
-                    <p>Selecciona un alumno de la lista para ver su ficha, editar sus datos y asignarlo a tus clases.<br><br>O pulsa <strong>"Nuevo Alumno"</strong> para empezar.</p>
+                    <p>Selecciona un alumno de la lista para ver su ficha, editar sus datos y asignarlo a tus clases.</p>
+                    <p>O pulsa <strong>"Nuevo Alumno"</strong> para empezar.</p>
                 </div>`;
         }
     };
