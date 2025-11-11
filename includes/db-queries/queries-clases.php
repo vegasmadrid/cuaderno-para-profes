@@ -85,16 +85,18 @@ function cpp_guardar_base_nota_final_clase($clase_id, $user_id, $base_nota) {
 function cpp_obtener_clases_usuario($user_id) {
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
     $query = $wpdb->prepare(
-        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.fecha_creacion, COUNT(a.id) as num_alumnos
+        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.fecha_creacion, COUNT(ac.alumno_id) as num_alumnos
          FROM $tabla_clases c
-         LEFT JOIN $tabla_alumnos a ON c.id = a.clase_id
+         LEFT JOIN $tabla_alumnos_clases ac ON c.id = ac.clase_id
          WHERE c.user_id = %d
          GROUP BY c.id
          ORDER BY c.orden ASC, c.fecha_creacion DESC",
         $user_id
     );
+
     return $wpdb->get_results($query, ARRAY_A);
 }
 
