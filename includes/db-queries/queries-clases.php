@@ -226,9 +226,10 @@ function cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase = 'Clase Ej
     foreach ($alumnos as $alumno_data) {
         $unique_slug = sanitize_title($alumno_data['nombre'] . ' ' . $alumno_data['apellidos']);
         $alumno_data['foto'] = 'https://api.dicebear.com/8.x/adventurer/svg?seed=' . $unique_slug;
-        $resultado = cpp_guardar_alumno($clase_id, $alumno_data);
-        if ($resultado) {
-            $alumnos_ids[] = $wpdb->insert_id;
+        // Usar la nueva función global para crear alumnos
+        $alumno_id = cpp_crear_alumno($user_id, $alumno_data, [$clase_id]);
+        if ($alumno_id) {
+            $alumnos_ids[] = $alumno_id;
         }
     }
 
