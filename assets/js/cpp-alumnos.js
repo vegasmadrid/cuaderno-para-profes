@@ -326,7 +326,7 @@
                     action: 'cpp_update_alumno_clases',
                     nonce: cppFrontendData.nonce,
                     alumno_id: alumnoId,
-                    clases_ids: clasesIds
+                    clases_ids: newClasesIds
                 },
                 success: (response) => {
                     if (response.success) {

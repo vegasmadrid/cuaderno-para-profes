@@ -436,7 +436,9 @@
                     $('#cpp-main-tab-resumen').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente de resumen.</p>');
                 }
             } else if (tabName === 'alumnos') {
-                // No specific action needed here for now, content is already in the DOM
+                if (cpp.alumnos && typeof cpp.alumnos.enter === 'function') {
+                    cpp.alumnos.enter();
+                }
             }
         },
 
