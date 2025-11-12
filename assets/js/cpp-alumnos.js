@@ -43,8 +43,14 @@
             $document.on('submit', '#cpp-ficha-alumno-form', this.handleSaveAlumnoDetails.bind(this));
             $document.on('click', '#cpp-update-clases-btn', this.handleUpdateAlumnoClases.bind(this));
             $document.on('click', '#cpp-eliminar-alumno-global-btn', this.handleDeleteAlumno.bind(this));
+
+            // Corregido: Asegurarse de que cpp.modals.excel exista
             $document.on('click', '#cpp-importar-alumnos-global-btn', function() {
-                cpp.modales.excel.openForGlobalImport();
+                if (cpp.modals && cpp.modals.excel) {
+                    cpp.modals.excel.openForGlobalImport();
+                } else {
+                    console.error("Error: Módulo de importación de Excel no encontrado.");
+                }
             });
         },
 
@@ -204,11 +210,30 @@
                         const notaFinal = evaluacion.nota_final.is_incomplete ?
                             `${evaluacion.nota_final.nota}% <span title="La nota no está sobre el 100% de las actividades">⚠️</span>` :
                             `${evaluacion.nota_final.nota}%`;
-                        calificacionesHtml += `<div class="cpp-calificaciones-eval-block"><h5>${evaluacion.evaluacion_nombre} (Nota: ${notaFinal})</h5><ul>`;
-                        evaluacion.actividades.forEach(actividad => {
-                            calificacionesHtml += `<li>${actividad.nombre_actividad}: <strong>${actividad.calificacion || '-'}</strong></li>`;
-                        });
-                        calificacionesHtml += '</ul></div>';
+
+                        calificacionesHtml += `<div class="cpp-calificaciones-eval-block">
+                                                <h5>${evaluacion.evaluacion_nombre} (Nota Final: ${notaFinal})</h5>
+                                                <table class="cpp-calificaciones-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Actividad</th>
+                                                            <th>Calificación</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>`;
+
+                        if (evaluacion.actividades.length > 0) {
+                            evaluacion.actividades.forEach(actividad => {
+                                calificacionesHtml += `<tr>
+                                                        <td>${actividad.nombre_actividad}</td>
+                                                        <td><strong>${actividad.calificacion || '-'}</strong></td>
+                                                    </tr>`;
+                            });
+                        } else {
+                            calificacionesHtml += '<tr><td colspan="2">No hay actividades en esta evaluación.</td></tr>';
+                        }
+
+                        calificacionesHtml += `</tbody></table></div>`;
                     });
                     calificacionesHtml += '</div>';
                 });
@@ -251,16 +276,17 @@
             data.action = 'cpp_save_alumno_details';
             data.nonce = cppFrontendData.nonce;
 
-            cpp.showSpinner();
+            cpp.utils.showSpinner();
+
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
                 dataType: 'json',
                 data: data,
                 success: (response) => {
-                    cpp.hideSpinner();
+                    cpp.utils.hideSpinner();
                     if (response.success) {
-                        cpp.showToast(response.data.message);
+                        cpp.utils.showToast(response.data.message);
                         this.handleSearch();
                         this.displayAlumnoFicha(response.data.alumno.id);
                     } else {
@@ -268,7 +294,7 @@
                     }
                 },
                 error: () => {
-                    cpp.hideSpinner();
+                    cpp.utils.hideSpinner();
                     alert('Error de conexión.');
                 }
             });
@@ -291,7 +317,7 @@
                 }
             }
 
-            cpp.showSpinner();
+            cpp.utils.showSpinner();
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
@@ -303,9 +329,9 @@
                     clases_ids: newClasesIds
                 },
                 success: (response) => {
-                    cpp.hideSpinner();
+                    cpp.utils.hideSpinner();
                     if (response.success) {
-                        cpp.showToast(response.data.message);
+                        cpp.utils.showToast(response.data.message);
                         this.handleSearch();
                         this.displayAlumnoFicha(alumnoId);
                     } else {
@@ -313,7 +339,7 @@
                     }
                 },
                 error: () => {
-                    cpp.hideSpinner();
+                    cpp.utils.hideSpinner();
                     alert('Error de conexión.');
                 }
             });
@@ -325,7 +351,7 @@
                 return;
             }
 
-            cpp.showSpinner();
+            cpp.utils.showSpinner();
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
@@ -336,9 +362,9 @@
                     alumno_id: alumnoId
                 },
                 success: (response) => {
-                    cpp.hideSpinner();
+                    cpp.utils.hideSpinner();
                     if (response.success) {
-                        cpp.showToast(response.data.message);
+                        cpp.utils.showToast(response.data.message);
                         this.handleSearch();
                         $('#cpp-alumnos-view-main').html(this.getInitialMainContentHtml());
                     } else {
@@ -346,7 +372,7 @@
                     }
                 },
                 error: () => {
-                    cpp.hideSpinner();
+                    cpp.utils.hideSpinner();
                     alert('Error de conexión.');
                 }
             });

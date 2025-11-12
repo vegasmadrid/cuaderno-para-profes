@@ -228,3 +228,34 @@
 .cpp-calificaciones-eval-block li strong {
     color: #212529;
 }
+
+/* --- Nuevos Estilos para Tablas de Calificaciones --- */
+.cpp-calificaciones-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 15px; /* Fuente más grande */
+}
+
+.cpp-calificaciones-table th,
+.cpp-calificaciones-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cpp-calificaciones-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-top: 1px solid #e9ecef;
+}
+
+.cpp-calificaciones-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.cpp-calificaciones-table td:last-child {
+    text-align: right;
+    font-weight: 500;
+}
