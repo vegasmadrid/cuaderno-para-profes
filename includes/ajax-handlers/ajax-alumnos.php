@@ -62,7 +62,7 @@ function cpp_ajax_get_alumno_ficha() {
     // Obtener calificaciones de todas las clases
     $calificaciones_por_clase = [];
     foreach ($clases_del_alumno_ids as $clase_id) {
-        $clase_info = cpp_obtener_clase_por_id($clase_id, $user_id);
+        $clase_info = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
         if (!$clase_info) continue;
 
         $evaluaciones = cpp_get_evaluaciones_clase($clase_id);
