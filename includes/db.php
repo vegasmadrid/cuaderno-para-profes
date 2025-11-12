@@ -63,13 +63,13 @@ function cpp_crear_tablas() {
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $sql_alumnos = "CREATE TABLE $tabla_alumnos (
         id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
-        clase_id mediumint(9) UNSIGNED NOT NULL,
+        user_id bigint(20) UNSIGNED NOT NULL,
         nombre varchar(50) NOT NULL,
         apellidos varchar(100) NOT NULL,
         foto varchar(255),
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        KEY clase_id (clase_id)
+        KEY user_id (user_id)
     ) $charset_collate;";
 
     $tabla_actividades_evaluables_nombre = $wpdb->prefix . 'cpp_actividades_evaluables';
@@ -128,6 +128,16 @@ function cpp_crear_tablas() {
     
     dbDelta($sql_clases);
     dbDelta($sql_alumnos);
+
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
+        alumno_id mediumint(9) UNSIGNED NOT NULL,
+        clase_id mediumint(9) UNSIGNED NOT NULL,
+        PRIMARY KEY (alumno_id, clase_id),
+        KEY alumno_id (alumno_id),
+        KEY clase_id (clase_id)
+    ) $charset_collate;";
+    dbDelta($sql_alumnos_clases);
     dbDelta($sql_actividades_evaluables); 
     dbDelta($sql_calificaciones_alumnos); 
     dbDelta($sql_asistencia);

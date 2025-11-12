@@ -3,80 +3,248 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
-// --- FUNCIONES PARA ALUMNOS ---
+// --- FUNCIONES PARA ALUMNOS (Refactorizadas para relación Many-to-Many) ---
 
+/**
+ * Obtiene todos los alumnos asociados a una clase específica.
+ */
 function cpp_obtener_alumnos_clase($clase_id, $sort_order = 'apellidos') {
     global $wpdb;
-    $order_by_clause = 'apellidos, nombre';
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
+    $order_by_clause = 'a.apellidos, a.nombre';
     if ($sort_order === 'nombre') {
-        $order_by_clause = 'nombre, apellidos';
+        $order_by_clause = 'a.nombre, a.apellidos';
     }
 
     $query = $wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}cpp_alumnos WHERE clase_id = %d ORDER BY $order_by_clause",
+        "SELECT a.* FROM $tabla_alumnos a
+         INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
+         WHERE ac.clase_id = %d
+         ORDER BY $order_by_clause",
         $clase_id
     );
     return $wpdb->get_results($query, ARRAY_A);
 }
 
-function cpp_obtener_alumno_por_id($alumno_id) {
+/**
+ * Obtiene todos los alumnos de un profesor.
+ */
+function cpp_obtener_todos_alumnos_usuario($user_id, $sort_order = 'apellidos', $search_term = '') {
     global $wpdb;
-    return $wpdb->get_row( $wpdb->prepare("SELECT * FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id), ARRAY_A );
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+
+    $order_by_clause = 'apellidos, nombre';
+    if ($sort_order === 'nombre') {
+        $order_by_clause = 'nombre, apellidos';
+    }
+
+    $sql = "SELECT * FROM $tabla_alumnos WHERE user_id = %d";
+    $params = [$user_id];
+
+    if (!empty($search_term)) {
+        $sql .= " AND (nombre LIKE %s OR apellidos LIKE %s)";
+        $like_term = '%' . $wpdb->esc_like($search_term) . '%';
+        $params[] = $like_term;
+        $params[] = $like_term;
+    }
+
+    $sql .= " ORDER BY $order_by_clause";
+
+    return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
 }
 
-function cpp_guardar_alumno($clase_id, $datos) {
+
+/**
+ * Obtiene los datos de un alumno específico por su ID.
+ */
+function cpp_obtener_alumno_por_id($alumno_id, $user_id) {
     global $wpdb;
-    return $wpdb->insert(
-        $wpdb->prefix . 'cpp_alumnos',
-        ['clase_id' => $clase_id, 'nombre' => sanitize_text_field($datos['nombre']), 'apellidos' => sanitize_text_field($datos['apellidos']), 'foto' => isset($datos['foto']) ? sanitize_text_field($datos['foto']) : ''],
+    return $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d AND user_id = %d",
+        $alumno_id, $user_id
+    ), ARRAY_A);
+}
+
+/**
+ * Obtiene los IDs de las clases a las que pertenece un alumno.
+ */
+function cpp_get_clases_for_alumno($alumno_id) {
+    global $wpdb;
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    return $wpdb->get_col($wpdb->prepare(
+        "SELECT clase_id FROM $tabla_alumnos_clases WHERE alumno_id = %d",
+        $alumno_id
+    ));
+}
+
+/**
+ * Crea un nuevo alumno globalmente y lo asocia a las clases proporcionadas.
+ */
+function cpp_crear_alumno($user_id, $datos, $clases_ids = []) {
+    global $wpdb;
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
+    $wpdb->insert(
+        $tabla_alumnos,
+        [
+            'user_id' => $user_id,
+            'nombre' => sanitize_text_field($datos['nombre']),
+            'apellidos' => sanitize_text_field($datos['apellidos']),
+            'foto' => isset($datos['foto']) ? sanitize_text_field($datos['foto']) : '',
+        ],
         ['%d', '%s', '%s', '%s']
+    );
+
+    $alumno_id = $wpdb->insert_id;
+
+    if ($alumno_id && !empty($clases_ids)) {
+        foreach ($clases_ids as $clase_id) {
+            $wpdb->insert(
+                $tabla_alumnos_clases,
+                ['alumno_id' => $alumno_id, 'clase_id' => intval($clase_id)],
+                ['%d', '%d']
+            );
+        }
+    }
+
+    return $alumno_id;
+}
+
+/**
+ * Actualiza los datos personales de un alumno.
+ */
+function cpp_actualizar_alumno($alumno_id, $user_id, $datos) {
+    global $wpdb;
+
+    // Verificación de propiedad
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id));
+    if ($owner_id != $user_id) {
+        return false;
+    }
+
+    $update_data = [
+        'nombre' => sanitize_text_field($datos['nombre']),
+        'apellidos' => sanitize_text_field($datos['apellidos'])
+    ];
+    $update_format = ['%s', '%s'];
+
+    if (isset($datos['foto'])) {
+        $update_data['foto'] = sanitize_text_field($datos['foto']);
+        $update_format[] = '%s';
+    }
+
+    return $wpdb->update(
+        $wpdb->prefix . 'cpp_alumnos',
+        $update_data,
+        ['id' => $alumno_id],
+        $update_format,
+        ['%d']
     );
 }
 
-function cpp_actualizar_alumno($alumno_id, $datos) {
+/**
+ * Sincroniza las clases de un alumno con la lista proporcionada.
+ */
+function cpp_actualizar_clases_de_alumno($alumno_id, $user_id, $nuevas_clases_ids) {
     global $wpdb;
-    $update_data = ['nombre' => sanitize_text_field($datos['nombre']), 'apellidos' => sanitize_text_field($datos['apellidos'])];
-    $update_format = ['%s', '%s'];
-    if (isset($datos['foto'])) { $update_data['foto'] = sanitize_text_field($datos['foto']); $update_format[] = '%s'; }
-    return $wpdb->update( $wpdb->prefix . 'cpp_alumnos', $update_data, ['id' => $alumno_id], $update_format, ['%d'] );
-}
 
-function cpp_eliminar_todos_alumnos_clase($clase_id, $user_id) {
-    global $wpdb;
-    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
-    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    $clase_owner = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $clase_id));
-    if ($clase_owner != $user_id) { return false; }
-    $alumnos_ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM $tabla_alumnos WHERE clase_id = %d", $clase_id));
-    if (!empty($alumnos_ids)) {
-        $placeholders_alumnos = implode(', ', array_fill(0, count($alumnos_ids), '%d'));
-        $wpdb->query($wpdb->prepare("DELETE FROM $tabla_calificaciones WHERE alumno_id IN ($placeholders_alumnos)", $alumnos_ids));
+    // Verificación de propiedad
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id));
+    if ($owner_id != $user_id) { return ['success' => false, 'error' => 'Permission denied']; }
+
+    $clases_actuales = cpp_get_clases_for_alumno($alumno_id);
+    $nuevas_clases_ids = array_map('intval', $nuevas_clases_ids);
+
+    $clases_a_anadir = array_diff($nuevas_clases_ids, $clases_actuales);
+    $clases_a_quitar = array_diff($clases_actuales, $nuevas_clases_ids);
+
+    // Añadir nuevas asociaciones
+    foreach ($clases_a_anadir as $clase_id) {
+        $wpdb->insert(
+            $wpdb->prefix . 'cpp_alumnos_clases',
+            ['alumno_id' => $alumno_id, 'clase_id' => $clase_id],
+            ['%d', '%d']
+        );
     }
-    $alumnos_eliminados = $wpdb->delete($tabla_alumnos, ['clase_id' => $clase_id], ['%d']);
-    return $alumnos_eliminados;
+
+    // Quitar viejas asociaciones y sus datos
+    foreach ($clases_a_quitar as $clase_id) {
+        cpp_desvincular_alumno_de_clase($alumno_id, $clase_id, $user_id);
+    }
+
+    return ['success' => true];
 }
 
-function cpp_alumno_existe($clase_id, $nombre, $apellidos) {
+/**
+ * Desvincula a un alumno de una clase, eliminando sus calificaciones en esa clase.
+ */
+function cpp_desvincular_alumno_de_clase($alumno_id, $clase_id, $user_id) {
+    global $wpdb;
+
+    // Verificación de propiedad
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id));
+    if ($owner_id != $user_id) { return false; }
+
+    // 1. Eliminar calificaciones
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $actividades_ids = $wpdb->get_col($wpdb->prepare(
+        "SELECT id FROM $tabla_actividades WHERE clase_id = %d", $clase_id
+    ));
+    if (!empty($actividades_ids)) {
+        $placeholders = implode(',', array_fill(0, count($actividades_ids), '%d'));
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id IN ($placeholders)",
+            array_merge([$alumno_id], $actividades_ids)
+        ));
+    }
+
+    // 2. Eliminar asistencia
+    $wpdb->delete($wpdb->prefix . 'cpp_asistencia', ['alumno_id' => $alumno_id, 'clase_id' => $clase_id], ['%d', '%d']);
+
+    // 3. Eliminar la vinculación
+    return $wpdb->delete(
+        $wpdb->prefix . 'cpp_alumnos_clases',
+        ['alumno_id' => $alumno_id, 'clase_id' => $clase_id],
+        ['%d', '%d']
+    );
+}
+
+/**
+ * Comprueba si un alumno con el mismo nombre y apellidos ya existe para un profesor.
+ */
+function cpp_alumno_existe($user_id, $nombre, $apellidos) {
     global $wpdb;
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $count = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM $tabla_alumnos WHERE clase_id = %d AND nombre = %s AND apellidos = %s",
-        $clase_id, sanitize_text_field($nombre), sanitize_text_field($apellidos)
+        "SELECT COUNT(*) FROM $tabla_alumnos WHERE user_id = %d AND nombre = %s AND apellidos = %s",
+        $user_id, sanitize_text_field($nombre), sanitize_text_field($apellidos)
     ));
     return $count > 0;
 }
 
+/**
+ * Elimina un alumno completamente del sistema.
+ */
 function cpp_eliminar_alumno($alumno_id, $user_id) {
     global $wpdb;
-    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
-    $tabla_asistencia = $wpdb->prefix . 'cpp_asistencia';
-    $clase_del_usuario = $wpdb->get_var( $wpdb->prepare( "SELECT c.user_id FROM $tabla_alumnos a INNER JOIN $tabla_clases c ON a.clase_id = c.id WHERE a.id = %d", $alumno_id ) );
-    if (null === $clase_del_usuario || $clase_del_usuario != $user_id) { return false; }
-    $wpdb->delete($tabla_calificaciones, ['alumno_id' => $alumno_id], ['%d']);
-    $wpdb->delete($tabla_asistencia, ['alumno_id' => $alumno_id, 'user_id' => $user_id], ['%d', '%d']);
-    $resultado = $wpdb->delete($tabla_alumnos, ['id' => $alumno_id], ['%d']);
-    return $resultado;
+
+    // 1. Verificación de propiedad
+    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id));
+    if ($owner_id != $user_id) { return false; }
+
+    // 2. Eliminar de la tabla de unión
+    $wpdb->delete($wpdb->prefix . 'cpp_alumnos_clases', ['alumno_id' => $alumno_id], ['%d']);
+
+    // 3. Eliminar calificaciones
+    $wpdb->delete($wpdb->prefix . 'cpp_calificaciones_alumnos', ['alumno_id' => $alumno_id], ['%d']);
+
+    // 4. Eliminar asistencia
+    $wpdb->delete($wpdb->prefix . 'cpp_asistencia', ['alumno_id' => $alumno_id], ['%d']);
+
+    // 5. Eliminar el alumno
+    return $wpdb->delete($wpdb->prefix . 'cpp_alumnos', ['id' => $alumno_id], ['%d']);
 }

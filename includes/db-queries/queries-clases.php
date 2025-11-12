@@ -85,16 +85,18 @@ function cpp_guardar_base_nota_final_clase($clase_id, $user_id, $base_nota) {
 function cpp_obtener_clases_usuario($user_id) {
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
     $query = $wpdb->prepare(
-        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.fecha_creacion, COUNT(a.id) as num_alumnos
+        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.fecha_creacion, COUNT(ac.alumno_id) as num_alumnos
          FROM $tabla_clases c
-         LEFT JOIN $tabla_alumnos a ON c.id = a.clase_id
+         LEFT JOIN $tabla_alumnos_clases ac ON c.id = ac.clase_id
          WHERE c.user_id = %d
          GROUP BY c.id
          ORDER BY c.orden ASC, c.fecha_creacion DESC",
         $user_id
     );
+
     return $wpdb->get_results($query, ARRAY_A);
 }
 
@@ -224,9 +226,10 @@ function cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase = 'Clase Ej
     foreach ($alumnos as $alumno_data) {
         $unique_slug = sanitize_title($alumno_data['nombre'] . ' ' . $alumno_data['apellidos']);
         $alumno_data['foto'] = 'https://api.dicebear.com/8.x/adventurer/svg?seed=' . $unique_slug;
-        $resultado = cpp_guardar_alumno($clase_id, $alumno_data);
-        if ($resultado) {
-            $alumnos_ids[] = $wpdb->insert_id;
+        // Usar la nueva función global para crear alumnos
+        $alumno_id = cpp_crear_alumno($user_id, $alumno_data, [$clase_id]);
+        if ($alumno_id) {
+            $alumnos_ids[] = $alumno_id;
         }
     }
 
