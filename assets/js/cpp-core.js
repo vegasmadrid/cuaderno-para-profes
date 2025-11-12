@@ -26,7 +26,7 @@ const cpp = {
         console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
         const modulesToInitialize = [
-            'utils', 'sidebar', 'gradebook',
+            'utils', 'sidebar', 'cuaderno',
             'modals.general', 'config',
             'modals.actividades', 'modals.excel', 'modals.asistencia',
             'modals.fichaAlumno', 'modals.evaluacion'
@@ -91,8 +91,8 @@ const cpp = {
         // Este listener ahora solo delega al manejador centralizado en el módulo del cuaderno
         $document.on('click', '.cpp-main-tab-link', function(e) {
             e.preventDefault();
-            if (cpp.gradebook && typeof cpp.gradebook.handleMainTabSwitch === 'function') {
-                cpp.gradebook.handleMainTabSwitch(jQuery(this));
+            if (cpp.cuaderno && typeof cpp.cuaderno.handleMainTabSwitch === 'function') {
+                cpp.cuaderno.handleMainTabSwitch(jQuery(this));
             }
         });
 
@@ -171,11 +171,11 @@ const cpp = {
             $clasesSidebarItems.removeClass('cpp-sidebar-item-active');
             $itemToActivate.addClass('cpp-sidebar-item-active');
             
-            if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
+            if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
                 // Pasamos null como tercer parámetro para que el backend cargue la primera evaluación por defecto.
-                cpp.gradebook.cargarContenidoCuaderno(claseIdToLoad, claseNombreToLoad, null);
+                cpp.cuaderno.cargarContenidoCuaderno(claseIdToLoad, claseNombreToLoad, null);
             } else {
-                 console.error("CPP Core: cpp.gradebook.cargarContenidoCuaderno NO ESTÁ DEFINIDO. El cuaderno no se cargará.");
+                 console.error("CPP Core: cpp.cuaderno.cargarContenidoCuaderno NO ESTÁ DEFINIDO. El cuaderno no se cargará.");
                  $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Módulo del cuaderno no cargado.</p></div>');
             }
         } else if ($clasesSidebarItems.length === 0) {
