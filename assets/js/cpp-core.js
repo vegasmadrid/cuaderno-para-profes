@@ -26,7 +26,7 @@ const cpp = {
         console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
         const modulesToInitialize = [
-            'utils', 'sidebar', 'cuaderno',
+            'utils', 'sidebar', 'cuaderno', 'alumnos',
             'modals.general', 'config',
             'modals.actividades', 'modals.excel', 'modals.asistencia',
             'modals.fichaAlumno', 'modals.evaluacion'
