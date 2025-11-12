@@ -69,7 +69,8 @@ function cpp_ajax_get_alumno_ficha() {
         $calificaciones_por_evaluacion = [];
 
         foreach ($evaluaciones as $evaluacion) {
-            $actividades = cpp_get_actividades_evaluacion_con_calificaciones_alumno($evaluacion['id'], $alumno_id);
+            // Utilizamos la nueva función que ya combina actividades y calificaciones
+            $actividades = cpp_obtener_actividades_con_calificaciones_alumno($evaluacion['id'], $alumno_id, $user_id);
             $nota_final_evaluacion = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $evaluacion['id'], $user_id);
 
             $calificaciones_por_evaluacion[] = [

@@ -1,3 +1,4 @@
+
 // assets/js/cpp-alumnos.js
 // --- REFACTORIZADO PARA GESTIÓN GLOBAL DE ALUMNOS ---
 
@@ -39,13 +40,9 @@
             $document.on('keyup', '#cpp-alumnos-search-input', debouncedSearch);
             $document.on('click', '.cpp-alumno-list-item', this.handleAlumnoClick.bind(this));
             $document.on('click', '#cpp-crear-nuevo-alumno-global-btn', this.handleNewAlumnoClick.bind(this));
-
-            // Eventos delegados para la ficha del alumno
             $document.on('submit', '#cpp-ficha-alumno-form', this.handleSaveAlumnoDetails.bind(this));
-            $document.on('click', '#cpp-guardar-clases-alumno-btn', this.handleUpdateAlumnoClases.bind(this));
+            $document.on('click', '#cpp-update-clases-btn', this.handleUpdateAlumnoClases.bind(this));
             $document.on('click', '#cpp-eliminar-alumno-global-btn', this.handleDeleteAlumno.bind(this));
-
-            // Importación
             $document.on('click', '#cpp-importar-alumnos-global-btn', function() {
                 cpp.modales.excel.openForGlobalImport();
             });
@@ -96,7 +93,6 @@
                 const clasesHtml = alumno.clases.length > 0 ?
                     `<span class="cpp-alumno-list-clases">${alumno.clases.join(', ')}</span>` :
                     `<span class="cpp-alumno-list-clases cpp-no-clases">Sin asignar</span>`;
-
                 const $li = $('<li>', { class: 'cpp-alumno-list-item', 'data-alumno-id': alumno.id })
                     .append(`<span class="cpp-alumno-list-nombre">${alumno.nombre} ${alumno.apellidos}</span>`)
                     .append(clasesHtml);
@@ -115,7 +111,7 @@
 
         handleNewAlumnoClick: function() {
             $('.cpp-alumno-list-item.active').removeClass('active');
-            this.renderAlumnoFicha(null); // Renderizar formulario vacío
+            this.renderAlumnoFicha(null);
         },
 
         displayAlumnoFicha: function(alumnoId) {
@@ -123,7 +119,7 @@
             $fichaContainer.html('<p class="cpp-cuaderno-cargando">Cargando ficha...</p>');
 
             if (!alumnoId) {
-                this.renderAlumnoFicha(null); // Llamada directa para formulario vacío
+                this.renderAlumnoFicha(null);
                 return;
             }
 
@@ -149,117 +145,100 @@
             });
         },
 
-        renderAlumnoFicha: function(fichaData) {
-            const isNew = fichaData === null;
-            const alumno = isNew ? {} : fichaData.alumno;
-            const $fichaContainer = $('#cpp-alumnos-view-main');
+        renderAlumnoFicha: function(data) {
+            const isNew = data === null;
+            const alumno = isNew ? {} : data.alumno;
+            const $container = $('#cpp-alumnos-view-main');
 
-            // Guardar datos iniciales para la lógica de confirmación
-            if (!isNew) {
-                const mapNombreClaseAId = fichaData.todas_las_clases.reduce((acc, clase) => {
-                    acc[clase.nombre] = clase.id;
-                    return acc;
-                }, {});
-
-                const classIdsWithGrades = fichaData.calificaciones_agrupadas
-                    .map(claseData => mapNombreClaseAId[claseData.clase_nombre])
-                    .filter(id => id !== undefined);
-
-                // Adjuntar datos al botón de guardar para usarlos en el handler
-                setTimeout(() => {
-                    $('#cpp-guardar-clases-alumno-btn')
-                        .data('initial-ids', fichaData.clases_del_alumno_ids)
-                        .data('ids-with-grades', classIdsWithGrades);
-                }, 0);
-            }
-
-            // --- HTML para el formulario de detalles del alumno ---
-            const formDetailsHtml = `
-                <form id="cpp-ficha-alumno-form" class="cpp-modern-form">
-                    <input type="hidden" name="alumno_id" value="${isNew ? '0' : alumno.id}">
-                    <div class="cpp-form-grid">
-                        <div class="cpp-form-group">
-                            <label for="nombre_alumno">Nombre</label>
-                            <input type="text" id="nombre_alumno" name="nombre" value="${isNew ? '' : alumno.nombre}" required>
+            let personalDataHtml = `
+                <div class="cpp-ficha-section">
+                    <h3>Datos Personales</h3>
+                    <form id="cpp-ficha-alumno-form" class="cpp-modern-form">
+                        <input type="hidden" name="alumno_id" value="${isNew ? '0' : alumno.id}">
+                        <div class="cpp-form-grid">
+                            <div class="cpp-form-group">
+                                <label for="nombre">Nombre</label>
+                                <input type="text" id="nombre" name="nombre" value="${isNew ? '' : alumno.nombre}" required>
+                            </div>
+                            <div class="cpp-form-group">
+                                <label for="apellidos">Apellidos</label>
+                                <input type="text" id="apellidos" name="apellidos" value="${isNew ? '' : alumno.apellidos}" required>
+                            </div>
                         </div>
                         <div class="cpp-form-group">
-                            <label for="apellidos_alumno">Apellidos</label>
-                            <input type="text" id="apellidos_alumno" name="apellidos" value="${isNew ? '' : alumno.apellidos}" required>
+                            <label for="foto">URL de la Foto</label>
+                            <input type="url" id="foto" name="foto" value="${isNew ? '' : (alumno.foto || '')}">
                         </div>
-                    </div>
-                    <div class="cpp-form-group">
-                        <label for="foto_alumno">URL de la foto (opcional)</label>
-                        <input type="text" id="foto_alumno" name="foto" value="${isNew ? '' : alumno.foto}">
-                    </div>
-                    <div class="cpp-form-actions">
-                        <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> ${isNew ? 'Crear Alumno' : 'Guardar Cambios'}</button>
-                        ${!isNew ? `<button type="button" id="cpp-eliminar-alumno-global-btn" class="cpp-btn cpp-btn-danger" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-trash"></span> Eliminar Alumno</button>` : ''}
-                    </div>
-                </form>
-            `;
+                        <div class="cpp-form-actions">
+                            <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> ${isNew ? 'Crear Alumno' : 'Guardar Cambios'}</button>
+                            ${!isNew ? `<button type="button" id="cpp-eliminar-alumno-global-btn" class="cpp-btn cpp-btn-danger" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-trash"></span> Eliminar Alumno</button>` : ''}
+                        </div>
+                    </form>
+                </div>`;
 
-            // --- HTML para la asignación de clases (solo para alumnos existentes) ---
             let clasesHtml = '';
             if (!isNew) {
-                const checkboxesHtml = fichaData.todas_las_clases.map(clase => {
-                    const isChecked = fichaData.clases_del_alumno_ids.includes(clase.id);
-                    return `
-                        <label class="cpp-clase-checkbox-label">
-                            <input type="checkbox" name="clases_ids[]" value="${clase.id}" ${isChecked ? 'checked' : ''}>
-                            ${clase.nombre}
-                        </label>`;
-                }).join('');
+                const checkboxes = data.todas_las_clases.map(clase => `
+                    <label>
+                        <input type="checkbox" name="clases_ids[]" value="${clase.id}" ${data.clases_del_alumno_ids.includes(clase.id) ? 'checked' : ''}>
+                        ${clase.nombre}
+                    </label>
+                `).join('');
 
                 clasesHtml = `
                     <div class="cpp-ficha-section">
                         <h3>Asignar a Clases</h3>
-                        <div class="cpp-clases-checkbox-container">${checkboxesHtml}</div>
+                        <div class="cpp-clases-checkbox-container">${checkboxes}</div>
                         <div class="cpp-form-actions">
-                            <button type="button" id="cpp-guardar-clases-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}">
-                                <span class="dashicons dashicons-saved"></span> Guardar Asignaciones
-                            </button>
+                            <button type="button" id="cpp-update-clases-btn" class="cpp-btn" data-alumno-id="${alumno.id}">Actualizar Clases</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }
 
-            // --- HTML para las calificaciones (solo para alumnos existentes) ---
             let calificacionesHtml = '';
-            if (!isNew && fichaData.calificaciones_agrupadas.length > 0) {
-                const calificacionesContent = fichaData.calificaciones_agrupadas.map(claseData => {
-                    const evaluacionesContent = claseData.evaluaciones.map(evalData => {
-                        const actividadesContent = evalData.actividades.map(act => `<li>${act.nombre_actividad}: <strong>${act.nota || '-'}</strong></li>`).join('');
-                        const notaFinal = evalData.nota_final.is_incomplete ? `${evalData.nota_final.nota}% ⚠️` : `${evalData.nota_final.nota}%`;
-                        return `
-                            <div class="cpp-evaluacion-block">
-                                <h4>${evalData.evaluacion_nombre} (Nota: ${notaFinal})</h4>
-                                <ul>${actividadesContent}</ul>
-                            </div>`;
-                    }).join('');
-                    return `<div class="cpp-clase-block"><h3>${claseData.clase_nombre}</h3>${evaluacionesContent}</div>`;
-                }).join('');
-
-                calificacionesHtml = `
-                    <div class="cpp-ficha-section">
-                        <h3>Calificaciones</h3>
-                        <div class="cpp-calificaciones-container">${calificacionesContent}</div>
-                    </div>
-                `;
-            } else if (!isNew) {
-                calificacionesHtml = `<div class="cpp-ficha-section"><p>Este alumno no tiene calificaciones registradas.</p></div>`;
+            if (!isNew && data.calificaciones_agrupadas.length > 0) {
+                calificacionesHtml = '<div class="cpp-ficha-section"><h3>Calificaciones</h3>';
+                data.calificaciones_agrupadas.forEach(clase => {
+                    calificacionesHtml += `<div class="cpp-calificaciones-clase-block"><h4>${clase.clase_nombre}</h4>`;
+                    clase.evaluaciones.forEach(evaluacion => {
+                        const notaFinal = evaluacion.nota_final.is_incomplete ?
+                            `${evaluacion.nota_final.nota}% <span title="La nota no está sobre el 100% de las actividades">⚠️</span>` :
+                            `${evaluacion.nota_final.nota}%`;
+                        calificacionesHtml += `<div class="cpp-calificaciones-eval-block"><h5>${evaluacion.evaluacion_nombre} (Nota: ${notaFinal})</h5><ul>`;
+                        evaluacion.actividades.forEach(actividad => {
+                            calificacionesHtml += `<li>${actividad.nombre_actividad}: <strong>${actividad.calificacion || '-'}</strong></li>`;
+                        });
+                        calificacionesHtml += '</ul></div>';
+                    });
+                    calificacionesHtml += '</div>';
+                });
+                calificacionesHtml += '</div>';
             }
 
-            // --- Ensamblar la ficha completa ---
-            const fichaCompletaHtml = `
+            const finalHtml = `
                 <div class="cpp-alumno-ficha-card">
-                    <h2>${isNew ? 'Nuevo Alumno' : 'Ficha de ' + alumno.nombre}</h2>
-                    <div class="cpp-ficha-section">${formDetailsHtml}</div>
+                    <h2>${isNew ? 'Nuevo Alumno' : `${alumno.nombre} ${alumno.apellidos}`}</h2>
+                    ${personalDataHtml}
                     ${clasesHtml}
                     ${calificacionesHtml}
-                </div>
-            `;
+                </div>`;
 
-            $fichaContainer.html(fichaCompletaHtml);
+            $container.html(finalHtml);
+
+            if (!isNew) {
+                const mapNombreClaseAId = data.todas_las_clases.reduce((acc, clase) => {
+                    acc[clase.nombre] = clase.id;
+                    return acc;
+                }, {});
+                const idsWithGrades = data.calificaciones_agrupadas
+                    .map(claseData => mapNombreClaseAId[claseData.clase_nombre])
+                    .filter(id => id !== undefined);
+
+                $('#cpp-update-clases-btn').data({
+                    'initial-ids': data.clases_del_alumno_ids,
+                    'ids-with-grades': idsWithGrades
+                });
+            }
         },
 
         handleSaveAlumnoDetails: function(e) {
@@ -273,20 +252,18 @@
             data.nonce = cppFrontendData.nonce;
 
             cpp.showSpinner();
-
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
                 dataType: 'json',
                 data: data,
                 success: (response) => {
+                    cpp.hideSpinner();
                     if (response.success) {
-                        cpp.hideSpinner();
                         cpp.showToast(response.data.message);
-                        this.handleSearch(); // Recargar lista
-                        this.displayAlumnoFicha(response.data.alumno.id); // Mostrar la ficha (nueva o actualizada)
+                        this.handleSearch();
+                        this.displayAlumnoFicha(response.data.alumno.id);
                     } else {
-                        cpp.hideSpinner();
                         alert(`Error: ${response.data.message}`);
                     }
                 },
@@ -302,22 +279,19 @@
             const alumnoId = $button.data('alumno-id');
             const initialIds = $button.data('initial-ids') || [];
             const idsWithGrades = $button.data('ids-with-grades') || [];
-
             const newClasesIds = $('input[name="clases_ids[]"]:checked').map(function() {
                 return parseInt($(this).val(), 10);
             }).get();
-
             const unselectedIds = initialIds.filter(id => !newClasesIds.includes(id));
             const unselectedWithGrades = unselectedIds.filter(id => idsWithGrades.includes(id));
 
             if (unselectedWithGrades.length > 0) {
-                if (!confirm('ADVERTENCIA:\n\nEstás a punto de desasignar al alumno de una o más clases donde ya tiene calificaciones. Si guardas los cambios, todas las notas de esas clases se eliminarán PERMANENTEMENTE.\n\n¿Deseas continuar?')) {
-                    return; // Abortar si el usuario cancela
+                if (!confirm('ADVERTENCIA:\n\nEstás a punto de desasignar al alumno de clases donde ya tiene calificaciones. Si guardas, esas notas se eliminarán PERMANENTEMENTE.\n\n¿Continuar?')) {
+                    return;
                 }
             }
 
             cpp.showSpinner();
-
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
@@ -329,13 +303,12 @@
                     clases_ids: newClasesIds
                 },
                 success: (response) => {
+                    cpp.hideSpinner();
                     if (response.success) {
-                        cpp.hideSpinner();
                         cpp.showToast(response.data.message);
-                        this.handleSearch(); // Recargar lista para mostrar nuevos tags de clases
-                        this.displayAlumnoFicha(alumnoId); // Recargar ficha para mostrar calificaciones actualizadas
+                        this.handleSearch();
+                        this.displayAlumnoFicha(alumnoId);
                     } else {
-                        cpp.hideSpinner();
                         alert(`Error: ${response.data.message}`);
                     }
                 },
@@ -348,12 +321,11 @@
 
         handleDeleteAlumno: function(e) {
             const alumnoId = $(e.currentTarget).data('alumno-id');
-            if (!confirm('¿Estás seguro de que quieres eliminar a este alumno? Esta acción es PERMANENTE y no se puede deshacer. Se borrarán todas sus notas y datos de todas las clases.')) {
+            if (!confirm('¿Seguro que quieres eliminar este alumno PERMANENTEMENTE? Se borrarán todos sus datos y notas en TODAS las clases.')) {
                 return;
             }
 
             cpp.showSpinner();
-
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
@@ -364,13 +336,12 @@
                     alumno_id: alumnoId
                 },
                 success: (response) => {
+                    cpp.hideSpinner();
                     if (response.success) {
-                        cpp.hideSpinner();
                         cpp.showToast(response.data.message);
-                        this.handleSearch(); // Recargar lista
-                        $('#cpp-alumnos-view-main').html(this.getInitialMainContentHtml()); // Volver a la vista inicial
+                        this.handleSearch();
+                        $('#cpp-alumnos-view-main').html(this.getInitialMainContentHtml());
                     } else {
-                        cpp.hideSpinner();
                         alert(`Error: ${response.data.message}`);
                     }
                 },

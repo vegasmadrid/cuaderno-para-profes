@@ -269,6 +269,58 @@ function cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id) {
 
     return $resultado !== false;
 }
+
+/**
+ * NUEVA FUNCIÓN PARA OBTENER ACTIVIDADES DE UNA EVALUACIÓN CON LAS CALIFICACIONES DE UN ALUMNO ESPECÍFICO.
+ * Combina la obtención de actividades con las notas del alumno para simplificar la lógica en los AJAX Handlers.
+ *
+ * @param int $evaluacion_id ID de la evaluación.
+ * @param int $alumno_id ID del alumno.
+ * @param int $user_id ID del usuario para verificación de permisos.
+ * @return array Lista de actividades con una propiedad 'calificacion' añadida a cada una.
+ */
+function cpp_obtener_actividades_con_calificaciones_alumno($evaluacion_id, $alumno_id, $user_id) {
+    global $wpdb;
+
+    // Primero, obtenemos todas las actividades de la evaluación.
+    // Usamos las funciones existentes para mantener la consistencia.
+    $clase_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d",
+        $evaluacion_id, $user_id
+    ));
+
+    if (!$clase_id) {
+        return []; // La evaluación no existe o no pertenece al usuario.
+    }
+
+    // Reutilizamos la función existente para obtener todas las actividades ordenadas y con fechas hidratadas
+    $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
+
+    if (empty($actividades)) {
+        return [];
+    }
+
+    // Ahora, obtenemos todas las calificaciones del alumno para estas actividades de una sola vez.
+    $ids_actividades = wp_list_pluck($actividades, 'id');
+    $placeholders = implode(',', array_fill(0, count($ids_actividades), '%d'));
+
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $calificaciones_raw = $wpdb->get_results($wpdb->prepare(
+        "SELECT actividad_id, nota FROM $tabla_calificaciones WHERE alumno_id = %d AND actividad_id IN ($placeholders)",
+        array_merge([$alumno_id], $ids_actividades)
+    ), OBJECT_K); // OBJECT_K para indexar por actividad_id
+
+    // Finalmente, fusionamos las calificaciones con las actividades.
+    foreach ($actividades as &$actividad) {
+        if (isset($calificaciones_raw[$actividad['id']])) {
+            $actividad['calificacion'] = $calificaciones_raw[$actividad['id']]->nota;
+        } else {
+            $actividad['calificacion'] = null; // Aseguramos que la propiedad siempre exista.
+        }
+    }
+
+    return $actividades;
+}
 function cpp_update_actividad_evaluable_fecha($actividad_id, $fecha, $user_id) {
     global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
