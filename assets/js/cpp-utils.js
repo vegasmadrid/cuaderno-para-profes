@@ -69,6 +69,27 @@ cpp.utils = {
         });
 
         $classNameSpan.text(nombre);
+    },
+
+    // --- Spinner y Notificaciones Toast ---
+    showSpinner: function() {
+        jQuery('body').append('<div id="cpp-spinner-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;"><div class="spinner is-active" style="width: 50px; height: 50px;"></div></div>');
+    },
+
+    hideSpinner: function() {
+        jQuery('#cpp-spinner-overlay').remove();
+    },
+
+    showToast: function(message, type = 'success') {
+        const $toast = jQuery('<div id="cpp-toast-notification"></div>');
+        $toast.text(message);
+        $toast.addClass(type === 'success' ? 'cpp-toast-success' : 'cpp-toast-error');
+        jQuery('body').append($toast);
+        setTimeout(() => {
+            $toast.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 3000);
     }
 };
 
