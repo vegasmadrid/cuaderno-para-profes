@@ -230,7 +230,7 @@
 
 
         // --- Semana View Navigation ---
-        $document.on('click', '#cpp-programador-app .cpp-semana-slot', function() {
+        $document.on('click', '.cpp-semana-slot', function() {
             const sesionId = this.dataset.sesionId;
             const claseId = this.dataset.claseId;
             const evaluacionId = this.dataset.evaluacionId;
