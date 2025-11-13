@@ -115,10 +115,10 @@
             $('.cpp-sidebar-clases-list .cpp-sidebar-clase-item').removeClass('cpp-sidebar-item-active');
             $sidebarItem.addClass('cpp-sidebar-item-active');
 
-            if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
-                cpp.gradebook.cargarContenidoCuaderno(claseId, claseNombre);
+            if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
+                cpp.cuaderno.cargarContenidoCuaderno(claseId, claseNombre);
             } else {
-                console.error("cpp.gradebook.cargarContenidoCuaderno no está definido.");
+                console.error("cpp.cuaderno.cargarContenidoCuaderno no está definido.");
             }
 
             // --- FIX: Notificar también al programador del cambio de clase ---
