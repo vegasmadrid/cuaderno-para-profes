@@ -62,10 +62,10 @@
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
-            if (cpp.gradebook.currentCalculoNota === 'ponderada') {
+            if (cpp.cuaderno.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
-                if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') {
-                    cpp.gradebook.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
                         if (!success) {
                              alert("Error al cargar las categorías. Inténtalo de nuevo.");
                         }
@@ -115,10 +115,10 @@
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
             // Lógica para mostrar/ocultar el campo al editar
-            if (cpp.gradebook.currentCalculoNota === 'ponderada') {
+            if (cpp.cuaderno.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
-                if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') {
-                    cpp.gradebook.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
                         if (success) {
                             $form.find('#categoria_id_actividad_cuaderno_select').val(categoriaId);
                         }
@@ -212,9 +212,9 @@
                         }
 
                         // Always refresh gradebook as it's a separate view
-                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
-                            cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
                         }
 
                         // Tutorial compatibility
@@ -244,10 +244,10 @@
 
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
-            if (cpp.gradebook.currentCalculoNota === 'ponderada') {
+            if (cpp.cuaderno.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
-                if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') {
-                    cpp.gradebook.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
                         if (success) {
                             $form.find('#categoria_id_actividad_cuaderno_select').val(actividad.categoria_id);
                         }
@@ -339,9 +339,9 @@
                     success: function(response) {
                         if (response.success) {
                             $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
-                            if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                            if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                                 let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
-                                cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
+                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
                             }
                             // Recargar Programador si existe en la página
                             if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
