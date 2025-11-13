@@ -76,6 +76,10 @@
         },
 
         init: function() {
+            this.bindEvents();
+        },
+
+        bindEvents: function() {
             console.log("Binding Gradebook (cuaderno) events...");
             const $document = $(document);
             const self = this;
@@ -465,7 +469,7 @@
                 });
             } else {
                 $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p>Selecciona una clase para ver el cuaderno.</p></div>');
-                if (cpp.gradebook && typeof cpp.gradebook.actualizarSelectCategoriasActividad === 'function') { cpp.gradebook.actualizarSelectCategoriasActividad(0, null); }
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') { cpp.cuaderno.actualizarSelectCategoriasActividad(0, null); }
                 $('#clase_id_actividad_cuaderno_form').val('');
                 if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
                     cpp.utils.updateTopBar({ nombre: 'Selecciona una clase', color: '#6c757d' });
@@ -571,7 +575,7 @@
         toggleHighlightFailed: function(e) {
             e.preventDefault();
             e.stopPropagation();
-            const self = cpp.gradebook;
+            const self = this;
             self.failedStudentsHighlighted = !self.failedStudentsHighlighted;
             const $button = $('#cpp-final-grade-highlight-btn');
             const $rows = $('.cpp-cuaderno-tabla tbody tr[data-nota-final]');
