@@ -171,6 +171,117 @@
 
             // El resto de eventos (guardar clase, evaluaciones, etc.) se mantienen,
             // pero los que gestionaban alumnos directamente (modales) se han eliminado.
+
+            // --- EVENTOS PARA EVALUACIONES ---
+            const evaluacionContainerSelector = '#cpp-config-evaluaciones-container';
+
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} #cpp-btn-add-evaluacion-config`, () => {
+                const $input = $('#cpp-nombre-nueva-evaluacion-config');
+                const nombre = $input.val().trim();
+                const claseId = this.currentClaseIdForConfig;
+                const sourceEvalId = $('#cpp-copy-from-eval-select-config').val() || '0';
+
+                if (!nombre) { alert('El nombre de la evaluación no puede estar vacío.'); $input.focus(); return; }
+                if (!claseId) { alert('Error: no se ha podido identificar la clase.'); return; }
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: {
+                        action: 'cpp_crear_evaluacion',
+                        nonce: cppFrontendData.nonce,
+                        clase_id: claseId,
+                        nombre_evaluacion: nombre,
+                        source_eval_id: sourceEvalId
+                    },
+                    success: (response) => {
+                        if (response.success) {
+                            this.loadEvaluacionesData(claseId);
+                        } else {
+                            alert('Error: ' + (response.data.message || 'No se pudo crear la evaluación.'));
+                        }
+                    }
+                });
+            });
+
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-eliminar-evaluacion`, (e) => {
+                e.preventDefault();
+                const $li = $(e.currentTarget).closest('li');
+                const evaluacionId = $li.data('evaluacion-id');
+                const evaluacionNombre = $li.find('.cpp-evaluacion-nombre').text();
+                const claseId = this.currentClaseIdForConfig;
+                if (confirm(`¿Estás SEGURO de que quieres eliminar la evaluación "${evaluacionNombre}"?\n\n¡Se borrarán TODAS las actividades y notas asociadas a ella!`)) {
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                        data: { action: 'cpp_eliminar_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId },
+                        success: (response) => {
+                            if (response.success) {
+                                this.loadEvaluacionesData(claseId);
+                            } else {
+                                alert('Error: ' + (response.data.message || 'No se pudo eliminar la evaluación.'));
+                            }
+                        }
+                    });
+                }
+            });
+
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-editar-evaluacion`, (e) => {
+                e.preventDefault();
+                const $li = $(e.currentTarget).closest('li');
+                $li.find('.cpp-evaluacion-nombre, .cpp-evaluacion-actions').hide();
+                const currentName = $li.find('.cpp-evaluacion-nombre').text();
+                const editHtml = `<div class="cpp-evaluacion-edit-form">
+                                    <input type="text" value="${$('<div>').text(currentName).html()}">
+                                    <button type="button" class="cpp-btn-icon cpp-btn-save-evaluacion" title="Guardar"><span class="dashicons dashicons-yes-alt"></span></button>
+                                    <button type="button" class="cpp-btn-icon cpp-btn-cancel-edit-evaluacion" title="Cancelar"><span class="dashicons dashicons-no"></span></button>
+                                  </div>`;
+                $li.append(editHtml);
+                $li.find('input[type="text"]').focus().select();
+            });
+
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-cancel-edit-evaluacion`, (e) => {
+                e.preventDefault();
+                const $li = $(e.currentTarget).closest('li');
+                $li.find('.cpp-evaluacion-edit-form').remove();
+                $li.find('.cpp-evaluacion-nombre, .cpp-evaluacion-actions').show();
+            });
+
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} .cpp-btn-save-evaluacion`, (e) => {
+                e.preventDefault();
+                const $li = $(e.currentTarget).closest('li');
+                const evaluacionId = $li.data('evaluacion-id');
+                const nuevoNombre = $li.find('input[type="text"]').val().trim();
+                const claseId = this.currentClaseIdForConfig;
+                if (!nuevoNombre) { alert('El nombre no puede estar vacío.'); return; }
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_actualizar_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, nombre_evaluacion: nuevoNombre },
+                    success: (response) => {
+                        if (response.success) {
+                            this.loadEvaluacionesData(claseId);
+                        } else {
+                            alert('Error: ' + (response.data.message || 'No se pudo actualizar.'));
+                        }
+                    }
+                });
+            });
+
+            $classSettingsPage.on('change', '#cpp-ponderaciones-eval-selector-config', function() {
+                const evaluacionId = $(this).val();
+                const $settingsContainer = $('#cpp-ponderaciones-settings-content-config');
+                if (evaluacionId) {
+                    $settingsContainer.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
+                    // Asegurarse de que el módulo de modales de evaluación exista y tenga la función
+                    if (cpp.modals && cpp.modals.evaluacion && typeof cpp.modals.evaluacion.refreshCategoriasList === 'function') {
+                        cpp.modals.evaluacion.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content-config');
+                    } else {
+                        console.error("El módulo cpp.modals.evaluacion o la función refreshCategoriasList no están disponibles.");
+                        $settingsContainer.html('<p class="cpp-error-message">Error: El módulo de gestión de categorías no está cargado.</p>');
+                    }
+                } else {
+                    $settingsContainer.empty();
+                }
+            });
         },
 
         handleConfigTabClick: function(event, targetTabId = null) {
@@ -184,15 +295,122 @@
 
             if (tabId === 'alumnos') {
                 this.loadAlumnosData(this.currentClaseIdForConfig);
+            } else if (tabId === 'evaluaciones') {
+                this.loadEvaluacionesData(this.currentClaseIdForConfig);
+            }
+            else if (tabId === 'ponderaciones') {
+                this.loadPonderacionesData(this.currentClaseIdForConfig);
             }
         },
 
-        // Las funciones de evaluaciones y otras se omiten por brevedad, asumiendo que no cambian.
-        loadEvaluacionesData: function(claseId) { /* ... sin cambios ... */ }
-    };
+        loadPonderacionesData: function(claseId) {
+            const $container = $('#cpp-config-ponderaciones-content-container');
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando evaluaciones...</p>');
 
-    // Simplificación de la inicialización y otros métodos no modificados
-    // Se asume que el resto de métodos (guardar clase, eliminar clase, gestión de evals)
-    // permanecen en el objeto `cpp.config`, pero se omiten aquí para no repetir código.
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
+                success: function(response) {
+                    if (response.success && response.data.evaluaciones && response.data.evaluaciones.length > 0) {
+                        let contentHtml = '<h4>Selecciona una evaluación para gestionar sus ponderaciones</h4>';
+                        contentHtml += '<div class="cpp-form-group"><select id="cpp-ponderaciones-eval-selector-config" class="cpp-evaluacion-selector">';
+                        contentHtml += '<option value="">-- Selecciona --</option>';
+                        response.data.evaluaciones.forEach(function(evaluacion) {
+                            contentHtml += `<option value="${evaluacion.id}">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</option>`;
+                        });
+                        contentHtml += '</select></div><hr>';
+                        contentHtml += '<div id="cpp-ponderaciones-settings-content-config"></div>';
+                        $container.html(contentHtml);
+                    } else {
+                        $container.html('<p>No hay evaluaciones creadas para esta clase. Añade una en la pestaña "Evaluaciones".</p>');
+                    }
+                },
+                error: function() {
+                    $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
+                }
+            });
+        },
+
+        loadEvaluacionesData: function(claseId) {
+            const $container = $('#cpp-config-evaluaciones-container');
+            if (!claseId) {
+                $container.html('<p>Error: ID de clase no disponible.</p>');
+                return;
+            }
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando...</p>');
+            const self = this;
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
+                success: function(response) {
+                    if (response.success) {
+                        self.renderEvaluacionesList(response.data.evaluaciones);
+                    } else {
+                        $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
+                    }
+                },
+                error: function() {
+                    $container.html('<p class="cpp-error-message">Error de conexión.</p>');
+                }
+            });
+        },
+
+        renderEvaluacionesList: function(evaluaciones) {
+            const $container = $('#cpp-config-evaluaciones-container');
+            let html = '<h4>Gestionar Evaluaciones</h4>';
+            html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
+            html += '<ul class="cpp-evaluaciones-list">';
+
+            if (evaluaciones && evaluaciones.length > 0) {
+                evaluaciones.forEach(function(evaluacion) {
+                    html += `<li data-evaluacion-id="${evaluacion.id}">
+                                <span class="cpp-drag-handle dashicons dashicons-menu"></span>
+                                <span class="cpp-evaluacion-nombre">${$('<div>').text(evaluacion.nombre_evaluacion).html()}</span>
+                                <div class="cpp-evaluacion-actions">
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-evaluacion" title="Renombrar"><span class="dashicons dashicons-edit"></span></button>
+                                    <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-evaluacion" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
+                                </div>
+                             </li>`;
+                });
+            } else {
+                html += '<li class="cpp-no-evaluaciones">No hay evaluaciones creadas.</li>';
+            }
+            html += '</ul>';
+
+            html += `<div class="cpp-form-add-evaluacion">
+                        <input type="text" id="cpp-nombre-nueva-evaluacion-config" placeholder="Nombre de la nueva evaluación" style="flex-grow:1;">`;
+
+            if (evaluaciones && evaluaciones.length > 0) {
+                html += `<div class="cpp-form-group" style="margin-bottom:0; flex-basis: 200px;">
+                            <select id="cpp-copy-from-eval-select-config">
+                                <option value="0">No copiar ponderaciones</option>`;
+                evaluaciones.forEach(function(evaluacion_origen) {
+                    html += `<option value="${evaluacion_origen.id}">Copiar de: ${$('<div>').text(evaluacion_origen.nombre_evaluacion).html()}</option>`;
+                });
+                html += `</select>
+                         </div>`;
+            }
+
+            html += `<button type="button" id="cpp-btn-add-evaluacion-config" class="cpp-btn cpp-btn-primary">Añadir</button>
+                     </div>`;
+
+            $container.html(html);
+
+            $container.find('.cpp-evaluaciones-list').sortable({
+                handle: '.cpp-drag-handle', axis: 'y', placeholder: 'cpp-sortable-placeholder',
+                update: function(event, ui) {
+                    const orderedIds = $(this).find('li').map(function() { return $(this).data('evaluacion-id'); }).get();
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                        data: { action: 'cpp_guardar_orden_evaluaciones', nonce: cppFrontendData.nonce, orden_evaluaciones: orderedIds }
+                    });
+                }
+            });
+        }
+    };
 
 })(jQuery);

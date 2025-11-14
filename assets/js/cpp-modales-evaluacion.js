@@ -71,7 +71,7 @@
         },
 
         cargarParaEditar: function(button) {
-            const $settingsContainer = $(button).closest('#cpp-ponderaciones-settings-content');
+            const $settingsContainer = $(button).closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
             const $formContainer = $settingsContainer.find('.cpp-form-categoria-container');
             const categoriaId = $(button).data('categoria-id');
             
@@ -102,7 +102,7 @@
         
         submitCategoriaForm: function($btn) {
             const $formContainer = $btn.closest('.cpp-form-categoria-container');
-            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content');
+            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
             const evaluacionId = $settingsContainer.data('evaluacion-id');
 
             const categoriaId = $formContainer.find('#categoria_id_editar_modal').val();
@@ -156,7 +156,7 @@
         eliminarCategoria: function($btn) {
             const categoriaId = $btn.data('categoria-id');
             const categoriaNombre = $btn.closest('li').find('.cpp-categoria-nombre-listado').text();
-            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content');
+            const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
             const evaluacionId = $settingsContainer.data('evaluacion-id');
             
             if (confirm(`¿Seguro que quieres eliminar la categoría "${categoriaNombre}"?`)) {
@@ -266,12 +266,12 @@
                 self.saveFinalGradeConfig.call(self, e);
             });
 
-            const containerSelector = '#cpp-config-ponderaciones-container';
+            const containerSelector = '.cpp-config-tab-content'; // Selector más general
             
             $document.on('change', `${containerSelector} input[name="metodo_calculo_evaluacion"]`, function() {
                 const nuevoMetodo = $(this).val();
                 const $mainContainer = $(this).closest(containerSelector);
-                const $settingsContainer = $mainContainer.find('#cpp-ponderaciones-settings-content');
+                const $settingsContainer = $mainContainer.find('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
                 const evaluacionId = $settingsContainer.data('evaluacion-id');
                 const $categoriasWrapper = $settingsContainer.find('#cpp-gestion-categorias-wrapper');
 

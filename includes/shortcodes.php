@@ -60,6 +60,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <span class="dashicons dashicons-chart-bar"></span>
                             <span>Evaluaciones</span>
                         </a>
+                        <a href="#" class="cpp-config-tab-link" data-config-tab="ponderaciones">
+                            <span class="dashicons dashicons-chart-pie"></span>
+                            <span>Ponderaciones</span>
+                        </a>
                         <a href="#" class="cpp-config-tab-link" data-config-tab="alumnos">
                             <span class="dashicons dashicons-admin-users"></span>
                             <span>Alumnos</span>
@@ -115,6 +119,11 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <hr class="cpp-config-divider">
                             <div id="cpp-config-ponderaciones-container">
                                 <p>Selecciona una evaluación para ver sus ponderaciones.</p>
+                            </div>
+                        </div>
+                        <div id="cpp-config-tab-ponderaciones" class="cpp-config-tab-content">
+                            <div id="cpp-config-ponderaciones-content-container">
+                                <p>Cargando...</p>
                             </div>
                         </div>
                         <div id="cpp-config-tab-alumnos" class="cpp-config-tab-content">
