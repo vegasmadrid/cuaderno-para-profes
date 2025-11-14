@@ -354,10 +354,10 @@
                         alert(response.data.message || 'Información guardada.');
                         self.toggleEditInfoAlumno(false);
                         self.mostrar(self.currentAlumnoId, self.currentClaseId);
-                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
+                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
                             const $claseActiva = $('.cpp-sidebar-clase-item.cpp-sidebar-item-active');
                             if ($claseActiva.length) {
-                                cpp.gradebook.cargarContenidoCuaderno($claseActiva.data('clase-id'), $claseActiva.data('clase-nombre'));
+                                cpp.cuaderno.cargarContenidoCuaderno($claseActiva.data('clase-id'), $claseActiva.data('clase-nombre'));
                             }
                         }
                     } else {
@@ -412,9 +412,9 @@
                     if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
                         cpp.modals.general.hideAll();
                     }
-                    if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function') {
+                    if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
                         const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                        cpp.gradebook.cargarContenidoCuaderno(claseId, claseNombre, evaluacionId);
+                        cpp.cuaderno.cargarContenidoCuaderno(claseId, claseNombre, evaluacionId);
                     }
                 }
             });

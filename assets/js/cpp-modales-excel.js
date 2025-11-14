@@ -208,13 +208,13 @@
                                 $('#cpp-import-errors-list').append($('<li>').text(errorMsg)); 
                             });
                         }
-                        if (cpp.gradebook && typeof cpp.gradebook.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                             let currentClassName = "Clase";
                             const $classNameSpan = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name');
                             if($classNameSpan.length && $classNameSpan.text().trim()){
                                  currentClassName = $classNameSpan.text().trim();
                             }
-                            cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName);
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName);
                         }
                         if ($('#cpp-modal-alumnos').is(':visible') && cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.refreshList === 'function') {
                             cpp.modals.alumnos.refreshList();
@@ -247,8 +247,6 @@
             console.log("Binding Modals Excel events...");
             const $modalExcelOptions = $('#cpp-modal-excel-options');
             const $modalImportStudents = $('#cpp-modal-import-students');
-
-            // Los botones que ABREN estos modales se bindean en cpp.gradebook.js
 
             // Eventos DENTRO del modal de opciones de descarga
             $modalExcelOptions.on('click', '#cpp-btn-download-excel-current-class', function(e){ cpp.modals.excel.triggerDownload(e, 'single_class'); });

@@ -139,7 +139,7 @@
                 success: function(response) {
                     if (response.success) {
                         self.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
-                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                        cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                     } else {
                         $errorContainer.text(response.data.message || 'Error desconocido').show();
                     }
@@ -167,7 +167,7 @@
                     success: function(response) {
                         if (response.success) {
                             self.refreshCategoriasList(evaluacionId, '#cpp-ponderaciones-settings-content');
-                            cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                         } else {
                             alert('Error: ' + (response.data.message || 'No se pudo eliminar.'));
                         }
@@ -238,7 +238,7 @@
                 success: function(response) {
                     if (response.success) {
                         $('#cpp-modal-manage-final-grade-evals').fadeOut();
-                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, 'final');
+                        cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, 'final');
                     } else {
                         alert('Error: ' + (response.data.message || 'No se pudo guardar la configuración.'));
                     }
@@ -300,7 +300,7 @@
                         if (!response.success) {
                             alert('Error al guardar el método de cálculo.');
                         }
-                        cpp.gradebook.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                        cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                     }
                 });
             });
