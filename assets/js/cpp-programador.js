@@ -241,6 +241,13 @@
     navigateToSesion(claseId, evaluacionId, sesionId) {
         if (!claseId || !evaluacionId || !sesionId) return;
 
+        // --- FIX: Close the fullscreen tab view before navigating ---
+        // This ensures the "Semana" tab closes and the "Programacion" tab is visible.
+        const $closeButton = $('#cpp-close-fullscreen-tab-btn');
+        if ($closeButton.length) {
+            $closeButton.trigger('click');
+        }
+
         // Check if we are already in the correct class
         if (this.currentClase && this.currentClase.id == claseId) {
             // We are in the correct class, just switch tab and load session.
