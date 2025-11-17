@@ -45,7 +45,7 @@ function cpp_ajax_search_alumnos() {
             wp_send_json_error(['message' => 'Permiso denegado para esta clase.']);
             return;
         }
-        $alumnos = cpp_obtener_alumnos_clase($clase_id, $search_term);
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, $search_term, 'apellidos');
     } else {
         $alumnos = cpp_obtener_todos_alumnos_usuario($user_id, 'apellidos', $search_term);
     }

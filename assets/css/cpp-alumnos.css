@@ -11,12 +11,11 @@
 /* --- Barra Lateral --- */
 .cpp-alumnos-view-sidebar {
     width: 320px;
-    /* border-right: 1px solid #dee2e6; */ /* Reemplazado por sombra */
-    box-shadow: 4px 0px 15px -5px rgba(0, 0, 0, 0.08);
+    border-right: 1px solid #e0e0e0; /* Línea fina de separación */
     display: flex;
     flex-direction: column;
     background-color: #fff;
-    z-index: 2; /* Para que la sombra se vea por encima del contenido */
+    z-index: 2;
 }
 
 .cpp-alumnos-sidebar-header {

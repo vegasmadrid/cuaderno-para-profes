@@ -8,7 +8,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 /**
  * Obtiene todos los alumnos asociados a una clase específica.
  */
-function cpp_obtener_alumnos_clase($clase_id, $sort_order = 'apellidos') {
+function cpp_obtener_alumnos_clase($clase_id, $search_term = '', $sort_order = 'apellidos') {
     global $wpdb;
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
@@ -18,14 +18,21 @@ function cpp_obtener_alumnos_clase($clase_id, $sort_order = 'apellidos') {
         $order_by_clause = 'a.nombre, a.apellidos';
     }
 
-    $query = $wpdb->prepare(
-        "SELECT a.* FROM $tabla_alumnos a
-         INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
-         WHERE ac.clase_id = %d
-         ORDER BY $order_by_clause",
-        $clase_id
-    );
-    return $wpdb->get_results($query, ARRAY_A);
+    $sql = "SELECT a.* FROM $tabla_alumnos a
+            INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
+            WHERE ac.clase_id = %d";
+    $params = [$clase_id];
+
+    if (!empty($search_term)) {
+        $sql .= " AND (a.nombre LIKE %s OR a.apellidos LIKE %s)";
+        $like_term = '%' . $wpdb->esc_like($search_term) . '%';
+        $params[] = $like_term;
+        $params[] = $like_term;
+    }
+
+    $sql .= " ORDER BY $order_by_clause";
+
+    return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
 }
 
 /**
@@ -277,7 +284,13 @@ function cpp_obtener_evolucion_calificaciones_alumno($alumno_id, $clase_id, $use
     $resultados = $wpdb->get_results($query, ARRAY_A);
 
     // 2. Hidratar fechas (para actividades ligadas a sesiones)
-    $resultados = cpp_hidratar_fechas_de_actividades($resultados);
+    // Se necesita el ID de la evaluación, pero para la evolución general, no tenemos uno.
+    // Pasaremos 0 y la función de hidratación debería manejarlo (o necesitará ajuste).
+    // UPDATE: Es mejor obtener todas las evaluaciones de la clase y pasar los IDs.
+    $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    foreach ($evaluaciones as $evaluacion) {
+        $resultados = cpp_hidratar_fechas_de_actividades($resultados, $clase_id, $evaluacion['id'], $user_id);
+    }
 
     // 3. Procesar y normalizar datos
     $datos_evolucion = [];
