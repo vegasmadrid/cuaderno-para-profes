@@ -248,3 +248,61 @@ function cpp_eliminar_alumno($alumno_id, $user_id) {
     // 5. Eliminar el alumno
     return $wpdb->delete($wpdb->prefix . 'cpp_alumnos', ['id' => $alumno_id], ['%d']);
 }
+
+/**
+ * Obtiene la evolución de las calificaciones de un alumno en una clase.
+ */
+function cpp_obtener_evolucion_calificaciones_alumno($alumno_id, $clase_id, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+
+    // 1. Obtener todas las actividades y sus calificaciones para el alumno en la clase
+    $query = $wpdb->prepare(
+        "SELECT
+            act.id,
+            act.nombre_actividad,
+            act.nota_maxima,
+            act.fecha_actividad,
+            cal.nota
+         FROM $tabla_actividades AS act
+         LEFT JOIN $tabla_calificaciones AS cal
+            ON act.id = cal.actividad_id AND cal.alumno_id = %d
+         WHERE act.clase_id = %d
+         ORDER BY act.fecha_actividad ASC",
+        $alumno_id,
+        $clase_id
+    );
+
+    $resultados = $wpdb->get_results($query, ARRAY_A);
+
+    // 2. Hidratar fechas (para actividades ligadas a sesiones)
+    $resultados = cpp_hidratar_fechas_de_actividades($resultados);
+
+    // 3. Procesar y normalizar datos
+    $datos_evolucion = [];
+    foreach ($resultados as $item) {
+        if (!empty($item['nota'])) {
+            $nota_numerica = cpp_extraer_numero_de_calificacion($item['nota']);
+            if ($nota_numerica !== null) {
+                $nota_maxima = !empty($item['nota_maxima']) ? floatval($item['nota_maxima']) : 10.0;
+                $nota_normalizada = ($nota_maxima > 0) ? ($nota_numerica / $nota_maxima) * 100 : 0;
+
+                $datos_evolucion[] = [
+                    'fecha' => $item['fecha_actividad'],
+                    'nombre_actividad' => $item['nombre_actividad'],
+                    'nota' => round($nota_normalizada, 2),
+                ];
+            }
+        }
+    }
+
+    // Ordenar por fecha final después de la hidratación
+    usort($datos_evolucion, function($a, $b) {
+        $timeA = strtotime($a['fecha']);
+        $timeB = strtotime($b['fecha']);
+        return $timeA <=> $timeB;
+    });
+
+    return $datos_evolucion;
+}

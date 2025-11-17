@@ -2032,7 +2032,8 @@ body.cpp-no-text-select {
 
 /* Ajustes para que el programador y el cuaderno encajen bien */
 #cpp-main-tab-programador, #cpp-main-tab-cuaderno, #cpp-main-tab-alumnos {
-    padding: 20px; /* Añade un margen interior general */
+    /* padding: 20px; */ /* Eliminado para que el contenido se ajuste al borde */
+    padding: 0;
 }
 
 #cpp-main-tab-programador, #cpp-main-tab-cuaderno {
