@@ -18,7 +18,7 @@ function cpp_ajax_obtener_alumnos_para_asistencia_handler() {
         wp_send_json_error(['message' => 'ID de clase no proporcionado.']);
         return;
     }
-    $alumnos = cpp_obtener_alumnos_clase($clase_id);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos');
 
     if (is_array($alumnos)) {
         wp_send_json_success(['alumnos' => $alumnos]);

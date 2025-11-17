@@ -214,7 +214,7 @@ function cpp_ajax_get_alumnos_for_clase_config() {
         wp_send_json_error(['message' => 'Clase no válida o sin permisos.']);
     }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos');
 
     // Generar HTML
     ob_start();
