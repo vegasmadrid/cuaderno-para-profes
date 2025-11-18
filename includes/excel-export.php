@@ -135,7 +135,7 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
     if ($base_nota_final_clase <= 0) $base_nota_final_clase = 100.00;
 
     // Usamos el user_id para asegurar que solo obtenemos los datos del usuario correcto.
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, 'apellidos', $user_id);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos');
     $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_id);
 

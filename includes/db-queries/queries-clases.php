@@ -411,3 +411,16 @@ function cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase = 'Clase Ej
 
     return $clase_id;
 }
+
+/**
+ * Comprueba si un usuario es el propietario de una clase.
+ */
+function cpp_es_propietario_clase($clase_id, $user_id) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+    $owner_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT user_id FROM $tabla_clases WHERE id = %d",
+        $clase_id
+    ));
+    return $owner_id == $user_id;
+}

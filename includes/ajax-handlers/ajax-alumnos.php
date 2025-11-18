@@ -14,13 +14,41 @@ require_once CPP_PLUGIN_DIR . 'includes/utils.php';
 
 // --- BÚSQUEDA Y OBTENCIÓN DE DATOS GLOBALES ---
 
+add_action('wp_ajax_cpp_get_clases_for_filter', 'cpp_get_clases_for_filter');
+function cpp_get_clases_for_filter() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error(['message' => 'Error: Usuario no autenticado.']);
+        return;
+    }
+
+    $clases = cpp_obtener_clases_usuario($user_id);
+    if (is_wp_error($clases)) {
+        wp_send_json_error(['message' => 'Error al obtener las clases.']);
+        return;
+    }
+
+    wp_send_json_success(['clases' => $clases]);
+}
+
 add_action('wp_ajax_cpp_search_alumnos', 'cpp_ajax_search_alumnos');
 function cpp_ajax_search_alumnos() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     $user_id = get_current_user_id();
     $search_term = isset($_POST['search_term']) ? sanitize_text_field($_POST['search_term']) : '';
+    $clase_id = isset($_POST['clase_id']) ? $_POST['clase_id'] : 'all';
 
-    $alumnos = cpp_obtener_todos_alumnos_usuario($user_id, 'apellidos', $search_term);
+    if ($clase_id !== 'all' && is_numeric($clase_id)) {
+        $clase_id = intval($clase_id);
+        if (!cpp_es_propietario_clase($clase_id, $user_id)) {
+            wp_send_json_error(['message' => 'Permiso denegado para esta clase.']);
+            return;
+        }
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, $search_term, 'apellidos');
+    } else {
+        $alumnos = cpp_obtener_todos_alumnos_usuario($user_id, 'apellidos', $search_term);
+    }
 
     // Para cada alumno, obtenemos sus clases
     foreach ($alumnos as &$alumno) {
@@ -74,6 +102,7 @@ function cpp_ajax_get_alumno_ficha() {
             $nota_final_evaluacion = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $evaluacion['id'], $user_id);
 
             $calificaciones_por_evaluacion[] = [
+                'evaluacion_id' => $evaluacion['id'],
                 'evaluacion_nombre' => $evaluacion['nombre_evaluacion'],
                 'actividades' => $actividades,
                 'nota_final' => $nota_final_evaluacion,
@@ -185,7 +214,7 @@ function cpp_ajax_get_alumnos_for_clase_config() {
         wp_send_json_error(['message' => 'Clase no válida o sin permisos.']);
     }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos');
 
     // Generar HTML
     ob_start();
@@ -224,6 +253,43 @@ function cpp_ajax_get_alumnos_for_clase_config() {
 
 
 add_action('wp_ajax_cpp_unlink_alumno_from_clase', 'cpp_ajax_unlink_alumno_from_clase');
+add_action('wp_ajax_cpp_get_alumno_ranking_in_clase', 'cpp_ajax_get_alumno_ranking_in_clase');
+add_action('wp_ajax_cpp_get_alumno_calificaciones_evolucion', 'cpp_ajax_get_alumno_calificaciones_evolucion');
+function cpp_ajax_get_alumno_calificaciones_evolucion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+
+    if (empty($alumno_id) || empty($clase_id) || !cpp_es_propietario_clase($clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'Datos no válidos o sin permisos.']);
+    }
+
+    $evolution_data = cpp_obtener_evolucion_calificaciones_alumno($alumno_id, $clase_id, $user_id);
+
+    wp_send_json_success($evolution_data);
+}
+
+function cpp_ajax_get_alumno_ranking_in_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+
+    if (empty($alumno_id) || empty($clase_id) || !cpp_es_propietario_clase($clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'Datos no válidos o sin permisos.']);
+    }
+
+    $ranking_data = cpp_calcular_ranking_alumno_en_clase($alumno_id, $clase_id, $user_id);
+
+    if (!$ranking_data) {
+        wp_send_json_error(['message' => 'No se pudo calcular el ranking.']);
+    }
+
+    wp_send_json_success($ranking_data);
+}
+
+
 function cpp_ajax_unlink_alumno_from_clase() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     $user_id = get_current_user_id();

@@ -8,7 +8,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 /**
  * Obtiene todos los alumnos asociados a una clase específica.
  */
-function cpp_obtener_alumnos_clase($clase_id, $sort_order = 'apellidos') {
+function cpp_obtener_alumnos_clase($clase_id, $search_term = '', $sort_order = 'apellidos') {
     global $wpdb;
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
@@ -18,14 +18,21 @@ function cpp_obtener_alumnos_clase($clase_id, $sort_order = 'apellidos') {
         $order_by_clause = 'a.nombre, a.apellidos';
     }
 
-    $query = $wpdb->prepare(
-        "SELECT a.* FROM $tabla_alumnos a
-         INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
-         WHERE ac.clase_id = %d
-         ORDER BY $order_by_clause",
-        $clase_id
-    );
-    return $wpdb->get_results($query, ARRAY_A);
+    $sql = "SELECT a.* FROM $tabla_alumnos a
+            INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
+            WHERE ac.clase_id = %d";
+    $params = [$clase_id];
+
+    if (!empty($search_term)) {
+        $sql .= " AND (a.nombre LIKE %s OR a.apellidos LIKE %s)";
+        $like_term = '%' . $wpdb->esc_like($search_term) . '%';
+        $params[] = $like_term;
+        $params[] = $like_term;
+    }
+
+    $sql .= " ORDER BY $order_by_clause";
+
+    return $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
 }
 
 /**
@@ -247,4 +254,68 @@ function cpp_eliminar_alumno($alumno_id, $user_id) {
 
     // 5. Eliminar el alumno
     return $wpdb->delete($wpdb->prefix . 'cpp_alumnos', ['id' => $alumno_id], ['%d']);
+}
+
+/**
+ * Obtiene la evolución de las calificaciones de un alumno en una clase.
+ */
+function cpp_obtener_evolucion_calificaciones_alumno($alumno_id, $clase_id, $user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+
+    // 1. Obtener todas las actividades y sus calificaciones para el alumno en la clase
+    $query = $wpdb->prepare(
+        "SELECT
+            act.id,
+            act.nombre_actividad,
+            act.nota_maxima,
+            act.fecha_actividad,
+            cal.nota
+         FROM $tabla_actividades AS act
+         LEFT JOIN $tabla_calificaciones AS cal
+            ON act.id = cal.actividad_id AND cal.alumno_id = %d
+         WHERE act.clase_id = %d
+         ORDER BY act.fecha_actividad ASC",
+        $alumno_id,
+        $clase_id
+    );
+
+    $resultados = $wpdb->get_results($query, ARRAY_A);
+
+    // 2. Hidratar fechas (para actividades ligadas a sesiones)
+    // Se necesita el ID de la evaluación, pero para la evolución general, no tenemos uno.
+    // Pasaremos 0 y la función de hidratación debería manejarlo (o necesitará ajuste).
+    // UPDATE: Es mejor obtener todas las evaluaciones de la clase y pasar los IDs.
+    $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    foreach ($evaluaciones as $evaluacion) {
+        $resultados = cpp_hidratar_fechas_de_actividades($resultados, $clase_id, $evaluacion['id'], $user_id);
+    }
+
+    // 3. Procesar y normalizar datos
+    $datos_evolucion = [];
+    foreach ($resultados as $item) {
+        if (!empty($item['nota'])) {
+            $nota_numerica = cpp_extraer_numero_de_calificacion($item['nota']);
+            if ($nota_numerica !== null) {
+                $nota_maxima = !empty($item['nota_maxima']) ? floatval($item['nota_maxima']) : 10.0;
+                $nota_normalizada = ($nota_maxima > 0) ? ($nota_numerica / $nota_maxima) * 100 : 0;
+
+                $datos_evolucion[] = [
+                    'fecha' => $item['fecha_actividad'],
+                    'nombre_actividad' => $item['nombre_actividad'],
+                    'nota' => round($nota_normalizada, 2),
+                ];
+            }
+        }
+    }
+
+    // Ordenar por fecha final después de la hidratación
+    usort($datos_evolucion, function($a, $b) {
+        $timeA = strtotime($a['fecha']);
+        $timeB = strtotime($b['fecha']);
+        return $timeA <=> $timeB;
+    });
+
+    return $datos_evolucion;
 }

@@ -303,3 +303,40 @@ function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_
 
     return $resultado;
 }
+
+function cpp_calcular_ranking_alumno_en_clase($alumno_id, $clase_id, $user_id) {
+    // Se pasa un string vacío para el término de búsqueda para obtener todos los alumnos de la clase
+    $alumnos_de_clase = cpp_obtener_alumnos_clase($clase_id, '');
+
+    if (empty($alumnos_de_clase)) {
+        return null;
+    }
+
+    $notas_alumnos = [];
+    foreach ($alumnos_de_clase as $alumno) {
+        $nota_media = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        $notas_alumnos[] = [
+            'alumno_id' => $alumno['id'],
+            'nota' => $nota_media,
+        ];
+    }
+
+    // Ordenar alumnos por nota descendente
+    usort($notas_alumnos, function ($a, $b) {
+        return $b['nota'] <=> $a['nota'];
+    });
+
+    // Encontrar el ranking del alumno
+    $ranking = 0;
+    foreach ($notas_alumnos as $index => $data) {
+        if ($data['alumno_id'] == $alumno_id) {
+            $ranking = $index + 1;
+            break;
+        }
+    }
+
+    return [
+        'ranking' => $ranking,
+        'total_alumnos' => count($alumnos_de_clase),
+    ];
+}

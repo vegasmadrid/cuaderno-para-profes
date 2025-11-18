@@ -260,6 +260,17 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <button class="cpp-main-tab-link" data-tab="alumnos">Alumnos</button>
                         <button class="cpp-main-tab-link" data-tab="resumen">Resumen</button>
                     </div>
+
+                    <!-- Contenedor para los botones de la pestaña de alumnos (se mostrará/ocultará con JS) -->
+                    <div id="cpp-alumnos-top-bar-actions" style="display: none; align-items: center; gap: 10px; margin-left: auto;">
+                        <button id="cpp-importar-alumnos-global-btn-top" class="cpp-btn cpp-btn-secondary">
+                            <span class="dashicons dashicons-upload"></span> Importar
+                        </button>
+                        <button id="cpp-crear-nuevo-alumno-global-btn-top" class="cpp-btn cpp-btn-primary">
+                            <span class="dashicons dashicons-plus"></span> Nuevo Alumno
+                        </button>
+                    </div>
+
                     <button class="cpp-btn-icon cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">
                         <span class="dashicons dashicons-admin-generic"></span>
                     </button>
@@ -311,20 +322,15 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <div id="cpp-main-tab-alumnos" class="cpp-main-tab-content">
                         <div class="cpp-alumnos-view-container">
                             <div class="cpp-alumnos-view-sidebar">
-                                <div class="cpp-alumnos-sidebar-header">
-                                    <h3>Mis Alumnos</h3>
-                                    <div class="cpp-alumnos-sidebar-actions">
-                                        <button id="cpp-importar-alumnos-global-btn" class="cpp-btn cpp-btn-secondary">
-                                            <span class="dashicons dashicons-upload"></span> Importar
-                                        </button>
-                                        <button id="cpp-crear-nuevo-alumno-global-btn" class="cpp-btn cpp-btn-primary">
-                                            <span class="dashicons dashicons-plus"></span> Nuevo Alumno
-                                        </button>
-                                    </div>
-                                </div>
                                 <div class="cpp-alumnos-search-bar">
-                                    <div class
-="cpp-form-group">
+                                    <div class="cpp-form-group" style="margin-bottom: 10px;">
+                                        <label for="cpp-alumnos-class-filter" style="font-weight: 500; font-size: 13px; color: #5f6368;">Filtrar por clase:</label>
+                                        <select id="cpp-alumnos-class-filter" name="clase_id_filter">
+                                            <option value="all">Todas mis clases</option>
+                                            <!-- Opciones de clase se cargarán aquí dinámicamente -->
+                                        </select>
+                                    </div>
+                                    <div class="cpp-form-group">
                                         <input type="text" id="cpp-alumnos-search-input" placeholder="Buscar por nombre o apellidos...">
                                         <span class="dashicons dashicons-search"></span>
                                     </div>
