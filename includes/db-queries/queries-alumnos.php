@@ -319,3 +319,16 @@ function cpp_obtener_evolucion_calificaciones_alumno($alumno_id, $clase_id, $use
 
     return $datos_evolucion;
 }
+
+/**
+ * Comprueba si un alumno pertenece a un usuario.
+ */
+function cpp_es_propietario_alumno($user_id, $alumno_id) {
+    global $wpdb;
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $tabla_alumnos WHERE id = %d AND user_id = %d",
+        $alumno_id, $user_id
+    ));
+    return $count > 0;
+}

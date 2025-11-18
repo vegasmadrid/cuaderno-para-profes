@@ -286,7 +286,8 @@
 
             // --- Renderizado para un alumno existente ---
 
-            const fotoUrl = alumno.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(alumno.nombre)}+${encodeURIComponent(alumno.apellidos)}&background=random`;
+            const seed = alumno.id || encodeURIComponent(alumno.nombre) + '+' + encodeURIComponent(alumno.apellidos);
+            const fotoUrl = alumno.foto || `https://api.dicebear.com/8.x/adventurer/svg?seed=${seed}`;
 
             let personalDataHtml = `
                 <div class="cpp-alumno-ficha-header">

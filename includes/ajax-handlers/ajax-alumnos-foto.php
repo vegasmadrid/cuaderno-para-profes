@@ -3,6 +3,8 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+require_once plugin_dir_path(__FILE__) . '../db-queries/queries-alumnos.php';
+
 add_action('wp_ajax_cpp_upload_alumno_foto', 'cpp_upload_alumno_foto_handler');
 
 function cpp_upload_alumno_foto_handler() {
@@ -15,11 +17,10 @@ function cpp_upload_alumno_foto_handler() {
     $alumno_id = intval($_POST['alumno_id']);
     $user_id = get_current_user_id();
 
-    // Aquí deberíamos verificar que el alumno pertenece al usuario actual.
-    // Esta función de verificación debería existir o crearse.
-    // if (!cpp_es_propietario_alumno($user_id, $alumno_id)) {
-    //     wp_send_json_error(['message' => 'No tienes permiso para modificar este alumno.']);
-    // }
+    // Verificar que el alumno pertenece al usuario actual.
+    if (!cpp_es_propietario_alumno($user_id, $alumno_id)) {
+        wp_send_json_error(['message' => 'No tienes permiso para modificar este alumno.']);
+    }
 
     if (!function_exists('wp_handle_upload')) {
         require_once(ABSPATH . 'wp-admin/includes/file.php');
