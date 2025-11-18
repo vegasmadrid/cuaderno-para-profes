@@ -287,7 +287,7 @@
             // --- Renderizado para un alumno existente ---
 
             const seed = alumno.id || encodeURIComponent(alumno.nombre) + '+' + encodeURIComponent(alumno.apellidos);
-            const fotoUrl = alumno.foto || `https://api.dicebear.com/8.x/adventurer/svg?seed=${seed}`;
+            const fotoUrl = alumno.foto || `https://api.dicebear.com/8.x/avataaars/svg?seed=${seed}`;
 
             let personalDataHtml = `
                 <div class="cpp-alumno-ficha-header">
