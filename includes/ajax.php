@@ -16,6 +16,7 @@ $ajax_handlers_dir = CPP_PLUGIN_DIR . 'includes/ajax-handlers/';
 require_once $ajax_handlers_dir . 'ajax-evaluaciones.php';
 require_once $ajax_handlers_dir . 'ajax-clases.php';
 require_once $ajax_handlers_dir . 'ajax-alumnos.php';
+require_once $ajax_handlers_dir . 'ajax-alumnos-foto.php';
 require_once $ajax_handlers_dir . 'ajax-categorias.php';
 require_once $ajax_handlers_dir . 'ajax-cuaderno.php';
 require_once $ajax_handlers_dir . 'ajax-asistencia.php';

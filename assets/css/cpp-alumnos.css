@@ -42,7 +42,7 @@
 
 /* --- Barra de Búsqueda --- */
 .cpp-alumnos-search-bar {
-    padding: 15px;
+    padding: 10px 15px;
     border-bottom: 1px solid #dee2e6;
 }
 
@@ -451,4 +451,13 @@
     border-radius: 4px;
     padding: 8px;
     font-size: 15px;
+}
+
+/* --- Solución para el formato del texto de bienvenida --- */
+.cpp-alumnos-view-content .cpp-empty-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
