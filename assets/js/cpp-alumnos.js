@@ -582,7 +582,7 @@
                         if (response.success) {
                             const ranking = response.data.ranking;
                             const total = response.data.total_alumnos;
-                            const percentage = total > 1 ? ((ranking - 1) / (total - 1)) * 100 : 50;
+                            const percentage = total > 1 ? ((total - ranking) / (total - 1)) * 100 : 50;
 
                             $(`#ranking-text-${claseId}`).text(`Posición: ${ranking} de ${total}`);
                             $(`#ranking-dot-${claseId}`).css('left', `${percentage}%`);
