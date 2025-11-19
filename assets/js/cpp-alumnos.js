@@ -333,8 +333,8 @@
                 calificacionesHtml = '<div class="cpp-ficha-section"><h3>Calificaciones</h3><div class="cpp-calificaciones-accordion">';
 
                 data.calificaciones_agrupadas.forEach(clase => {
-                    const notaFinalClase = clase.nota_final_clase ?
-                        `<span class="nota-final-pill">${clase.nota_final_clase.nota}%</span>` : '';
+                    const notaFinalClase = clase.nota_final_clase && clase.nota_final_clase.nota !== undefined ?
+                        `<span class="nota-final-pill">${parseFloat(clase.nota_final_clase.nota).toFixed(2)}%</span>` : '';
 
                     calificacionesHtml += `<div class="cpp-accordion-item">
                         <button class="cpp-accordion-header">${clase.clase_nombre} ${notaFinalClase}</button>

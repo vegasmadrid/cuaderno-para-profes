@@ -155,7 +155,7 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
     $evaluaciones_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
 
     if (empty($evaluaciones_ids)) {
-        return 0.00;
+        return ['nota' => 0.00];
     }
 
     $suma_notas_evaluaciones = 0.0;
@@ -170,10 +170,10 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
     // 3. Calcular la media de las evaluaciones seleccionadas
     if ($numero_evaluaciones > 0) {
         $media_final = $suma_notas_evaluaciones / $numero_evaluaciones;
-        return round($media_final, 2); // Devuelve la nota media en escala 0-100
+        return ['nota' => round($media_final, 2)]; // Devuelve un objeto con la nota
     }
 
-    return 0.00;
+    return ['nota' => 0.00];
 }
 
 function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_id, $evaluacion_id, $base_nota_clase) {
