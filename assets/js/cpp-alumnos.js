@@ -53,6 +53,7 @@
             $document.on('click', '#cpp-cancel-edit-btn', this.toggleEditMode.bind(this, false));
             $document.on('click', '#cpp-save-alumno-btn', this.handleSaveInline.bind(this));
             $document.on('click', '#cpp-alumno-foto-editable', this.handleChangeFoto.bind(this));
+            $document.on('change', '#cpp-alumno-foto-input', this.handleUploadFoto.bind(this));
 
             // Listeners para el acordeón y edición de notas
             $document.on('click', '.cpp-accordion-header', function() {
@@ -285,21 +286,21 @@
 
             // --- Renderizado para un alumno existente ---
 
-            const fotoUrl = alumno.foto || `https://ui-avatars.com/api/?name=${encodeURIComponent(alumno.nombre)}+${encodeURIComponent(alumno.apellidos)}&background=random`;
+            const seed = alumno.id || encodeURIComponent(alumno.nombre) + '+' + encodeURIComponent(alumno.apellidos);
+            const fotoUrl = alumno.foto || `https://api.dicebear.com/8.x/avataaars/svg?seed=${seed}`;
 
             let personalDataHtml = `
                 <div class="cpp-alumno-ficha-header">
                     <div class="cpp-alumno-avatar-container">
                         <img src="${fotoUrl}" alt="Foto de ${alumno.nombre}" class="cpp-alumno-avatar-large" id="cpp-alumno-foto-editable" data-alumno-id="${alumno.id}" title="Haz clic para cambiar la foto">
+                        <input type="file" id="cpp-alumno-foto-input" data-alumno-id="${alumno.id}" style="display: none;" accept="image/*">
                     </div>
-                    <div class="cpp-alumno-name-container">
-                        <h2 id="cpp-alumno-nombre-display" class="cpp-editable-field" data-field="nombre">${alumno.nombre}</h2>
-                        <h2 id="cpp-alumno-apellidos-display" class="cpp-editable-field" data-field="apellidos">${alumno.apellidos}</h2>
+                    <div class="cpp-alumno-name-container editing">
+                        <input type="text" class="cpp-editable-field-input" data-field="nombre" value="${alumno.nombre}" placeholder="Nombre">
+                        <input type="text" class="cpp-editable-field-input" data-field="apellidos" value="${alumno.apellidos}" placeholder="Apellidos">
                     </div>
-                    <button id="cpp-edit-alumno-btn" class="cpp-btn-icon" title="Editar Nombre/Apellidos"><span class="dashicons dashicons-edit"></span></button>
-                    <div id="cpp-edit-actions-container" style="display:none;">
+                    <div id="cpp-edit-actions-container">
                          <button id="cpp-save-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-saved"></span> Guardar</button>
-                         <button id="cpp-cancel-edit-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
                     </div>
                 </div>
                 <div id="cpp-alumno-visual-data" class="cpp-ficha-section">
@@ -371,7 +372,6 @@
 
             const finalHtml = `
                 <div class="cpp-alumno-ficha-card">
-                    <h2>${isNew ? 'Nuevo Alumno' : `${alumno.nombre} ${alumno.apellidos}`}</h2>
                     ${personalDataHtml}
                     ${clasesHtml}
                     ${calificacionesHtml}
@@ -731,37 +731,47 @@
         },
 
         handleChangeFoto: function(e) {
-            const $img = $(e.currentTarget);
-            const alumnoId = $img.data('alumno-id');
-            const newFotoUrl = prompt("Introduce la nueva URL para la foto del alumno:", $img.attr('src'));
+            // Simula un clic en el input de archivo oculto
+            $('#cpp-alumno-foto-input').click();
+        },
 
-            if (newFotoUrl === null || newFotoUrl.trim() === '') {
+        handleUploadFoto: function(e) {
+            const fileInput = e.currentTarget;
+            if (fileInput.files.length === 0) {
                 return;
             }
 
+            const alumnoId = $(fileInput).data('alumno-id');
+            const file = fileInput.files[0];
+            const formData = new FormData();
+
+            formData.append('action', 'cpp_upload_alumno_foto');
+            formData.append('nonce', cppFrontendData.nonce);
+            formData.append('alumno_id', alumnoId);
+            formData.append('foto', file);
+
             cpp.utils.showSpinner();
+
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
                 dataType: 'json',
-                data: {
-                    action: 'cpp_save_alumno_details',
-                    nonce: cppFrontendData.nonce,
-                    alumno_id: alumnoId,
-                    foto: newFotoUrl.trim()
-                },
                 success: (response) => {
                     cpp.utils.hideSpinner();
                     if (response.success) {
-                        cpp.utils.showToast("Foto actualizada.");
-                        $img.attr('src', newFotoUrl.trim());
+                        cpp.utils.showToast('Foto actualizada.');
+                        // Actualizar la imagen en la UI
+                        $('#cpp-alumno-foto-editable').attr('src', response.data.new_foto_url);
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
                 },
                 error: () => {
                     cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
+                    alert('Error de conexión al subir la foto.');
                 }
             });
         }

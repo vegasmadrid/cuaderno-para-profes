@@ -88,7 +88,7 @@ if (!function_exists('cpp_get_avatar_url')) {
         } else {
             // Usa el ID del alumno para que el avatar sea siempre el mismo para ese alumno
             $seed = !empty($alumno['id']) ? $alumno['id'] : sanitize_title($alumno['nombre'] . ' ' . $alumno['apellidos']);
-            return 'https://api.dicebear.com/8.x/adventurer/svg?seed=' . $seed;
+            return 'https://api.dicebear.com/8.x/avataaars/svg?seed=' . $seed;
         }
     }
 }
