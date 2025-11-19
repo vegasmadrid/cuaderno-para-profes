@@ -271,26 +271,31 @@ function cpp_obtener_evolucion_calificaciones_alumno($alumno_id, $clase_id, $use
             act.nombre_actividad,
             act.nota_maxima,
             act.fecha_actividad,
+            act.sesion_id,
+            act.evaluacion_id,
             cal.nota
          FROM $tabla_actividades AS act
          LEFT JOIN $tabla_calificaciones AS cal
             ON act.id = cal.actividad_id AND cal.alumno_id = %d
-         WHERE act.clase_id = %d
-         ORDER BY act.fecha_actividad ASC",
+         WHERE act.clase_id = %d",
         $alumno_id,
         $clase_id
     );
-
     $resultados = $wpdb->get_results($query, ARRAY_A);
 
-    // 2. Hidratar fechas (para actividades ligadas a sesiones)
-    // Se necesita el ID de la evaluación, pero para la evolución general, no tenemos uno.
-    // Pasaremos 0 y la función de hidratación debería manejarlo (o necesitará ajuste).
-    // UPDATE: Es mejor obtener todas las evaluaciones de la clase y pasar los IDs.
-    $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
-    foreach ($evaluaciones as $evaluacion) {
-        $resultados = cpp_hidratar_fechas_de_actividades($resultados, $clase_id, $evaluacion['id'], $user_id);
+    // 2. Hidratar fechas de forma correcta, agrupando por evaluación
+    $actividades_por_evaluacion = [];
+    foreach ($resultados as $actividad) {
+        if (empty($actividad['evaluacion_id'])) continue;
+        $actividades_por_evaluacion[$actividad['evaluacion_id']][] = $actividad;
     }
+
+    $resultados_hidratados = [];
+    foreach ($actividades_por_evaluacion as $eval_id => $actividades) {
+        $hidratadas = cpp_hidratar_fechas_de_actividades($actividades, $clase_id, $eval_id, $user_id);
+        $resultados_hidratados = array_merge($resultados_hidratados, $hidratadas);
+    }
+    $resultados = $resultados_hidratados;
 
     // 3. Procesar y normalizar datos
     $datos_evolucion = [];

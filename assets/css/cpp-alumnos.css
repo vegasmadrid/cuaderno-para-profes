@@ -342,9 +342,9 @@
 
 .cpp-ranking-bar {
     width: 100%;
-    height: 6px;
-    background-color: #dee2e6;
-    border-radius: 3px;
+    height: 8px; /* Un poco más grueso para que se vea mejor el gradiente */
+    background-image: linear-gradient(to right, #d9534f, #f0ad4e, #5cb85c);
+    border-radius: 4px;
     position: relative;
 }
 
@@ -352,13 +352,30 @@
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 16px;
-    height: 16px;
-    background-color: #007bff;
+    width: 24px;
+    height: 24px;
+    background-color: #fff;
     border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     transition: left 0.5s ease-in-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #333;
+}
+
+.cpp-ranking-dot::before {
+    content: "\f110"; /* Código para el icono de usuario de Dashicons */
+    font-family: "dashicons";
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* --- Estilos para Widget de Gráfico de Evolución --- */

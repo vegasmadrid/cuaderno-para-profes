@@ -109,9 +109,13 @@ function cpp_ajax_get_alumno_ficha() {
             ];
         }
 
+        $nota_final_clase = cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id);
+
         $calificaciones_por_clase[] = [
+            'clase_id' => $clase_id,
             'clase_nombre' => $clase_info['nombre'],
-            'evaluaciones' => $calificaciones_por_evaluacion
+            'evaluaciones' => $calificaciones_por_evaluacion,
+            'nota_final_clase' => $nota_final_clase,
         ];
     }
 
