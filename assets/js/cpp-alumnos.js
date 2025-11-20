@@ -302,9 +302,6 @@
                     <div id="cpp-edit-actions-container">
                          <button id="cpp-save-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-saved"></span> Guardar</button>
                     </div>
-                </div>
-                <div id="cpp-alumno-visual-data" class="cpp-ficha-section">
-                    <!-- Los rankings y gráficos se insertarán aquí -->
                 </div>`;
 
             let clasesHtml = '';
@@ -326,19 +323,28 @@
                     </div>`;
             }
 
+            let visualDataHtml = `
+                <div id="cpp-alumno-visual-data" class="cpp-ficha-section">
+                    <!-- Los rankings y gráficos se insertarán aquí -->
+                </div>`;
+
             let calificacionesHtml = '';
             if (!isNew && data.calificaciones_agrupadas.length > 0) {
                 calificacionesHtml = '<div class="cpp-ficha-section"><h3>Calificaciones</h3><div class="cpp-calificaciones-accordion">';
 
                 data.calificaciones_agrupadas.forEach(clase => {
+                    const notaFinalClase = clase.nota_final_clase && clase.nota_final_clase.nota !== undefined ?
+                        `<span class="nota-final-pill">${parseFloat(clase.nota_final_clase.nota).toFixed(2)}%</span>` : '';
+
                     calificacionesHtml += `<div class="cpp-accordion-item">
-                        <button class="cpp-accordion-header">${clase.clase_nombre}</button>
+                        <button class="cpp-accordion-header">${clase.clase_nombre} ${notaFinalClase}</button>
                         <div class="cpp-accordion-content">`;
 
                     clase.evaluaciones.forEach(evaluacion => {
+                        const notaFinalEval = evaluacion.nota_final.nota !== null ? parseFloat(evaluacion.nota_final.nota).toFixed(2) : "0.00";
                         const notaFinal = evaluacion.nota_final.is_incomplete ?
-                            `${evaluacion.nota_final.nota}% <span title="La nota no está sobre el 100% de las actividades">⚠️</span>` :
-                            `${evaluacion.nota_final.nota}%`;
+                            `${notaFinalEval}% <span title="La nota no está sobre el 100% de las actividades">⚠️</span>` :
+                            `${notaFinalEval}%`;
 
                         calificacionesHtml += `<div class="cpp-accordion-item">
                             <button class="cpp-accordion-header sub-header">${evaluacion.evaluacion_nombre} <span class="nota-final-pill">${notaFinal}</span></button>
@@ -374,6 +380,7 @@
                 <div class="cpp-alumno-ficha-card">
                     ${personalDataHtml}
                     ${clasesHtml}
+                    ${visualDataHtml}
                     ${calificacionesHtml}
                 </div>`;
 
@@ -407,6 +414,24 @@
                 return acc;
             }, {});
 
+            // Función para calcular la media móvil
+            const calculateMovingAverage = (data, windowSize) => {
+                if (data.length < windowSize) {
+                    return data.map(() => null); // No se puede calcular si hay menos puntos que la ventana
+                }
+                const movingAverages = [];
+                for (let i = 0; i < data.length; i++) {
+                    if (i < windowSize - 1) {
+                        movingAverages.push(null); // Rellenar los primeros puntos
+                    } else {
+                        const window = data.slice(i - windowSize + 1, i + 1);
+                        const sum = window.reduce((acc, val) => acc + val, 0);
+                        movingAverages.push(sum / windowSize);
+                    }
+                }
+                return movingAverages;
+            };
+
             clasesDelAlumnoIds.forEach(claseId => {
                 const claseNombre = clasesMap[claseId] || 'Clase desconocida';
                 const $chartWidget = $(`
@@ -430,11 +455,15 @@
                         clase_id: claseId
                     },
                     success: (response) => {
-                        if (response.success && response.data.length > 0) {
+                        if (response.success && response.data.length > 1) { // Necesitamos al menos 2 puntos
                             const labels = response.data.map(d => new Date(d.fecha).toLocaleDateString());
                             const dataPoints = response.data.map(d => d.nota);
+                            const movingAverage = calculateMovingAverage(dataPoints, 3); // Ventana de 3 puntos
 
                             const ctx = document.getElementById(`chart-clase-${claseId}`).getContext('2d');
+                            if (this.charts && this.charts[claseId]) {
+                                this.charts[claseId].destroy();
+                            }
                             this.charts[claseId] = new Chart(ctx, {
                                 type: 'line',
                                 data: {
@@ -442,28 +471,58 @@
                                     datasets: [{
                                         label: 'Calificación (0-100)',
                                         data: dataPoints,
-                                        borderColor: '#007bff',
+                                        borderColor: 'rgba(0, 123, 255, 0.2)', // Puntos originales más tenues
+                                        backgroundColor: 'rgba(0, 123, 255, 0.05)',
+                                        fill: false,
+                                        pointRadius: 4,
+                                        pointBackgroundColor: 'rgba(0, 123, 255, 0.5)'
+                                    }, {
+                                        label: 'Tendencia (Media Móvil)',
+                                        data: movingAverage,
+                                        borderColor: '#007bff', // Línea de tendencia más prominente
                                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
                                         fill: true,
-                                        tension: 0.1
+                                        tension: 0.4, // Suavizar la curva de la media móvil
+                                        pointRadius: 0 // No mostrar puntos en la línea de tendencia
                                     }]
                                 },
                                 options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
                                     scales: {
                                         y: {
                                             beginAtZero: true,
-                                            max: 100
+                                            suggestedMax: 100
                                         }
                                     },
                                     plugins: {
                                         legend: {
-                                            display: false
+                                            display: true,
+                                            position: 'bottom'
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                // Mostrar la calificación original en el tooltip
+                                                label: function(context) {
+                                                    if (context.datasetIndex === 0) { // Solo para el dataset original
+                                                        let label = context.dataset.label || '';
+                                                        if (label) {
+                                                            label += ': ';
+                                                        }
+                                                        if (context.parsed.y !== null) {
+                                                            label += context.parsed.y.toFixed(2);
+                                                        }
+                                                        return label;
+                                                    }
+                                                    return null; // Ocultar tooltip para la media móvil
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             });
                         } else {
-                             $(`#chart-clase-${claseId}`).closest('.cpp-chart-container').html('<p class="cpp-empty-panel-small">No hay suficientes datos para mostrar un gráfico.</p>');
+                             $(`#chart-clase-${claseId}`).closest('.cpp-chart-container').html('<p class="cpp-empty-panel-small">No hay suficientes datos para mostrar un gráfico de tendencia.</p>');
                         }
                     },
                     error: () => {
@@ -475,7 +534,7 @@
 
         renderRankingWidgets: function(alumnoId, clasesDelAlumnoIds, todasLasClases) {
             const $container = $('#cpp-alumno-visual-data');
-            $container.html('<h3>Ranking en Clase</h3>');
+            $container.html('<h3>Posición con respecto al grupo</h3>');
 
             this.charts = this.charts || {}; // Almacenar instancias de gráficos
             // Limpiar gráficos anteriores
@@ -523,7 +582,7 @@
                         if (response.success) {
                             const ranking = response.data.ranking;
                             const total = response.data.total_alumnos;
-                            const percentage = total > 1 ? ((ranking - 1) / (total - 1)) * 100 : 50;
+                            const percentage = total > 1 ? ((total - ranking) / (total - 1)) * 100 : 50;
 
                             $(`#ranking-text-${claseId}`).text(`Posición: ${ranking} de ${total}`);
                             $(`#ranking-dot-${claseId}`).css('left', `${percentage}%`);
