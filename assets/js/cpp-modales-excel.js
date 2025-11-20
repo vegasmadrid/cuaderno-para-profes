@@ -57,11 +57,24 @@
         },
 
         // --- Funciones para Importación de Alumnos desde Excel ---
+        openForGlobalImport: function(event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            // No se necesita `currentClaseIdCuaderno` para la importación global.
+            if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
+                cpp.modals.general.hideAll();
+            }
+            this.resetImportForm();
+            $('#cpp-modal-import-students').fadeIn();
+        },
+
         // Llamado por cpp.modals.general.hideAll() y al mostrar el modal de importación
-        resetImportForm: function() { 
+        resetImportForm: function() {
             // console.log("Reseteando formulario de modal de importación de alumnos.");
             const $modal = $('#cpp-modal-import-students');
-            $modal.find('#student_excel_file_input').val(''); 
+            $modal.find('#student_excel_file_input').val('');
             $modal.find('#cpp-upload-status-message').text('').removeClass('cpp-error-message cpp-success-message');
             $modal.find('#cpp-btn-upload-excel-file').prop('disabled', true);
             $modal.find('#cpp-import-step-1-upload').show();
@@ -71,7 +84,7 @@
             $modal.find('#cpp-import-results-message').empty();
             $modal.find('#cpp-import-errors-list').empty();
             $modal.find('#cpp-btn-cancel-excel-import').text('Cancelar / Subir otro archivo');
-            this.tempUploadedFilePath = null; 
+            this.tempUploadedFilePath = null;
             this.tempUploadedFileName = null;
         },
 
@@ -80,27 +93,27 @@
                 event.stopPropagation();
                 event.preventDefault();
             }
-            if (!cpp.currentClaseIdCuaderno) { 
+            if (!cpp.currentClaseIdCuaderno) {
                 alert("Por favor, selecciona primero una clase para importar alumnos.");
                 return;
             }
             if (cpp.modals && cpp.modals.general && typeof cpp.modals.general.hideAll === 'function') {
-                cpp.modals.general.hideAll(); 
+                cpp.modals.general.hideAll();
             }
-            this.resetImportForm(); 
+            this.resetImportForm();
             $('#cpp-modal-import-students').fadeIn();
         },
 
         downloadStudentTemplate: function(event) {
             if (event) event.preventDefault();
-            const url = cppFrontendData.ajaxUrl + 
-                            '?action=cpp_download_student_template' +
-                            '&nonce=' + cppFrontendData.nonce;
+            const url = cppFrontendData.ajaxUrl +
+                '?action=cpp_download_student_template' +
+                '&nonce=' + cppFrontendData.nonce;
             window.location.href = url;
         },
 
-        handleFileSelected: function(event) { 
-            const file = event.target.files[0]; 
+        handleFileSelected: function(event) {
+            const file = event.target.files[0];
             if (file) {
                 $('#cpp-upload-status-message').text(`Archivo seleccionado: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`).removeClass('cpp-error-message cpp-success-message');
                 $('#cpp-btn-upload-excel-file').prop('disabled', false);
@@ -109,8 +122,8 @@
                 $('#cpp-btn-upload-excel-file').prop('disabled', true);
             }
         },
-        
-        uploadFile: function(event) { 
+
+        uploadFile: function(event) {
             if (event) event.preventDefault();
             const fileInput = document.getElementById('student_excel_file_input');
             if (!fileInput.files || fileInput.files.length === 0) {
@@ -128,28 +141,29 @@
             $uploadBtn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Subiendo...');
             $('#cpp-upload-status-message').text('Subiendo archivo...').removeClass('cpp-error-message cpp-success-message');
 
-            const self = this; 
+            const self = this;
 
             $.ajax({
-                url: cppFrontendData.ajaxUrl, type: 'POST', data: formData,
-                processData: false, contentType: false, dataType: 'json',
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        self.tempUploadedFilePath = response.data.filePath; 
+                        self.tempUploadedFilePath = response.data.filePath;
                         self.tempUploadedFileName = response.data.fileName || file.name;
                         $('#cpp-upload-status-message').text(`Archivo "${self.tempUploadedFileName}" subido. Elige modo.`).addClass('cpp-success-message').removeClass('cpp-error-message');
-                        
+
                         $('#cpp-import-step-1-upload').hide();
                         $('#cpp-uploaded-file-name-display').text(self.tempUploadedFileName);
-                        
-                        let currentClassName = "la clase actual";
-                        const $classNameSpan = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name');
-                        if($classNameSpan.length && $classNameSpan.text().trim()){
-                            currentClassName = $classNameSpan.text().trim();
-                        }
-                        $('#cpp-import-target-class-name').text(currentClassName);
+
+                        // Mensaje para la importación global
+                        $('#cpp-import-target-class-name').html('Los alumnos se importarán globalmente.<br>Puedes usar la columna "Clases" en el Excel para asignarlos a clases existentes.');
+
                         $('#cpp-import-step-2-options').show();
-                        $('#cpp-import-results').hide().find('#cpp-import-results-message, #cpp-import-errors-list').empty(); 
+                        $('#cpp-import-results').hide().find('#cpp-import-results-message, #cpp-import-errors-list').empty();
                     } else {
                         $('#cpp-upload-status-message').text('Error: ' + (response.data.message || 'No se pudo subir.')).addClass('cpp-error-message').removeClass('cpp-success-message');
                     }
@@ -157,20 +171,21 @@
                 error: function() {
                     $('#cpp-upload-status-message').text('Error de conexión al subir.').addClass('cpp-error-message').removeClass('cpp-success-message');
                 },
-                complete: function() { $uploadBtn.html(originalBtnHtml).prop('disabled', false); } // Rehabilita el botón
+                complete: function() {
+                    $uploadBtn.html(originalBtnHtml).prop('disabled', false);
+                } // Rehabilita el botón
             });
         },
 
-        confirmImport: function(event) { 
+        confirmImport: function(event) {
             if (event) event.preventDefault();
-            if (!cpp.currentClaseIdCuaderno) {
-                alert("Error: No hay una clase activa seleccionada."); this.resetImportForm(); return;
-            }
+            // La comprobación de clase ya no es necesaria para la importación global.
             if (!this.tempUploadedFilePath) {
-                alert("Error: No hay un archivo subido para importar."); this.resetImportForm(); return;
+                alert("Error: No hay un archivo subido para importar.");
+                this.resetImportForm();
+                return;
             }
 
-            const importMode = $('#cpp-modal-import-students input[name="import_mode"]:checked').val();
             const $confirmBtn = $('#cpp-btn-confirm-student-import');
             const originalBtnHtml = $confirmBtn.html();
             const self = this;
@@ -180,19 +195,20 @@
             $('#cpp-import-results').hide().find('#cpp-import-results-message, #cpp-import-errors-list').empty();
 
             $.ajax({
-                url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
                 data: {
                     action: 'cpp_import_students_from_file',
                     nonce: cppFrontendData.nonce,
-                    clase_id: cpp.currentClaseIdCuaderno,
                     temp_file_path: self.tempUploadedFilePath,
-                    import_mode: importMode
+                    // Ya no se necesitan 'clase_id' ni 'import_mode'. El backend lo gestiona todo.
                 },
                 success: function(response) {
                     $('#cpp-import-step-2-options').hide();
                     $('#cpp-import-results').show();
                     let resultHtml = '';
-                    if (response.success || (response.data && response.data.status === 'warning')) { 
+                    if (response.success || (response.data && response.data.status === 'warning')) {
                         resultHtml = `<strong style="color:${response.success ? 'green' : '#e65100'};">${response.data.message || 'Proceso completado.'}</strong>`;
                         if (typeof response.data.imported_count !== 'undefined') {
                             resultHtml += `<br>Alumnos importados/actualizados: ${response.data.imported_count}.`;
@@ -204,31 +220,24 @@
 
                         if (response.data.errors && response.data.errors.length > 0) {
                             $('#cpp-import-results-message').append('<br>Problemas encontrados:');
-                            response.data.errors.forEach(function(errorMsg){
-                                $('#cpp-import-errors-list').append($('<li>').text(errorMsg)); 
+                            response.data.errors.forEach(function(errorMsg) {
+                                $('#cpp-import-errors-list').append($('<li>').text(errorMsg));
                             });
                         }
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
-                            let currentClassName = "Clase";
-                            const $classNameSpan = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name');
-                            if($classNameSpan.length && $classNameSpan.text().trim()){
-                                 currentClassName = $classNameSpan.text().trim();
-                            }
-                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName);
+                        // Al terminar, refrescar la lista de alumnos en la pestaña global
+                        if (cpp.alumnos && typeof cpp.alumnos.handleSearch === 'function') {
+                            cpp.alumnos.handleSearch();
                         }
-                        if ($('#cpp-modal-alumnos').is(':visible') && cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.refreshList === 'function') {
-                            cpp.modals.alumnos.refreshList();
-                        }
-                    } else { 
+                    } else {
                         $('#cpp-import-results-message').html(`<strong style="color:red;">Error: ${response.data.message || 'No se pudo importar.'}</strong>`);
                         if (response.data.errors && response.data.errors.length > 0) {
                             $('#cpp-import-results-message').append('<br>Detalles:');
-                            response.data.errors.forEach(function(errorMsg){
-                               $('#cpp-import-errors-list').append($('<li>').text(errorMsg));
+                            response.data.errors.forEach(function(errorMsg) {
+                                $('#cpp-import-errors-list').append($('<li>').text(errorMsg));
                             });
                         }
                     }
-                    $('#cpp-btn-cancel-excel-import').text('Cerrar'); 
+                    $('#cpp-btn-cancel-excel-import').text('Cerrar');
                 },
                 error: function() {
                     $('#cpp-import-results').show();
@@ -237,7 +246,7 @@
                 complete: function() {
                     $confirmBtn.prop('disabled', false).html('<span class="dashicons dashicons-database-import"></span> Confirmar Importación');
                     $('#cpp-btn-cancel-excel-import').prop('disabled', false);
-                    self.tempUploadedFilePath = null; 
+                    self.tempUploadedFilePath = null;
                     self.tempUploadedFileName = null;
                 }
             });
