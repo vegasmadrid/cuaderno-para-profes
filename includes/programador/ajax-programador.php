@@ -570,12 +570,12 @@ function cpp_ajax_download_programacion_pdf() {
     }
 
     // --- Obtener datos ---
-    $clase = cpp_obtener_clase_por_id($clase_id, $user_id);
-    if (!$clase) {
+    $clase_data = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+    if (!$clase_data) {
         wp_send_json_error(['message' => 'Clase no encontrada o sin permisos.'], 404);
         return;
     }
-    $nombre_clase = $clase->nombre_clase;
+    $nombre_clase = $clase_data['nombre'];
     $fecha_actual = date_i18n('d \d\e F \d\e Y');
 
     // --- Refactor: Lógica de datos unificada ---
