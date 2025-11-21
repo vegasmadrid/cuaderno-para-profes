@@ -583,6 +583,23 @@ function cpp_add_modals_to_footer() {
     </div>
 
     <!-- El modal de símbolos del programador se ha eliminado y se generará dinámicamente como una paleta. -->
+
+    <!-- Modal para Descargar Programación en PDF -->
+    <div id="cpp-pdf-download-modal" class="cpp-modal">
+        <div class="cpp-modal-content">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Descargar Programación</h2>
+            <p>Elige el rango de la programación que deseas descargar en formato PDF.</p>
+            <div class="cpp-modal-actions">
+                <button id="cpp-pdf-download-week-btn" class="cpp-btn cpp-btn-secondary">
+                    <span class="dashicons dashicons-calendar-alt"></span> Descargar Semana Actual
+                </button>
+                <button id="cpp-pdf-download-eval-btn" class="cpp-btn cpp-btn-primary">
+                    <span class="dashicons dashicons-book"></span> Descargar Evaluación Completa
+                </button>
+            </div>
+        </div>
+    </div>
     <?php
 }
 ?>
