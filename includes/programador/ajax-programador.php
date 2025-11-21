@@ -556,6 +556,7 @@ function cpp_ajax_download_programacion_pdf() {
     require_once CPP_PLUGIN_DIR . 'lib/vendor/autoload.php';
     require_once CPP_PLUGIN_DIR . 'includes/programador/pdf-template.php';
     require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+    require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
 
     $user_id = get_current_user_id();
     $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
