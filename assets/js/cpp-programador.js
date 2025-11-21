@@ -7,7 +7,7 @@
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {},
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, pdfDownloadModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
     selectedSesiones: [],
@@ -46,6 +46,12 @@
         this.configModal = {
             element: document.querySelector('#cpp-config-modal'),
             form: document.querySelector('#cpp-config-form')
+        };
+        this.pdfDownloadModal = {
+            element: document.querySelector('#cpp-pdf-download-modal'),
+            weekBtn: document.querySelector('#cpp-pdf-download-week-btn'),
+            evalBtn: document.querySelector('#cpp-pdf-download-eval-btn'),
+            closeBtn: document.querySelector('#cpp-pdf-download-modal .cpp-modal-close')
         };
         this.attachEventListeners();
         this.fetchData(initialClaseId);
@@ -236,6 +242,48 @@
             const evaluacionId = this.dataset.evaluacionId;
             self.navigateToSesion(claseId, evaluacionId, sesionId);
         });
+
+        // --- PDF Download Modal ---
+        $document.on('click', '#cpp-download-pdf-btn', () => this.openPdfDownloadModal());
+        if (this.pdfDownloadModal.element && this.pdfDownloadModal.closeBtn) {
+            this.pdfDownloadModal.closeBtn.addEventListener('click', () => this.closePdfDownloadModal());
+        }
+        if (this.pdfDownloadModal.element && this.pdfDownloadModal.weekBtn) {
+            this.pdfDownloadModal.weekBtn.addEventListener('click', () => this.handlePdfDownload('semana'));
+        }
+        if (this.pdfDownloadModal.element && this.pdfDownloadModal.evalBtn) {
+            this.pdfDownloadModal.evalBtn.addEventListener('click', () => this.handlePdfDownload('evaluacion'));
+        }
+    },
+
+    openPdfDownloadModal() {
+        if (this.pdfDownloadModal.element) {
+            this.pdfDownloadModal.element.style.display = 'block';
+        }
+    },
+
+    closePdfDownloadModal() {
+        if (this.pdfDownloadModal.element) {
+            this.pdfDownloadModal.element.style.display = 'none';
+        }
+    },
+
+    handlePdfDownload(type) {
+        if (!this.currentClase || !this.currentEvaluacionId) {
+            alert('Por favor, selecciona una clase y una evaluación válidas.');
+            return;
+        }
+
+        let url = `${cppFrontendData.ajaxUrl}?action=cpp_download_programacion_pdf&clase_id=${this.currentClase.id}&evaluacion_id=${this.currentEvaluacionId}&type=${type}`;
+
+        if (type === 'semana') {
+            const weekDates = this.getWeekDates(this.semanaDate);
+            const startOfWeek = weekDates[0].toISOString().slice(0, 10);
+            url += `&start_of_week=${startOfWeek}`;
+        }
+
+        window.open(url, '_blank');
+        this.closePdfDownloadModal();
     },
 
     navigateToSesion(claseId, evaluacionId, sesionId) {
@@ -1852,6 +1900,9 @@
                             <button class="cpp-semana-prev-btn cpp-btn-icon" title="Semana Anterior">◄</button>
                             <h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3>
                             <button class="cpp-semana-next-btn cpp-btn-icon" title="Siguiente Semana">►</button>
+                            <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-secondary">
+                                <span class="dashicons dashicons-download"></span> Descargar PDF
+                            </button>
                           </div>`;
         let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
 

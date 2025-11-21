@@ -18,6 +18,7 @@ add_action('wp_ajax_cpp_copy_multiple_sesiones', 'cpp_ajax_copy_sessions');
 add_action('wp_ajax_cpp_delete_multiple_sesiones', 'cpp_ajax_delete_multiple_sesiones');
 add_action('wp_ajax_cpp_get_fechas_evaluacion', 'cpp_ajax_get_fechas_evaluacion');
 add_action('wp_ajax_cpp_toggle_sesion_fijada', 'cpp_ajax_toggle_sesion_fijada');
+add_action('wp_ajax_cpp_download_programacion_pdf', 'cpp_ajax_download_programacion_pdf');
 
 
 // Handlers para Actividades
@@ -543,6 +544,104 @@ function cpp_ajax_toggle_sesion_fijada() {
     } else {
         wp_send_json_error(['message' => 'Error al actualizar el estado de fijación.']);
     }
+}
+
+function cpp_ajax_download_programacion_pdf() {
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Acceso no permitido.'], 403);
+        return;
+    }
+
+    // --- Incluir dependencias ---
+    require_once CPP_PLUGIN_DIR . 'lib/vendor/autoload.php';
+    require_once CPP_PLUGIN_DIR . 'includes/programador/pdf-template.php';
+    require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+
+    $user_id = get_current_user_id();
+    $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
+    $clase_id = isset($_GET['clase_id']) ? intval($_GET['clase_id']) : 0;
+    $evaluacion_id = isset($_GET['evaluacion_id']) ? intval($_GET['evaluacion_id']) : 0;
+
+    if (empty($type) || empty($clase_id) || empty($evaluacion_id)) {
+        // Aunque no se mostrará, es buena práctica usar el handler de errores de WP
+        wp_send_json_error(['message' => 'Faltan parámetros para generar el PDF.'], 400);
+        return;
+    }
+
+    // --- Obtener datos ---
+    $clase = cpp_obtener_clase_por_id($clase_id, $user_id);
+    if (!$clase) {
+        wp_send_json_error(['message' => 'Clase no encontrada o sin permisos.'], 404);
+        return;
+    }
+    $nombre_clase = $clase->nombre_clase;
+    $fecha_actual = date_i18n('d \d\e F \d\e Y');
+
+    // --- Refactor: Lógica de datos unificada ---
+    $all_sesiones_data = [];
+    $fechas_sesiones = [];
+
+    $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
+    $sesiones = cpp_programador_get_sesiones_by_evaluacion($evaluacion_id, $user_id);
+
+    foreach ($sesiones as $sesion) {
+        if (isset($fechas[$sesion->id])) {
+            $sesion->fecha_calculada = $fechas[$sesion->id]['fecha'];
+            $all_sesiones_data[] = $sesion;
+        }
+    }
+
+    if ($type === 'semana') {
+        $start_of_week = isset($_GET['start_of_week']) ? sanitize_text_field($_GET['start_of_week']) : '';
+        if (empty($start_of_week)) {
+             wp_send_json_error(['message' => 'Falta la fecha de inicio de la semana.'], 400);
+             return;
+        }
+        $end_of_week = date('Y-m-d', strtotime($start_of_week . ' +6 days'));
+
+        $all_sesiones_data = array_filter($all_sesiones_data, function($sesion) use ($start_of_week, $end_of_week) {
+            return $sesion->fecha_calculada >= $start_of_week && $sesion->fecha_calculada <= $end_of_week;
+        });
+    }
+
+    if (!empty($all_sesiones_data)) {
+        usort($all_sesiones_data, fn($a, $b) => strtotime($a->fecha_calculada) - strtotime($b->fecha_calculada));
+        $fechas_sesiones = array_map(fn($s) => $s->fecha_calculada, $all_sesiones_data);
+    }
+
+    $rango_fechas = !empty($fechas_sesiones) ? date_i18n('d/m/Y', strtotime(min($fechas_sesiones))) . ' al ' . date_i18n('d/m/Y', strtotime(max($fechas_sesiones))) : '';
+
+    $semanas = [];
+    foreach ($all_sesiones_data as $sesion) {
+        $week_number = date('W', strtotime($sesion->fecha_calculada));
+        $year = date('Y', strtotime($sesion->fecha_calculada));
+        $semanas[$year . '-' . $week_number][] = $sesion;
+    }
+    ksort($semanas);
+
+    $leyendas_guardadas = get_user_meta($user_id, 'cpp_programador_simbolos_leyendas', true);
+    if (!is_array($leyendas_guardadas)) $leyendas_guardadas = [];
+    $simbolos_default = cpp_get_default_programador_simbolos();
+    $simbolos = [];
+    foreach ($simbolos_default as $id => $data) {
+        $simbolos[$id] = ['simbolo' => $data['simbolo'], 'leyenda' => isset($leyendas_guardadas[$id]) ? esc_html($leyendas_guardadas[$id]) : $data['leyenda']];
+    }
+
+    // --- Generar HTML y PDF ---
+    $html = cpp_get_programacion_pdf_html($nombre_clase, $rango_fechas, $fecha_actual, $semanas, $simbolos);
+
+    $options = new Dompdf\Options();
+    $options->set('isRemoteEnabled', true);
+    $dompdf = new Dompdf\Dompdf($options);
+
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'landscape');
+    $dompdf->render();
+
+    $filename = 'programacion-' . sanitize_file_name($nombre_clase) . '.pdf';
+
+    $dompdf->stream($filename, ['Attachment' => true]);
+    wp_die();
 }
 
 
