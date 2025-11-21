@@ -55,6 +55,20 @@
             $document.on('click', '#cpp-alumno-foto-editable', this.handleChangeFoto.bind(this));
             $document.on('change', '#cpp-alumno-foto-input', this.handleUploadFoto.bind(this));
 
+            // Handlers para el formulario de nuevo alumno
+            $document.on('click', '#cpp-new-alumno-foto-preview', function() {
+                $('#cpp-new-alumno-foto-input').click();
+            });
+            $document.on('change', '#cpp-new-alumno-foto-input', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        $('#cpp-new-alumno-foto-preview').attr('src', event.target.result);
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
             // Listeners para el acordeón y edición de notas
             $document.on('click', '.cpp-accordion-header', function() {
                 $(this).next('.cpp-accordion-content').slideToggle('fast');
@@ -254,31 +268,26 @@
 
             // Si es un nuevo alumno, mostramos el formulario tradicional
             if (isNew) {
+                const defaultAvatar = `https://api.dicebear.com/8.x/avataaars/svg?seed=new-student`;
                 const newAlumnoFormHtml = `
                     <div class="cpp-alumno-ficha-card">
                         <h2>Nuevo Alumno</h2>
-                        <div class="cpp-ficha-section">
-                            <form id="cpp-ficha-alumno-form" class="cpp-modern-form">
-                                <input type="hidden" name="alumno_id" value="0">
-                                <div class="cpp-form-grid">
-                                    <div class="cpp-form-group">
-                                        <label for="nombre">Nombre</label>
-                                        <input type="text" id="nombre" name="nombre" value="" required>
-                                    </div>
-                                    <div class="cpp-form-group">
-                                        <label for="apellidos">Apellidos</label>
-                                        <input type="text" id="apellidos" name="apellidos" value="" required>
-                                    </div>
+                        <form id="cpp-ficha-alumno-form" class="cpp-modern-form">
+                            <div class="cpp-alumno-ficha-header">
+                                <div class="cpp-alumno-avatar-container">
+                                    <img src="${defaultAvatar}" alt="Foto de nuevo alumno" class="cpp-alumno-avatar-large" id="cpp-new-alumno-foto-preview" title="Haz clic para cambiar la foto" style="cursor: pointer;">
+                                    <input type="file" id="cpp-new-alumno-foto-input" style="display: none;" accept="image/*">
                                 </div>
-                                <div class="cpp-form-group">
-                                    <label for="foto">URL de la Foto (Opcional)</label>
-                                    <input type="url" id="foto" name="foto" value="">
+                                <div class="cpp-alumno-name-container editing">
+                                    <input type="text" name="nombre" class="cpp-editable-field-input" placeholder="Nombre" required>
+                                    <input type="text" name="apellidos" class="cpp-editable-field-input" placeholder="Apellidos" required>
                                 </div>
-                                <div class="cpp-form-actions">
-                                    <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Crear Alumno</button>
+                                <div id="cpp-edit-actions-container">
+                                     <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Crear Alumno</button>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+                            <input type="hidden" name="alumno_id" value="0">
+                        </form>
                     </div>`;
                 $container.html(newAlumnoFormHtml);
                 return;
@@ -608,6 +617,7 @@
             data.nonce = cppFrontendData.nonce;
 
             cpp.utils.showSpinner();
+            const self = this;
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -615,12 +625,30 @@
                 dataType: 'json',
                 data: data,
                 success: (response) => {
-                    cpp.utils.hideSpinner();
                     if (response.success) {
                         cpp.utils.showToast(response.data.message);
-                        this.handleSearch();
-                        this.displayAlumnoFicha(response.data.alumno.id);
+                        const newAlumnoId = response.data.alumno.id;
+                        const fileInput = document.getElementById('cpp-new-alumno-foto-input');
+
+                        if (fileInput && fileInput.files.length > 0) {
+                            const file = fileInput.files[0];
+                            self.uploadFotoForAlumno(newAlumnoId, file).then(() => {
+                                cpp.utils.hideSpinner();
+                                self.handleSearch();
+                                self.displayAlumnoFicha(newAlumnoId);
+                            }).catch(errorMsg => {
+                                cpp.utils.hideSpinner();
+                                alert(errorMsg); // Muestra el error de la subida de foto
+                                self.handleSearch();
+                                self.displayAlumnoFicha(newAlumnoId);
+                            });
+                        } else {
+                            cpp.utils.hideSpinner();
+                            self.handleSearch();
+                            self.displayAlumnoFicha(newAlumnoId);
+                        }
                     } else {
+                        cpp.utils.hideSpinner();
                         alert(`Error: ${response.data.message}`);
                     }
                 },
@@ -796,42 +824,51 @@
 
         handleUploadFoto: function(e) {
             const fileInput = e.currentTarget;
-            if (fileInput.files.length === 0) {
-                return;
-            }
+            if (fileInput.files.length === 0) return;
 
             const alumnoId = $(fileInput).data('alumno-id');
             const file = fileInput.files[0];
-            const formData = new FormData();
-
-            formData.append('action', 'cpp_upload_alumno_foto');
-            formData.append('nonce', cppFrontendData.nonce);
-            formData.append('alumno_id', alumnoId);
-            formData.append('foto', file);
 
             cpp.utils.showSpinner();
 
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                dataType: 'json',
-                success: (response) => {
+            this.uploadFotoForAlumno(alumnoId, file)
+                .then(newFotoUrl => {
                     cpp.utils.hideSpinner();
-                    if (response.success) {
-                        cpp.utils.showToast('Foto actualizada.');
-                        // Actualizar la imagen en la UI
-                        $('#cpp-alumno-foto-editable').attr('src', response.data.new_foto_url);
-                    } else {
-                        alert(`Error: ${response.data.message}`);
+                    cpp.utils.showToast('Foto actualizada.');
+                    $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
+                })
+                .catch(errorMsg => {
+                    cpp.utils.hideSpinner();
+                    alert(errorMsg);
+                });
+        },
+
+        uploadFotoForAlumno: function(alumnoId, file) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('action', 'cpp_upload_alumno_foto');
+                formData.append('nonce', cppFrontendData.nonce);
+                formData.append('alumno_id', alumnoId);
+                formData.append('foto', file);
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: (response) => {
+                        if (response.success) {
+                            resolve(response.data.new_foto_url);
+                        } else {
+                            reject(`Error: ${response.data.message}`);
+                        }
+                    },
+                    error: () => {
+                        reject('Error de conexión al subir la foto.');
                     }
-                },
-                error: () => {
-                    cpp.utils.hideSpinner();
-                    alert('Error de conexión al subir la foto.');
-                }
+                });
             });
         }
     };
