@@ -607,10 +607,13 @@
             const isRightTab = ['semana', 'horario', 'alumnos', 'resumen'].includes(tabName);
 
             // Control de visibilidad de los botones de la barra superior
+            $('#cpp-alumnos-top-bar-actions').hide();
+            $('#cpp-semana-top-bar-actions').hide();
+
             if (tabName === 'alumnos') {
                 $('#cpp-alumnos-top-bar-actions').css('display', 'flex');
-            } else {
-                $('#cpp-alumnos-top-bar-actions').hide();
+            } else if (tabName === 'semana') {
+                $('#cpp-semana-top-bar-actions').css('display', 'block');
             }
 
             if (isRightTab) {

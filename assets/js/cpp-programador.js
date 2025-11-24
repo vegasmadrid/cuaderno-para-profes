@@ -1900,9 +1900,6 @@
                             <button class="cpp-semana-prev-btn cpp-btn-icon" title="Semana Anterior">◄</button>
                             <h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3>
                             <button class="cpp-semana-next-btn cpp-btn-icon" title="Siguiente Semana">►</button>
-                            <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-secondary">
-                                <span class="dashicons dashicons-download"></span> Descargar PDF
-                            </button>
                           </div>`;
         let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
 
