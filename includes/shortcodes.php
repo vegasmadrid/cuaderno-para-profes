@@ -35,6 +35,11 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <span class="dashicons dashicons-arrow-left-alt"></span>
                 </button>
                 <h2 id="cpp-fullscreen-tab-title"></h2>
+                <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto;">
+                    <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-download"></span> Descargar PDF
+                    </button>
+                </div>
                 <!-- Contenedor para los botones de la pestaña de alumnos (se mostrará/ocultará con JS) -->
                 <div id="cpp-alumnos-top-bar-actions" style="display: none; align-items: center; gap: 10px; margin-left: auto;">
                     <button id="cpp-importar-alumnos-global-btn-top" class="cpp-btn cpp-btn-secondary">
@@ -383,6 +388,21 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <button type="submit" class="cpp-btn cpp-btn-primary">Copiar Sesiones</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+                <div id="cpp-pdf-download-modal" class="cpp-modal" style="display:none;">
+                    <div class="cpp-modal-content">
+                        <span class="cpp-modal-close">&times;</span>
+                        <h2>Descargar Programación</h2>
+                        <p>Elige el rango de la programación que deseas descargar en formato PDF.</p>
+                        <div class="cpp-modal-actions">
+                            <button id="cpp-pdf-download-week-btn" class="cpp-btn cpp-btn-secondary">
+                                <span class="dashicons dashicons-calendar-alt"></span> Descargar Semana Actual
+                            </button>
+                            <button id="cpp-pdf-download-eval-btn" class="cpp-btn cpp-btn-primary">
+                                <span class="dashicons dashicons-book"></span> Descargar Evaluación Completa
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

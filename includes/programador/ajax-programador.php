@@ -583,7 +583,10 @@ function cpp_ajax_download_programacion_pdf() {
     $fechas_sesiones = [];
 
     $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
-    $sesiones = cpp_programador_get_sesiones_by_evaluacion($evaluacion_id, $user_id);
+    $all_data = cpp_programador_get_all_data($user_id);
+    $sesiones = array_filter($all_data['sesiones'], function($sesion) use ($evaluacion_id) {
+        return $sesion->evaluacion_id == $evaluacion_id;
+    });
 
     foreach ($sesiones as $sesion) {
         if (isset($fechas[$sesion->id])) {
