@@ -70,7 +70,10 @@
             if (cpp.sidebar && cpp.sidebar.isSidebarVisible) {
                 cpp.sidebar.toggle();
             }
-            // Aquí se podría cargar la configuración del calendario si fuera necesario
+            // Cargar los datos del calendario al abrir
+            if (window.CppProgramadorApp && typeof window.CppProgramadorApp.populateConfigModal === 'function') {
+                window.CppProgramadorApp.populateConfigModal();
+            }
         },
 
         hideGeneralSettings: function() {
