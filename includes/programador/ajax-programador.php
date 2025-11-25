@@ -615,7 +615,7 @@ function cpp_ajax_download_programacion_pdf() {
     setlocale(LC_TIME, 'es_ES.UTF-8');
     $fecha_actual_str = strftime('%e de %B de %Y');
     $rango_fechas_str = '';
-    $semanas = [];
+    $dias = [];
 
     if (!empty($sesiones_filtradas)) {
         usort($sesiones_filtradas, fn($a, $b) => strtotime($a->fecha_calculada) - strtotime($b->fecha_calculada));
@@ -626,11 +626,10 @@ function cpp_ajax_download_programacion_pdf() {
             : 'No hay sesiones programadas';
 
         foreach ($sesiones_filtradas as $sesion) {
-            $week_number = date('W', strtotime($sesion->fecha_calculada));
-            $year = date('Y', strtotime($sesion->fecha_calculada));
-            $semanas[$year . '-' . $week_number][] = $sesion;
+            $fecha = $sesion->fecha_calculada;
+            $dias[$fecha][] = $sesion;
         }
-        ksort($semanas);
+        ksort($dias);
     } else {
         $rango_fechas_str = 'No se encontraron sesiones en el rango especificado.';
     }
@@ -644,14 +643,14 @@ function cpp_ajax_download_programacion_pdf() {
     }
 
     // --- Generar HTML y PDF ---
-    $html = cpp_get_programador_pdf_html($rango_fechas_str, $fecha_actual_str, $semanas, $simbolos);
+    $html = cpp_get_programador_pdf_html($rango_fechas_str, $fecha_actual_str, $dias, $simbolos);
 
     $options = new Dompdf\Options();
     $options->set('isRemoteEnabled', true);
     $dompdf = new Dompdf\Dompdf($options);
 
     $dompdf->loadHtml($html);
-    $dompdf->setPaper('A4', 'landscape');
+    $dompdf->setPaper('A4', 'portrait');
     $dompdf->render();
 
     $filename = 'Programacion_' . date('Y-m-d') . '.pdf';
