@@ -63,6 +63,25 @@
             $('body').removeClass('cpp-fullscreen-active');
         },
 
+        showGeneralSettings: function() {
+            $('#cpp-cuaderno-main-content').hide();
+            $('#cpp-general-settings-page-container').show();
+            $('body').addClass('cpp-fullscreen-active');
+            if (cpp.sidebar && cpp.sidebar.isSidebarVisible) {
+                cpp.sidebar.toggle();
+            }
+            // Cargar los datos del calendario al abrir
+            if (window.CppProgramadorApp && typeof window.CppProgramadorApp.populateConfigModal === 'function') {
+                window.CppProgramadorApp.populateConfigModal();
+            }
+        },
+
+        hideGeneralSettings: function() {
+            $('#cpp-general-settings-page-container').hide();
+            $('#cpp-cuaderno-main-content').show();
+            $('body').removeClass('cpp-fullscreen-active');
+        },
+
         loadAlumnosData: function(claseId) {
             const $container = $('#cpp-config-alumnos-container');
             if (!claseId) {
@@ -162,6 +181,8 @@
 
             $body.on('click', '.cpp-sidebar-clase-settings-btn', (e) => this.showParaEditar(e));
             $body.on('click', '#cpp-close-class-settings-btn', () => this.hide());
+            $body.on('click', '#cpp-general-settings-btn', () => this.showGeneralSettings());
+            $body.on('click', '#cpp-close-general-settings-btn', () => this.hideGeneralSettings());
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
 
