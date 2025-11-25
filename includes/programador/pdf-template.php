@@ -29,8 +29,8 @@ function cpp_get_programador_pdf_html($rango_fechas, $fecha_actual, $dias, $simb
             .cover h3 { font-size: 16px; font-weight: 300; margin-bottom: 60px; color: #7f8c8d; }
             .cover-footer { position: absolute; bottom: 20mm; left: 0; right: 0; font-size: 12px; color: #95a5a6; }
             .cover-footer img { width: 80px; height: 80px; margin-bottom: 10px; }
-            .header { text-align: center; font-size: 9px; color: #aaa; position: fixed; top: -15mm; left: 0; right: 0; }
-            .footer { text-align: center; font-size: 9px; color: #aaa; position: fixed; bottom: -15mm; left: 0; right: 0; }
+            .footer { text-align: center; font-size: 10px; color: #aaa; position: fixed; bottom: -15mm; left: 0; right: 0; display: flex; align-items: center; justify-content: center; }
+            .footer img { width: 16px; height: 16px; margin-right: 5px; }
             .day-container { page-break-before: always; }
             .day-header {
                 font-size: 22px;
@@ -45,17 +45,19 @@ function cpp_get_programador_pdf_html($rango_fechas, $fecha_actual, $dias, $simb
                 padding-left: 15px;
                 border-left: 4px solid #bdc3c7;
             }
-            .session-header { font-size: 18px; font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
+            .session-header { margin-bottom: 8px; }
             .clase-name-badge {
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: bold;
-                padding: 3px 8px;
+                padding: 4px 10px;
                 border-radius: 4px;
                 color: #fff;
-                margin-right: 10px;
                 display: inline-block;
+                margin-bottom: 10px;
             }
-            .session-header .symbol { margin-right: 8px; font-size: 20px; vertical-align: middle; }
+            .session-details { padding-left: 5px; }
+            .session-title { font-size: 18px; font-weight: bold; color: #2c3e50; }
+            .session-title .symbol { margin-right: 8px; font-size: 20px; vertical-align: middle; }
             .session-content { padding-left: 20px; }
             .session-content p { margin: 5px 0; }
             .activities { padding-left: 20px; margin-top: 12px;}
@@ -90,8 +92,10 @@ function cpp_get_programador_pdf_html($rango_fechas, $fecha_actual, $dias, $simb
                 $fecha_str = strftime('%A, %e de %B de %Y', strtotime($fecha));
             ?>
                 <div class="day-container" style="<?php if ($is_first_day) { echo 'page-break-before: auto;'; $is_first_day = false; } ?>">
-                    <div class="header">Programación de Clases</div>
-                    <div class="footer">cuadernodeprofe.com</div>
+                    <div class="footer">
+                        <img src="<?php echo esc_url($logo_url); ?>" alt="Logo">
+                        <span>cuadernodeprofe.com</span>
+                    </div>
 
                     <h2 class="day-header"><?php echo $fecha_str; ?></h2>
                     <?php foreach ($sesiones_del_dia as $sesion):
@@ -104,29 +108,33 @@ function cpp_get_programador_pdf_html($rango_fechas, $fecha_actual, $dias, $simb
                         <div class="session" style="border-left-color: <?php echo esc_attr($sesion->color_clase); ?>;">
                             <div class="session-header">
                                 <span class="clase-name-badge" style="background-color: <?php echo esc_attr($sesion->color_clase); ?>;"><?php echo esc_html($sesion->nombre_clase); ?></span>
-                                <?php echo $simbolo_str; ?>
-                                <span><?php echo esc_html($sesion->titulo); ?></span>
                             </div>
-                            <div class="session-content">
-                                <?php if (!empty($sesion->descripcion)): ?>
-                                    <p><?php echo nl2br(esc_html($sesion->descripcion)); ?></p>
-                                <?php endif; ?>
+                            <div class="session-details">
+                                <div class="session-title">
+                                    <?php echo $simbolo_str; ?>
+                                    <span><?php echo esc_html($sesion->titulo); ?></span>
+                                </div>
+                                <div class="session-content">
+                                    <?php if (!empty($sesion->descripcion)): ?>
+                                        <p><?php echo nl2br(esc_html($sesion->descripcion)); ?></p>
+                                    <?php endif; ?>
 
-                                <?php if (!empty($sesion->actividades_programadas)): ?>
-                                    <div class="activities">
-                                        <p class="activities-title">Actividades:</p>
-                                        <ul>
-                                        <?php foreach ($sesion->actividades_programadas as $actividad):
-                                            $actividad = (object)$actividad;
-                                            $tipo_class = (isset($actividad->tipo) && $actividad->tipo === 'evaluable') ? 'evaluable' : '';
-                                        ?>
-                                            <li class="activity <?php echo $tipo_class; ?>">
-                                                <?php echo esc_html($actividad->titulo); ?>
-                                            </li>
-                                        <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                <?php endif; ?>
+                                    <?php if (!empty($sesion->actividades_programadas)): ?>
+                                        <div class="activities">
+                                            <p class="activities-title">Actividades:</p>
+                                            <ul>
+                                            <?php foreach ($sesion->actividades_programadas as $actividad):
+                                                $actividad = (object)$actividad;
+                                                $tipo_class = (isset($actividad->tipo) && $actividad->tipo === 'evaluable') ? 'evaluable' : '';
+                                            ?>
+                                                <li class="activity <?php echo $tipo_class; ?>">
+                                                    <?php echo esc_html($actividad->titulo); ?>
+                                                </li>
+                                            <?php endforeach; ?>
+                                            </ul>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
