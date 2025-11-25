@@ -559,42 +559,31 @@ function cpp_ajax_download_programacion_pdf() {
     require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-clases.php';
 
     $user_id = get_current_user_id();
-    $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : '';
-    $clase_id = isset($_GET['clase_id']) ? intval($_GET['clase_id']) : 0;
-    $evaluacion_id = isset($_GET['evaluacion_id']) ? intval($_GET['evaluacion_id']) : 0;
-
-    if (empty($type) || empty($clase_id) || empty($evaluacion_id)) {
-        // Aunque no se mostrará, es buena práctica usar el handler de errores de WP
-        wp_send_json_error(['message' => 'Faltan parámetros para generar el PDF.'], 400);
-        return;
-    }
+    $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : 'toda';
 
     // --- Obtener datos ---
-    $clase_data = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
-    if (!$clase_data) {
-        wp_send_json_error(['message' => 'Clase no encontrada o sin permisos.'], 404);
-        return;
-    }
-    $nombre_clase = $clase_data['nombre'];
-    $fecha_actual = date_i18n('d \d\e F \d\e Y');
-
-    // --- Refactor: Lógica de datos unificada ---
-    $all_sesiones_data = [];
-    $fechas_sesiones = [];
-
-    $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
     $all_data = cpp_programador_get_all_data($user_id);
-    $sesiones = array_filter($all_data['sesiones'], function($sesion) use ($evaluacion_id) {
-        return $sesion->evaluacion_id == $evaluacion_id;
-    });
+    $all_sesiones_con_fecha = [];
 
-    foreach ($sesiones as $sesion) {
-        if (isset($fechas[$sesion->id])) {
-            $sesion->fecha_calculada = $fechas[$sesion->id]['fecha'];
-            $all_sesiones_data[] = $sesion;
+    if (!empty($all_data['sesiones'])) {
+        // Calcular fechas para todas las sesiones de todas las clases
+        foreach ($all_data['clases'] as $clase) {
+            foreach ($clase['evaluaciones'] as $evaluacion) {
+                $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase['id'], $evaluacion['id']);
+                foreach ($all_data['sesiones'] as $sesion) {
+                    if ($sesion->evaluacion_id == $evaluacion['id'] && isset($fechas[$sesion->id])) {
+                        $sesion->fecha_calculada = $fechas[$sesion->id]['fecha'];
+                        $sesion->nombre_clase = $clase['nombre']; // Añadir el nombre de la clase a la sesión
+                        $sesion->color_clase = $clase['color']; // Añadir el color de la clase a la sesión
+                        $all_sesiones_con_fecha[] = $sesion;
+                    }
+                }
+            }
         }
     }
 
+    // --- Filtrar por tipo ---
+    $sesiones_filtradas = [];
     if ($type === 'semana') {
         $start_of_week = isset($_GET['start_of_week']) ? sanitize_text_field($_GET['start_of_week']) : '';
         if (empty($start_of_week)) {
@@ -603,25 +592,48 @@ function cpp_ajax_download_programacion_pdf() {
         }
         $end_of_week = date('Y-m-d', strtotime($start_of_week . ' +6 days'));
 
-        $all_sesiones_data = array_filter($all_sesiones_data, function($sesion) use ($start_of_week, $end_of_week) {
+        $sesiones_filtradas = array_filter($all_sesiones_con_fecha, function($sesion) use ($start_of_week, $end_of_week) {
             return $sesion->fecha_calculada >= $start_of_week && $sesion->fecha_calculada <= $end_of_week;
         });
+
+    } else if ($type === 'rango') {
+        $start_date = isset($_GET['start_date']) ? sanitize_text_field($_GET['start_date']) : '';
+        $end_date = isset($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : '';
+        if (empty($start_date) || empty($end_date)) {
+             wp_send_json_error(['message' => 'Faltan las fechas del rango.'], 400);
+             return;
+        }
+        $sesiones_filtradas = array_filter($all_sesiones_con_fecha, function($sesion) use ($start_date, $end_date) {
+            return $sesion->fecha_calculada >= $start_date && $sesion->fecha_calculada <= $end_date;
+        });
+
+    } else { // 'toda'
+        $sesiones_filtradas = $all_sesiones_con_fecha;
     }
 
-    if (!empty($all_sesiones_data)) {
-        usort($all_sesiones_data, fn($a, $b) => strtotime($a->fecha_calculada) - strtotime($b->fecha_calculada));
-        $fechas_sesiones = array_map(fn($s) => $s->fecha_calculada, $all_sesiones_data);
-    }
-
-    $rango_fechas = !empty($fechas_sesiones) ? date_i18n('d/m/Y', strtotime(min($fechas_sesiones))) . ' al ' . date_i18n('d/m/Y', strtotime(max($fechas_sesiones))) : '';
-
+    // --- Preparar datos para la plantilla ---
+    setlocale(LC_TIME, 'es_ES.UTF-8');
+    $fecha_actual_str = strftime('%e de %B de %Y');
+    $rango_fechas_str = '';
     $semanas = [];
-    foreach ($all_sesiones_data as $sesion) {
-        $week_number = date('W', strtotime($sesion->fecha_calculada));
-        $year = date('Y', strtotime($sesion->fecha_calculada));
-        $semanas[$year . '-' . $week_number][] = $sesion;
+
+    if (!empty($sesiones_filtradas)) {
+        usort($sesiones_filtradas, fn($a, $b) => strtotime($a->fecha_calculada) - strtotime($b->fecha_calculada));
+        $fechas_sesiones = array_map(fn($s) => $s->fecha_calculada, $sesiones_filtradas);
+
+        $rango_fechas_str = !empty($fechas_sesiones)
+            ? strftime('%e de %B de %Y', strtotime(min($fechas_sesiones))) . ' al ' . strftime('%e de %B de %Y', strtotime(max($fechas_sesiones)))
+            : 'No hay sesiones programadas';
+
+        foreach ($sesiones_filtradas as $sesion) {
+            $week_number = date('W', strtotime($sesion->fecha_calculada));
+            $year = date('Y', strtotime($sesion->fecha_calculada));
+            $semanas[$year . '-' . $week_number][] = $sesion;
+        }
+        ksort($semanas);
+    } else {
+        $rango_fechas_str = 'No se encontraron sesiones en el rango especificado.';
     }
-    ksort($semanas);
 
     $leyendas_guardadas = get_user_meta($user_id, 'cpp_programador_simbolos_leyendas', true);
     if (!is_array($leyendas_guardadas)) $leyendas_guardadas = [];
@@ -632,7 +644,7 @@ function cpp_ajax_download_programacion_pdf() {
     }
 
     // --- Generar HTML y PDF ---
-    $html = cpp_get_programacion_pdf_html($nombre_clase, $rango_fechas, $fecha_actual, $semanas, $simbolos);
+    $html = cpp_get_programador_pdf_html($rango_fechas_str, $fecha_actual_str, $semanas, $simbolos);
 
     $options = new Dompdf\Options();
     $options->set('isRemoteEnabled', true);
@@ -642,7 +654,7 @@ function cpp_ajax_download_programacion_pdf() {
     $dompdf->setPaper('A4', 'landscape');
     $dompdf->render();
 
-    $filename = 'programacion-' . sanitize_file_name($nombre_clase) . '.pdf';
+    $filename = 'Programacion_' . date('Y-m-d') . '.pdf';
 
     $dompdf->stream($filename, ['Attachment' => true]);
     wp_die();

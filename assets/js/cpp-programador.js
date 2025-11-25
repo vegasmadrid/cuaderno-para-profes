@@ -7,7 +7,7 @@
     // La inicialización ahora es controlada por cpp-cuaderno.js
     window.CppProgramadorApp = {
     // --- Propiedades ---
-    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, pdfDownloadModal: {},
+    appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, pdfDownloadModal: {}, pdfRangeModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
     selectedSesiones: [],
@@ -50,8 +50,16 @@
         this.pdfDownloadModal = {
             element: document.querySelector('#cpp-pdf-download-modal'),
             weekBtn: document.querySelector('#cpp-pdf-download-week-btn'),
-            evalBtn: document.querySelector('#cpp-pdf-download-eval-btn'),
+            allBtn: document.querySelector('#cpp-pdf-download-all-btn'),
+            rangeBtn: document.querySelector('#cpp-pdf-download-range-btn'),
             closeBtn: document.querySelector('#cpp-pdf-download-modal .cpp-modal-close')
+        };
+        this.pdfRangeModal = {
+            element: document.querySelector('#cpp-pdf-range-modal'),
+            form: document.querySelector('#cpp-pdf-range-form'),
+            startDateInput: document.querySelector('#cpp-pdf-start-date'),
+            endDateInput: document.querySelector('#cpp-pdf-end-date'),
+            closeBtn: document.querySelector('#cpp-pdf-range-modal .cpp-modal-close')
         };
         this.attachEventListeners();
         this.fetchData(initialClaseId);
@@ -251,8 +259,17 @@
         if (this.pdfDownloadModal.element && this.pdfDownloadModal.weekBtn) {
             this.pdfDownloadModal.weekBtn.addEventListener('click', () => this.handlePdfDownload('semana'));
         }
-        if (this.pdfDownloadModal.element && this.pdfDownloadModal.evalBtn) {
-            this.pdfDownloadModal.evalBtn.addEventListener('click', () => this.handlePdfDownload('evaluacion'));
+        if (this.pdfDownloadModal.element && this.pdfDownloadModal.allBtn) {
+            this.pdfDownloadModal.allBtn.addEventListener('click', () => this.handlePdfDownload('toda'));
+        }
+        if (this.pdfDownloadModal.element && this.pdfDownloadModal.rangeBtn) {
+            this.pdfDownloadModal.rangeBtn.addEventListener('click', () => this.openPdfRangeModal());
+        }
+        if (this.pdfRangeModal.element && this.pdfRangeModal.closeBtn) {
+            this.pdfRangeModal.closeBtn.addEventListener('click', () => this.closePdfRangeModal());
+        }
+        if (this.pdfRangeModal.element && this.pdfRangeModal.form) {
+            this.pdfRangeModal.form.addEventListener('submit', (e) => this.handlePdfDownload('rango', e));
         }
     },
 
@@ -268,22 +285,44 @@
         }
     },
 
-    handlePdfDownload(type) {
-        if (!this.currentClase || !this.currentEvaluacionId) {
-            alert('Por favor, selecciona una clase y una evaluación válidas.');
-            return;
+    openPdfRangeModal() {
+        this.closePdfDownloadModal();
+        if (this.pdfRangeModal.element) {
+            this.pdfRangeModal.element.style.display = 'block';
+        }
+    },
+
+    closePdfRangeModal() {
+        if (this.pdfRangeModal.element) {
+            this.pdfRangeModal.element.style.display = 'none';
+        }
+    },
+
+    handlePdfDownload(type, event = null) {
+        if (event) {
+            event.preventDefault();
         }
 
-        let url = `${cppFrontendData.ajaxUrl}?action=cpp_download_programacion_pdf&clase_id=${this.currentClase.id}&evaluacion_id=${this.currentEvaluacionId}&type=${type}`;
+        let url = `${cppFrontendData.ajaxUrl}?action=cpp_download_programacion_pdf&type=${type}`;
 
         if (type === 'semana') {
             const weekDates = this.getWeekDates(this.semanaDate);
             const startOfWeek = weekDates[0].toISOString().slice(0, 10);
             url += `&start_of_week=${startOfWeek}`;
+        } else if (type === 'rango') {
+            const startDate = this.pdfRangeModal.startDateInput.value;
+            const endDate = this.pdfRangeModal.endDateInput.value;
+            if (!startDate || !endDate || new Date(startDate) > new Date(endDate)) {
+                alert('Por favor, selecciona un rango de fechas válido.');
+                return;
+            }
+            url += `&start_date=${startDate}&end_date=${endDate}`;
         }
+        // No se necesitan parámetros extra para el tipo 'toda'
 
         window.open(url, '_blank');
         this.closePdfDownloadModal();
+        this.closePdfRangeModal();
     },
 
     navigateToSesion(claseId, evaluacionId, sesionId) {
