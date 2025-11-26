@@ -17,6 +17,7 @@ require_once $ajax_handlers_dir . 'ajax-evaluaciones.php';
 require_once $ajax_handlers_dir . 'ajax-clases.php';
 require_once $ajax_handlers_dir . 'ajax-alumnos.php';
 require_once $ajax_handlers_dir . 'ajax-alumnos-foto.php';
+require_once $ajax_handlers_dir . 'ajax-alumnos-unlink.php';
 require_once $ajax_handlers_dir . 'ajax-categorias.php';
 require_once $ajax_handlers_dir . 'ajax-cuaderno.php';
 require_once $ajax_handlers_dir . 'ajax-asistencia.php';

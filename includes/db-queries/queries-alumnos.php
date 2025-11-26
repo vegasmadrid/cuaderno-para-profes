@@ -191,9 +191,7 @@ function cpp_actualizar_clases_de_alumno($alumno_id, $user_id, $nuevas_clases_id
 function cpp_desvincular_alumno_de_clase($alumno_id, $clase_id, $user_id) {
     global $wpdb;
 
-    // Verificación de propiedad
-    $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id));
-    if ($owner_id != $user_id) { return false; }
+    // La verificación de propiedad ya se hace en el manejador AJAX que llama a esta función (cpp_es_propietario_clase)
 
     // 1. Eliminar calificaciones
     $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
@@ -213,11 +211,16 @@ function cpp_desvincular_alumno_de_clase($alumno_id, $clase_id, $user_id) {
     $wpdb->delete($wpdb->prefix . 'cpp_asistencia', ['alumno_id' => $alumno_id, 'clase_id' => $clase_id], ['%d', '%d']);
 
     // 3. Eliminar la vinculación
-    return $wpdb->delete(
+    $deleted_rows = $wpdb->delete(
         $wpdb->prefix . 'cpp_alumnos_clases',
         ['alumno_id' => $alumno_id, 'clase_id' => $clase_id],
         ['%d', '%d']
     );
+
+    // Devolver true solo si se eliminó al menos una fila.
+    // $wpdb->delete devuelve el número de filas eliminadas, o false en error.
+    // Un valor de 0 no es un error, pero para nosotros significa que la operación no tuvo el efecto deseado.
+    return ($deleted_rows > 0);
 }
 
 /**
