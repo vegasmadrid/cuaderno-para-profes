@@ -257,6 +257,28 @@ function cpp_ajax_get_alumnos_for_clase_config() {
 
 
 add_action('wp_ajax_cpp_unlink_alumno_from_clase', 'cpp_ajax_unlink_alumno_from_clase');
+function cpp_ajax_unlink_alumno_from_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+
+    if (empty($alumno_id) || empty($clase_id)) {
+        wp_send_json_error(['message' => 'Faltan datos.']);
+    }
+
+    if (!cpp_es_propietario_clase($clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'No tienes permiso sobre esta clase.']);
+    }
+
+    $result = cpp_desvincular_alumno_de_clase($alumno_id, $clase_id, $user_id);
+    if ($result === false) {
+        wp_send_json_error(['message' => 'No se pudo quitar al alumno de la clase.']);
+    }
+
+    wp_send_json_success(['message' => 'Alumno quitado de la clase.']);
+}
+
 add_action('wp_ajax_cpp_get_alumno_ranking_in_clase', 'cpp_ajax_get_alumno_ranking_in_clase');
 add_action('wp_ajax_cpp_get_alumno_calificaciones_evolucion', 'cpp_ajax_get_alumno_calificaciones_evolucion');
 function cpp_ajax_get_alumno_calificaciones_evolucion() {
@@ -291,27 +313,4 @@ function cpp_ajax_get_alumno_ranking_in_clase() {
     }
 
     wp_send_json_success($ranking_data);
-}
-
-
-function cpp_ajax_unlink_alumno_from_clase() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    $user_id = get_current_user_id();
-    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
-    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-
-    if (empty($alumno_id) || empty($clase_id)) {
-        wp_send_json_error(['message' => 'Faltan datos.']);
-    }
-
-    if (!cpp_es_propietario_clase($clase_id, $user_id)) {
-        wp_send_json_error(['message' => 'No tienes permiso sobre esta clase.']);
-    }
-
-    $result = cpp_desvincular_alumno_de_clase($alumno_id, $clase_id, $user_id);
-    if ($result === false) {
-        wp_send_json_error(['message' => 'No se pudo quitar al alumno de la clase.']);
-    }
-
-    wp_send_json_success(['message' => 'Alumno quitado de la clase.']);
 }
