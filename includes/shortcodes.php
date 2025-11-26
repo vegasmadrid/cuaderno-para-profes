@@ -399,16 +399,48 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <span class="cpp-modal-close">&times;</span>
             <h2>Descargar Programación</h2>
             <p>Elige el rango de la programación que deseas descargar en formato PDF.</p>
-            <div class="cpp-modal-actions">
+            <div class="cpp-modal-actions-grid">
                 <button id="cpp-pdf-download-week-btn" class="cpp-btn cpp-btn-secondary">
-                    <span class="dashicons dashicons-calendar-alt"></span> Descargar Semana Actual
+                    <span class="dashicons dashicons-calendar-alt"></span>
+                    <span>Semana Actual</span>
+                    <small>Descarga la semana que estás viendo ahora mismo.</small>
                 </button>
-                <button id="cpp-pdf-download-eval-btn" class="cpp-btn cpp-btn-primary">
-                    <span class="dashicons dashicons-book"></span> Descargar Evaluación Completa
+                <button id="cpp-pdf-download-all-btn" class="cpp-btn cpp-btn-secondary">
+                    <span class="dashicons dashicons-book"></span>
+                    <span>Toda la Programación</span>
+                    <small>Incluye todas las sesiones programadas.</small>
                 </button>
-                </div>
+                <button id="cpp-pdf-download-range-btn" class="cpp-btn cpp-btn-secondary">
+                    <span class="dashicons dashicons-leftright"></span>
+                    <span>Rango de Fechas</span>
+                    <small>Elige una fecha de inicio y de fin.</small>
+                </button>
             </div>
         </div>
+    </div>
+
+    <div id="cpp-pdf-range-modal" class="cpp-modal" style="display:none;">
+        <div class="cpp-modal-content">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Seleccionar Rango de Fechas</h2>
+            <p>Elige las fechas de inicio y fin para la descarga del PDF.</p>
+            <form id="cpp-pdf-range-form">
+                <div class="cpp-form-group-grid-2">
+                    <div class="cpp-form-group">
+                        <label for="cpp-pdf-start-date">Fecha de Inicio:</label>
+                        <input type="date" id="cpp-pdf-start-date" required>
+                    </div>
+                    <div class="cpp-form-group">
+                        <label for="cpp-pdf-end-date">Fecha de Fin:</label>
+                        <input type="date" id="cpp-pdf-end-date" required>
+                    </div>
+                </div>
+                <div class="cpp-modal-actions">
+                    <button type="submit" class="cpp-btn cpp-btn-primary">Descargar PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
         
         <div class="cpp-sidebar-overlay" id="cpp-sidebar-overlay"></div>
 
