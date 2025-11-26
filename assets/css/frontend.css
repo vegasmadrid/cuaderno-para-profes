@@ -728,12 +728,21 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-tab-content.active { display: block; }
 #cpp-clase-modal-categorias-container .cpp-form-group { margin-top: 20px; }
 
-.cpp-alumno-card { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #e9ecef; }
+.cpp-alumno-card { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #e9ecef; }
 .cpp-alumno-card:last-child { border-bottom: none; }
-.cpp-alumno-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; margin-right: 12px; background-color: #e9ecef; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.cpp-alumno-avatar img { width:100%; height:100%; object-fit:cover; }
+/* La clase .cpp-alumno-avatar ya existe y se usa en la config de clase. La ajustamos aquí */
+#cpp-config-tab-alumnos .cpp-alumno-avatar {
+    width: 36px;
+    height: 36px;
+}
+
 .cpp-avatar-inicial { font-size: 16px; font-weight: 500; color: #495057; }
-.cpp-alumno-info { flex-grow: 1; }
+.cpp-alumno-info {
+    flex-grow: 1;
+    display: flex; /* Añadido para alinear avatar y nombre */
+    align-items: center; /* Añadido */
+    gap: 12px; /* Añadido para espaciar */
+}
 .cpp-alumno-info h4 { margin:0; font-size: 15px; font-weight: normal; }
 .cpp-alumno-actions { display: flex; gap: 5px; }
 .cpp-form-alumno-container { padding-top: 15px; border-top: 1px solid #e9ecef; margin-top: 15px; }

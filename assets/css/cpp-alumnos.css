@@ -258,16 +258,31 @@
 /* --- Nuevos Estilos para Cabecera de Alumno Editable --- */
 .cpp-alumno-ficha-header {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    align-items: flex-end; /* Alinear con la parte inferior del avatar */
+    gap: 30px; /* Aumentar el espacio */
     margin-bottom: 30px;
     padding-bottom: 20px;
     border-bottom: 1px solid #e9ecef;
 }
 
+.cpp-alumno-avatar-container {
+    position: relative;
+    width: 160px; /* Forzar el tamaño del contenedor */
+    height: 160px;
+}
+
+#cpp-regenerate-avatar-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
 .cpp-alumno-avatar-large {
-    width: 80px;
-    height: 80px;
+    width: 160px; /* El doble */
+    height: 160px; /* El doble */
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid #fff;
@@ -477,4 +492,12 @@
     justify-content: center;
     align-items: center;
     text-align: center;
+}
+
+/* --- Estilos para el pie de la ficha --- */
+.cpp-ficha-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
 }
