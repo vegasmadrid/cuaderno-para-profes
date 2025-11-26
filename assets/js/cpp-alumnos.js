@@ -415,6 +415,7 @@
         },
 
         renderEvolutionCharts: function(alumnoId, clasesDelAlumnoIds, todasLasClases) {
+            this.charts = this.charts || {};
             const $container = $('#cpp-alumno-visual-data');
             $container.append('<h3 style="margin-top: 30px;">Evolución de Calificaciones</h3>');
 
