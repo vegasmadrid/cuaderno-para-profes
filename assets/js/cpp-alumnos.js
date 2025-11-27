@@ -54,6 +54,7 @@
             $document.on('click', '#cpp-save-alumno-btn', this.handleSaveInline.bind(this));
             $document.on('click', '#cpp-alumno-foto-editable', this.handleChangeFoto.bind(this));
             $document.on('change', '#cpp-alumno-foto-input', this.handleUploadFoto.bind(this));
+            $document.on('click', '#cpp-regenerate-avatar-btn', this.handleRegenerateAvatar.bind(this));
 
             // Handlers para el formulario de nuevo alumno
             $document.on('click', '#cpp-new-alumno-foto-preview', function() {
@@ -302,6 +303,9 @@
                 <div class="cpp-alumno-ficha-header">
                     <div class="cpp-alumno-avatar-container">
                         <img src="${fotoUrl}" alt="Foto de ${alumno.nombre}" class="cpp-alumno-avatar-large" id="cpp-alumno-foto-editable" data-alumno-id="${alumno.id}" title="Haz clic para cambiar la foto">
+                        <button type="button" id="cpp-regenerate-avatar-btn" class="cpp-btn-icon" title="Generar nuevo avatar aleatorio" data-alumno-id="${alumno.id}">
+                            <span class="dashicons dashicons-update"></span>
+                        </button>
                         <input type="file" id="cpp-alumno-foto-input" data-alumno-id="${alumno.id}" style="display: none;" accept="image/*">
                     </div>
                     <div class="cpp-alumno-name-container editing">
@@ -385,12 +389,21 @@
                 calificacionesHtml += '</div></div>';
             }
 
+            const footerHtml = `
+                <div class="cpp-ficha-footer">
+                    <button type="button" id="cpp-eliminar-alumno-global-btn" class="cpp-btn cpp-btn-danger" data-alumno-id="${alumno.id}">
+                        <span class="dashicons dashicons-trash"></span> Eliminar Alumno Permanentemente
+                    </button>
+                </div>
+            `;
+
             const finalHtml = `
                 <div class="cpp-alumno-ficha-card">
                     ${personalDataHtml}
                     ${clasesHtml}
                     ${visualDataHtml}
                     ${calificacionesHtml}
+                    ${footerHtml}
                 </div>`;
 
             $container.html(finalHtml);
@@ -727,6 +740,11 @@
                         cpp.utils.showToast(response.data.message);
                         this.handleSearch();
                         $('#cpp-alumnos-view-main').html(this.getInitialMainContentHtml());
+
+                        // Forzar la recarga del cuaderno si está activo
+                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
+                        }
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -870,6 +888,45 @@
                         reject('Error de conexión al subir la foto.');
                     }
                 });
+            });
+        },
+
+        handleRegenerateAvatar: function(e) {
+            const alumnoId = $(e.currentTarget).data('alumno-id');
+            if (!alumnoId) return;
+
+            // Generar un seed aleatorio para asegurar un avatar diferente
+            const randomSeed = Math.random().toString(36).substring(2, 15);
+            const newFotoUrl = `https://api.dicebear.com/8.x/avataaars/svg?seed=${randomSeed}`;
+
+            // Actualizar la imagen en la UI
+            $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
+
+            // Guardar en la base de datos
+            this.saveAvatarUrl(alumnoId, newFotoUrl);
+        },
+
+        saveAvatarUrl: function(alumnoId, fotoUrl) {
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_update_alumno_avatar',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: alumnoId,
+                    foto_url: fotoUrl
+                },
+                success: (response) => {
+                    if (response.success) {
+                        cpp.utils.showToast('Avatar actualizado.');
+                    } else {
+                        cpp.utils.showToast('Error al guardar el avatar.', 'error');
+                    }
+                },
+                error: () => {
+                     cpp.utils.showToast('Error de conexión.', 'error');
+                }
             });
         }
     };
