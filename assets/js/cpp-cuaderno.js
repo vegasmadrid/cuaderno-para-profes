@@ -401,6 +401,13 @@
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
+            const scrollContainer = document.querySelector('.cpp-cuaderno-main-content-classroom');
+            let scrollLeft = 0, scrollTop = 0;
+            if (scrollContainer) {
+                scrollLeft = scrollContainer.scrollLeft;
+                scrollTop = scrollContainer.scrollTop;
+            }
+
             const isFinalView = evaluacionId === 'final';
             // Estos botones ahora están en la barra superior, pero podemos mantener la lógica de visibilidad aquí
             // $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
@@ -456,6 +463,11 @@
                             self.updateSortButton(response.data.sort_order);
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
+
+                            if (scrollContainer) {
+                                scrollContainer.scrollLeft = scrollLeft;
+                                scrollContainer.scrollTop = scrollTop;
+                            }
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno. Respuesta inesperada.';
                             if (response && response.data && response.data.message) { errorMsg = response.data.message; }
