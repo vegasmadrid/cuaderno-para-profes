@@ -19,6 +19,7 @@
         notaAprobado: 50, // Default, se actualiza al cargar la clase
         programadorInicializado: false,
         lastActiveTab: 'cuaderno',
+        savedScroll: null,
 
         // --- Propiedades para la paleta de símbolos ---
         availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', '📝', '❓', '⭐'],
@@ -456,6 +457,16 @@
                             self.updateSortButton(response.data.sort_order);
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
+
+                            // Restaurar la posición del scroll si existe
+                            if (self.savedScroll) {
+                                const $scrollContainer = $('.cpp-cuaderno-tabla-wrapper');
+                                if ($scrollContainer.length) {
+                                    $scrollContainer.scrollTop(self.savedScroll.top);
+                                    $scrollContainer.scrollLeft(self.savedScroll.left);
+                                    self.savedScroll = null; // Limpiar después de usar
+                                }
+                            }
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno. Respuesta inesperada.';
                             if (response && response.data && response.data.message) { errorMsg = response.data.message; }
@@ -503,6 +514,7 @@
                 error: function() { if (typeof callback === 'function') callback(false); }
             });
         },
+
         
         limpiarErrorNotaInput: function(inputElement){ const $input = $(inputElement); $input.removeClass('cpp-nota-error cpp-nota-guardada'); $input.closest('td').find('.cpp-nota-validation-message').hide().text(''); },
         guardarNotaDesdeInput: function(event, callbackFn) { const $input = $(this); const alumnoId = $input.data('alumno-id'); const actividadId = $input.data('actividad-id'); const notaMaxima = parseFloat($input.data('nota-maxima')); let notaStr = $input.val().trim(); const $td = $input.closest('td'); const $validationMessage = $td.find('.cpp-nota-validation-message'); cpp.cuaderno.limpiarErrorNotaInput(this); if (notaStr !== '') { const match = notaStr.match(/[0-9,.]+/); const notaNum = match ? parseFloat(match[0].replace(',', '.')) : NaN; if (!isNaN(notaNum)) { if (notaNum < 0 || notaNum > notaMaxima) { $validationMessage.text(`Nota 0-${notaMaxima}`).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); return; } } } const originalNota = $input.data('original-nota') || ''; if (notaStr === originalNota && event && event.type === 'blur') { if (typeof callbackFn === 'function') callbackFn(true, false); return; } $input.prop('disabled', true); $validationMessage.hide().text(''); const ajaxData = { action: 'cpp_guardar_calificacion_alumno', nonce: cppFrontendData.nonce, alumno_id: alumnoId, actividad_id: actividadId, nota: notaStr, evaluacion_id: cpp.currentEvaluacionId }; $.ajax({ url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData, success: function(response) { if (response && response.success) { $input.addClass('cpp-nota-guardada'); if (response.data) { const $notaFinalCell = $(`#cpp-nota-final-alumno-${alumnoId}`); $notaFinalCell.text(response.data.nota_final_alumno_display); if (response.data.is_incomplete) { $notaFinalCell.attr('data-is-incomplete', 'true'); $notaFinalCell.attr('data-used-categories', JSON.stringify(response.data.used_categories)); $notaFinalCell.attr('data-missing-categories', JSON.stringify(response.data.missing_categories)); if ($notaFinalCell.find('.cpp-warning-icon').length === 0) { $notaFinalCell.append(' <span class="cpp-warning-icon" title="Nota incompleta">⚠️</span>'); } } else { $notaFinalCell.removeAttr('data-is-incomplete'); $notaFinalCell.removeAttr('data-used-categories'); $notaFinalCell.removeAttr('data-missing-categories'); $notaFinalCell.find('.cpp-warning-icon').remove(); } } let displayNota = notaStr; const numMatch = notaStr.match(/^[0-9,.]*$/); if (numMatch) { const num = parseFloat(notaStr.replace(',', '.')); if (!isNaN(num)) { displayNota = (num % 1 !== 0) ? num.toFixed(2) : String(parseInt(num)); } } $input.val(displayNota); $input.data('original-nota', displayNota); setTimeout(function() { $input.removeClass('cpp-nota-guardada'); }, 1500); if (typeof callbackFn === 'function') callbackFn(true, true); } else { const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error desconocido al guardar.'; $validationMessage.text(errorMsg).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); } }, error: function() { $validationMessage.text('Error de conexión').show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); }, complete: function() { $input.prop('disabled', false); } }); },

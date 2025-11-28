@@ -89,6 +89,17 @@
             }
             if(event) event.preventDefault();
 
+            // Guardar la posición del scroll antes de hacer nada más
+            if (cpp.cuaderno) {
+                const $scrollContainer = $('.cpp-cuaderno-tabla-wrapper');
+                if ($scrollContainer.length) {
+                    cpp.cuaderno.savedScroll = {
+                        top: $scrollContainer.scrollTop(),
+                        left: $scrollContainer.scrollLeft()
+                    };
+                }
+            }
+
             const $actividadTh = $(elementClicked);
             const $actividadDataContainer = $actividadTh.find('.cpp-editable-activity-name');
 
