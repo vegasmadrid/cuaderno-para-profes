@@ -401,6 +401,24 @@
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
+            const scrollSelectors = [
+                '.cpp-main-tabs-content',
+                '.cpp-cuaderno-tabla-wrapper',
+                '.cpp-cuaderno-main-content-classroom',
+                'body'
+            ];
+            const savedScrollPositions = [];
+            scrollSelectors.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) {
+                    savedScrollPositions.push({
+                        selector: selector,
+                        scrollLeft: el.scrollLeft,
+                        scrollTop: el.scrollTop
+                    });
+                }
+            });
+
             const isFinalView = evaluacionId === 'final';
             // Estos botones ahora están en la barra superior, pero podemos mantener la lógica de visibilidad aquí
             // $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
@@ -456,6 +474,16 @@
                             self.updateSortButton(response.data.sort_order);
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
+
+                            setTimeout(() => {
+                                savedScrollPositions.forEach(pos => {
+                                    const el = document.querySelector(pos.selector);
+                                    if (el) {
+                                        el.scrollLeft = pos.scrollLeft;
+                                        el.scrollTop = pos.scrollTop;
+                                    }
+                                });
+                            }, 0);
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno. Respuesta inesperada.';
                             if (response && response.data && response.data.message) { errorMsg = response.data.message; }
