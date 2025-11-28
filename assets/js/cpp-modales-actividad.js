@@ -89,6 +89,17 @@
             }
             if(event) event.preventDefault();
 
+            // Guardar la posición del scroll antes de hacer nada más
+            if (cpp.cuaderno) {
+                const $scrollContainer = $('.cpp-cuaderno-tabla-wrapper');
+                if ($scrollContainer.length) {
+                    cpp.cuaderno.savedScroll = {
+                        top: $scrollContainer.scrollTop(),
+                        left: $scrollContainer.scrollLeft()
+                    };
+                }
+            }
+
             const $actividadTh = $(elementClicked);
             const $actividadDataContainer = $actividadTh.find('.cpp-editable-activity-name');
 
@@ -400,13 +411,15 @@
 
         bindEvents: function() {
             console.log("Binding Modals Actividades events...");
-            const $modal = $('#cpp-modal-actividad-evaluable-cuaderno');
+            const $document = $(document);
             
-            $modal.on('submit', '#cpp-form-actividad-evaluable-cuaderno', (e) => { 
+            // Usar delegación de eventos desde un elemento estático como 'document'
+            $document.on('submit', '#cpp-form-actividad-evaluable-cuaderno', (e) => {
                 this.guardar(e); 
             });
 
-            $modal.on('click', '#cpp-eliminar-actividad-btn-modal', (e) => {
+            // La delegación también es una buena práctica aquí
+            $document.on('click', '#cpp-eliminar-actividad-btn-modal', (e) => {
                 e.preventDefault();
                 this.eliminar();
             });
