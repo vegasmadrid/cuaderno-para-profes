@@ -140,8 +140,10 @@ function cpp_ajax_save_alumno_details() {
     $datos = [
         'nombre' => isset($_POST['nombre']) ? sanitize_text_field($_POST['nombre']) : '',
         'apellidos' => isset($_POST['apellidos']) ? sanitize_text_field($_POST['apellidos']) : '',
-        'foto' => isset($_POST['foto']) ? sanitize_url($_POST['foto']) : '',
+        'foto' => isset($_POST['foto_url']) ? sanitize_url($_POST['foto_url']) : '',
     ];
+
+    $clases_ids = isset($_POST['clases_ids']) ? (array)$_POST['clases_ids'] : null;
 
     if (empty($datos['nombre']) || empty($datos['apellidos'])) {
         wp_send_json_error(['message' => 'El nombre y los apellidos son obligatorios.']);
@@ -150,9 +152,18 @@ function cpp_ajax_save_alumno_details() {
     if ($alumno_id > 0) { // Actualizar
         $result = cpp_actualizar_alumno($alumno_id, $user_id, $datos);
         if ($result === false) {
-            wp_send_json_error(['message' => 'Error al actualizar el alumno.']);
+            wp_send_json_error(['message' => 'Error al actualizar los datos del alumno.']);
         }
         $new_alumno_id = $alumno_id;
+
+        // Si se han enviado clases, actualizarlas
+        if ($clases_ids !== null) {
+            $clases_result = cpp_actualizar_clases_de_alumno($new_alumno_id, $user_id, $clases_ids);
+            if (!$clases_result['success']) {
+                wp_send_json_error(['message' => $clases_result['error'] ?? 'Error al actualizar las clases.']);
+            }
+        }
+
     } else { // Crear
         if (cpp_alumno_existe($user_id, $datos['nombre'], $datos['apellidos'])) {
             wp_send_json_error(['message' => 'Ya existe un alumno con ese nombre y apellidos.']);
@@ -165,26 +176,6 @@ function cpp_ajax_save_alumno_details() {
 
     $alumno_guardado = cpp_obtener_alumno_por_id($new_alumno_id, $user_id);
     wp_send_json_success(['message' => 'Alumno guardado correctamente.', 'alumno' => $alumno_guardado]);
-}
-
-add_action('wp_ajax_cpp_update_alumno_clases', 'cpp_ajax_update_alumno_clases');
-function cpp_ajax_update_alumno_clases() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    $user_id = get_current_user_id();
-    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
-    $clases_ids = isset($_POST['clases_ids']) ? (array)$_POST['clases_ids'] : [];
-
-    if (empty($alumno_id)) {
-        wp_send_json_error(['message' => 'ID de alumno no válido.']);
-    }
-
-    $result = cpp_actualizar_clases_de_alumno($alumno_id, $user_id, $clases_ids);
-
-    if (!$result['success']) {
-        wp_send_json_error(['message' => $result['error'] ?? 'Error al actualizar las clases del alumno.']);
-    }
-
-    wp_send_json_success(['message' => 'Clases del alumno actualizadas.']);
 }
 
 
