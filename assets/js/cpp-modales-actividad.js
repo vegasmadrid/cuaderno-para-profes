@@ -211,11 +211,15 @@
                             CppProgramadorApp.refreshCurrentView();
                         }
 
-                        // Always refresh gradebook as it's a separate view
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                        if (actividadIdEditar && response.data.actividad && cpp.cuaderno && typeof cpp.cuaderno.actualizarHeaderActividad === 'function') {
+                            // Si es una edición y tenemos el objeto de vuelta, hacemos la actualización optimista.
+                            cpp.cuaderno.actualizarHeaderActividad(response.data.actividad);
+                        } else if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                            // Si es una actividad nueva o no tenemos el objeto para la actualización optimista, recargamos.
                             let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
                             cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
                         }
+
 
                         // Tutorial compatibility
                         if (cpp.tutorial && cpp.tutorial.isActive && cpp.tutorial.currentStep === 10) {
