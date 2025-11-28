@@ -44,14 +44,11 @@
             $document.on('click', '.cpp-alumno-list-item', this.handleAlumnoClick.bind(this));
             $document.on('click', '#cpp-crear-nuevo-alumno-global-btn, #cpp-crear-nuevo-alumno-global-btn-top', this.handleNewAlumnoClick.bind(this));
             $document.on('submit', '#cpp-ficha-alumno-form', this.handleSaveAlumnoDetails.bind(this)); // Para nuevos alumnos
-            $document.on('click', '#cpp-update-clases-btn', this.handleUpdateAlumnoClases.bind(this));
+            $document.on('click', '#cpp-unified-save-btn', this.handleUnifiedSave.bind(this));
             $document.on('click', '#cpp-eliminar-alumno-global-btn', this.handleDeleteAlumno.bind(this));
             $document.on('change', '#cpp-alumnos-class-filter', this.handleSearch.bind(this));
 
             // Listeners para edición en el sitio
-            $document.on('click', '#cpp-edit-alumno-btn', this.toggleEditMode.bind(this, true));
-            $document.on('click', '#cpp-cancel-edit-btn', this.toggleEditMode.bind(this, false));
-            $document.on('click', '#cpp-save-alumno-btn', this.handleSaveInline.bind(this));
             $document.on('click', '#cpp-alumno-foto-editable', this.handleChangeFoto.bind(this));
             $document.on('change', '#cpp-alumno-foto-input', this.handleUploadFoto.bind(this));
             $document.on('click', '#cpp-regenerate-avatar-btn', this.handleRegenerateAvatar.bind(this));
@@ -299,7 +296,14 @@
             const seed = alumno.id || encodeURIComponent(alumno.nombre) + '+' + encodeURIComponent(alumno.apellidos);
             const fotoUrl = alumno.foto || `https://api.dicebear.com/8.x/avataaars/svg?seed=${seed}`;
 
-            let personalDataHtml = `
+            const checkboxes = data.todas_las_clases.map(clase => `
+                <label>
+                    <input type="checkbox" name="clases_ids[]" value="${clase.id}" ${data.clases_del_alumno_ids.includes(clase.id) ? 'checked' : ''}>
+                    ${clase.nombre}
+                </label>
+            `).join('');
+
+            const unifiedFormHtml = `
                 <div class="cpp-alumno-ficha-header">
                     <div class="cpp-alumno-avatar-container">
                         <img src="${fotoUrl}" alt="Foto de ${alumno.nombre}" class="cpp-alumno-avatar-large" id="cpp-alumno-foto-editable" data-alumno-id="${alumno.id}" title="Haz clic para cambiar la foto">
@@ -312,29 +316,18 @@
                         <input type="text" class="cpp-editable-field-input" data-field="nombre" value="${alumno.nombre}" placeholder="Nombre">
                         <input type="text" class="cpp-editable-field-input" data-field="apellidos" value="${alumno.apellidos}" placeholder="Apellidos">
                     </div>
-                    <div id="cpp-edit-actions-container">
-                         <button id="cpp-save-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-saved"></span> Guardar</button>
-                    </div>
-                </div>`;
+                </div>
+                <div class="cpp-ficha-section">
+                    <h3>Asignar a Clases</h3>
+                    <div class="cpp-clases-checkbox-container">${checkboxes}</div>
+                </div>
+                <div class="cpp-form-actions" style="text-align: right; margin-top: 20px;">
+                    <button type="button" id="cpp-unified-save-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}">
+                        <span class="dashicons dashicons-saved"></span> Guardar Cambios
+                    </button>
+                </div>
+            `;
 
-            let clasesHtml = '';
-            if (!isNew) {
-                const checkboxes = data.todas_las_clases.map(clase => `
-                    <label>
-                        <input type="checkbox" name="clases_ids[]" value="${clase.id}" ${data.clases_del_alumno_ids.includes(clase.id) ? 'checked' : ''}>
-                        ${clase.nombre}
-                    </label>
-                `).join('');
-
-                clasesHtml = `
-                    <div class="cpp-ficha-section">
-                        <h3>Asignar a Clases</h3>
-                        <div class="cpp-clases-checkbox-container">${checkboxes}</div>
-                        <div class="cpp-form-actions">
-                            <button type="button" id="cpp-update-clases-btn" class="cpp-btn" data-alumno-id="${alumno.id}">Actualizar Clases</button>
-                        </div>
-                    </div>`;
-            }
 
             let visualDataHtml = `
                 <div id="cpp-alumno-visual-data" class="cpp-ficha-section">
@@ -399,8 +392,9 @@
 
             const finalHtml = `
                 <div class="cpp-alumno-ficha-card">
-                    ${personalDataHtml}
-                    ${clasesHtml}
+                    <form id="cpp-unified-alumno-form">
+                        ${unifiedFormHtml}
+                    </form>
                     ${visualDataHtml}
                     ${calificacionesHtml}
                     ${footerHtml}
@@ -417,7 +411,7 @@
                     .map(claseData => mapNombreClaseAId[claseData.clase_nombre])
                     .filter(id => id !== undefined);
 
-                $('#cpp-update-clases-btn').data({
+                $('#cpp-unified-save-btn').data({
                     'initial-ids': data.clases_del_alumno_ids,
                     'ids-with-grades': idsWithGrades
                 });
@@ -673,9 +667,12 @@
             });
         },
 
-        handleUpdateAlumnoClases: function(e) {
+        handleUnifiedSave: function(e) {
             const $button = $(e.currentTarget);
             const alumnoId = $button.data('alumno-id');
+            const self = this;
+
+            // Lógica de advertencia (se ejecuta antes de cualquier acción)
             const initialIds = $button.data('initial-ids') || [];
             const idsWithGrades = $button.data('ids-with-grades') || [];
             const newClasesIds = $('input[name="clases_ids[]"]:checked').map(function() {
@@ -686,35 +683,58 @@
 
             if (unselectedWithGrades.length > 0) {
                 if (!confirm('ADVERTENCIA:\n\nEstás a punto de desasignar al alumno de clases donde ya tiene calificaciones. Si guardas, esas notas se eliminarán PERMANENTEMENTE.\n\n¿Continuar?')) {
-                    return;
+                    return; // Detener el guardado si el usuario cancela
                 }
             }
 
             cpp.utils.showSpinner();
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_update_alumno_clases',
-                    nonce: cppFrontendData.nonce,
-                    alumno_id: alumnoId,
+
+            // Paso 1: Comprobar si hay una nueva foto para subir
+            const fileInput = document.getElementById('cpp-alumno-foto-input');
+            const fotoFile = (fileInput && fileInput.files.length > 0) ? fileInput.files[0] : null;
+
+            const getFotoUrl = fotoFile
+                ? self.uploadFotoForAlumno(alumnoId, fotoFile) // Si hay archivo, subirlo
+                : Promise.resolve($('#cpp-alumno-foto-editable').attr('src')); // Si no, usar la URL actual
+
+            getFotoUrl.then(fotoUrl => {
+                // Paso 2: Recolectar el resto de los datos
+                const newData = {
+                    nombre: $('.cpp-editable-field-input[data-field="nombre"]').val(),
+                    apellidos: $('.cpp-editable-field-input[data-field="apellidos"]').val(),
+                    foto_url: fotoUrl,
                     clases_ids: newClasesIds
-                },
-                success: (response) => {
-                    cpp.utils.hideSpinner();
-                    if (response.success) {
-                        cpp.utils.showToast(response.data.message);
-                        this.handleSearch();
-                        this.displayAlumnoFicha(alumnoId);
-                    } else {
-                        alert(`Error: ${response.data.message}`);
+                };
+
+                // Paso 3: Enviar todos los datos al backend
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_save_alumno_details',
+                        nonce: cppFrontendData.nonce,
+                        alumno_id: alumnoId,
+                        ...newData
+                    },
+                    success: (response) => {
+                        cpp.utils.hideSpinner();
+                        if (response.success) {
+                            cpp.utils.showToast(response.data.message);
+                            self.handleSearch();
+                            self.displayAlumnoFicha(alumnoId);
+                        } else {
+                            alert(`Error: ${response.data.message}`);
+                        }
+                    },
+                    error: () => {
+                        cpp.utils.hideSpinner();
+                        alert('Error de conexión.');
                     }
-                },
-                error: () => {
-                    cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
-                }
+                });
+            }).catch(errorMsg => {
+                cpp.utils.hideSpinner();
+                alert(`Error al subir la foto: ${errorMsg}`);
             });
         },
 
@@ -766,76 +786,6 @@
                 </div>`;
         },
 
-        toggleEditMode: function(enable) {
-            const $nameContainer = $('.cpp-alumno-name-container');
-            if (enable) {
-                // Entrar en modo edición
-                $nameContainer.addClass('editing');
-                $('.cpp-editable-field').each(function() {
-                    const $h2 = $(this);
-                    const currentValue = $h2.text();
-                    const fieldName = $h2.data('field');
-                    const $input = $(`<input type="text" class="cpp-editable-field-input" data-field="${fieldName}" value="${currentValue}">`);
-                    $input.data('original-value', currentValue); // Guardar valor original
-                    $h2.after($input);
-                });
-                $('#cpp-edit-alumno-btn').hide();
-                $('#cpp-edit-actions-container').show();
-            } else {
-                // Salir del modo edición (Cancelar)
-                $nameContainer.removeClass('editing');
-                $('.cpp-editable-field-input').each(function() {
-                    const $input = $(this);
-                    const originalValue = $input.data('original-value');
-                    const fieldName = $input.data('field');
-                    $(`#cpp-alumno-${fieldName}-display`).text(originalValue); // Restaurar texto original
-                    $input.remove();
-                });
-                $('#cpp-edit-alumno-btn').show();
-                $('#cpp-edit-actions-container').hide();
-            }
-        },
-
-        handleSaveInline: function(e) {
-            const $button = $(e.currentTarget);
-            const alumnoId = $button.data('alumno-id');
-
-            const newData = {
-                nombre: $('.cpp-editable-field-input[data-field="nombre"]').val(),
-                apellidos: $('.cpp-editable-field-input[data-field="apellidos"]').val(),
-            };
-
-            cpp.utils.showSpinner();
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_save_alumno_details',
-                    nonce: cppFrontendData.nonce,
-                    alumno_id: alumnoId,
-                    ...newData
-                },
-                success: (response) => {
-                    cpp.utils.hideSpinner();
-                    if (response.success) {
-                        cpp.utils.showToast(response.data.message);
-                        // Actualizar UI sin recargar todo
-                        $('#cpp-alumno-nombre-display').text(newData.nombre);
-                        $('#cpp-alumno-apellidos-display').text(newData.apellidos);
-                        this.toggleEditMode(false); // Salir del modo edición
-                        this.handleSearch(); // Actualizar la lista de la izquierda
-                    } else {
-                        alert(`Error: ${response.data.message}`);
-                    }
-                },
-                error: () => {
-                    cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
-                }
-            });
-        },
-
         handleChangeFoto: function(e) {
             // Simula un clic en el input de archivo oculto
             $('#cpp-alumno-foto-input').click();
@@ -845,21 +795,16 @@
             const fileInput = e.currentTarget;
             if (fileInput.files.length === 0) return;
 
-            const alumnoId = $(fileInput).data('alumno-id');
             const file = fileInput.files[0];
+            const reader = new FileReader();
 
-            cpp.utils.showSpinner();
+            reader.onload = function(event) {
+                // Solo actualiza la imagen en la UI, no la sube al servidor aún.
+                $('#cpp-alumno-foto-editable').attr('src', event.target.result);
+                cpp.utils.showToast('Avatar previsualizado. Pulsa "Guardar Cambios" para confirmar.');
+            };
 
-            this.uploadFotoForAlumno(alumnoId, file)
-                .then(newFotoUrl => {
-                    cpp.utils.hideSpinner();
-                    cpp.utils.showToast('Foto actualizada.');
-                    $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
-                })
-                .catch(errorMsg => {
-                    cpp.utils.hideSpinner();
-                    alert(errorMsg);
-                });
+            reader.readAsDataURL(file);
         },
 
         uploadFotoForAlumno: function(alumnoId, file) {
@@ -901,34 +846,8 @@
 
             // Actualizar la imagen en la UI
             $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
-
-            // Guardar en la base de datos
-            this.saveAvatarUrl(alumnoId, newFotoUrl);
+            cpp.utils.showToast('Avatar cambiado. Pulsa "Guardar Cambios" para confirmar.');
         },
-
-        saveAvatarUrl: function(alumnoId, fotoUrl) {
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_update_alumno_avatar',
-                    nonce: cppFrontendData.nonce,
-                    alumno_id: alumnoId,
-                    foto_url: fotoUrl
-                },
-                success: (response) => {
-                    if (response.success) {
-                        cpp.utils.showToast('Avatar actualizado.');
-                    } else {
-                        cpp.utils.showToast('Error al guardar el avatar.', 'error');
-                    }
-                },
-                error: () => {
-                     cpp.utils.showToast('Error de conexión.', 'error');
-                }
-            });
-        }
     };
 
 })(jQuery);
