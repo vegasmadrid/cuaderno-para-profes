@@ -73,7 +73,8 @@ function cpp_ajax_get_resumen_data()
 
         foreach ($alumnos as $alumno) {
             // 3. Calcular la nota media final del alumno, respetando la configuración de la clase
-            $mediaAlumno = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+            $mediaAlumnoResult = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+            $mediaAlumno = $mediaAlumnoResult['nota'];
 
             $sumaNotasClase += $mediaAlumno;
             $sumaNotasGlobal += $mediaAlumno;
