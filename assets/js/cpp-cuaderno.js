@@ -100,7 +100,7 @@
         },
 
         actualizarHeaderActividad: function(actividad) {
-            if (!actividad || !actividad.id) {
+            if (!actividad || typeof actividad.id === 'undefined') {
                 console.error("actualizarHeaderActividad: Datos de actividad no válidos.", actividad);
                 return;
             }
@@ -110,43 +110,51 @@
             if ($headerContainer.length) {
                 const $editableDiv = $headerContainer.find('.cpp-editable-activity-name');
 
-                $editableDiv.data('nombre-actividad', actividad.nombre_actividad);
-                $editableDiv.attr('data-nombre-actividad', actividad.nombre_actividad);
+                // Actualizar atributos de datos solo si existen en el objeto de respuesta
+                if (typeof actividad.nombre_actividad !== 'undefined') {
+                    $editableDiv.data('nombre-actividad', actividad.nombre_actividad).attr('data-nombre-actividad', actividad.nombre_actividad);
+                }
+                if (typeof actividad.categoria_id !== 'undefined') {
+                    $editableDiv.data('categoria-id', actividad.categoria_id).attr('data-categoria-id', actividad.categoria_id);
+                }
+                if (typeof actividad.nota_maxima !== 'undefined') {
+                    $editableDiv.data('nota-maxima', actividad.nota_maxima).attr('data-nota-maxima', actividad.nota_maxima);
+                }
+                if (typeof actividad.fecha_actividad !== 'undefined') {
+                    $editableDiv.data('fecha-actividad', actividad.fecha_actividad).attr('data-fecha-actividad', actividad.fecha_actividad);
+                }
+                if (typeof actividad.descripcion_actividad !== 'undefined') {
+                    $editableDiv.data('descripcion-actividad', actividad.descripcion_actividad).attr('data-descripcion-actividad', actividad.descripcion_actividad);
+                }
+                if (typeof actividad.sesion_id !== 'undefined') {
+                    $editableDiv.data('sesion-id', actividad.sesion_id).attr('data-sesion-id', actividad.sesion_id);
+                }
 
-                $editableDiv.data('categoria-id', actividad.categoria_id);
-                $editableDiv.attr('data-categoria-id', actividad.categoria_id);
+                // Actualizar contenido visual
+                if (typeof actividad.nombre_actividad !== 'undefined') {
+                    $editableDiv.text(actividad.nombre_actividad).attr('title', `Editar Actividad: ${actividad.nombre_actividad}`);
+                }
 
-                $editableDiv.data('nota-maxima', actividad.nota_maxima);
-                $editableDiv.attr('data-nota-maxima', actividad.nota_maxima);
-
-                $editableDiv.data('fecha-actividad', actividad.fecha_actividad);
-                $editableDiv.attr('data-fecha-actividad', actividad.fecha_actividad);
-
-                $editableDiv.data('descripcion-actividad', actividad.descripcion_actividad);
-                $editableDiv.attr('data-descripcion-actividad', actividad.descripcion_actividad);
-
-                $editableDiv.data('sesion-id', actividad.sesion_id);
-                $editableDiv.attr('data-sesion-id', actividad.sesion_id);
-
-                $editableDiv.text(actividad.nombre_actividad);
-                $editableDiv.attr('title', `Editar Actividad: ${actividad.nombre_actividad}`);
-
-                const $notaMaxContainer = $headerContainer.find('.cpp-actividad-notamax');
-                if ($notaMaxContainer.length) {
-                    $notaMaxContainer.text(`(Sobre ${this.formatearNotaDisplay(actividad.nota_maxima)})`);
+                if (typeof actividad.nota_maxima !== 'undefined') {
+                    const $notaMaxContainer = $headerContainer.find('.cpp-actividad-notamax');
+                    if ($notaMaxContainer.length) {
+                        $notaMaxContainer.text(`(Sobre ${this.formatearNotaDisplay(actividad.nota_maxima)})`);
+                    }
                 }
 
                 const $fechaContainer = $headerContainer.find('.cpp-actividad-fecha');
-                 if ($fechaContainer.length && actividad.fecha_actividad) {
-                    const fecha = new Date(actividad.fecha_actividad.split(' ')[0] + 'T00:00:00');
-                    const formattedDate = `${('0' + fecha.getDate()).slice(-2)}/${('0' + (fecha.getMonth() + 1)).slice(-2)}/${fecha.getFullYear()}`;
-                    $fechaContainer.text(formattedDate);
-                } else if ($fechaContainer.length) {
-                    $fechaContainer.text('');
+                if ($fechaContainer.length) {
+                    if (actividad.fecha_actividad) {
+                        const fecha = new Date(actividad.fecha_actividad.split(' ')[0] + 'T00:00:00');
+                        const formattedDate = `${('0' + fecha.getDate()).slice(-2)}/${('0' + (fecha.getMonth() + 1)).slice(-2)}/${fecha.getFullYear()}`;
+                        $fechaContainer.text(formattedDate);
+                    } else {
+                        $fechaContainer.text('');
+                    }
                 }
 
             } else {
-                console.warn(`No se encontró la cabecera para la actividad con ID ${actividad.id} para actualizar. Puede que no esté en la vista actual.`);
+                console.warn(`No se encontró la cabecera para la actividad con ID ${actividad.id} para actualizar.`);
             }
         },
 

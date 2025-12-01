@@ -211,13 +211,23 @@
                             CppProgramadorApp.refreshCurrentView();
                         }
 
-                        if (actividadIdEditar && response.data.actividad && cpp.cuaderno && typeof cpp.cuaderno.actualizarHeaderActividad === 'function') {
-                            // Si es una edición y tenemos el objeto de vuelta, hacemos la actualización optimista.
-                            cpp.cuaderno.actualizarHeaderActividad(response.data.actividad);
-                        } else if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
-                            // Si es una actividad nueva o no tenemos el objeto para la actualización optimista, recargamos.
-                            let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
-                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
+                        // Decidir si hacer una actualización optimista o una recarga completa.
+                        if (actividadIdEditar) {
+                            // Siempre intentar la actualización optimista al editar.
+                            if (response.data.actividad && cpp.cuaderno && typeof cpp.cuaderno.actualizarHeaderActividad === 'function') {
+                                cpp.cuaderno.actualizarHeaderActividad(response.data.actividad);
+                            } else {
+                                // Fallback a recarga completa si la actualización optimista no es posible al editar.
+                                console.warn("No se pudo realizar la actualización optimista. Recargando el cuaderno completo.");
+                                let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
+                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
+                            }
+                        } else {
+                            // Siempre recargar al crear una nueva actividad.
+                            if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                                let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
+                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
+                            }
                         }
 
 
