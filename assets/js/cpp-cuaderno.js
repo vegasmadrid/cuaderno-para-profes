@@ -100,7 +100,7 @@
         },
 
         actualizarHeaderActividad: function(actividad) {
-            if (!actividad || !actividad.id) {
+            if (!actividad || typeof actividad.id === 'undefined') {
                 console.error("actualizarHeaderActividad: Datos de actividad no válidos.", actividad);
                 return;
             }
@@ -110,44 +110,113 @@
             if ($headerContainer.length) {
                 const $editableDiv = $headerContainer.find('.cpp-editable-activity-name');
 
-                $editableDiv.data('nombre-actividad', actividad.nombre_actividad);
-                $editableDiv.attr('data-nombre-actividad', actividad.nombre_actividad);
+                // Actualizar atributos de datos solo si existen en el objeto de respuesta
+                if (typeof actividad.nombre_actividad !== 'undefined') {
+                    $editableDiv.data('nombre-actividad', actividad.nombre_actividad).attr('data-nombre-actividad', actividad.nombre_actividad);
+                }
+                if (typeof actividad.categoria_id !== 'undefined') {
+                    $editableDiv.data('categoria-id', actividad.categoria_id).attr('data-categoria-id', actividad.categoria_id);
+                }
+                if (typeof actividad.nota_maxima !== 'undefined') {
+                    $editableDiv.data('nota-maxima', actividad.nota_maxima).attr('data-nota-maxima', actividad.nota_maxima);
+                }
+                if (typeof actividad.fecha_actividad !== 'undefined') {
+                    $editableDiv.data('fecha-actividad', actividad.fecha_actividad).attr('data-fecha-actividad', actividad.fecha_actividad);
+                }
+                if (typeof actividad.descripcion_actividad !== 'undefined') {
+                    $editableDiv.data('descripcion-actividad', actividad.descripcion_actividad).attr('data-descripcion-actividad', actividad.descripcion_actividad);
+                }
+                if (typeof actividad.sesion_id !== 'undefined') {
+                    $editableDiv.data('sesion-id', actividad.sesion_id).attr('data-sesion-id', actividad.sesion_id);
+                }
 
-                $editableDiv.data('categoria-id', actividad.categoria_id);
-                $editableDiv.attr('data-categoria-id', actividad.categoria_id);
+                // Actualizar contenido visual
+                if (typeof actividad.nombre_actividad !== 'undefined') {
+                    $editableDiv.text(actividad.nombre_actividad).attr('title', `Editar Actividad: ${actividad.nombre_actividad}`);
+                }
 
-                $editableDiv.data('nota-maxima', actividad.nota_maxima);
-                $editableDiv.attr('data-nota-maxima', actividad.nota_maxima);
-
-                $editableDiv.data('fecha-actividad', actividad.fecha_actividad);
-                $editableDiv.attr('data-fecha-actividad', actividad.fecha_actividad);
-
-                $editableDiv.data('descripcion-actividad', actividad.descripcion_actividad);
-                $editableDiv.attr('data-descripcion-actividad', actividad.descripcion_actividad);
-
-                $editableDiv.data('sesion-id', actividad.sesion_id);
-                $editableDiv.attr('data-sesion-id', actividad.sesion_id);
-
-                $editableDiv.text(actividad.nombre_actividad);
-                $editableDiv.attr('title', `Editar Actividad: ${actividad.nombre_actividad}`);
-
-                const $notaMaxContainer = $headerContainer.find('.cpp-actividad-notamax');
-                if ($notaMaxContainer.length) {
-                    $notaMaxContainer.text(`(Sobre ${this.formatearNotaDisplay(actividad.nota_maxima)})`);
+                if (typeof actividad.nota_maxima !== 'undefined') {
+                    const $notaMaxContainer = $headerContainer.find('.cpp-actividad-notamax');
+                    if ($notaMaxContainer.length) {
+                        $notaMaxContainer.text(`(Sobre ${this.formatearNotaDisplay(actividad.nota_maxima)})`);
+                    }
                 }
 
                 const $fechaContainer = $headerContainer.find('.cpp-actividad-fecha');
-                 if ($fechaContainer.length && actividad.fecha_actividad) {
-                    const fecha = new Date(actividad.fecha_actividad.split(' ')[0] + 'T00:00:00');
-                    const formattedDate = `${('0' + fecha.getDate()).slice(-2)}/${('0' + (fecha.getMonth() + 1)).slice(-2)}/${fecha.getFullYear()}`;
-                    $fechaContainer.text(formattedDate);
-                } else if ($fechaContainer.length) {
-                    $fechaContainer.text('');
+                if ($fechaContainer.length) {
+                    if (actividad.fecha_actividad) {
+                        const fecha = new Date(actividad.fecha_actividad.split(' ')[0] + 'T00:00:00');
+                        const formattedDate = `${('0' + fecha.getDate()).slice(-2)}/${('0' + (fecha.getMonth() + 1)).slice(-2)}/${fecha.getFullYear()}`;
+                        $fechaContainer.text(formattedDate);
+                    } else {
+                        $fechaContainer.text('');
+                    }
+                }
+
+                if (typeof actividad.nombre_categoria !== 'undefined') {
+                    const $categoriaContainer = $headerContainer.find('.cpp-actividad-categoria');
+                    if ($categoriaContainer.length) {
+                        if (actividad.nombre_categoria && actividad.nombre_categoria !== 'Sin categoría' && actividad.nombre_categoria !== 'General') {
+                            // Idealmente, el backend también devolvería el porcentaje actualizado si pudiera cambiar.
+                            // Por ahora, solo actualizamos el nombre.
+                            $categoriaContainer.text(actividad.nombre_categoria).show();
+                        } else {
+                            $categoriaContainer.text('').hide();
+                        }
+                    }
+                }
+
+                // Actualizar el color de fondo
+                if (typeof actividad.categoria_color !== 'undefined' && this.currentCalculoNota === 'ponderada') {
+                    let newBgColor = '';
+                    if (actividad.categoria_color && actividad.nombre_categoria !== 'Sin categoría' && actividad.nombre_categoria !== 'General') {
+                        newBgColor = actividad.categoria_color;
+                    } else {
+                        // Fallback al color suave de la clase si la categoría es general o no tiene color
+                        const claseColor = $('.cpp-main-tabs-content').css('background-color'); // Una forma de obtener el color de la clase
+                        newBgColor = cpp.utils.lightenColor(claseColor, 92); // Usar una función de utilidad para aclarar
+                    }
+
+                    if (newBgColor) {
+                        const newTextColor = cpp.utils.getContrastingTextColor(newBgColor);
+                        $headerContainer.css({
+                            'background-color': newBgColor,
+                            'color': newTextColor
+                        });
+                        // También actualizar el color de los elementos hijos que lo puedan necesitar
+                        $headerContainer.find('.cpp-actividad-notamax, .cpp-actividad-categoria, .cpp-actividad-fecha').css('color', newTextColor);
+                    }
                 }
 
             } else {
-                console.warn(`No se encontró la cabecera para la actividad con ID ${actividad.id} para actualizar. Puede que no esté en la vista actual.`);
+                console.warn(`No se encontró la cabecera para la actividad con ID ${actividad.id} para actualizar.`);
             }
+        },
+
+        actualizarNotasFinalesAlumnos: function(notasFinales) {
+            if (!notasFinales || !Array.isArray(notasFinales)) {
+                console.warn("actualizarNotasFinalesAlumnos: No se proporcionaron datos de notas válidos.");
+                return;
+            }
+
+            notasFinales.forEach(notaInfo => {
+                const $cell = $(`#cpp-nota-final-alumno-${notaInfo.alumno_id}`);
+                if ($cell.length) {
+                    $cell.text(notaInfo.nota_final_display);
+
+                    if (notaInfo.is_incomplete) {
+                        $cell.attr('data-is-incomplete', 'true');
+                        $cell.attr('data-used-categories', JSON.stringify(notaInfo.used_categories));
+                        $cell.attr('data-missing-categories', JSON.stringify(notaInfo.missing_categories));
+                        if ($cell.find('.cpp-warning-icon').length === 0) {
+                            $cell.append(' <span class="cpp-warning-icon" title="Nota incompleta">⚠️</span>');
+                        }
+                    } else {
+                        $cell.removeAttr('data-is-incomplete data-used-categories data-missing-categories');
+                        $cell.find('.cpp-warning-icon').remove();
+                    }
+                }
+            });
         },
 
         bindEvents: function() {

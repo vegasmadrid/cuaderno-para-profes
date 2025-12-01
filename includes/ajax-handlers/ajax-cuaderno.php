@@ -335,7 +335,12 @@ function cpp_ajax_guardar_actividad_evaluable() {
         'orden' => $orden
     ];
 
+    $categoria_cambiada = false;
     if ($actividad_id_editar > 0) {
+        $actividad_original = $wpdb->get_row($wpdb->prepare("SELECT categoria_id FROM {$wpdb->prefix}cpp_actividades_evaluables WHERE id = %d", $actividad_id_editar));
+        if ($actividad_original && $actividad_original->categoria_id != $categoria_id) {
+            $categoria_cambiada = true;
+        }
         $resultado_guardado = cpp_actualizar_actividad_evaluable($actividad_id_editar, $datos_actividad);
         $mensaje_exito = 'Actividad actualizada.';
     } else {
@@ -349,6 +354,8 @@ function cpp_ajax_guardar_actividad_evaluable() {
         $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
         $actividad = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d AND user_id = %d", $final_actividad_id, $user_id), ARRAY_A);
 
+        $response_data = ['message' => $mensaje_exito];
+
         if ($actividad) {
             $actividades_a_hidratar = [$actividad];
             $actividades_hidratadas = cpp_hidratar_fechas_de_actividades($actividades_a_hidratar, $actividad['clase_id'], $actividad['evaluacion_id'], $user_id);
@@ -356,11 +363,46 @@ function cpp_ajax_guardar_actividad_evaluable() {
             $actividad_completa['tipo'] = 'evaluable';
             $actividad_completa['titulo'] = $actividad_completa['nombre_actividad'];
 
-            wp_send_json_success(['message' => $mensaje_exito, 'actividad' => $actividad_completa]);
+            // Añadir el nombre y color de la categoría a la respuesta
+            $categoria_info = $wpdb->get_row($wpdb->prepare("SELECT nombre_categoria, color FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE id = %d", $categoria_id));
+            if ($categoria_info) {
+                $actividad_completa['nombre_categoria'] = $categoria_info->nombre_categoria;
+                $actividad_completa['categoria_color'] = $categoria_info->color;
+            }
+
+            $response_data['actividad'] = $actividad_completa;
         } else {
-            // Fallback for safety
-            wp_send_json_success(['message' => $mensaje_exito, 'new_id' => $final_actividad_id]);
+            $response_data['new_id'] = $final_actividad_id;
         }
+
+        if ($categoria_cambiada) {
+            $alumnos = cpp_obtener_alumnos_clase($clase_id);
+            $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+            $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
+            $notas_finales_actualizadas = [];
+
+            foreach ($alumnos as $alumno) {
+                $calculo_result = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
+                $nota_reescalada = ($calculo_result['nota'] / 100) * $base_nota_final_clase;
+
+                $decimales_nota_final = 2;
+                 if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_reescalada == floor($nota_reescalada)) {
+                    $decimales_nota_final = 0;
+                }
+
+                $notas_finales_actualizadas[] = [
+                    'alumno_id' => $alumno['id'],
+                    'nota_final_display' => cpp_formatear_nota_display($nota_reescalada, $decimales_nota_final),
+                    'is_incomplete' => $calculo_result['is_incomplete'],
+                    'used_categories' => $calculo_result['used_categories'],
+                    'missing_categories' => $calculo_result['missing_categories']
+                ];
+            }
+            $response_data['notas_finales_actualizadas'] = $notas_finales_actualizadas;
+        }
+
+        wp_send_json_success($response_data);
+
     } else {
         wp_send_json_error(['message' => 'Error al procesar la actividad.', 'debug_sesion_id' => $sesion_id]);
     }
