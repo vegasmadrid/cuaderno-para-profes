@@ -311,6 +311,7 @@
                     <div class="cpp-alumno-name-container editing">
                         <input type="text" class="cpp-editable-field-input" data-field="nombre" value="${alumno.nombre}" placeholder="Nombre">
                         <input type="text" class="cpp-editable-field-input" data-field="apellidos" value="${alumno.apellidos}" placeholder="Apellidos">
+                        <input type="hidden" id="cpp-alumno-foto-url-input" value="${fotoUrl}">
                     </div>
                     <div id="cpp-edit-actions-container">
                          <button id="cpp-save-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-saved"></span> Guardar</button>
@@ -803,6 +804,7 @@
             const newData = {
                 nombre: $('.cpp-editable-field-input[data-field="nombre"]').val(),
                 apellidos: $('.cpp-editable-field-input[data-field="apellidos"]').val(),
+                foto: $('#cpp-alumno-foto-url-input').val(),
             };
 
             cpp.utils.showSpinner();
@@ -855,6 +857,7 @@
                     cpp.utils.hideSpinner();
                     cpp.utils.showToast('Foto actualizada.');
                     $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
+                    $('#cpp-alumno-foto-url-input').val(newFotoUrl);
                 })
                 .catch(errorMsg => {
                     cpp.utils.hideSpinner();
@@ -899,36 +902,12 @@
             const randomSeed = Math.random().toString(36).substring(2, 15);
             const newFotoUrl = `https://api.dicebear.com/8.x/avataaars/svg?seed=${randomSeed}`;
 
-            // Actualizar la imagen en la UI
+            // Actualizar la imagen en la UI y el campo oculto
             $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
+            $('#cpp-alumno-foto-url-input').val(newFotoUrl);
 
-            // Guardar en la base de datos
-            this.saveAvatarUrl(alumnoId, newFotoUrl);
+            cpp.utils.showToast('Avatar regenerado. Pulsa "Guardar" para aplicar el cambio.');
         },
-
-        saveAvatarUrl: function(alumnoId, fotoUrl) {
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_update_alumno_avatar',
-                    nonce: cppFrontendData.nonce,
-                    alumno_id: alumnoId,
-                    foto_url: fotoUrl
-                },
-                success: (response) => {
-                    if (response.success) {
-                        cpp.utils.showToast('Avatar actualizado.');
-                    } else {
-                        cpp.utils.showToast('Error al guardar el avatar.', 'error');
-                    }
-                },
-                error: () => {
-                     cpp.utils.showToast('Error de conexión.', 'error');
-                }
-            });
-        }
     };
 
 })(jQuery);
