@@ -823,9 +823,6 @@
                     if (response.success) {
                         cpp.utils.showToast(response.data.message);
                         // Actualizar UI sin recargar todo
-                        $('#cpp-alumno-nombre-display').text(newData.nombre);
-                        $('#cpp-alumno-apellidos-display').text(newData.apellidos);
-                        this.toggleEditMode(false); // Salir del modo edición
                         this.handleSearch(); // Actualizar la lista de la izquierda
 
                         // Forzar la recarga del cuaderno si está activo
