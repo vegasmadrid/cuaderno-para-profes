@@ -827,6 +827,11 @@
                         $('#cpp-alumno-apellidos-display').text(newData.apellidos);
                         this.toggleEditMode(false); // Salir del modo edición
                         this.handleSearch(); // Actualizar la lista de la izquierda
+
+                        // Forzar la recarga del cuaderno si está activo
+                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
+                        }
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
