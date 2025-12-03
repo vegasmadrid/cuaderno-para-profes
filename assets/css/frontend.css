@@ -796,7 +796,10 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 .cpp-btn-danger { background-color: #d93025 !important; color: white !important; border-color: #d93025 !important; }
 .cpp-btn-danger:hover, .cpp-btn-danger:focus { background-color: #c5221f !important; border-color: #b01c1a !important; box-shadow: 0 1px 1px 0 rgba(217,48,37,0.45), 0 1px 3px 1px rgba(217,48,37,0.3) !important; color: white !important; }
 .cpp-btn-secondary { background-color: #6c757d; color: white; border-color: #6c757d; }
-.cpp-btn-secondary:hover, .cpp-btn-secondary:focus { background-color: #5a6268; border-color: #545b62; }
+.cpp-btn-secondary:hover { background-color: #5a6268; border-color: #545b62; }
+.cpp-btn-secondary:focus {
+    outline: none;
+}
 .cpp-alumno-actions .cpp-btn, .cpp-categoria-actions .cpp-btn { background-color: transparent; padding: 0; height: 32px; width: 32px; border-color: transparent; border-radius: 50%; color: #5f6368; }
 .cpp-alumno-actions .cpp-btn .dashicons, .cpp-categoria-actions .cpp-btn .dashicons { font-size: 20px; color: inherit !important; }
 .cpp-btn-eliminar-categoria.cpp-btn-icon .dashicons { font-size: 20px !important; }
