@@ -851,7 +851,6 @@ td.cpp-semana-td-hora {
 
 /* Fix for pin button turning black on click */
 #cpp-programador-pin-sesion-btn:active,
-#cpp-programador-pin-sesion-btn:focus,
 #cpp-programador-pin-sesion-btn.active {
     background-color: #e8f0fe !important;
     color: #1a73e8 !important;
