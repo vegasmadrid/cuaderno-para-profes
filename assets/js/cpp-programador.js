@@ -2150,20 +2150,45 @@
                         }
                     }
 
-                    // --- FIX: Forzar la actualización del item para que el icono de la chincheta aparezca/desaparezca ---
+                    // --- FIX v3: Optimizar rendimiento y combinar actualización visual ---
                     const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                     if (list) {
+                        // 1. Redibujar el item para que el icono de la chincheta aparezca/desaparezca al instante.
                         const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
                         if (listItem) {
                              const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                              const displayIndex = sesionesFiltradas.findIndex(s => s.id == sesion.id);
                              listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
                         }
+
+                        // 2. Recalcular fechas y reordenar toda la lista para evitar el salto (de forma optimizada).
+                        this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
+                            this.sesiones.sort((a, b) => {
+                                if (!a.fecha_calculada) return 1;
+                                if (!b.fecha_calculada) return -1;
+                                return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
+                            });
+
+                            const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                            // Optimización: Crear un mapa de los elementos del DOM para evitar búsquedas repetitivas.
+                            const itemsMap = new Map();
+                            list.querySelectorAll('.cpp-sesion-list-item').forEach(item => {
+                                itemsMap.set(item.dataset.sesionId, item);
+                            });
+
+                            sesionesFiltradas.forEach((s, index) => {
+                                const item = itemsMap.get(s.id.toString());
+                                if (item) {
+                                    item.style.order = index;
+                                    const numberElement = item.querySelector('.cpp-sesion-number');
+                                    if (numberElement) {
+                                        numberElement.textContent = `${index + 1}.`;
+                                    }
+                                }
+                            });
+                        });
                     }
-
-                    // 2. Refrescar solo las fechas, que a su vez actualiza el HTML del item
-                    this.fetchAndApplyFechas(this.currentEvaluacionId);
-
 
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
