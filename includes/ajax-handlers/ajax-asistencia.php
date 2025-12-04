@@ -3,6 +3,10 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+// Incluir dependencias de consultas a la base de datos
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
+
+
 // --- ACCIONES AJAX PARA ASISTENCIA ---
 
 add_action('wp_ajax_cpp_obtener_alumnos_para_asistencia', 'cpp_ajax_obtener_alumnos_para_asistencia_handler');
@@ -18,7 +22,8 @@ function cpp_ajax_obtener_alumnos_para_asistencia_handler() {
         wp_send_json_error(['message' => 'ID de clase no proporcionado.']);
         return;
     }
-    $alumnos = cpp_get_alumnos_by_clase_id($clase_id);
+    // La función correcta es cpp_obtener_alumnos_clase y espera más argumentos
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos');
 
     if (is_array($alumnos)) {
         wp_send_json_success(['alumnos' => $alumnos]);
