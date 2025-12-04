@@ -3,6 +3,10 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+// Incluir dependencias de consultas a la base de datos
+require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-alumnos.php';
+
+
 // --- ACCIONES AJAX PARA ASISTENCIA ---
 
 add_action('wp_ajax_cpp_obtener_alumnos_para_asistencia', 'cpp_ajax_obtener_alumnos_para_asistencia_handler');

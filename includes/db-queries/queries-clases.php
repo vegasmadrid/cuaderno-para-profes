@@ -422,5 +422,8 @@ function cpp_es_propietario_clase($clase_id, $user_id) {
         "SELECT user_id FROM $tabla_clases WHERE id = %d",
         $clase_id
     ));
-    return $owner_id == $user_id;
+
+    // Comparamos el owner_id con el user_id actual para asegurar la propiedad.
+    // También es importante asegurarse de que el owner_id no sea null (por si la clase no existe).
+    return $owner_id !== null && $owner_id == $user_id;
 }
