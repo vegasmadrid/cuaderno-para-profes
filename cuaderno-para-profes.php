@@ -41,14 +41,37 @@ function cpp_cargar_assets() {
         return;
     }
 
-    $plugin_version = defined('WP_DEBUG') && WP_DEBUG ? time() : CPP_VERSION;
+    // --- ESTRATEGIA DE CACHE BUSTING ---
+    // Se usa filemtime para forzar la recarga de assets solo cuando cambian.
+    // En un entorno de producción real, una constante de versión sería más performante,
+    // pero para desarrollo y depuración esto es más robusto.
+    $ver_core = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-core.js');
+    $ver_utils = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-utils.js');
+    $ver_sidebar = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-sidebar.js');
+    $ver_programador = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-programador.js');
+    $ver_cuaderno = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-cuaderno.js');
+    $ver_mod_general = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-general.js');
+    $ver_mod_clase = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-clase.js');
+    $ver_config = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-configuracion.js');
+    $ver_resumen = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-resumen.js');
+    $ver_mod_actividad = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-actividad.js');
+    $ver_mod_excel = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-excel.js');
+    $ver_mod_asistencia = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-asistencia.js');
+    $ver_mod_ficha = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-ficha-alumno.js');
+    $ver_mod_eval = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-modales-evaluacion.js');
+    $ver_alumnos = filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-alumnos.js');
+    $ver_css_main = filemtime(CPP_PLUGIN_DIR . 'assets/css/frontend.css');
+    $ver_css_prog = filemtime(CPP_PLUGIN_DIR . 'assets/css/cpp-programador.css');
+    $ver_css_alumnos = filemtime(CPP_PLUGIN_DIR . 'assets/css/cpp-alumnos.css');
+    $ver_css_resumen = filemtime(CPP_PLUGIN_DIR . 'assets/css/cpp-resumen.css');
+
 
     // Estilos
     wp_enqueue_style('dashicons');
-    wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
-    wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], filemtime(CPP_PLUGIN_DIR . 'assets/css/cpp-programador.css'));
-    wp_enqueue_style('cpp-alumnos-css', CPP_PLUGIN_URL . 'assets/css/cpp-alumnos.css', [], $plugin_version);
-    wp_register_style('cpp-resumen-css', CPP_PLUGIN_URL . 'assets/css/cpp-resumen.css', [], $plugin_version);
+    wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $ver_css_main);
+    wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $ver_css_prog);
+    wp_enqueue_style('cpp-alumnos-css', CPP_PLUGIN_URL . 'assets/css/cpp-alumnos.css', [], $ver_css_alumnos);
+    wp_register_style('cpp-resumen-css', CPP_PLUGIN_URL . 'assets/css/cpp-resumen.css', [], $ver_css_resumen);
 
     // Scripts de librerías
     wp_enqueue_script('jquery-ui-sortable');
@@ -57,25 +80,23 @@ function cpp_cargar_assets() {
     wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.0', true);
 
     // Scripts del plugin
-    wp_enqueue_script('cpp-core-js', CPP_PLUGIN_URL . 'assets/js/cpp-core.js', ['jquery', 'jquery-ui-sortable'], $plugin_version, true);
-    wp_enqueue_script('cpp-utils-js', CPP_PLUGIN_URL . 'assets/js/cpp-utils.js', ['cpp-core-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-core-js', CPP_PLUGIN_URL . 'assets/js/cpp-core.js', ['jquery', 'jquery-ui-sortable'], $ver_core, true);
+    wp_enqueue_script('cpp-utils-js', CPP_PLUGIN_URL . 'assets/js/cpp-utils.js', ['cpp-core-js'], $ver_utils, true);
+    wp_enqueue_script('cpp-modales-clase-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-clase.js', ['cpp-core-js'], $ver_mod_clase, true);
+    wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js', 'cpp-modales-clase-js'], $ver_sidebar, true);
 
-    // El programador ahora es una dependencia del cuaderno
-    wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-programador.js'), true);
-    wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $ver_programador, true);
+    wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js', 'cpp-programador-js'], $ver_cuaderno, true);
 
-    // Módulos de modales y configuración
-    wp_enqueue_script('cpp-modales-general-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-general.js', ['cpp-core-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-clase-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-clase.js', ['cpp-core-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-configuracion-js', CPP_PLUGIN_URL . 'assets/js/cpp-configuracion.js', ['cpp-core-js'], $plugin_version, true);
-    wp_register_script('cpp-resumen-js', CPP_PLUGIN_URL . 'assets/js/cpp-resumen.js', ['cpp-core-js', 'chart-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-actividad-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-actividad.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-excel-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-excel.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-general-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-general.js', ['cpp-core-js'], $ver_mod_general, true);
+    wp_enqueue_script('cpp-configuracion-js', CPP_PLUGIN_URL . 'assets/js/cpp-configuracion.js', ['cpp-core-js'], $ver_config, true);
+    wp_register_script('cpp-resumen-js', CPP_PLUGIN_URL . 'assets/js/cpp-resumen.js', ['cpp-core-js', 'chart-js'], $ver_resumen, true);
+    wp_enqueue_script('cpp-modales-actividad-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-actividad.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $ver_mod_actividad, true);
+    wp_enqueue_script('cpp-modales-excel-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-excel.js', ['cpp-core-js', 'cpp-modales-general-js'], $ver_mod_excel, true);
+    wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $ver_mod_asistencia, true);
+    wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $ver_mod_ficha, true);
+    wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $ver_mod_eval, true);
+    wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-js'], $ver_alumnos, true);
 
     // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
