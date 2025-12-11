@@ -46,7 +46,7 @@ function cpp_cargar_assets() {
     // Estilos
     wp_enqueue_style('dashicons');
     wp_enqueue_style('cpp-frontend-css', CPP_PLUGIN_URL . 'assets/css/frontend.css', [], $plugin_version);
-    wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], filemtime(CPP_PLUGIN_DIR . 'assets/css/cpp-programador.css'));
+    wp_enqueue_style('cpp-programador-css', CPP_PLUGIN_URL . 'assets/css/cpp-programador.css', [], $plugin_version);
     wp_enqueue_style('cpp-alumnos-css', CPP_PLUGIN_URL . 'assets/css/cpp-alumnos.css', [], $plugin_version);
     wp_register_style('cpp-resumen-css', CPP_PLUGIN_URL . 'assets/css/cpp-resumen.css', [], $plugin_version);
 
@@ -59,13 +59,12 @@ function cpp_cargar_assets() {
     // Scripts del plugin
     wp_enqueue_script('cpp-core-js', CPP_PLUGIN_URL . 'assets/js/cpp-core.js', ['jquery', 'jquery-ui-sortable'], $plugin_version, true);
     wp_enqueue_script('cpp-utils-js', CPP_PLUGIN_URL . 'assets/js/cpp-utils.js', ['cpp-core-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-clase-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-clase.js', ['cpp-core-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js', 'cpp-modales-clase-js'], $plugin_version, true);
 
-    // El programador ahora es una dependencia del cuaderno
-    wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], filemtime(CPP_PLUGIN_DIR . 'assets/js/cpp-programador.js'), true);
+    wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $plugin_version, true);
     wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
 
-    // Módulos de modales y configuración
     wp_enqueue_script('cpp-modales-general-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-general.js', ['cpp-core-js'], $plugin_version, true);
     wp_enqueue_script('cpp-configuracion-js', CPP_PLUGIN_URL . 'assets/js/cpp-configuracion.js', ['cpp-core-js'], $plugin_version, true);
     wp_register_script('cpp-resumen-js', CPP_PLUGIN_URL . 'assets/js/cpp-resumen.js', ['cpp-core-js', 'chart-js'], $plugin_version, true);

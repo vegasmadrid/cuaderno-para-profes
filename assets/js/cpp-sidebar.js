@@ -13,7 +13,6 @@
         isSidebarVisible: false,
 
         init: function() {
-            console.log("CPP Sidebar Module Initializing...");
             this.initSortableClases();
             this.bindEvents();
         },
@@ -141,21 +140,18 @@
         },
 
         bindEvents: function() {
-            console.log("Binding Sidebar events...");
             const $document = $(document);
 
             $document.on('click', '#cpp-a1-menu-btn-toggle', function(e) {
-                console.log("Botón Menú Clases (#cpp-a1-menu-btn-toggle) CLICADO.");
                 e.preventDefault();
                 e.stopPropagation();
-                cpp.sidebar.toggle(); 
+                cpp.sidebar.toggle();
             });
-            
-            $document.on('click', '#cpp-sidebar-close-btn', function(e) { 
-                console.log("Botón Cerrar Sidebar (#cpp-sidebar-close-btn) CLICADO.");
+
+            $document.on('click', '#cpp-sidebar-close-btn', function(e) {
                 e.stopPropagation();
                 if (cpp.sidebar.isSidebarVisible) {
-                    cpp.sidebar.toggle(); 
+                    cpp.sidebar.toggle();
                 }
             });
 
@@ -186,10 +182,10 @@
                 }
             });
             $document.on('click', '#cpp-btn-nueva-clase-sidebar', function(e){ 
-                if (cpp.config && typeof cpp.config.showModalParaCrear === 'function') {
-                    cpp.config.showModalParaCrear(e);
+                if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaCrear === 'function') {
+                    cpp.modals.clase.showParaCrear(e);
                 } else {
-                    console.error("Función cpp.config.showModalParaCrear no encontrada.");
+                    console.error("Función cpp.modals.clase.showParaCrear no encontrada.");
                 }
             });
         }
