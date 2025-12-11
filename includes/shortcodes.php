@@ -467,8 +467,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             do_action('cpp_modal_symbol_palette_outputted');
         }
 
-
-        <?php
         // --- Modal para Crear/Editar Clase (Consolidado) ---
         if (empty(did_action('cpp_modal_clase_outputted'))) {
         ?>
