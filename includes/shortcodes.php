@@ -468,20 +468,32 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         }
 
 
-        if (empty(did_action('cpp_modal_crear_clase_outputted'))) {
-            ?>
-            <div class="cpp-modal" id="cpp-modal-crear-clase">
-                <div class="cpp-modal-content">
-                    <span class="cpp-modal-close">&times;</span>
-                    <h2 id="cpp-modal-crear-clase-titulo">Crear Nueva Clase</h2>
-                    <form id="cpp-form-crear-clase" novalidate>
+        <?php
+        // --- Modal para Crear/Editar Clase (Consolidado) ---
+        if (empty(did_action('cpp_modal_clase_outputted'))) {
+        ?>
+        <div class="cpp-modal" id="cpp-modal-clase">
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2 id="cpp-modal-clase-titulo">Crear Nueva Clase</h2>
+
+                <div class="cpp-tab-nav">
+                    <a href="#" class="cpp-tab-link active" data-tab="cpp-tab-general">General</a>
+                    <a href="#" class="cpp-tab-link" data-tab="cpp-tab-evaluaciones">Evaluaciones</a>
+                    <a href="#" class="cpp-tab-link" data-tab="cpp-tab-ponderaciones">Ponderaciones</a>
+                </div>
+
+                <form id="cpp-form-clase" novalidate>
+                    <input type="hidden" id="clase_id_editar" name="clase_id_editar" value="">
+
+                    <div id="cpp-tab-general" class="cpp-tab-content active">
                         <div class="cpp-form-group">
-                            <label for="nombre_clase_modal_crear">Nombre de la clase (máx. 16 caracteres):</label>
-                            <input type="text" id="nombre_clase_modal_crear" name="nombre_clase" required maxlength="16">
+                            <label for="nombre_clase_modal">Nombre de la clase (máx. 16 caracteres):</label>
+                            <input type="text" id="nombre_clase_modal" name="nombre_clase" required maxlength="16">
                         </div>
-                        <div class="cpp-form-group">
+                        <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container">
                             <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="rellenar_clase_ejemplo_modal_crear" name="rellenar_clase_ejemplo">
+                                <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
                                 Rellenar la clase con datos de ejemplo
                             </label>
                         </div>
@@ -492,26 +504,45 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <span class="cpp-color-swatch <?php echo (strtoupper($hex) === strtoupper($default_class_color_hex)) ? 'selected' : ''; ?>" data-color="<?php echo esc_attr($hex); ?>" style="background-color: <?php echo esc_attr($hex); ?>;" title="<?php echo esc_attr($name); ?>"></span>
                                 <?php endforeach; ?>
                             </div>
-                            <input type="hidden" id="color_clase_hidden_modal_crear" name="color_clase" value="<?php echo esc_attr($default_class_color_hex); ?>">
+                            <input type="hidden" id="color_clase_hidden_modal" name="color_clase" value="<?php echo esc_attr($default_class_color_hex); ?>">
                         </div>
                         <div class="cpp-form-group">
-                            <label for="base_nota_final_clase_modal_crear">Base Nota Final (ej: 10, 100):</label>
-                            <input type="number" id="base_nota_final_clase_modal_crear" name="base_nota_final_clase" value="100" step="0.01" min="1" required>
+                            <label for="base_nota_final_clase_modal">Base Nota Final (ej: 10, 100):</label>
+                            <input type="number" id="base_nota_final_clase_modal" name="base_nota_final_clase" value="100.00" step="0.01" min="1" required>
                             <small>La nota final de los alumnos se calculará sobre esta base.</small>
                         </div>
                         <div class="cpp-form-group">
-                            <label for="nota_aprobado_clase_modal_crear">Nota mínima para aprobar (ej: 5, 50):</label>
-                            <input type="number" id="nota_aprobado_clase_modal_crear" name="nota_aprobado_clase" value="50" step="0.01" min="0" required>
+                            <label for="nota_aprobado_clase_modal">Nota mínima para aprobar (ej: 5, 50):</label>
+                            <input type="number" id="nota_aprobado_clase_modal" name="nota_aprobado_clase" value="50.00" step="0.01" min="0" required>
                             <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
                         </div>
-                        <div class="cpp-modal-actions">
-                            <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
+                    </div>
+
+                    <div id="cpp-tab-evaluaciones" class="cpp-tab-content">
+                        <div id="cpp-clase-modal-evaluaciones-container">
+                            <!-- Contenido de evaluaciones cargado por AJAX -->
                         </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <div id="cpp-tab-ponderaciones" class="cpp-tab-content">
+                         <div id="cpp-clase-modal-ponderaciones-container">
+                            <!-- Contenido de ponderaciones cargado por AJAX -->
+                        </div>
+                    </div>
+
+                    <div class="cpp-modal-actions">
+                        <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-modal-btn" style="display: none; margin-right: auto;">
+                            <span class="dashicons dashicons-trash"></span> Eliminar Clase
+                        </button>
+                        <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-submit-clase-btn-modal">
+                            <span class="dashicons dashicons-saved"></span> Guardar Clase
+                        </button>
+                    </div>
+                </form>
             </div>
-            <?php
-            do_action('cpp_modal_crear_clase_outputted');
+        </div>
+        <?php
+        do_action('cpp_modal_clase_outputted');
         }
 
         if (empty(did_action('cpp_modal_import_students_outputted'))) {
