@@ -27,7 +27,7 @@ const cpp = {
 
         const modulesToInitialize = [
             'utils', 'sidebar', 'cuaderno', 'alumnos',
-            'modals.general', 'config',
+            'modals.general', 'config', 'modals.clase',
             'modals.actividades', 'modals.excel', 'modals.asistencia',
             'modals.fichaAlumno', 'modals.evaluacion'
         ];

@@ -13,7 +13,7 @@
         currentClaseIdForModal: null,
 
         init: function() {
-            console.log("CPP Modals Clase Module Initializing...");
+            this.bindEvents();
         },
 
         resetForm: function() {
