@@ -236,10 +236,16 @@ function cpp_ajax_cargar_cuaderno_clase() {
     }
     $html_cuaderno = ob_get_clean();
     wp_send_json_success([
-        'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db['nombre'], 'color_clase' => $clase_color_actual, 'evaluaciones' => $evaluaciones,
-        'evaluacion_activa_id' => $evaluacion_activa_id, 'calculo_nota' => $metodo_calculo,
-        'base_nota_final' => $base_nota_final_clase, 'nota_aprobado' => floatval($clase_db['nota_aprobado']),
-        'sort_order' => $sort_order
+        'html_cuaderno' => $html_cuaderno,
+        'nombre_clase' => $clase_db['nombre'],
+        'color_clase' => $clase_color_actual,
+        'evaluaciones' => $evaluaciones,
+        'evaluacion_activa_id' => $evaluacion_activa_id,
+        'calculo_nota' => $metodo_calculo,
+        'base_nota_final' => $base_nota_final_clase,
+        'nota_aprobado' => floatval($clase_db['nota_aprobado']),
+        'sort_order' => $sort_order,
+        'has_students' => !empty($alumnos)
     ]);
 }
 

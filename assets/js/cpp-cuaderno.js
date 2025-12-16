@@ -257,6 +257,12 @@
                 }
             });
 
+            // Botón para ir a la pestaña de alumnos desde el mensaje de "no hay alumnos"
+            $document.on('click', '#cpp-btn-ir-a-crear-alumnos', function(e) {
+                e.preventDefault();
+                $('.cpp-main-tab-link[data-tab="alumnos"]').trigger('click');
+            });
+
             $document.on('change', '#cpp-global-evaluacion-selector', function(e) {
                 const nuevaEvaluacionId = $(this).val();
                 if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) {
@@ -542,10 +548,6 @@
             cpp.currentClaseIdCuaderno = claseId;
 
             const isFinalView = evaluacionId === 'final';
-            // Estos botones ahora están en la barra superior, pero podemos mantener la lógica de visibilidad aquí
-            // $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
-            // $('#cpp-a1-import-students-btn').toggle(!isFinalView);
-            // $('#cpp-a1-take-attendance-btn').toggle(!isFinalView);
 
             if (claseId && typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId) {
                 try { localStorage.setItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId, claseId); } catch (e) { console.warn("No se pudo guardar la última clase abierta en localStorage:", e); }
@@ -556,6 +558,7 @@
 
             if (claseId) {
                 $contenidoCuaderno.html('<p class="cpp-cuaderno-cargando">Cargando cuaderno...</p>');
+                $('#cpp-cuaderno-no-alumnos-mensaje').hide();
                 const self = this;
 
                 const ajaxAction = isFinalView ? 'cpp_cargar_vista_final' : 'cpp_cargar_cuaderno_clase';
@@ -569,7 +572,6 @@
                     success: function(response) {
                         if (response && response.success && response.data && typeof response.data.html_cuaderno !== 'undefined') {
 
-                            // Actualizar la barra superior estática con los datos recibidos
                             if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
                                 cpp.utils.updateTopBar({
                                     nombre: response.data.nombre_clase,
@@ -577,10 +579,20 @@
                                 });
                             }
 
-                            // Cargar solo el contenido de la tabla en su contenedor
-                            $contenidoCuaderno.empty().html(response.data.html_cuaderno);
-                            $contenidoCuaderno.attr('data-active-eval', response.data.evaluacion_activa_id);
+                            const tieneAlumnos = response.data.has_students;
 
+                            if (tieneAlumnos) {
+                                $('#cpp-cuaderno-no-alumnos-mensaje').hide();
+                                $contenidoCuaderno.show().empty().html(response.data.html_cuaderno);
+                                self.updateSortButton(response.data.sort_order);
+                                self.clearCellSelection();
+                                self.selectionStartCellInput = null;
+                            } else {
+                                $contenidoCuaderno.hide().empty();
+                                $('#cpp-cuaderno-no-alumnos-mensaje').show();
+                            }
+
+                            $contenidoCuaderno.attr('data-active-eval', response.data.evaluacion_activa_id);
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
                             if (typeof response.data.nota_aprobado !== 'undefined') {
@@ -593,9 +605,6 @@
                             if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
 
-                            self.updateSortButton(response.data.sort_order);
-                            self.clearCellSelection();
-                            self.selectionStartCellInput = null;
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno. Respuesta inesperada.';
                             if (response && response.data && response.data.message) { errorMsg = response.data.message; }
