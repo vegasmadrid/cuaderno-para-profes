@@ -582,13 +582,14 @@
                             const tieneAlumnos = response.data.has_students;
 
                             if (tieneAlumnos) {
+                                $('#cpp-cuaderno-tabla-area').show();
                                 $('#cpp-cuaderno-no-alumnos-mensaje').hide();
-                                $contenidoCuaderno.show().empty().html(response.data.html_cuaderno);
+                                $contenidoCuaderno.html(response.data.html_cuaderno);
                                 self.updateSortButton(response.data.sort_order);
                                 self.clearCellSelection();
                                 self.selectionStartCellInput = null;
                             } else {
-                                $contenidoCuaderno.hide().empty();
+                                $('#cpp-cuaderno-tabla-area').hide();
                                 $('#cpp-cuaderno-no-alumnos-mensaje').show();
                             }
 

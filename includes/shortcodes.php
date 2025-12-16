@@ -319,23 +319,23 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <div class="cpp-cuaderno-mensaje-vacio">
                                         <p class="cpp-cuaderno-cargando">Cargando clase...</p>
                                     </div>
-                                    <div id="cpp-cuaderno-no-alumnos-mensaje" class="cpp-empty-state-container" style="display: none; text-align: center; padding: 40px 20px;">
-                                        <h2 class="cpp-empty-state-title" style="font-size: 24px; color: #333; margin-bottom: 15px;">¡Prepara tu nueva clase para la aventura!</h2>
-                                        <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 15px auto;">
-                                            Tu aula está lista, ¡ahora solo faltan los protagonistas! Antes de poder verlos aquí, necesitas crear sus perfiles en tu fichero de 'Alumnos'.
-                                        </p>
-                                        <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
-                                            Es como crear los cromos de tus superhéroes: una vez que los tienes, ¡puedes llevarlos a cualquier aventura (o clase) que imagines!
-                                        </p>
-                                        <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
-                                            Haz clic en el botón de abajo para empezar a crear tu equipo.
-                                        </p>
-                                        <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-ir-a-crear-alumnos">
-                                            ✨ Crear mis alumnos ahora
-                                        </button>
-                                    </div>
                                 <?php endif; ?>
                             </div>
+                        </div>
+                        <div id="cpp-cuaderno-no-alumnos-mensaje" class="cpp-empty-state-container" style="display: none; text-align: center; padding: 40px 20px;">
+                            <h2 class="cpp-empty-state-title" style="font-size: 24px; color: #333; margin-bottom: 15px;">¡Prepara tu nueva clase para la aventura!</h2>
+                            <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 15px auto;">
+                                Tu aula está lista, ¡ahora solo faltan los protagonistas! Antes de poder verlos aquí, necesitas crear sus perfiles en tu fichero de 'Alumnos'.
+                            </p>
+                            <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
+                                Es como crear los cromos de tus superhéroes: una vez que los tienes, ¡puedes llevarlos a cualquier aventura (o clase) que imagines!
+                            </p>
+                            <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
+                                Haz clic en el botón de abajo para empezar a crear tu equipo.
+                            </p>
+                            <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-ir-a-crear-alumnos">
+                                ✨ Crear mis alumnos ahora
+                            </button>
                         </div>
                     </div>
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
