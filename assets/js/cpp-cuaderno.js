@@ -597,6 +597,15 @@
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
                             $contenidoCuaderno.attr('data-active-eval', response.data.evaluacion_activa_id);
 
+                            // Lógica de visibilidad
+                            if (response.data.has_students) {
+                                $('#cpp-cuaderno-tabla-area').show();
+                                $('#cpp-cuaderno-no-alumnos-mensaje').hide();
+                            } else {
+                                $('#cpp-cuaderno-tabla-area').hide();
+                                $('#cpp-cuaderno-no-alumnos-mensaje').show();
+                            }
+
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
                             if (typeof response.data.nota_aprobado !== 'undefined') {
@@ -949,7 +958,7 @@
                                 self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
                             }
                         } else {
-                            alert('Error: ' + (response.data.message || 'No se pudieron copiar los alumnos.'));
+                            cpp.utils.showToast('Error: ' + (response.data.message || 'No se pudieron copiar los alumnos.'), 'error');
                         }
                     },
                     error: function() {

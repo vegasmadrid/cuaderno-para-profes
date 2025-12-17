@@ -97,20 +97,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
 
     ob_start();
 
-    if (empty($alumnos)) {
-        ?>
-        <div class="cpp-no-alumnos-container">
-            <div class="cpp-no-alumnos-emoji">🚀</div>
-            <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
-            <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
-            <div class="cpp-no-alumnos-actions">
-                <button class="cpp-btn cpp-btn-primary" id="cpp-btn-agregar-alumnos-mano" data-clase-id="<?php echo esc_attr($clase_id); ?>" data-clase-nombre="<?php echo esc_attr($clase_db['nombre']); ?>">
-                    <span class="dashicons dashicons-admin-users"></span> Ingresar alumnos a mano
-                </button>
-            </div>
-        </div>
-        <?php
-    } else {
+    // The main table is now always rendered, and JS will handle visibility.
     ?>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
