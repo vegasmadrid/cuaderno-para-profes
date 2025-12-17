@@ -322,6 +322,26 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <?php endif; ?>
                             </div>
                         </div>
+                        <div id="cpp-cuaderno-no-alumnos-mensaje" class="cpp-empty-state-container" style="display: none; text-align: center; padding: 40px 20px;">
+                            <h2 class="cpp-empty-state-title" style="font-size: 24px; color: #333; margin-bottom: 15px;">🚀 ¡Prepara tu nueva clase para la aventura!</h2>
+                            <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 15px auto;">
+                                Tu aula está lista, ¡ahora solo faltan los protagonistas! Antes de poder verlos aquí, necesitas crear sus perfiles en tu fichero de 'Alumnos'.
+                            </p>
+                            <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
+                                Es como crear los cromos de tus superhéroes: una vez que los tienes, ¡puedes llevarlos a cualquier aventura (o clase) que imagines!
+                            </p>
+                            <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
+                                👇 Haz clic en uno de los botones de abajo para empezar a crear tu equipo.
+                            </p>
+                            <div class="cpp-empty-state-actions" style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+                                <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-ir-a-crear-alumnos">
+                                    ✨ Crear mis alumnos ahora
+                                </button>
+                                <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-btn-copiar-alumnos-otra-clase">
+                                    <span class="dashicons dashicons-admin-page"></span> Copiar de otra clase
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-alumnos" class="cpp-main-tab-content">
@@ -446,6 +466,32 @@ function cpp_shortcode_cuaderno_notas_classroom() {
 
         <?php
         // --- INICIO DE LA SECCIÓN DE MODALES ---
+
+        // Modal para copiar alumnos de otra clase
+        if (empty(did_action('cpp_modal_copy_students_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-copy-students">
+                <div class="cpp-modal-content">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2>Copiar Alumnos de otra Clase</h2>
+                    <p>Selecciona una clase de origen para copiar sus alumnos a la clase actual.</p>
+                    <form id="cpp-form-copy-students">
+                        <div class="cpp-form-group">
+                            <label for="cpp-copy-students-source-class-select">Copiar alumnos desde:</label>
+                            <select id="cpp-copy-students-source-class-select" name="source_class_id" required>
+                                <option value="">Cargando clases...</option>
+                            </select>
+                        </div>
+                        <div class="cpp-modal-actions">
+                            <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-cancel-btn">Cancelar</button>
+                            <button type="submit" class="cpp-btn cpp-btn-primary">Confirmar Copia</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_copy_students_outputted');
+        }
 
         // Modal para la paleta de símbolos
         if (empty(did_action('cpp_modal_symbol_palette_outputted'))) {

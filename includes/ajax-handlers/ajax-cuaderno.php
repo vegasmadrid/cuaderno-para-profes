@@ -97,20 +97,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
 
     ob_start();
 
-    if (empty($alumnos)) {
-        ?>
-        <div class="cpp-no-alumnos-container">
-            <div class="cpp-no-alumnos-emoji">🚀</div>
-            <h3 class="cpp-no-alumnos-titulo">¡Añade tu primer tripulante!</h3>
-            <p class="cpp-no-alumnos-texto">Esta clase todavía no tiene alumnos. ¡Es hora de llenar las sillas y empezar la aventura del conocimiento!</p>
-            <div class="cpp-no-alumnos-actions">
-                <button class="cpp-btn cpp-btn-primary" id="cpp-btn-agregar-alumnos-mano" data-clase-id="<?php echo esc_attr($clase_id); ?>" data-clase-nombre="<?php echo esc_attr($clase_db['nombre']); ?>">
-                    <span class="dashicons dashicons-admin-users"></span> Ingresar alumnos a mano
-                </button>
-            </div>
-        </div>
-        <?php
-    } else {
+    // The main table is now always rendered, and JS will handle visibility.
     ?>
     <div class="cpp-cuaderno-tabla-wrapper">
         <table class="cpp-cuaderno-tabla">
@@ -233,13 +220,18 @@ function cpp_ajax_cargar_cuaderno_clase() {
         </table>
     </div>
     <?php
-    }
     $html_cuaderno = ob_get_clean();
     wp_send_json_success([
-        'html_cuaderno' => $html_cuaderno, 'nombre_clase' => $clase_db['nombre'], 'color_clase' => $clase_color_actual, 'evaluaciones' => $evaluaciones,
-        'evaluacion_activa_id' => $evaluacion_activa_id, 'calculo_nota' => $metodo_calculo,
-        'base_nota_final' => $base_nota_final_clase, 'nota_aprobado' => floatval($clase_db['nota_aprobado']),
-        'sort_order' => $sort_order
+        'html_cuaderno' => $html_cuaderno,
+        'nombre_clase' => $clase_db['nombre'],
+        'color_clase' => $clase_color_actual,
+        'evaluaciones' => $evaluaciones,
+        'evaluacion_activa_id' => $evaluacion_activa_id,
+        'calculo_nota' => $metodo_calculo,
+        'base_nota_final' => $base_nota_final_clase,
+        'nota_aprobado' => floatval($clase_db['nota_aprobado']),
+        'sort_order' => $sort_order,
+        'has_students' => !empty($alumnos)
     ]);
 }
 
