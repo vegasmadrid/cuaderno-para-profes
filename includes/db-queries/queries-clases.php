@@ -187,7 +187,11 @@ function cpp_eliminar_clase_y_alumnos($clase_id, $user_id) {
 
     // Eliminar registros de asistencia
     $wpdb->delete($tabla_asistencia, ['clase_id' => $clase_id], ['%d']);
-    cpp_eliminar_todos_alumnos_clase($clase_id, $user_id); 
+
+    // Desvincular a todos los alumnos de la clase
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $wpdb->delete($tabla_alumnos_clases, ['clase_id' => $clase_id], ['%d']);
+
     $clase_eliminada = $wpdb->delete($tabla_clases, ['id' => $clase_id, 'user_id' => $user_id], ['%d', '%d']);
     return $clase_eliminada;
 }
