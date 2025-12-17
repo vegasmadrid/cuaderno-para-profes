@@ -291,3 +291,94 @@ function cpp_ajax_get_alumno_ranking_in_clase() {
 
     wp_send_json_success($ranking_data);
 }
+
+// --- AJAX HANDLERS PARA COPIAR ALUMNOS ---
+
+add_action('wp_ajax_cpp_get_source_classes_for_copy', 'cpp_ajax_get_source_classes_for_copy');
+function cpp_ajax_get_source_classes_for_copy() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_send_json_error(['message' => 'Error: Usuario no autenticado.']);
+        return;
+    }
+
+    $target_clase_id = isset($_POST['target_clase_id']) ? intval($_POST['target_clase_id']) : 0;
+    if (empty($target_clase_id)) {
+        wp_send_json_error(['message' => 'Clase de destino no especificada.']);
+        return;
+    }
+
+    $all_clases = cpp_obtener_clases_usuario($user_id);
+    if (is_wp_error($all_clases)) {
+        wp_send_json_error(['message' => 'Error al obtener las clases.']);
+        return;
+    }
+
+    // Filtrar la clase de destino para que no aparezca en la lista de origen
+    $source_clases = array_filter($all_clases, function($clase) use ($target_clase_id) {
+        return $clase['id'] != $target_clase_id;
+    });
+
+    // Re-indexar el array para asegurar que sea un array JSON y no un objeto
+    $source_clases = array_values($source_clases);
+
+    wp_send_json_success(['clases' => $source_clases]);
+}
+
+add_action('wp_ajax_cpp_copy_alumnos_to_clase', 'cpp_ajax_copy_alumnos_to_clase');
+function cpp_ajax_copy_alumnos_to_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    global $wpdb;
+    $user_id = get_current_user_id();
+
+    // 1. Validar Entradas
+    $source_clase_id = isset($_POST['source_clase_id']) ? intval($_POST['source_clase_id']) : 0;
+    $target_clase_id = isset($_POST['target_clase_id']) ? intval($_POST['target_clase_id']) : 0;
+
+    if (empty($source_clase_id) || empty($target_clase_id)) {
+        wp_send_json_error(['message' => 'IDs de clase de origen y destino son requeridos.']);
+    }
+
+    // 2. Verificar Permisos
+    if (!cpp_es_propietario_clase($source_clase_id, $user_id) || !cpp_es_propietario_clase($target_clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'Permiso denegado. No eres propietario de una de las clases.']);
+    }
+
+    // 3. Obtener Alumnos de Origen y Destino
+    $alumnos_origen = cpp_obtener_alumnos_clase($source_clase_id);
+    $alumnos_destino_actuales = cpp_obtener_alumnos_clase($target_clase_id);
+    $ids_alumnos_destino = wp_list_pluck($alumnos_destino_actuales, 'id');
+
+    $alumnos_a_copiar = array_filter($alumnos_origen, function($alumno) use ($ids_alumnos_destino) {
+        return !in_array($alumno['id'], $ids_alumnos_destino);
+    });
+
+    if (empty($alumnos_a_copiar)) {
+        wp_send_json_success(['message' => 'No hay alumnos nuevos que copiar. La clase de destino ya los contiene todos.']);
+    }
+
+    // 4. Realizar la Inserción
+    $table_name = $wpdb->prefix . 'cpp_alumnos_clases';
+    $copied_count = 0;
+    foreach ($alumnos_a_copiar as $alumno) {
+        $result = $wpdb->insert(
+            $table_name,
+            [
+                'alumno_id' => $alumno['id'],
+                'clase_id' => $target_clase_id,
+            ],
+            ['%d', '%d']
+        );
+        if ($result) {
+            $copied_count++;
+        }
+    }
+
+    // 5. Enviar Respuesta
+    if ($copied_count > 0) {
+        wp_send_json_success(['message' => "Se han copiado $copied_count alumnos con éxito."]);
+    } else {
+        wp_send_json_error(['message' => 'Ocurrió un error y no se pudieron copiar los alumnos.']);
+    }
+}

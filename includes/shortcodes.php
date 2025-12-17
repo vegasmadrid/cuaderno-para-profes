@@ -333,9 +333,14 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <p class="cpp-empty-state-text" style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto 25px auto;">
                                 Haz clic en el botón de abajo para empezar a crear tu equipo.
                             </p>
-                            <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-ir-a-crear-alumnos">
-                                ✨ Crear mis alumnos ahora
-                            </button>
+                            <div class="cpp-empty-state-actions" style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+                                <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-ir-a-crear-alumnos">
+                                    ✨ Crear mis alumnos ahora
+                                </button>
+                                <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-btn-copiar-alumnos-otra-clase">
+                                    <span class="dashicons dashicons-admin-page"></span> Copiar de otra clase
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
@@ -461,6 +466,32 @@ function cpp_shortcode_cuaderno_notas_classroom() {
 
         <?php
         // --- INICIO DE LA SECCIÓN DE MODALES ---
+
+        // Modal para copiar alumnos de otra clase
+        if (empty(did_action('cpp_modal_copy_students_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-copy-students">
+                <div class="cpp-modal-content">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2>Copiar Alumnos de otra Clase</h2>
+                    <p>Selecciona una clase de origen para copiar sus alumnos a la clase actual.</p>
+                    <form id="cpp-form-copy-students">
+                        <div class="cpp-form-group">
+                            <label for="cpp-copy-students-source-class-select">Copiar alumnos desde:</label>
+                            <select id="cpp-copy-students-source-class-select" name="source_class_id" required>
+                                <option value="">Cargando clases...</option>
+                            </select>
+                        </div>
+                        <div class="cpp-modal-actions">
+                            <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-cancel-btn">Cancelar</button>
+                            <button type="submit" class="cpp-btn cpp-btn-primary">Confirmar Copia</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_copy_students_outputted');
+        }
 
         // Modal para la paleta de símbolos
         if (empty(did_action('cpp_modal_symbol_palette_outputted'))) {
