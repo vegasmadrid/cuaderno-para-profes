@@ -855,6 +855,7 @@
                     cpp.alumnos.enter();
                 }
             }
+        }
     };
 
 })(jQuery);
