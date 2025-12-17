@@ -43,6 +43,7 @@
                         $form.find('#clase_id_editar').val(clase.id);
                         $form.find('#nombre_clase_config').val(clase.nombre);
                         $settingsPage.find('#cpp-class-settings-page-title').text(`Ajustes: ${clase.nombre}`);
+                        $('#cpp-eliminar-clase-config-btn').show();
                         this.handleConfigTabClick(null, targetTab);
                         this.loadEvaluacionesData(claseId);
                     } else {
@@ -175,6 +176,49 @@
             }, 100);
         },
 
+        eliminarDesdeConfig: function(e) {
+            e.preventDefault();
+            const $btn = $(e.currentTarget);
+            const claseId = $('#cpp-form-clase #clase_id_editar').val();
+            const claseNombre = $('#cpp-form-clase #nombre_clase_config').val().trim() || 'esta clase';
+
+            if (!claseId) {
+                alert('Error: No se pudo identificar la clase para eliminar.');
+                return;
+            }
+
+            if (confirm(`¿Estás SEGURO de que quieres eliminar la clase "${claseNombre}"?\n\nATENCIÓN: Esta acción es permanente y no se puede deshacer.`)) {
+                const originalBtnHtml = $btn.html();
+                $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Eliminando...');
+                $('#cpp-submit-clase-btn-config').prop('disabled', true);
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_eliminar_clase',
+                        nonce: cppFrontendData.nonce,
+                        clase_id: claseId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo eliminar la clase.'));
+                            $btn.prop('disabled', false).html(originalBtnHtml);
+                            $('#cpp-submit-clase-btn-config').prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión al intentar eliminar la clase.');
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                        $('#cpp-submit-clase-btn-config').prop('disabled', false);
+                    }
+                });
+            }
+        },
+
         bindEvents: function() {
             const $body = $('body');
             const $classSettingsPage = $('#cpp-class-settings-page-container');
@@ -185,6 +229,7 @@
             $body.on('click', '#cpp-close-general-settings-btn', () => this.hideGeneralSettings());
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
+            $classSettingsPage.on('click', '#cpp-eliminar-clase-config-btn', this.eliminarDesdeConfig.bind(this));
 
             // --- NUEVOS EVENTOS PARA LA PESTAÑA ALUMNOS EN CONFIG ---
             $classSettingsPage.on('click', '.cpp-btn-quitar-de-clase', this.handleQuitarAlumnoDeClase.bind(this));
