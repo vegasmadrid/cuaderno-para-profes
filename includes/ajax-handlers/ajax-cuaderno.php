@@ -220,7 +220,6 @@ function cpp_ajax_cargar_cuaderno_clase() {
         </table>
     </div>
     <?php
-    }
     $html_cuaderno = ob_get_clean();
     wp_send_json_success([
         'html_cuaderno' => $html_cuaderno,
