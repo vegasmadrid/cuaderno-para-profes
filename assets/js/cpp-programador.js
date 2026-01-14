@@ -865,8 +865,15 @@
     },
 
     fetchData(initialClaseId, evaluacionIdToSelect = null, sesionIdToSelect = null) {
+        if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+            cpp.utils.showLoader();
+        }
         this.fetchDataFromServer().then(result => {
             this.processInitialData(result, initialClaseId, evaluacionIdToSelect, sesionIdToSelect);
+        }).finally(() => {
+            if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                cpp.utils.hideLoader();
+            }
         });
     },
 
