@@ -68,7 +68,14 @@ const cpp = {
 
         // Restaurar la última pestaña abierta al final de toda la inicialización
         try {
-            const lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
+            let lastOpenedTab = localStorage.getItem('cpp_last_opened_tab');
+
+            // Lógica para forzar el regreso a la pestaña 'cuaderno'
+            if (lastOpenedTab && lastOpenedTab !== 'cuaderno') {
+                lastOpenedTab = 'cuaderno';
+                localStorage.setItem('cpp_last_opened_tab', 'cuaderno');
+            }
+
             if (lastOpenedTab) {
                 const $targetTab = $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`);
                 if ($targetTab.length && !$targetTab.hasClass('active')) {

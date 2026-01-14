@@ -595,19 +595,6 @@
                 }
             });
 
-            // Restaurar la pestaña al cargar la página
-            try {
-                const lastTab = localStorage.getItem('cpp_last_opened_tab');
-                if (lastTab) {
-                    const $tabLink = $('.cpp-main-tab-link[data-tab="' + lastTab + '"]');
-                    if ($tabLink.length) {
-                        // Usar un pequeño retardo para asegurar que todo esté cargado
-                        setTimeout(() => $tabLink.trigger('click'), 100);
-                    }
-                }
-            } catch (e) {
-                console.warn("No se pudo restaurar la última pestaña abierta desde localStorage:", e);
-            }
         },
 
         updateSortButton: function(sortOrder) {
