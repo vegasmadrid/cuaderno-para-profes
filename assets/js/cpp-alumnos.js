@@ -196,6 +196,11 @@
                 },
                 error: () => {
                     $resultsContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
+                },
+                complete: () => {
+                    if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                        cpp.utils.hideLoader();
+                    }
                 }
             });
         },
@@ -233,10 +238,16 @@
 
         displayAlumnoFicha: function(alumnoId) {
             const $fichaContainer = $('#cpp-alumnos-view-main');
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
             $fichaContainer.html('<p class="cpp-cuaderno-cargando">Cargando ficha...</p>');
 
             if (!alumnoId) {
                 this.renderAlumnoFicha(null);
+                 if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                    cpp.utils.hideLoader();
+                }
                 return;
             }
 
@@ -258,6 +269,11 @@
                 },
                 error: () => {
                     $fichaContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
+                },
+                complete: () => {
+                    if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                        cpp.utils.hideLoader();
+                    }
                 }
             });
         },

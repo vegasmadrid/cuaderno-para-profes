@@ -948,6 +948,11 @@
 
                         if (claseNoCoincide || evaluacionNoCoincide) {
                             CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, globalEvalId);
+                        } else {
+                            // If no data load is needed, just hide the loader
+                            if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                                cpp.utils.hideLoader();
+                            }
                         }
                     }
                 }
