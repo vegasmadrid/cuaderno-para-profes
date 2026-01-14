@@ -255,6 +255,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         </div>
 
         <div class="cpp-cuaderno-main-content-classroom" id="cpp-cuaderno-main-content">
+            <div id="cpp-main-loader" style="display: none;">
+                <div class="cpp-spinner"></div>
+            </div>
             <div class="cpp-fixed-top-bar">
                 <div class="cpp-top-bar-left">
                     <button class="cpp-btn-icon cpp-top-bar-menu-btn" id="cpp-a1-menu-btn-toggle" title="Menú de clases">

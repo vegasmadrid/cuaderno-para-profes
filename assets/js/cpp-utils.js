@@ -80,6 +80,17 @@ cpp.utils = {
         jQuery('#cpp-spinner-overlay').remove();
     },
 
+    // Loader for main content area
+    showLoader: function() {
+        jQuery('#cpp-main-loader').show();
+        jQuery('#cpp-cuaderno-main-content').addClass('cpp-content-loading');
+    },
+
+    hideLoader: function() {
+        jQuery('#cpp-main-loader').hide();
+        jQuery('#cpp-cuaderno-main-content').removeClass('cpp-content-loading');
+    },
+
     showToast: function(message, type = 'success') {
         const $toast = jQuery('<div id="cpp-toast-notification"></div>');
         $toast.text(message);

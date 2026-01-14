@@ -711,9 +711,18 @@
                     error: function(jqXHR, textStatus, errorThrown) {
                         console.error("Error AJAX cargando cuaderno. Status:", textStatus, "Error:", errorThrown, jqXHR.responseText);
                         $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error de conexión al cargar el cuaderno.</p></div>');
+                    },
+                    complete: function() {
+                        // Always hide loader when the request is complete
+                        if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                            cpp.utils.hideLoader();
+                        }
                     }
                 });
             } else {
+                if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                    cpp.utils.hideLoader();
+                }
                 $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p>Selecciona una clase para ver el cuaderno.</p></div>');
                 if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') { cpp.cuaderno.actualizarSelectCategoriasActividad(0, null); }
                 $('#clase_id_actividad_cuaderno_form').val('');
@@ -845,6 +854,11 @@
 
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
+
+            // Show loader at the beginning of any tab switch
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
 
             if ($tab.hasClass('active') && !$tab.hasClass('cpp-main-tab-right')) {
                 return;
