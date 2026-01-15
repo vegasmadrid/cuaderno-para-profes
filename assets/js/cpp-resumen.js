@@ -41,6 +41,11 @@ class CppResumenApp {
         .catch(error => {
             console.error('Error en la llamada AJAX:', error);
             this.container.innerHTML = `<p class="cpp-error-message">Error: ${error.message}</p>`;
+        })
+        .finally(() => {
+            if (typeof cpp !== 'undefined' && cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                cpp.utils.hideLoader();
+            }
         });
     }
 
