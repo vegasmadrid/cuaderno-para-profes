@@ -2254,6 +2254,7 @@ body.cpp-fullscreen-active .cpp-fixed-top-bar {
 /* --- Main Content Loader --- */
 #cpp-main-loader {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     position: fixed;
@@ -2284,4 +2285,12 @@ body.admin-bar #cpp-main-loader {
     width: 50px;
     height: 50px;
     animation: spin 1s linear infinite;
+}
+
+#cpp-loader-phrase {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #5f6368;
+    text-align: center;
+    max-width: 80%;
 }
