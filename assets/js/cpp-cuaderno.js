@@ -638,47 +638,51 @@
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
-            const isFinalView = evaluacionId === 'final';
-            // Estos botones ahora están en la barra superior, pero podemos mantener la lógica de visibilidad aquí
-            // $('#cpp-a1-add-activity-btn').toggle(!isFinalView);
-            // $('#cpp-a1-import-students-btn').toggle(!isFinalView);
-            // $('#cpp-a1-take-attendance-btn').toggle(!isFinalView);
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
 
             if (claseId && typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId) {
-                try { localStorage.setItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId, claseId); } catch (e) { console.warn("No se pudo guardar la última clase abierta en localStorage:", e); }
+                try {
+                    localStorage.setItem('cpp_last_opened_clase_id_user_' + cppFrontendData.userId, claseId);
+                } catch (e) {
+                    console.warn("No se pudo guardar la última clase abierta en localStorage:", e);
+                }
                 if (!evaluacionId && typeof localStorage !== 'undefined') {
                     evaluacionId = localStorage.getItem(this.localStorageKey_lastEval + claseId);
                 }
             }
 
             if (claseId) {
-                $contenidoCuaderno.html('<p class="cpp-cuaderno-cargando">Cargando cuaderno...</p>');
                 const self = this;
-
+                const isFinalView = evaluacionId === 'final';
                 const ajaxAction = isFinalView ? 'cpp_cargar_vista_final' : 'cpp_cargar_cuaderno_clase';
-                let ajaxData = { nonce: cppFrontendData.nonce, clase_id: claseId, sort_order: sortOrder || 'apellidos' };
+                let ajaxData = {
+                    nonce: cppFrontendData.nonce,
+                    clase_id: claseId,
+                    sort_order: sortOrder || 'apellidos'
+                };
                 if (!isFinalView && evaluacionId) {
                     ajaxData.evaluacion_id = evaluacionId;
                 }
 
                 $.ajax({
-                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: { ...ajaxData, action: ajaxAction },
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { ...ajaxData,
+                        action: ajaxAction
+                    },
                     success: function(response) {
                         if (response && response.success && response.data && typeof response.data.html_cuaderno !== 'undefined') {
-
-                            // Actualizar la barra superior estática con los datos recibidos
                             if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
                                 cpp.utils.updateTopBar({
                                     nombre: response.data.nombre_clase,
                                     color: response.data.color_clase
                                 });
                             }
-
-                            // Cargar solo el contenido de la tabla en su contenedor
                             $contenidoCuaderno.empty().html(response.data.html_cuaderno);
                             $contenidoCuaderno.attr('data-active-eval', response.data.evaluacion_activa_id);
-
-                            // Lógica de visibilidad
                             if (response.data.has_students) {
                                 $('#cpp-cuaderno-tabla-area').show();
                                 $('#cpp-cuaderno-no-alumnos-mensaje').hide();
@@ -686,7 +690,6 @@
                                 $('#cpp-cuaderno-tabla-area').hide();
                                 $('#cpp-cuaderno-no-alumnos-mensaje').show();
                             }
-
                             cpp.currentEvaluacionId = response.data.evaluacion_activa_id;
                             self.currentCalculoNota = response.data.calculo_nota || 'total';
                             if (typeof response.data.nota_aprobado !== 'undefined') {
@@ -696,15 +699,18 @@
                                 localStorage.setItem(self.localStorageKey_lastEval + cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
                             }
                             self.renderEvaluacionesDropdown(response.data.evaluaciones, response.data.evaluacion_activa_id);
-                            if (typeof response.data.base_nota_final !== 'undefined') { cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100; }
+                            if (typeof response.data.base_nota_final !== 'undefined') {
+                                cpp.currentBaseNotaFinal = parseFloat(response.data.base_nota_final) || 100;
+                            }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
-
                             self.updateSortButton(response.data.sort_order);
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno. Respuesta inesperada.';
-                            if (response && response.data && response.data.message) { errorMsg = response.data.message; }
+                            if (response && response.data && response.data.message) {
+                                errorMsg = response.data.message;
+                            }
                             $contenidoCuaderno.html(`<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">${errorMsg}</p></div>`);
                         }
                     },
@@ -713,7 +719,6 @@
                         $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error de conexión al cargar el cuaderno.</p></div>');
                     },
                     complete: function() {
-                        // Always hide loader when the request is complete
                         if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
                             cpp.utils.hideLoader();
                         }
@@ -724,10 +729,15 @@
                     cpp.utils.hideLoader();
                 }
                 $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p>Selecciona una clase para ver el cuaderno.</p></div>');
-                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') { cpp.cuaderno.actualizarSelectCategoriasActividad(0, null); }
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCategoriasActividad(0, null);
+                }
                 $('#clase_id_actividad_cuaderno_form').val('');
                 if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
-                    cpp.utils.updateTopBar({ nombre: 'Selecciona una clase', color: '#6c757d' });
+                    cpp.utils.updateTopBar({
+                        nombre: 'Selecciona una clase',
+                        color: '#6c757d'
+                    });
                 }
             }
         },
@@ -855,11 +865,6 @@
         handleMainTabSwitch: function($tab) {
             const tabName = $tab.data('tab');
 
-            // Show loader at the beginning of any tab switch
-            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
-                cpp.utils.showLoader();
-            }
-
             if ($tab.hasClass('active') && !$tab.hasClass('cpp-main-tab-right')) {
                 return;
             }
@@ -948,11 +953,6 @@
 
                         if (claseNoCoincide || evaluacionNoCoincide) {
                             CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, globalEvalId);
-                        } else {
-                            // If no data load is needed, just hide the loader
-                            if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
-                                cpp.utils.hideLoader();
-                            }
                         }
                     }
                 }

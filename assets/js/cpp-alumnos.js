@@ -17,6 +17,9 @@
         },
 
         enter: function() {
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
             this.loadInitialAlumnosList();
             this.populateClassFilter();
         },
@@ -175,7 +178,10 @@
             const searchTerm = $('#cpp-alumnos-search-input').val();
             const claseId = $('#cpp-alumnos-class-filter').val();
             const $resultsContainer = $('#cpp-alumnos-search-results');
-            $resultsContainer.html('<p class="cpp-cuaderno-cargando">Buscando...</p>');
+
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -241,11 +247,10 @@
             if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
                 cpp.utils.showLoader();
             }
-            $fichaContainer.html('<p class="cpp-cuaderno-cargando">Cargando ficha...</p>');
 
             if (!alumnoId) {
                 this.renderAlumnoFicha(null);
-                 if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
                     cpp.utils.hideLoader();
                 }
                 return;
