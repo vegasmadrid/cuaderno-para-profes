@@ -58,6 +58,7 @@ const cpp = {
         
         this.bindCoreEvents();
         this.initializeCuadernoView();
+        this.handleConnectionStatus();
 
         // El módulo programador se inicializa de forma independiente si existe
         if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
@@ -109,6 +110,47 @@ const cpp = {
                 cpp.config.showParaCrear(e);
             }
         });
+    },
+
+    handleConnectionStatus: function() {
+        const offlineNotice = document.getElementById('cpp-offline-notice');
+        const quoteElement = document.getElementById('cpp-offline-quote');
+        const mainContainer = document.querySelector('.cpp-cuaderno-viewport-classroom');
+
+        const quotes = [
+            "La educación es el arma más poderosa que puedes usar para cambiar el mundo. - Nelson Mandela",
+            "La única verdadera sabiduría está en saber que no sabes nada. - Sócrates",
+            "La mente que se abre a una nueva idea nunca volverá a su tamaño original. - Albert Einstein",
+            "Aprender es descubrir lo que ya sabes. - Richard Bach",
+            "Dime y lo olvido, enséñame y lo recuerdo, involúcrame y lo aprendo. - Benjamin Franklin",
+            "La educación es el pasaporte hacia el futuro, el mañana pertenece a aquellos que se preparan para él en el día de hoy. - Malcolm X"
+        ];
+
+        function updateOnlineStatus(event) {
+            if (event.type === 'offline') {
+                const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+                if (quoteElement) {
+                    quoteElement.textContent = randomQuote;
+                }
+                if (offlineNotice) {
+                    offlineNotice.classList.add('visible');
+                }
+                if (mainContainer) {
+                    mainContainer.classList.add('offline-active');
+                }
+            } else if (event.type === 'online') {
+                if (offlineNotice && offlineNotice.classList.contains('visible')) {
+                    window.location.reload();
+                }
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        if (!navigator.onLine) {
+            updateOnlineStatus({ type: 'offline' });
+        }
     },
 
     getInitialClaseId: function() {
