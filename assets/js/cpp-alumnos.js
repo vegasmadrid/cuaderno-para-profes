@@ -17,6 +17,9 @@
         },
 
         enter: function() {
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
             this.loadInitialAlumnosList();
             this.populateClassFilter();
         },
@@ -175,7 +178,10 @@
             const searchTerm = $('#cpp-alumnos-search-input').val();
             const claseId = $('#cpp-alumnos-class-filter').val();
             const $resultsContainer = $('#cpp-alumnos-search-results');
-            $resultsContainer.html('<p class="cpp-cuaderno-cargando">Buscando...</p>');
+
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -196,6 +202,11 @@
                 },
                 error: () => {
                     $resultsContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
+                },
+                complete: () => {
+                    if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                        cpp.utils.hideLoader();
+                    }
                 }
             });
         },
@@ -233,10 +244,15 @@
 
         displayAlumnoFicha: function(alumnoId) {
             const $fichaContainer = $('#cpp-alumnos-view-main');
-            $fichaContainer.html('<p class="cpp-cuaderno-cargando">Cargando ficha...</p>');
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
 
             if (!alumnoId) {
                 this.renderAlumnoFicha(null);
+                if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                    cpp.utils.hideLoader();
+                }
                 return;
             }
 
@@ -258,6 +274,11 @@
                 },
                 error: () => {
                     $fichaContainer.html('<p class="cpp-error-message">Error de conexión.</p>');
+                },
+                complete: () => {
+                    if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                        cpp.utils.hideLoader();
+                    }
                 }
             });
         },

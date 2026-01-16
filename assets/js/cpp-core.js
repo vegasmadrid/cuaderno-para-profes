@@ -177,6 +177,11 @@ const cpp = {
             console.log("CPP Core: Clase inicial a cargar ID:", claseIdToLoad);
             $clasesSidebarItems.removeClass('cpp-sidebar-item-active');
             $itemToActivate.addClass('cpp-sidebar-item-active');
+
+            // Show loader before initial content load
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
             
             if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
                 // Pasamos null como tercer parámetro para que el backend cargue la primera evaluación por defecto.

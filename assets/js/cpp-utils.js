@@ -3,6 +3,19 @@
 // y que cpp-core.js se carga primero gracias a las dependencias en PHP.
 
 cpp.utils = {
+    motivationalPhrases: [
+        "Preparando tu varita de enseñar... ✨",
+        "¡Organizando la magia del aprendizaje! 🧙‍♂️",
+        "Ajustando los pupitres virtuales... 🚀",
+        "Tu paciencia es legendaria. ¡Casi estamos! 🧘‍♀️",
+        "La mente es un fuego por encender, no un vaso por llenar. - Plutarco 🔥",
+        "El arte supremo del maestro es despertar la curiosidad. - A. Einstein 🔭",
+        "Dime y lo olvido, enséñame y lo recuerdo, involúcrame y lo aprendo. - B. Franklin 🧠",
+        "La educación es el arma más poderosa para cambiar el mundo. - N. Mandela 🌍",
+        "Un maestro es una brújula que activa los imanes de la curiosidad. - S. Kierkegaard 🧭"
+    ],
+    phraseInterval: null,
+
     init: function() {
         console.log("CPP Utils Module Initializing...");
         this.initializeColorSwatches();
@@ -78,6 +91,42 @@ cpp.utils = {
 
     hideSpinner: function() {
         jQuery('#cpp-spinner-overlay').remove();
+    },
+
+    // Loader for main content area
+    showLoader: function() {
+        const $loader = jQuery('#cpp-main-loader');
+        const $phrase = jQuery('#cpp-loader-phrase');
+
+        if ($loader.length === 0) {
+            // No need to create it here as it's in the shortcode now
+            return;
+        }
+
+        // Clear any existing interval
+        if (this.phraseInterval) {
+            clearInterval(this.phraseInterval);
+        }
+
+        // Set an initial phrase immediately
+        const initialPhrase = this.motivationalPhrases[Math.floor(Math.random() * this.motivationalPhrases.length)];
+        $phrase.text(initialPhrase);
+
+        // Start rotating phrases
+        this.phraseInterval = setInterval(() => {
+            const randomPhrase = this.motivationalPhrases[Math.floor(Math.random() * this.motivationalPhrases.length)];
+            $phrase.text(randomPhrase);
+        }, 2000);
+
+        $loader.show();
+    },
+
+    hideLoader: function() {
+        if (this.phraseInterval) {
+            clearInterval(this.phraseInterval);
+            this.phraseInterval = null;
+        }
+        jQuery('#cpp-main-loader').hide();
     },
 
     showToast: function(message, type = 'success') {
