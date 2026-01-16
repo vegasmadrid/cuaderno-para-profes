@@ -31,7 +31,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         <!-- Pantalla de aviso de "Sin Conexión" -->
         <div id="cpp-offline-notice">
             <div class="cpp-offline-notice-content">
-                <span class="dashicons dashicons-wifi-off"></span>
                 <h2>¡El Wi-Fi se ha ido de excursión!</h2>
                 <p>Para seguir trabajando, necesitas conexión a Internet.</p>
                 <div id="cpp-offline-quote">

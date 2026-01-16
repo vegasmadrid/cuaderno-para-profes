@@ -2315,13 +2315,6 @@ body.admin-bar #cpp-main-loader {
     display: flex; /* Se muestra con JS */
 }
 
-.cpp-offline-notice-content .dashicons-wifi-off {
-    font-size: 120px; /* Aumentado */
-    width: 120px;
-    height: 120px;
-    color: #5f6368;
-}
-
 .cpp-offline-notice-content h2 {
     font-size: 32px; /* Aumentado */
     margin-top: 25px;
