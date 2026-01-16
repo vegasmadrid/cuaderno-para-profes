@@ -539,7 +539,8 @@ function cpp_ajax_cargar_vista_final() {
     $notas_finales_promediadas = [];
 
     foreach ($alumnos as $index => $alumno) {
-        $nota_final_promediada = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        $resultado_nota_final = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
+        $nota_final_promediada = $resultado_nota_final['nota'];
         $notas_finales_promediadas[$alumno['id']] = $nota_final_promediada;
         $alumnos[$index]['nota_final_calculada'] = $nota_final_promediada; // Used for sorting
         // Recalcular las notas solo para las evaluaciones que se van a mostrar.
