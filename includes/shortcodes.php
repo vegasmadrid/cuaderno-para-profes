@@ -28,6 +28,18 @@ function cpp_shortcode_cuaderno_notas_classroom() {
     ob_start();
     ?>
     <div class="cpp-cuaderno-viewport-classroom">
+        <!-- Pantalla de aviso de "Sin Conexión" -->
+        <div id="cpp-offline-notice">
+            <div class="cpp-offline-notice-content">
+                <h2>¡El Wi-Fi se ha ido de excursión!</h2>
+                <p>Para seguir trabajando, necesitas conexión a Internet.</p>
+                <div id="cpp-offline-quote">
+                    <span class="quote-text"></span>
+                    <small class="quote-author"></small>
+                </div>
+            </div>
+        </div>
+
         <!-- Contenedor para las pestañas de la derecha en pantalla completa -->
         <div id="cpp-fullscreen-tab-container" class="cpp-fullscreen-settings-page" style="display: none;">
             <div class="cpp-fullscreen-settings-header">
