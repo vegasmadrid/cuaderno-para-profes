@@ -34,7 +34,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <span class="dashicons dashicons-wifi-off"></span>
                 <h2>¡El Wi-Fi se ha ido de excursión!</h2>
                 <p>Para seguir trabajando, necesitas conexión a Internet.</p>
-                <p id="cpp-offline-quote"></p>
+                <div id="cpp-offline-quote">
+                    <span class="quote-text"></span>
+                    <small class="quote-author"></small>
+                </div>
             </div>
         </div>
 
