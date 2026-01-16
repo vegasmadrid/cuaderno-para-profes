@@ -657,6 +657,7 @@ function cpp_ajax_cargar_vista_final() {
         'color_clase' => $clase_color_actual,
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
-        'nota_aprobado' => floatval($clase_db->nota_aprobado)
+        'nota_aprobado' => floatval($clase_db->nota_aprobado),
+        'has_students' => !empty($alumnos)
     ]);
 }
