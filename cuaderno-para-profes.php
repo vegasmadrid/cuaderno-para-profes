@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.4.0');
+define('CPP_VERSION', '2.4.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -404,6 +404,12 @@ function cpp_migrate_alumnos_to_many_to_many_v2_3_0_final() {
     }
 }
 
+function cpp_migrate_add_sort_order_v2_4_1() {
+    // Esta función simplemente vuelve a llamar a la creación de tablas.
+    // dbDelta se encargará de añadir la nueva columna de forma segura.
+    cpp_crear_tablas();
+}
+
 
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
@@ -437,6 +443,9 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_to_many_to_many_v2_3_0_final();
+    }
+    if (version_compare($current_version, '2.4.1', '<')) {
+        cpp_migrate_add_sort_order_v2_4_1();
     }
     // Aquí se podrían añadir futuras migraciones con if(version_compare...)
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
