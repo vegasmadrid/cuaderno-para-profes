@@ -10,11 +10,33 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     return $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT id, user_id, nombre, color, base_nota_final, nota_aprobado, orden, fecha_creacion FROM $tabla_clases WHERE id = %d AND user_id = %d",
+            "SELECT id, user_id, nombre, color, base_nota_final, nota_aprobado, orden_alumnos_predeterminado, orden, fecha_creacion FROM $tabla_clases WHERE id = %d AND user_id = %d",
             $clase_id,
             $user_id
         ),
         ARRAY_A 
+    );
+}
+
+function cpp_actualizar_orden_alumnos_clase($clase_id, $user_id, $orden) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    if (!in_array($orden, ['nombre', 'apellidos'])) {
+        return false;
+    }
+
+    $clase_existente = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $clase_id));
+    if (null === $clase_existente || $clase_existente != $user_id) {
+        return false;
+    }
+
+    return $wpdb->update(
+        $tabla_clases,
+        ['orden_alumnos_predeterminado' => $orden],
+        ['id' => $clase_id, 'user_id' => $user_id],
+        ['%s'],
+        ['%d', '%d']
     );
 }
 

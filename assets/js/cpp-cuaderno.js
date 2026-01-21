@@ -406,6 +406,27 @@
                 if (cpp.currentClaseIdCuaderno) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort);
+
+                    // Guardar la preferencia de ordenación
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_guardar_orden_alumnos',
+                            nonce: cppFrontendData.nonce,
+                            clase_id: cpp.currentClaseIdCuaderno,
+                            orden: newSort
+                        },
+                        success: function(response) {
+                            if (!response.success) {
+                                console.warn('No se pudo guardar la preferencia de ordenación.');
+                            }
+                        },
+                        error: function() {
+                            console.warn('Error de conexión al guardar la preferencia de ordenación.');
+                        }
+                    });
                 }
             });
 
