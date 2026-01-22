@@ -163,11 +163,12 @@ function cpp_ajax_guardar_orden_alumnos() {
         return;
     }
 
-    $resultado = cpp_actualizar_orden_alumnos_clase($clase_id, $user_id, $orden);
+    // $resultado = cpp_actualizar_orden_alumnos_clase($clase_id, $user_id, $orden);
 
-    if ($resultado !== false) {
-        wp_send_json_success(['message' => 'Orden guardado.']);
-    } else {
-        wp_send_json_error(['message' => 'Error al guardar el orden.']);
-    }
+    // if ($resultado !== false) {
+    //     wp_send_json_success(['message' => 'Orden guardado.']);
+    // } else {
+    //     wp_send_json_error(['message' => 'Error al guardar el orden.']);
+    // }
+    wp_send_json_success(['debug_clase_id' => $clase_id, 'debug_orden' => $orden]);
 }

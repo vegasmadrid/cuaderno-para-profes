@@ -419,11 +419,13 @@
                             orden: newSort
                         },
                         success: function(response) {
+                            alert('DEBUG SUCCESS: ' + JSON.stringify(response));
                             if (!response.success) {
                                 console.warn('No se pudo guardar la preferencia de ordenación.');
                             }
                         },
-                        error: function() {
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            alert('DEBUG ERROR: ' + textStatus + ' - ' + errorThrown);
                             console.warn('Error de conexión al guardar la preferencia de ordenación.');
                         }
                     });
