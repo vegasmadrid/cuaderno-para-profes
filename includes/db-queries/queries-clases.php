@@ -18,6 +18,7 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
     );
 }
 
+
 function cpp_actualizar_orden_alumnos_clase($clase_id, $user_id, $orden) {
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
