@@ -156,19 +156,19 @@ function cpp_ajax_guardar_orden_alumnos() {
 
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : 'apellidos';
+    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : null;
 
-    if (empty($clase_id)) {
-        wp_send_json_error(['message' => 'ID de clase no proporcionado.']);
+    if (empty($clase_id) || empty($orden)) {
+        wp_send_json_error(['message' => 'Faltan datos para guardar el orden.']);
         return;
     }
 
-    // $resultado = cpp_actualizar_orden_alumnos_clase($clase_id, $user_id, $orden);
+    $datos = ['orden_alumnos_predeterminado' => $orden];
+    $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, $datos);
 
-    // if ($resultado !== false) {
-    //     wp_send_json_success(['message' => 'Orden guardado.']);
-    // } else {
-    //     wp_send_json_error(['message' => 'Error al guardar el orden.']);
-    // }
-    wp_send_json_success(['debug_clase_id' => $clase_id, 'debug_orden' => $orden]);
+    if ($resultado !== false) {
+        wp_send_json_success(['message' => 'Preferencia de ordenación guardada.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar la preferencia de ordenación.']);
+    }
 }

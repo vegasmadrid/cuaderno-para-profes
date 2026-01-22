@@ -19,28 +19,6 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
 }
 
 
-function cpp_actualizar_orden_alumnos_clase($clase_id, $user_id, $orden) {
-    global $wpdb;
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-
-    if (!in_array($orden, ['nombre', 'apellidos'])) {
-        return false;
-    }
-
-    $clase_existente = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $clase_id));
-    if (null === $clase_existente || $clase_existente != $user_id) {
-        return false;
-    }
-
-    return $wpdb->update(
-        $tabla_clases,
-        ['orden_alumnos_predeterminado' => $orden],
-        ['id' => $clase_id, 'user_id' => $user_id],
-        ['%s'],
-        ['%d', '%d']
-    );
-}
-
 function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
@@ -53,6 +31,12 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
     if (isset($datos['nombre'])) {
         $update_data['nombre'] = sanitize_text_field(substr(trim($datos['nombre']), 0, 100));
         $update_formats[] = '%s';
+    }
+    if (isset($datos['orden_alumnos_predeterminado'])) {
+        if (in_array($datos['orden_alumnos_predeterminado'], ['nombre', 'apellidos'])) {
+            $update_data['orden_alumnos_predeterminado'] = $datos['orden_alumnos_predeterminado'];
+            $update_formats[] = '%s';
+        }
     }
     if (isset($datos['color'])) {
         $update_data['color'] = preg_match('/^#[a-f0-9]{6}$/i', $datos['color']) ? $datos['color'] : '#FFFFFF';
