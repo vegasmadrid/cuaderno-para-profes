@@ -221,6 +221,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     </div>
     <?php
     $html_cuaderno = ob_get_clean();
+
     wp_send_json_success([
         'html_cuaderno' => $html_cuaderno,
         'nombre_clase' => $clase_db['nombre'],
@@ -231,7 +232,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
         'base_nota_final' => $base_nota_final_clase,
         'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'sort_order' => $sort_order,
-        'has_students' => !empty($alumnos)
+        'has_students' => !empty($alumnos),
     ]);
 }
 
