@@ -162,8 +162,7 @@ function cpp_ajax_guardar_orden_alumnos() {
         return;
     }
 
-    $datos = ['orden_alumnos_predeterminado' => $orden];
-    $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, $datos);
+    $resultado = cpp_guardar_orden_alumnos_preferencia($clase_id, $user_id, $orden);
 
     if ($resultado !== false) {
         wp_send_json_success(['message' => 'Preferencia de orden guardada.']);
