@@ -237,6 +237,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
     ]);
 }
 
+
 add_action('wp_ajax_cpp_guardar_actividad_evaluable', 'cpp_ajax_guardar_actividad_evaluable');
 function cpp_ajax_guardar_actividad_evaluable() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
