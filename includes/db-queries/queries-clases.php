@@ -42,6 +42,10 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
             $update_formats[] = '%f';
         }
     }
+    if (isset($datos['orden_alumnos_predeterminado']) && in_array($datos['orden_alumnos_predeterminado'], ['nombre', 'apellidos'])) {
+        $update_data['orden_alumnos_predeterminado'] = $datos['orden_alumnos_predeterminado'];
+        $update_formats[] = '%s';
+    }
     if (isset($datos['nota_aprobado'])) {
         $nota_aprobado = floatval(str_replace(',', '.', $datos['nota_aprobado']));
         if ($nota_aprobado >= 0) {
