@@ -145,3 +145,29 @@ function cpp_ajax_crear_clase_ejemplo() {
         wp_send_json_error(['message' => 'Error al crear la clase de ejemplo.']);
     }
 }
+
+add_action('wp_ajax_cpp_guardar_orden_alumnos', 'cpp_ajax_guardar_orden_alumnos');
+function cpp_ajax_guardar_orden_alumnos() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : 'apellidos';
+
+    if (empty($clase_id) || !in_array($orden, ['nombre', 'apellidos'])) {
+        wp_send_json_error(['message' => 'Datos no válidos.']);
+        return;
+    }
+
+    $datos = ['orden_alumnos_predeterminado' => $orden];
+    $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, $datos);
+
+    if ($resultado !== false) {
+        wp_send_json_success(['message' => 'Preferencia de orden guardada.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar la preferencia.']);
+    }
+}

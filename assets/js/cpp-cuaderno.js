@@ -404,8 +404,32 @@
                 $button.data('sort', newSort);
 
                 if (cpp.currentClaseIdCuaderno) {
+                    // Primero, recargamos visualmente el cuaderno
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort);
+
+                    // Después, enviamos la preferencia al backend para guardarla
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_guardar_orden_alumnos',
+                            nonce: cppFrontendData.nonce,
+                            clase_id: cpp.currentClaseIdCuaderno,
+                            orden: newSort
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                console.log('Preferencia de orden guardada:', newSort);
+                            } else {
+                                console.warn('No se pudo guardar la preferencia de orden.');
+                            }
+                        },
+                        error: function() {
+                            console.error('Error de conexión al guardar la preferencia de orden.');
+                        }
+                    });
                 }
             });
 
