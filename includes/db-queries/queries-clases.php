@@ -10,7 +10,7 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     return $wpdb->get_row(
         $wpdb->prepare(
-            "SELECT id, user_id, nombre, color, base_nota_final, nota_aprobado, orden, fecha_creacion FROM $tabla_clases WHERE id = %d AND user_id = %d",
+            "SELECT id, user_id, nombre, color, base_nota_final, nota_aprobado, orden, fecha_creacion, orden_alumnos_predeterminado FROM $tabla_clases WHERE id = %d AND user_id = %d",
             $clase_id,
             $user_id
         ),
@@ -56,13 +56,20 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
     if (empty($update_data)) {
         return 0; 
     }
-    return $wpdb->update(
+    $resultado = $wpdb->update(
         $tabla_clases,
         $update_data,
         ['id' => $clase_id, 'user_id' => $user_id], 
         $update_formats,
         ['%d', '%d'] 
     );
+
+    if ($resultado !== false) {
+        // Limpiar la caché del objeto para esta clase para asegurar que los cambios se reflejen inmediatamente
+        wp_cache_delete('clase_' . $clase_id, 'cpp_clases');
+    }
+
+    return $resultado;
 }
 
 function cpp_guardar_base_nota_final_clase($clase_id, $user_id, $base_nota) {
@@ -431,25 +438,4 @@ function cpp_es_propietario_clase($clase_id, $user_id) {
         $clase_id
     ));
     return $owner_id == $user_id;
-}
-
-function cpp_guardar_orden_alumnos_preferencia($clase_id, $user_id, $orden) {
-    global $wpdb;
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-
-    if (!in_array($orden, ['nombre', 'apellidos'])) {
-        return false;
-    }
-
-    if (!cpp_es_propietario_clase($clase_id, $user_id)) {
-        return false;
-    }
-
-    return $wpdb->update(
-        $tabla_clases,
-        ['orden_alumnos_predeterminado' => $orden],
-        ['id' => $clase_id, 'user_id' => $user_id],
-        ['%s'],
-        ['%d', '%d']
-    );
 }

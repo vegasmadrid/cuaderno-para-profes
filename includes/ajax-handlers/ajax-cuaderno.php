@@ -12,7 +12,6 @@ function cpp_ajax_cargar_cuaderno_clase() {
     cpp_clear_programador_cache($user_id);
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     $evaluacion_id_solicitada = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : null;
-    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : 'apellidos';
 
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
@@ -20,6 +19,10 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+
+    // Determinar el orden de los alumnos
+    $default_sort_order = !empty($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'apellidos';
+    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : $default_sort_order;
 
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $evaluacion_activa_id = null;

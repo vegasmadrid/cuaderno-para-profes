@@ -153,37 +153,21 @@ function cpp_ajax_guardar_orden_alumnos() {
         wp_send_json_error(['message' => 'Usuario no autenticado.']);
         return;
     }
+
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : 'apellidos';
+    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : '';
 
     if (empty($clase_id) || !in_array($orden, ['nombre', 'apellidos'])) {
-        wp_send_json_error(['message' => 'Datos no válidos.']);
+        wp_send_json_error(['message' => 'Datos no válidos proporcionados.']);
         return;
     }
 
-    global $wpdb;
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-
-    // Depuración: Paso 1 - Comprobar si la fila existe
-    $fila_existente = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
-    $debug_msg = "DEBUG GUARDADO:\n";
-    $debug_msg .= "1. ¿Fila encontrada para clase_id={$clase_id} y user_id={$user_id}? " . ($fila_existente ? 'Sí' : 'No') . "\n";
-
-    // Depuración: Paso 2 - Intentar la actualización
-    $resultado = cpp_guardar_orden_alumnos_preferencia($clase_id, $user_id, $orden);
-    $debug_msg .= "2. Resultado de la actualización (filas afectadas): " . var_export($resultado, true) . "\n";
+    $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $orden]);
 
     if ($resultado !== false) {
-        wp_send_json_success([
-            'message' => 'Preferencia de orden guardada.',
-            'debug_save_message' => $debug_msg
-        ]);
+        wp_send_json_success(['message' => 'Preferencia de orden guardada.']);
     } else {
-        $debug_msg .= "3. Último error de la BD: " . $wpdb->last_error;
-        wp_send_json_error([
-            'message' => 'Error al guardar la preferencia.',
-            'debug_save_message' => $debug_msg
-        ]);
+        wp_send_json_error(['message' => 'Error al guardar la preferencia de orden.']);
     }
 }
