@@ -225,9 +225,14 @@ function cpp_ajax_cargar_cuaderno_clase() {
     <?php
     $html_cuaderno = ob_get_clean();
 
+    $debug_load_msg = "DEBUG CARGA:\n";
+    $debug_load_msg .= "1. Datos completos de la clase leídos de la BD: " . json_encode($clase_db) . "\n";
+    $debug_load_msg .= "2. Orden final aplicado: '{$sort_order}'.";
+
     wp_send_json_success([
         'html_cuaderno' => $html_cuaderno,
         'nombre_clase' => $clase_db['nombre'],
+        'debug_load_message' => $debug_load_msg,
         'color_clase' => $clase_color_actual,
         'evaluaciones' => $evaluaciones,
         'evaluacion_activa_id' => $evaluacion_activa_id,
