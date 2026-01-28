@@ -420,14 +420,13 @@
                             orden: newSort
                         },
                         success: function(response) {
-                            if (response.success) {
-                                console.log('Preferencia de orden guardada:', newSort);
-                            } else {
-                                console.warn('No se pudo guardar la preferencia de orden.');
+                            if (!response.success) {
+                                console.error('Error al guardar la preferencia de ordenación:', response.data.message);
+                                cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
                             }
                         },
                         error: function() {
-                            console.error('Error de conexión al guardar la preferencia de orden.');
+                            cpp.utils.showToast('Error de conexión al guardar la preferencia.', 'error');
                         }
                     });
                 }
@@ -684,7 +683,7 @@
                 let ajaxData = {
                     nonce: cppFrontendData.nonce,
                     clase_id: claseId,
-                    sort_order: sortOrder || 'apellidos'
+                    sort_order: sortOrder
                 };
                 if (!isFinalView && evaluacionId) {
                     ajaxData.evaluacion_id = evaluacionId;

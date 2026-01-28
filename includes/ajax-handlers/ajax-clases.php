@@ -165,21 +165,9 @@ function cpp_ajax_guardar_orden_alumnos() {
 
     $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $orden]);
 
-    $debug_msg = "DEBUG GUARDADO:\n";
-    $debug_msg .= "1. Intentando guardar '{$orden}' para la clase_id {$clase_id}.\n";
-    $debug_msg .= "2. Resultado de la actualización (filas afectadas): " . var_export($resultado, true) . "\n";
-
     if ($resultado !== false) {
-        wp_send_json_success([
-            'message' => 'Preferencia de orden guardada.',
-            'debug_save_message' => $debug_msg
-        ]);
+        wp_send_json_success(['message' => 'Preferencia de orden guardada.']);
     } else {
-        global $wpdb;
-        $debug_msg .= "3. Último error de la BD: " . $wpdb->last_error;
-        wp_send_json_error([
-            'message' => 'Error al guardar la preferencia.',
-            'debug_save_message' => $debug_msg
-        ]);
+        wp_send_json_error(['message' => 'Error al guardar la preferencia de orden.']);
     }
 }
