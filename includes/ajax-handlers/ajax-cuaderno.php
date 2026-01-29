@@ -18,11 +18,35 @@ function cpp_ajax_cargar_cuaderno_clase() {
     global $wpdb;
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
-    if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+
+    // Helper function for logging
+    if (!function_exists('cpp_debug_log')) {
+        function cpp_debug_log($message) {
+            $log_file = '/tmp/debug_log.txt';
+            $timestamp = date('Y-m-d H:i:s');
+            $formatted_message = sprintf("[%s] %s\n", $timestamp, print_r($message, true));
+            file_put_contents($log_file, $formatted_message, FILE_APPEND);
+        }
+    }
+
+    cpp_debug_log("--- AJAX: cpp_cargar_cuaderno_clase ---");
+    cpp_debug_log("Cargando cuaderno para clase ID: {$clase_id}");
+
+    if (!$clase_db) {
+        cpp_debug_log("Error: Clase no encontrada o sin permiso para user_id: {$user_id}");
+        wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']);
+        return;
+    }
+
+    $orden_guardado = isset($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : '(no establecido)';
+    cpp_debug_log("Orden guardado en la BD para esta clase: '{$orden_guardado}'");
 
     // Determinar el orden de los alumnos
     $default_sort_order = !empty($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'apellidos';
+    $sort_order_solicitado = isset($_POST['sort_order']) ? $_POST['sort_order'] : '(no solicitado)';
     $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : $default_sort_order;
+
+    cpp_debug_log("Orden de alumnos solicitado: '{$sort_order_solicitado}'. Orden por defecto usado: '{$default_sort_order}'. Orden final a aplicar: '{$sort_order}'");
 
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $evaluacion_activa_id = null;

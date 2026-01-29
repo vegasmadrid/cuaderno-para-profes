@@ -410,6 +410,7 @@
                     // Después, enviamos la preferencia al backend para guardarla
                     // SOLO si el evento fue iniciado por un usuario real
                     if (e.originalEvent) {
+                        console.log(`[DEBUG] User click detected. Saving sort order: ${newSort} for class ID: ${cpp.currentClaseIdCuaderno}`);
                         $.ajax({
                             url: cppFrontendData.ajaxUrl,
                             type: 'POST',
@@ -421,15 +422,20 @@
                                 orden: newSort
                             },
                             success: function(response) {
-                                if (!response.success) {
-                                    console.error('Error al guardar la preferencia de ordenación:', response.data.message);
+                                if (response.success) {
+                                    console.log('[DEBUG] AJAX Success:', response.data.message);
+                                } else {
+                                    console.error('[DEBUG] AJAX Error:', response.data.message);
                                     cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
                                 }
                             },
-                            error: function() {
+                            error: function(jqXHR, textStatus, errorThrown) {
+                                console.error('[DEBUG] AJAX transport error:', textStatus, errorThrown);
                                 cpp.utils.showToast('Error de conexión al guardar la preferencia.', 'error');
                             }
                         });
+                    } else {
+                        console.log(`[DEBUG] Programmatic click ignored. Sort order: ${newSort}`);
                     }
                 }
             });
