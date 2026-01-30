@@ -3,9 +3,6 @@
 (function($) {
     'use strict';
 
-    // Module-level guard to prevent multiple bindings
-    let eventsBound = false;
-
     if (typeof cpp === 'undefined') {
         console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-cuaderno.js no puede inicializarse.");
         return;
@@ -317,8 +314,8 @@
         },
 
         bindEvents: function() {
-            if (eventsBound) return;
-            eventsBound = true;
+            if (cpp.cuadernoEventsBound) return;
+            cpp.cuadernoEventsBound = true;
 
             const $document = $(document);
             const self = this;
@@ -401,50 +398,26 @@
                 }
             });
 
-            $document.off('click', '#cpp-a1-sort-students-btn').on('click', '#cpp-a1-sort-students-btn', function(e) {
+            $document.on('click', '#cpp-a1-sort-students-btn', function(e) {
                 e.preventDefault();
                 const $button = $(this);
 
-                // DEFINTIVE FIX FOR DOUBLE TRIGGER: Check a property on the element
-                if ($button.data('is-handling-click')) {
-                    return;
-                }
+                // ATOMIC STRATEGY: Debounce with is-handling-click
+                if ($button.data('is-handling-click')) return;
                 $button.data('is-handling-click', true);
+                setTimeout(() => { $button.removeData('is-handling-click'); }, 600);
 
-                // Clear the flag after a short delay (enough for the second event to be ignored)
-                setTimeout(() => { $button.removeData('is-handling-click'); }, 500);
-
-                const currentSort = $button.data('sort');
+                // Use .attr() to ensure we bypass jQuery's internal cache
+                const currentSort = $button.attr('data-sort') || 'apellidos';
                 const newSort = currentSort === 'apellidos' ? 'nombre' : 'apellidos';
-                $button.data('sort', newSort);
+
+                // Optimistically update the attribute
+                $button.attr('data-sort', newSort);
 
                 if (cpp.currentClaseIdCuaderno) {
-                    // Primero, recargamos visualmente el cuaderno
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort);
-
-                    // Después, enviamos la preferencia al backend para guardarla
-                    $.ajax({
-                        url: cppFrontendData.ajaxUrl,
-                        type: 'POST',
-                        dataType: 'json',
-                        data: {
-                            action: 'cpp_guardar_orden_alumnos',
-                            nonce: cppFrontendData.nonce,
-                            clase_id: cpp.currentClaseIdCuaderno,
-                            orden: newSort
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                cpp.utils.showToast('Preferencia de orden guardada.');
-                            } else {
-                                cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
-                            }
-                        },
-                        error: function() {
-                            cpp.utils.showToast('Error de conexión al guardar la preferencia.', 'error');
-                        }
-                    });
+                    // Send save_sort_preference: true to make the call atomic
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort, true);
                 }
             });
 
@@ -648,11 +621,11 @@
             if (sortOrder === 'nombre') {
                 $button.html(icons.nombre);
                 $button.attr('title', 'Ordenado por Nombre (clic para cambiar a Apellidos)');
-                $button.data('sort', 'nombre');
+                $button.attr('data-sort', 'nombre');
             } else {
                 $button.html(icons.apellidos);
                 $button.attr('title', 'Ordenado por Apellidos (clic para cambiar a Nombre)');
-                $button.data('sort', 'apellidos');
+                $button.attr('data-sort', 'apellidos');
             }
         },
 
@@ -673,7 +646,7 @@
             $container.html(selectHtml);
         },
         
-        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder) {
+        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder, saveSort = false) {
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
@@ -699,7 +672,8 @@
                 let ajaxData = {
                     nonce: cppFrontendData.nonce,
                     clase_id: claseId,
-                    sort_order: sortOrder
+                    sort_order: sortOrder,
+                    save_sort_preference: saveSort ? 'true' : 'false'
                 };
                 if (!isFinalView && evaluacionId) {
                     ajaxData.evaluacion_id = evaluacionId;
@@ -743,6 +717,9 @@
                             }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
                             self.updateSortButton(response.data.sort_order);
+                            if (saveSort) {
+                                cpp.utils.showToast('Preferencia de orden guardada.');
+                            }
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
                         } else {

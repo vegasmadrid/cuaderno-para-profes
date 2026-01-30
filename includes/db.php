@@ -53,8 +53,6 @@ function cpp_crear_tablas() {
         nombre varchar(100) NOT NULL,
         color varchar(7) DEFAULT '#FFFFFF' NOT NULL, 
         base_nota_final decimal(5,2) DEFAULT 100.00 NOT NULL,
-        nota_aprobado decimal(10,2) NOT NULL DEFAULT 5.00,
-        orden_alumnos_predeterminado varchar(20) DEFAULT 'apellidos',
         orden INT NOT NULL DEFAULT 0,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),

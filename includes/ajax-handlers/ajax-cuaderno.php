@@ -16,6 +16,16 @@ function cpp_ajax_cargar_cuaderno_clase() {
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
     global $wpdb;
+
+    // ATOMIC SORT STRATEGY: Save preference if requested in the same call
+    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true') {
+        $requested_sort = isset($_POST['sort_order']) ? sanitize_text_field($_POST['sort_order']) : '';
+        if (in_array($requested_sort, ['nombre', 'apellidos'])) {
+            // FIXED: Corrected argument order ($clase_id, $user_id, $datos)
+            cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $requested_sort]);
+        }
+    }
+
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
 
@@ -113,7 +123,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr(in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos'); ?>">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -526,6 +536,15 @@ function cpp_ajax_cargar_vista_final() {
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
+    // ATOMIC SORT STRATEGY: Save preference if requested in the same call
+    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true') {
+        $requested_sort = isset($_POST['sort_order']) ? sanitize_text_field($_POST['sort_order']) : '';
+        if (in_array($requested_sort, ['nombre', 'apellidos'])) {
+            // FIXED: Corrected argument order ($clase_id, $user_id, $datos)
+            cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $requested_sort]);
+        }
+    }
+
     $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
@@ -583,7 +602,7 @@ function cpp_ajax_cargar_vista_final() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr(in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos'); ?>">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">

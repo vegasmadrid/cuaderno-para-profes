@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 2.4.4
+Version: 2.4.5
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.4.4');
+define('CPP_VERSION', '2.4.5');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -447,7 +447,7 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_to_many_to_many_v2_3_0_final();
     }
-    if (version_compare($current_version, '2.4.4', '<')) {
+    if (version_compare($current_version, '2.4.5', '<')) {
         cpp_migrate_add_sort_preference_column_v2_4_0();
     }
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---

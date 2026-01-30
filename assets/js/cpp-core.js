@@ -93,7 +93,23 @@ const cpp = {
     },
 
     bindCoreEvents: function() {
-        // Core events that are not handled by specific modules
+        const $ = jQuery;
+        const $document = $(document);
+
+        // Este listener ahora solo delega al manejador centralizado en el módulo del cuaderno
+        $document.on('click', '.cpp-main-tab-link', function(e) {
+            e.preventDefault();
+            if (cpp.cuaderno && typeof cpp.cuaderno.handleMainTabSwitch === 'function') {
+                cpp.cuaderno.handleMainTabSwitch(jQuery(this));
+            }
+        });
+
+        // Botón de crear primera clase desde el welcome screen
+        $document.on('click', '#cpp-btn-crear-primera-clase', function(e) {
+            if (cpp.config && typeof cpp.config.showParaCrear === 'function') {
+                cpp.config.showParaCrear(e);
+            }
+        });
     },
 
     handleConnectionStatus: function() {
