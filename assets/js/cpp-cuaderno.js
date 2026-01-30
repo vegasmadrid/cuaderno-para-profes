@@ -424,7 +424,9 @@
                                 orden: newSort
                             },
                             success: function(response) {
-                                if (!response.success) {
+                                if (response.success) {
+                                    cpp.utils.showToast('Preferencia de orden guardada.');
+                                } else {
                                     cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
                                 }
                             },
