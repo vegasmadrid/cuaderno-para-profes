@@ -349,6 +349,15 @@ function cpp_migrate_nullify_scheduled_activity_dates_v2_2_1() {
     );
 }
 
+function cpp_migrate_add_sort_preference_column_v2_4_0() {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+    $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE 'orden_alumnos_predeterminado'"));
+    if (!$column_exists) {
+        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `orden_alumnos_predeterminado` VARCHAR(20) NULL DEFAULT 'apellidos' AFTER `nota_aprobado`;");
+    }
+}
+
 function cpp_migrate_alumnos_to_many_to_many_v2_3_0_final() {
     global $wpdb;
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -438,7 +447,9 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_to_many_to_many_v2_3_0_final();
     }
-    // Aquí se podrían añadir futuras migraciones con if(version_compare...)
+    if (version_compare($current_version, '2.4.0', '<')) {
+        cpp_migrate_add_sort_preference_column_v2_4_0();
+    }
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
     // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.
     if (version_compare($current_version, CPP_VERSION, '<')) {

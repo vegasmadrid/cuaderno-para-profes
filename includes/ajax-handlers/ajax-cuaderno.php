@@ -113,7 +113,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr(in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos'); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -524,11 +524,14 @@ function cpp_ajax_cargar_vista_final() {
     global $wpdb;
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : 'apellidos';
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
-    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final, nota_aprobado FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
+    $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
     if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+
+    // Determinar el orden de los alumnos
+    $default_sort_order = !empty($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'apellidos';
+    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : $default_sort_order;
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
 
@@ -539,8 +542,8 @@ function cpp_ajax_cargar_vista_final() {
         return in_array($eval['id'], $evaluaciones_seleccionadas_ids);
     });
 
-    $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
-    $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
+    $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
+    $clase_color_actual = isset($clase_db['color']) && !empty($clase_db['color']) ? $clase_db['color'] : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
 
     $notas_por_evaluacion = [];
@@ -580,7 +583,7 @@ function cpp_ajax_cargar_vista_final() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr(in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos'); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -661,11 +664,11 @@ function cpp_ajax_cargar_vista_final() {
         'html_cuaderno' => $html_cuaderno,
         'evaluaciones' => $evaluaciones_con_final,
         'evaluacion_activa_id' => 'final',
-        'nombre_clase' => $clase_db->nombre,
+        'nombre_clase' => $clase_db['nombre'],
         'color_clase' => $clase_color_actual,
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
-        'nota_aprobado' => floatval($clase_db->nota_aprobado),
+        'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'has_students' => !empty($alumnos)
     ]);
 }
