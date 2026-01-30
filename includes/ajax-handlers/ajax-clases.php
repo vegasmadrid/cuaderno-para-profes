@@ -167,8 +167,16 @@ function cpp_ajax_guardar_orden_alumnos() {
     $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $orden]);
 
     if ($resultado !== false) {
-        wp_send_json_success(['message' => 'Preferencia de orden guardada.']);
+        wp_send_json_success([
+            'message' => 'Preferencia de orden guardada.',
+            'clase_id' => $clase_id,
+            'orden' => $orden
+        ]);
     } else {
-        wp_send_json_error(['message' => 'Error al guardar la preferencia de orden.']);
+        wp_send_json_error([
+            'message' => 'Error al guardar la preferencia.',
+            'clase_id' => $clase_id,
+            'orden' => $orden
+        ]);
     }
 }
