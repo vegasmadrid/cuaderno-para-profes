@@ -3,6 +3,9 @@
 (function($) {
     'use strict';
 
+    // Module-level guard to prevent multiple bindings
+    let eventsBound = false;
+
     if (typeof cpp === 'undefined') {
         console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-cuaderno.js no puede inicializarse.");
         return;
@@ -314,8 +317,8 @@
         },
 
         bindEvents: function() {
-            if (this.eventsBound) return;
-            this.eventsBound = true;
+            if (eventsBound) return;
+            eventsBound = true;
 
             const $document = $(document);
             const self = this;
@@ -401,6 +404,16 @@
             $document.off('click', '#cpp-a1-sort-students-btn').on('click', '#cpp-a1-sort-students-btn', function(e) {
                 e.preventDefault();
                 const $button = $(this);
+
+                // DEFINTIVE FIX FOR DOUBLE TRIGGER: Check a property on the element
+                if ($button.data('is-handling-click')) {
+                    return;
+                }
+                $button.data('is-handling-click', true);
+
+                // Clear the flag after a short delay (enough for the second event to be ignored)
+                setTimeout(() => { $button.removeData('is-handling-click'); }, 500);
+
                 const currentSort = $button.data('sort');
                 const newSort = currentSort === 'apellidos' ? 'nombre' : 'apellidos';
                 $button.data('sort', newSort);
@@ -411,30 +424,27 @@
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort);
 
                     // Después, enviamos la preferencia al backend para guardarla
-                    // SOLO si el evento fue iniciado por un usuario real
-                    if (e.originalEvent) {
-                        $.ajax({
-                            url: cppFrontendData.ajaxUrl,
-                            type: 'POST',
-                            dataType: 'json',
-                            data: {
-                                action: 'cpp_guardar_orden_alumnos',
-                                nonce: cppFrontendData.nonce,
-                                clase_id: cpp.currentClaseIdCuaderno,
-                                orden: newSort
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    cpp.utils.showToast('Preferencia de orden guardada.');
-                                } else {
-                                    cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
-                                }
-                            },
-                            error: function() {
-                                cpp.utils.showToast('Error de conexión al guardar la preferencia.', 'error');
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_guardar_orden_alumnos',
+                            nonce: cppFrontendData.nonce,
+                            clase_id: cpp.currentClaseIdCuaderno,
+                            orden: newSort
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                cpp.utils.showToast('Preferencia de orden guardada.');
+                            } else {
+                                cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
                             }
-                        });
-                    }
+                        },
+                        error: function() {
+                            cpp.utils.showToast('Error de conexión al guardar la preferencia.', 'error');
+                        }
+                    });
                 }
             });
 
