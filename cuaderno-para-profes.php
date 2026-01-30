@@ -3,7 +3,7 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 1.9
+Version: 2.4.1
 Author: Javier Vegas Serrano
 */
 
