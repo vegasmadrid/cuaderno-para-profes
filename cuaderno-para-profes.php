@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.5.0');
+define('CPP_VERSION', '2.5.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -63,17 +63,18 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js', 'cpp-modales-clase-js'], $plugin_version, true);
 
     wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $plugin_version, true);
-    wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
+    // NUCLEAR CACHE BUST: Renaming the script handle and file to force fresh download
+    wp_enqueue_script('cpp-cuaderno-v2', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno-v2.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
 
     wp_enqueue_script('cpp-modales-general-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-general.js', ['cpp-core-js'], $plugin_version, true);
     wp_enqueue_script('cpp-configuracion-js', CPP_PLUGIN_URL . 'assets/js/cpp-configuracion.js', ['cpp-core-js'], $plugin_version, true);
     wp_register_script('cpp-resumen-js', CPP_PLUGIN_URL . 'assets/js/cpp-resumen.js', ['cpp-core-js', 'chart-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-actividad-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-actividad.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-actividad-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-actividad.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-v2'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-excel-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-excel.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-v2'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-v2'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-v2'], $plugin_version, true);
 
     // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
@@ -442,7 +443,7 @@ function cpp_run_migrations() {
         cpp_crear_tablas(); // dbDelta se encargará de añadir la columna orden_alumnos_predeterminado
     }
 
-    if (version_compare($current_version, '2.5.0', '<')) {
+    if (version_compare($current_version, '2.5.1', '<')) {
         // Asegurar explícitamente que la columna existe y tiene valores por defecto
         global $wpdb;
         $table_name = $wpdb->prefix . 'cpp_clases';
