@@ -1,4 +1,4 @@
-// assets/js/cpp-cuaderno.js (VERSIÓN FINAL)
+// assets/js/cpp-cuaderno.js (VERSIÓN LIMPIA)
 
 (function($) {
     'use strict';
@@ -314,6 +314,9 @@
         },
 
         bindEvents: function() {
+            if (cpp.cuadernoEventsBound) return;
+            cpp.cuadernoEventsBound = true;
+
             const $document = $(document);
             const self = this;
 
@@ -383,12 +386,11 @@
                     const activeTab = $('.cpp-main-tab-link.active').data('tab');
 
                     if (activeTab === 'cuaderno') {
-                        const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
+                        const sortOrder = $('#cpp-a1-sort-students-btn').attr('data-sort');
                         self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
                     } else if (activeTab === 'programacion') {
                         if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
                             // Cargar la nueva evaluación en el programador.
-                            // La función loadClass ya se encarga de actualizar el currentEvaluacionId y renderizar.
                             CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, nuevaEvaluacionId);
                         }
                     }
@@ -398,45 +400,23 @@
             $document.on('click', '#cpp-a1-sort-students-btn', function(e) {
                 e.preventDefault();
                 const $button = $(this);
-                const currentSort = $button.data('sort');
+
+                // ATOMIC STRATEGY: Debounce with is-handling-click
+                if ($button.data('is-handling-click')) {
+                    return;
+                }
+                $button.data('is-handling-click', true);
+                setTimeout(() => { $button.removeData('is-handling-click'); }, 600);
+
+                const currentSort = $button.attr('data-sort') || 'apellidos';
                 const newSort = currentSort === 'apellidos' ? 'nombre' : 'apellidos';
-                $button.data('sort', newSort);
+
+                // Optimistically update the attribute
+                $button.attr('data-sort', newSort);
 
                 if (cpp.currentClaseIdCuaderno) {
-                    // Primero, recargamos visualmente el cuaderno
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort);
-
-                    // Después, enviamos la preferencia al backend para guardarla
-                    // SOLO si el evento fue iniciado por un usuario real
-                    if (e.originalEvent) {
-                        console.log(`[DEBUG] User click detected. Saving sort order: ${newSort} for class ID: ${cpp.currentClaseIdCuaderno}`);
-                        $.ajax({
-                            url: cppFrontendData.ajaxUrl,
-                            type: 'POST',
-                            dataType: 'json',
-                            data: {
-                                action: 'cpp_guardar_orden_alumnos',
-                                nonce: cppFrontendData.nonce,
-                                clase_id: cpp.currentClaseIdCuaderno,
-                                orden: newSort
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    console.log('[DEBUG] AJAX Success:', response.data.message);
-                                } else {
-                                    console.error('[DEBUG] AJAX Error:', response.data.message);
-                                    cpp.utils.showToast('No se pudo guardar la preferencia de orden.', 'error');
-                                }
-                            },
-                            error: function(jqXHR, textStatus, errorThrown) {
-                                console.error('[DEBUG] AJAX transport error:', textStatus, errorThrown);
-                                cpp.utils.showToast('Error de conexión al guardar la preferencia.', 'error');
-                            }
-                        });
-                    } else {
-                        console.log(`[DEBUG] Programmatic click ignored. Sort order: ${newSort}`);
-                    }
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort, true);
                 }
             });
 
@@ -547,9 +527,7 @@
             $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } });
             $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); });
 
-            // --- INICIO: Listeners para la Paleta de Símbolos ---
-
-            // Abrir la paleta
+            // --- Listeners para la Paleta de Símbolos ---
             $document.on('click', '#cpp-a1-symbol-palette-btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -560,12 +538,10 @@
                 }
             });
 
-            // Cerrar la paleta (genérico para todos los modales)
             $document.on('click', '#cpp-modal-symbol-palette .cpp-modal-close', function() {
                 $('#cpp-modal-symbol-palette').hide();
             });
 
-            // Guardar la leyenda
             $document.on('click', '#cpp-save-symbol-legend-btn', function() {
                 const userId = (cppFrontendData && cppFrontendData.userId) ? cppFrontendData.userId : '0';
                 const storageKey = self.localStorageKey_symbolLegends + userId;
@@ -590,7 +566,6 @@
                 }
             });
 
-            // Insertar un símbolo en la celda activa
             $document.on('click', '#cpp-symbol-list-container .cpp-symbol-item', function() {
                 const symbol = $(this).data('symbol');
 
@@ -607,20 +582,15 @@
                 }
             });
 
-            // --- FIN: Listeners para la Paleta de Símbolos ---
-
             // Listeners for cross-component updates
             $document.on('cpp:forceGradebookReload', function() {
-                console.log('Event detected: cpp:forceGradebookReload. Reloading gradebook...');
                 if (cpp.currentClaseIdCuaderno) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    // Usar cpp.currentEvaluacionId que ya debería estar actualizado
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
                 }
             });
 
             $document.on('cpp:forceProgramadorReload', function() {
-                console.log('Event detected: cpp:forceProgramadorReload. Reloading scheduler...');
                 if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.programadorInicializado && CppProgramadorApp.currentClase) {
                     CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
                 }
@@ -640,11 +610,11 @@
             if (sortOrder === 'nombre') {
                 $button.html(icons.nombre);
                 $button.attr('title', 'Ordenado por Nombre (clic para cambiar a Apellidos)');
-                $button.data('sort', 'nombre');
+                $button.attr('data-sort', 'nombre');
             } else {
                 $button.html(icons.apellidos);
                 $button.attr('title', 'Ordenado por Apellidos (clic para cambiar a Nombre)');
-                $button.data('sort', 'apellidos');
+                $button.attr('data-sort', 'apellidos');
             }
         },
 
@@ -665,7 +635,7 @@
             $container.html(selectHtml);
         },
         
-        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder) {
+        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder, saveSort = false) {
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
@@ -691,7 +661,8 @@
                 let ajaxData = {
                     nonce: cppFrontendData.nonce,
                     clase_id: claseId,
-                    sort_order: sortOrder
+                    sort_order: sortOrder,
+                    save_sort_preference: saveSort ? 'true' : 'false'
                 };
                 if (!isFinalView && evaluacionId) {
                     ajaxData.evaluacion_id = evaluacionId;
@@ -735,18 +706,20 @@
                             }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
                             self.updateSortButton(response.data.sort_order);
+                            if (saveSort) {
+                                cpp.utils.showToast('Preferencia de orden guardada.');
+                            }
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
                         } else {
-                            let errorMsg = 'Error al cargar el contenido del cuaderno. Respuesta inesperada.';
+                            let errorMsg = 'Error al cargar el contenido del cuaderno.';
                             if (response && response.data && response.data.message) {
                                 errorMsg = response.data.message;
                             }
                             $contenidoCuaderno.html(`<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">${errorMsg}</p></div>`);
                         }
                     },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error("Error AJAX cargando cuaderno. Status:", textStatus, "Error:", errorThrown, jqXHR.responseText);
+                    error: function() {
                         $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error de conexión al cargar el cuaderno.</p></div>');
                     },
                     complete: function() {
@@ -760,9 +733,6 @@
                     cpp.utils.hideLoader();
                 }
                 $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p>Selecciona una clase para ver el cuaderno.</p></div>');
-                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
-                    cpp.cuaderno.actualizarSelectCategoriasActividad(0, null);
-                }
                 $('#clase_id_actividad_cuaderno_form').val('');
                 if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
                     cpp.utils.updateTopBar({
@@ -801,13 +771,13 @@
         },
         
         limpiarErrorNotaInput: function(inputElement){ const $input = $(inputElement); $input.removeClass('cpp-nota-error cpp-nota-guardada'); $input.closest('td').find('.cpp-nota-validation-message').hide().text(''); },
-        guardarNotaDesdeInput: function(event, callbackFn) { const $input = $(this); const alumnoId = $input.data('alumno-id'); const actividadId = $input.data('actividad-id'); const notaMaxima = parseFloat($input.data('nota-maxima')); let notaStr = $input.val().trim(); const $td = $input.closest('td'); const $validationMessage = $td.find('.cpp-nota-validation-message'); cpp.cuaderno.limpiarErrorNotaInput(this); if (notaStr !== '') { const match = notaStr.match(/[0-9,.]+/); const notaNum = match ? parseFloat(match[0].replace(',', '.')) : NaN; if (!isNaN(notaNum)) { if (notaNum < 0 || notaNum > notaMaxima) { $validationMessage.text(`Nota 0-${notaMaxima}`).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); return; } } } const originalNota = $input.data('original-nota') || ''; if (notaStr === originalNota && event && event.type === 'blur') { if (typeof callbackFn === 'function') callbackFn(true, false); return; } $input.prop('disabled', true); $validationMessage.hide().text(''); const ajaxData = { action: 'cpp_guardar_calificacion_alumno', nonce: cppFrontendData.nonce, alumno_id: alumnoId, actividad_id: actividadId, nota: notaStr, evaluacion_id: cpp.currentEvaluacionId }; $.ajax({ url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData, success: function(response) { if (response && response.success) { $input.addClass('cpp-nota-guardada'); if (response.data) { const $notaFinalCell = $(`#cpp-nota-final-alumno-${alumnoId}`); $notaFinalCell.text(response.data.nota_final_alumno_display); if (response.data.is_incomplete) { $notaFinalCell.attr('data-is-incomplete', 'true'); $notaFinalCell.attr('data-used-categories', JSON.stringify(response.data.used_categories)); $notaFinalCell.attr('data-missing-categories', JSON.stringify(response.data.missing_categories)); if ($notaFinalCell.find('.cpp-warning-icon').length === 0) { $notaFinalCell.append(' <span class="cpp-warning-icon" title="Nota incompleta">⚠️</span>'); } } else { $notaFinalCell.removeAttr('data-is-incomplete'); $notaFinalCell.removeAttr('data-used-categories'); $notaFinalCell.removeAttr('data-missing-categories'); $notaFinalCell.find('.cpp-warning-icon').remove(); } } let displayNota = notaStr; const numMatch = notaStr.match(/^[0-9,.]*$/); if (numMatch) { const num = parseFloat(notaStr.replace(',', '.')); if (!isNaN(num)) { displayNota = (num % 1 !== 0) ? num.toFixed(2) : String(parseInt(num)); } } $input.val(displayNota); $input.data('original-nota', displayNota); setTimeout(function() { $input.removeClass('cpp-nota-guardada'); }, 1500); if (typeof callbackFn === 'function') callbackFn(true, true); } else { const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error desconocido al guardar.'; $validationMessage.text(errorMsg).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); } }, error: function() { $validationMessage.text('Error de conexión').show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); }, complete: function() { $input.prop('disabled', false); } }); },
+        guardarNotaDesdeInput: function(event, callbackFn) { const $input = $(this); const alumnoId = $input.data('alumno-id'); const actividadId = $input.data('actividad-id'); const notaMaxima = parseFloat($input.data('nota-maxima')); let notaStr = $input.val().trim(); const $td = $input.closest('td'); const $validationMessage = $td.find('.cpp-nota-validation-message'); cpp.cuaderno.limpiarErrorNotaInput(this); if (notaStr !== '') { const match = notaStr.match(/[0-9,.]+/); const notaNum = match ? parseFloat(match[0].replace(',', '.')) : NaN; if (!isNaN(notaNum)) { if (notaNum < 0 || notaNum > notaMaxima) { $validationMessage.text(`Nota 0-${notaMaxima}`).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); return; } } } const originalNota = $input.data('original-nota') || ''; if (notaStr === originalNota && event && event.type === 'blur') { if (typeof callbackFn === 'function') callbackFn(true, false); return; } $input.prop('disabled', true); $validationMessage.hide().text(''); const ajaxData = { action: 'cpp_guardar_calificacion_alumno', nonce: cppFrontendData.nonce, alumno_id: alumnoId, actividad_id: actividadId, nota: notaStr, evaluacion_id: cpp.currentEvaluacionId }; $.ajax({ url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData, success: function(response) { if (response && response.success) { $input.addClass('cpp-nota-guardada'); if (response.data) { const $notaFinalCell = $(`#cpp-nota-final-alumno-${alumnoId}`); $notaFinalCell.text(response.data.nota_final_alumno_display); if (response.data.is_incomplete) { $notaFinalCell.attr('data-is-incomplete', 'true'); $notaFinalCell.attr('data-used-categories', JSON.stringify(response.data.used_categories)); $notaFinalCell.attr('data-missing-categories', JSON.stringify(response.data.missing_categories)); if ($notaFinalCell.find('.cpp-warning-icon').length === 0) { $notaFinalCell.append(' <span class="cpp-warning-icon" title="Nota incompleta">⚠️</span>'); } } else { $notaFinalCell.removeAttr('data-is-incomplete'); $notaFinalCell.removeAttr('data-used-categories'); $notaFinalCell.removeAttr('data-missing-categories'); $notaFinalCell.find('.cpp-warning-icon').remove(); } } let displayNota = notaStr; const numMatch = notaStr.match(/^[0-9,.]*$/); if (numMatch) { const num = parseFloat(notaStr.replace(',', '.')); if (!isNaN(num)) { displayNota = (num % 1 !== 0) ? num.toFixed(2) : String(parseInt(num)); } } $input.val(displayNota); $input.data('original-nota', displayNota); setTimeout(function() { $input.removeClass('cpp-nota-guardada'); }, 1500); if (typeof callbackFn === 'function') callbackFn(true, true); } else { const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error al guardar.'; $validationMessage.text(errorMsg).show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); } }, error: function() { $validationMessage.text('Error de conexión').show(); $input.addClass('cpp-nota-error'); if (typeof callbackFn === 'function') callbackFn(false); }, complete: function() { $input.prop('disabled', false); } }); },
         manejarNavegacionTablaNotas: function(e) { const $thisInput = $(this); const $td = $thisInput.closest('td'); const $tr = $td.closest('tr'); let $nextCell; if (e.key === 'Enter') { e.preventDefault(); cpp.cuaderno.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved) { if (isValid) { $nextCell = $tr.next('tr').find(`td:eq(${$td.index()})`); if ($nextCell && $nextCell.length) { $nextCell.find('input.cpp-input-nota').focus().select(); } } }); } else if (e.key === 'Tab') { e.preventDefault(); cpp.cuaderno.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved) { if (isValid) { if (e.shiftKey) { $nextCell = $td.prevAll('td:has(input.cpp-input-nota)').first(); if (!$nextCell.length) { $nextCell = $tr.prev('tr').find('td:has(input.cpp-input-nota)').last(); } } else { $nextCell = $td.nextAll('td:has(input.cpp-input-nota)').first(); if (!$nextCell.length) { $nextCell = $tr.next('tr').find('td:has(input.cpp-input-nota)').first(); } } if ($nextCell && $nextCell.length) { $nextCell.find('input.cpp-input-nota').focus().select(); } } }); } else if (e.key === 'ArrowUp') { e.preventDefault(); $nextCell = $tr.prev('tr').find(`td:eq(${$td.index()})`); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } else if (e.key === 'ArrowDown') { e.preventDefault(); $nextCell = $tr.next('tr').find(`td:eq(${$td.index()})`); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } else if (e.key === 'ArrowLeft') { if (this.selectionStart === 0 && this.selectionEnd === 0) { e.preventDefault(); $nextCell = $td.prevAll('td:has(input.cpp-input-nota)').first(); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } } else if (e.key === 'ArrowRight') { if (this.selectionStart === this.value.length && this.selectionEnd === this.value.length) { e.preventDefault(); $nextCell = $td.nextAll('td:has(input.cpp-input-nota)').first(); if ($nextCell.length) $nextCell.find('input.cpp-input-nota').focus().select(); } } else if (e.key === 'Escape') { $thisInput.val($thisInput.data('original-nota') || ''); cpp.cuaderno.limpiarErrorNotaInput(this); $thisInput.blur(); cpp.cuaderno.clearCellSelection(); } },
         clearCellSelection: function() { $('.cpp-input-nota.cpp-cell-selected').removeClass('cpp-cell-selected'); this.currentSelectedInputs = []; },
         updateSelectionRange: function(startInputDom, currentInputDom) { $('.cpp-input-nota.cpp-cell-selected').removeClass('cpp-cell-selected'); this.currentSelectedInputs = []; const $startTd = $(startInputDom).closest('td'); const $currentTd = $(currentInputDom).closest('td'); const $startTr = $startTd.closest('tr'); const $currentTr = $currentTd.closest('tr'); const allTrs = $('.cpp-cuaderno-tabla tbody tr:visible'); const startRowIndex = allTrs.index($startTr); const currentRowIndex = allTrs.index($currentTr); const startColRelIndex = $startTr.find('td.cpp-cuaderno-td-nota').index($startTd.filter('.cpp-cuaderno-td-nota')); const currentColRelIndex = $currentTr.find('td.cpp-cuaderno-td-nota').index($currentTd.filter('.cpp-cuaderno-td-nota')); if (startRowIndex === -1 || currentRowIndex === -1 || startColRelIndex === -1 || currentColRelIndex === -1) { $(startInputDom).addClass('cpp-cell-selected'); this.currentSelectedInputs.push(startInputDom); return; } const minRow = Math.min(startRowIndex, currentRowIndex); const maxRow = Math.max(startRowIndex, currentRowIndex); const minColRel = Math.min(startColRelIndex, currentColRelIndex); const maxColRel = Math.max(startColRelIndex, currentColRelIndex); for (let r = minRow; r <= maxRow; r++) { const $row = $(allTrs[r]); const $tdsInRow = $row.find('td.cpp-cuaderno-td-nota'); for (let c = minColRel; c <= maxColRel; c++) { if (c < $tdsInRow.length) { const $td = $($tdsInRow[c]); const $inputInCell = $td.find('.cpp-input-nota'); if ($inputInCell.length) { $inputInCell.addClass('cpp-cell-selected'); this.currentSelectedInputs.push($inputInCell[0]); } } } } },
         handleCellMouseDown: function(e) { const clickedInput = this; const self = cpp.cuaderno; if (e.shiftKey && self.selectionStartCellInput) { self.updateSelectionRange(self.selectionStartCellInput, clickedInput); e.preventDefault(); } else { if (self.currentSelectedInputs.length > 1 || (self.currentSelectedInputs.length === 1 && self.currentSelectedInputs[0] !== clickedInput)) { self.clearCellSelection(); } self.selectionStartCellInput = clickedInput; if (!$(clickedInput).hasClass('cpp-cell-selected')) { if (!(self.currentSelectedInputs.length === 1 && self.currentSelectedInputs[0] === clickedInput)) { self.clearCellSelection(); } $(clickedInput).addClass('cpp-cell-selected'); self.currentSelectedInputs = [clickedInput]; } } let dragHasStarted = false; $(document).off('mousemove.cppCellSelection mouseup.cppCellSelection'); $(document).on('mousemove.cppCellSelection', function(moveEvent) { if (!self.selectionStartCellInput) { return; } if (!dragHasStarted) { dragHasStarted = true; self.isDraggingSelection = true; $('body').addClass('cpp-no-text-select'); } if (self.isDraggingSelection) { moveEvent.preventDefault(); let $hoveredTd = $(moveEvent.target).closest('td.cpp-cuaderno-td-nota'); if ($hoveredTd.length) { let hoveredInput = $hoveredTd.find('.cpp-input-nota')[0]; if (hoveredInput) { self.updateSelectionRange(self.selectionStartCellInput, hoveredInput); } } } }); $(document).on('mouseup.cppCellSelection', function(upEvent) { if (dragHasStarted) { $('body').removeClass('cpp-no-text-select'); } self.isDraggingSelection = false; $(document).off('mousemove.cppCellSelection mouseup.cppCellSelection'); }); },
-        handleCopyCells: function(e) { if (cpp.cuaderno.currentSelectedInputs && cpp.cuaderno.currentSelectedInputs.length > 0) { let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity; const cellData = []; const $tbody = $('.cpp-cuaderno-tabla tbody'); $(cpp.cuaderno.currentSelectedInputs).each(function() { const $input = $(this); const $td = $input.closest('td'); const $tr = $td.closest('tr'); const r = $tbody.find('tr:visible').index($tr); const c = $tr.find('td.cpp-cuaderno-td-nota').index($td); if (r !== -1 && c !== -1) { minRow = Math.min(minRow, r); maxRow = Math.max(maxRow, r); minCol = Math.min(minCol, c); maxCol = Math.max(maxCol, c); cellData.push({ row: r, col: c, value: $input.val() }); } }); if (cellData.length === 0) return; const numRows = maxRow - minRow + 1; const numCols = maxCol - minCol + 1; const dataMatrix = Array(numRows).fill(null).map(() => Array(numCols).fill('')); cellData.forEach(cell => { dataMatrix[cell.row - minRow][cell.col - minCol] = cell.value; }); const tsvString = dataMatrix.map(row => row.join('\t')).join('\n'); if (e.originalEvent && e.originalEvent.clipboardData) { e.originalEvent.clipboardData.setData('text/plain', tsvString); e.preventDefault(); } else { console.warn("Clipboard API no disponible directamente. No se pudo copiar."); } } },
-        handlePasteCells: function(e) { e.preventDefault(); const self = cpp.cuaderno; const $startInput = $(this); const $startTd = $startInput.closest('td'); const $startTr = $startInput.closest('tr'); const $tbody = $('.cpp-cuaderno-tabla tbody'); const startRowVisibleIndex = $tbody.find('tr:visible').index($startTr); const startColVisibleIndex = $startTr.find('td.cpp-cuaderno-td-nota').index($startTd); if (startRowVisibleIndex === -1 || startColVisibleIndex === -1) { console.error("Celda de inicio para pegar no válida."); return; } let pastedData = ''; if (e.originalEvent && e.originalEvent.clipboardData) { pastedData = e.originalEvent.clipboardData.getData('text/plain'); } else if (window.clipboardData) { pastedData = window.clipboardData.getData('Text'); } if (!pastedData) return; const rows = pastedData.split(/\r\n|\n|\r/); self.clearCellSelection(); const $allVisibleTrs = $tbody.find('tr:visible'); const newSelectedInputs = []; for (let i = 0; i < rows.length; i++) { const cells = rows[i].split('\t'); const targetRowIndex = startRowVisibleIndex + i; if (targetRowIndex >= $allVisibleTrs.length) break; const $targetTr = $($allVisibleTrs[targetRowIndex]); const $targetTdsNotas = $targetTr.find('td.cpp-cuaderno-td-nota'); for (let j = 0; j < cells.length; j++) { const targetColIndex = startColVisibleIndex + j; if (targetColIndex >= $targetTdsNotas.length) break; const $targetTd = $($targetTdsNotas[targetColIndex]); const $targetInput = $targetTd.find('.cpp-input-nota'); if ($targetInput.length) { const pastedValue = cells[j]; $targetInput.val(pastedValue); newSelectedInputs.push($targetInput[0]); const mockEvent = { type: 'paste', target: $targetInput[0] }; self.guardarNotaDesdeInput.call($targetInput[0], mockEvent, function(success, saved) {}); } } } if (newSelectedInputs.length > 0) { self.currentSelectedInputs = newSelectedInputs; $(newSelectedInputs).addClass('cpp-cell-selected'); } },
+        handleCopyCells: function(e) { if (cpp.cuaderno.currentSelectedInputs && cpp.cuaderno.currentSelectedInputs.length > 0) { let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity; const cellData = []; const $tbody = $('.cpp-cuaderno-tabla tbody'); $(cpp.cuaderno.currentSelectedInputs).each(function() { const $input = $(this); const $td = $input.closest('td'); const $tr = $td.closest('tr'); const r = $tbody.find('tr:visible').index($tr); const c = $tr.find('td.cpp-cuaderno-td-nota').index($td); if (r !== -1 && c !== -1) { minRow = Math.min(minRow, r); maxRow = Math.max(maxRow, r); minCol = Math.min(minCol, c); maxCol = Math.max(maxCol, c); cellData.push({ row: r, col: c, value: $input.val() }); } }); if (cellData.length === 0) return; const numRows = maxRow - minRow + 1; const numCols = maxCol - minCol + 1; const dataMatrix = Array(numRows).fill(null).map(() => Array(numCols).fill('')); cellData.forEach(cell => { dataMatrix[cell.row - minRow][cell.col - minCol] = cell.value; }); const tsvString = dataMatrix.map(row => row.join('\t')).join('\n'); if (e.originalEvent && e.originalEvent.clipboardData) { e.originalEvent.clipboardData.setData('text/plain', tsvString); e.preventDefault(); } } },
+        handlePasteCells: function(e) { e.preventDefault(); const self = cpp.cuaderno; const $startInput = $(this); const $startTd = $startInput.closest('td'); const $startTr = $startInput.closest('tr'); const $tbody = $('.cpp-cuaderno-tabla tbody'); const startRowVisibleIndex = $tbody.find('tr:visible').index($startTr); const startColVisibleIndex = $startTr.find('td.cpp-cuaderno-td-nota').index($startTd); if (startRowVisibleIndex === -1 || startColVisibleIndex === -1) { return; } let pastedData = ''; if (e.originalEvent && e.originalEvent.clipboardData) { pastedData = e.originalEvent.clipboardData.getData('text/plain'); } else if (window.clipboardData) { pastedData = window.clipboardData.getData('Text'); } if (!pastedData) return; const rows = pastedData.split(/\r\n|\n|\r/); self.clearCellSelection(); const $allVisibleTrs = $tbody.find('tr:visible'); const newSelectedInputs = []; for (let i = 0; i < rows.length; i++) { const cells = rows[i].split('\t'); const targetRowIndex = startRowVisibleIndex + i; if (targetRowIndex >= $allVisibleTrs.length) break; const $targetTr = $($allVisibleTrs[targetRowIndex]); const $targetTdsNotas = $targetTr.find('td.cpp-cuaderno-td-nota'); for (let j = 0; j < cells.length; j++) { const targetColIndex = startColVisibleIndex + j; if (targetColIndex >= $targetTdsNotas.length) break; const $targetTd = $($targetTdsNotas[targetColIndex]); const $targetInput = $targetTd.find('.cpp-input-nota'); if ($targetInput.length) { const pastedValue = cells[j]; $targetInput.val(pastedValue); newSelectedInputs.push($targetInput[0]); const mockEvent = { type: 'paste', target: $targetInput[0] }; self.guardarNotaDesdeInput.call($targetInput[0], mockEvent, function(success, saved) {}); } } } if (newSelectedInputs.length > 0) { self.currentSelectedInputs = newSelectedInputs; $(newSelectedInputs).addClass('cpp-cell-selected'); } },
         handleClickAlumnoCell: function(e) {
             e.preventDefault();
             const $td = $(this);
@@ -815,33 +785,24 @@
             const alumnoId = $tr.data('alumno-id');
 
             if (!alumnoId) {
-                console.warn("No se pudo obtener el ID del alumno para abrir la ficha.");
                 return;
             }
 
-            // 1. Cambiar a la pestaña de Alumnos
             $('.cpp-main-tab-link[data-tab="alumnos"]').trigger('click');
 
-            // 2. Abrir la ficha del alumno.
-            // Usamos un timeout para dar tiempo a la pestaña de alumnos a inicializarse
-            // y cargar la lista de alumnos si es la primera vez.
             setTimeout(() => {
                 if (cpp.alumnos && typeof cpp.alumnos.displayAlumnoFicha === 'function') {
                     cpp.alumnos.displayAlumnoFicha(alumnoId);
-
-                    // Opcional: hacer scroll para asegurar que la ficha sea visible si es necesario
                     const $fichaContainer = $('#cpp-alumnos-view-main');
                     if ($fichaContainer.length) {
                         $('html, body').animate({
-                            scrollTop: $fichaContainer.offset().top - 100 // 100px offset from top
+                            scrollTop: $fichaContainer.offset().top - 100
                         }, 300);
                     }
-                } else {
-                    console.error("Función cpp.alumnos.displayAlumnoFicha no encontrada.");
                 }
-            }, 150); // Un pequeño retardo es suficiente
+            }, 150);
         },
-        handleClickNotaFinalHeader: function(e) { if (e.target !== this && $(e.target).closest(this).length) { if ($(e.target).is('button, a, input') || $(e.target).closest('button, a, input').length) { return; } } e.preventDefault(); if (!cpp.currentClaseIdCuaderno) { alert('Por favor, selecciona una clase primero.'); return; } if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaEditar === 'function') { cpp.modals.clase.showParaEditar(null, true, cpp.currentClaseIdCuaderno); } else { console.error("Función cpp.modals.clase.showParaEditar no encontrada."); } },
+        handleClickNotaFinalHeader: function(e) { if (e.target !== this && $(e.target).closest(this).length) { if ($(e.target).is('button, a, input') || $(e.target).closest('button, a, input').length) { return; } } e.preventDefault(); if (!cpp.currentClaseIdCuaderno) { alert('Por favor, selecciona una clase primero.'); return; } if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaEditar === 'function') { cpp.modals.clase.showParaEditar(null, true, cpp.currentClaseIdCuaderno); } },
 
         handleFinalGradeSort: function(e) {
             e.preventDefault();
@@ -858,7 +819,7 @@
                 sortOrderForAjax = 'nota_asc';
             } else { // asc
                 nextSortState = 'none';
-                sortOrderForAjax = $('#cpp-a1-sort-students-btn').data('sort') || 'apellidos';
+                sortOrderForAjax = $('#cpp-a1-sort-students-btn').attr('data-sort') || 'apellidos';
             }
             self.finalGradeSortState = nextSortState;
 
@@ -902,7 +863,6 @@
 
             const isRightTab = ['semana', 'horario', 'alumnos', 'resumen'].includes(tabName);
 
-            // Control de visibilidad de los botones de la barra superior
             $('#cpp-alumnos-top-bar-actions').hide();
             $('#cpp-semana-top-bar-actions').hide();
 
@@ -918,34 +878,27 @@
                 const $fullscreenContainer = $('#cpp-fullscreen-tab-container');
 
                 if ($content.length && $fullscreenContent.length) {
-                    // Limpiar el contenedor antes de añadir nuevo contenido
                     $fullscreenContent.empty();
-                    // Mover el contenido y añadir la clase 'active' para asegurar que sea visible
                     $fullscreenContent.append($content.addClass('active'));
                     $('#cpp-fullscreen-tab-title').text($tab.text());
                     $('#cpp-cuaderno-main-content').hide();
                     $fullscreenContainer.show();
                     $('body').addClass('cpp-fullscreen-active');
                 }
-
-                // No activar/desactivar visualmente las pestañas derechas
             } else {
                 this.lastActiveTab = tabName;
-                // Lógica original para pestañas izquierdas
                 $('.cpp-main-tab-link').removeClass('active');
                 $('.cpp-main-tab-content').removeClass('active');
                 $tab.addClass('active');
                 $('#cpp-main-tab-' + tabName).addClass('active');
             }
 
-            // 2. Guardar estado en localStorage
             try {
                 localStorage.setItem('cpp_last_opened_tab', tabName);
             } catch (e) {
                 console.warn("No se pudo guardar la última pestaña abierta en localStorage:", e);
             }
 
-            // 3. Lógica específica de la pestaña (efectos secundarios)
             const globalEvalId = $('#cpp-global-evaluacion-selector').val();
             const isProgramadorTab = ['programacion', 'semana', 'horario'].includes(tabName);
 
@@ -954,7 +907,6 @@
                     cpp.alumnos.enter();
                 }
             } else if (isProgramadorTab) {
-                // Inicializar el programador si es la primera vez
                 if (!this.programadorInicializado) {
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
                         if (cpp.currentClaseIdCuaderno) {
@@ -964,20 +916,16 @@
                             $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel">Por favor, selecciona una clase primero.</p>');
                         }
                     } else {
-                        console.error("Error: El objeto CppProgramadorApp no está disponible.");
-                        $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente del programador.</p>');
+                        $('#cpp-main-tab-programacion, #cpp-main-tab-semana, #cpp-main-tab-horario').html('<p class="cpp-empty-panel" style="color:red;">Error al cargar el componente del programador.</p>');
                     }
                 }
 
-                // --- Lógica de Sincronización ---
                 if (globalEvalId === 'final') {
-                    // Si es la Evaluación Final, forzar el renderizado del mensaje especial
                     if (typeof CppProgramadorApp !== 'undefined') {
                         CppProgramadorApp.currentEvaluacionId = 'final';
                         CppProgramadorApp.renderProgramacionTab();
                     }
                 } else {
-                    // Para cualquier otra evaluación, usar la lógica de carga normal
                     if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
                         const claseNoCoincide = !CppProgramadorApp.currentClase || CppProgramadorApp.currentClase.id != cpp.currentClaseIdCuaderno;
                         const evaluacionNoCoincide = CppProgramadorApp.currentEvaluacionId != globalEvalId;
@@ -988,12 +936,10 @@
                     }
                 }
 
-                // Renderizar la pestaña de la semana bajo demanda, si aplica
                 if (tabName === 'semana' && typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
                     CppProgramadorApp.renderSemanaTab();
                 }
             } else if (tabName === 'cuaderno') {
-                // Forzar recarga del cuaderno si la evaluación activa del contenedor no coincide con la del selector global
                 const activeEvalInCuaderno = $('#cpp-cuaderno-contenido').attr('data-active-eval');
                 if (cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
@@ -1003,110 +949,10 @@
                 if (window.cppResumenApp && typeof window.cppResumenApp.render === 'function') {
                     window.cppResumenApp.render();
                 } else {
-                    console.error("Error: El objeto cppResumenApp no está disponible o no se pudo cargar.");
-                    $('#cpp-main-tab-resumen').html('<p class="cpp-empty-panel" style="color:red;">Error: No se pudo cargar el componente de resumen.</p>');
-                }
-            } else if (tabName === 'alumnos') {
-                if (cpp.alumnos && typeof cpp.alumnos.enter === 'function') {
-                    cpp.alumnos.enter();
+                    $('#cpp-main-tab-resumen').html('<p class="cpp-empty-panel" style="color:red;">Error al cargar el componente de resumen.</p>');
                 }
             }
-        },
-
-        showCopyStudentsModal: function() {
-            const self = this;
-            const $modal = $('#cpp-modal-copy-students');
-            const $select = $('#cpp-copy-students-source-class-select');
-            const $form = $('#cpp-form-copy-students');
-            const targetClaseId = cpp.currentClaseIdCuaderno;
-
-            if (!targetClaseId) {
-                alert('Error: No se ha seleccionado una clase de destino.');
-                return;
-            }
-
-            // Resetear el select y mostrar estado de carga
-            $select.html('<option value="">Cargando clases...</option>').prop('disabled', true);
-            $modal.css('display', 'flex');
-
-            // --- AJAX para obtener las clases de origen ---
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    action: 'cpp_get_source_classes_for_copy',
-                    nonce: cppFrontendData.nonce,
-                    target_clase_id: targetClaseId
-                },
-                success: function(response) {
-                    $select.empty();
-                    if (response.success && response.data.clases && response.data.clases.length > 0) {
-                        $select.append('<option value="">-- Selecciona una clase --</option>');
-                        response.data.clases.forEach(function(clase) {
-                            $select.append(`<option value="${clase.id}">${$('<div>').text(clase.nombre).html()}</option>`);
-                        });
-                        $select.prop('disabled', false);
-                    } else {
-                        $select.html('<option value="">No hay otras clases para copiar.</option>');
-                    }
-                },
-                error: function() {
-                    $select.html('<option value="">Error al cargar clases.</option>');
-                    cpp.utils.showToast('Error de conexión al cargar las clases.', 'error');
-                }
-            });
-
-            // --- Handler para el envío del formulario ---
-            $form.off('submit').on('submit', function(e) {
-                e.preventDefault();
-                const sourceClaseId = $select.val();
-                if (!sourceClaseId) {
-                    cpp.utils.showToast('Por favor, selecciona una clase de origen.', 'warning');
-                    return;
-                }
-
-                cpp.utils.showSpinner();
-
-                // --- AJAX para ejecutar la copia ---
-                $.ajax({
-                    url: cppFrontendData.ajaxUrl,
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        action: 'cpp_copy_alumnos_to_clase',
-                        nonce: cppFrontendData.nonce,
-                        source_clase_id: sourceClaseId,
-                        target_clase_id: targetClaseId
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            cpp.utils.showToast(response.data.message || 'Alumnos copiados con éxito.');
-                            $modal.hide();
-                            // Recargar el contenido del cuaderno para mostrar los nuevos alumnos
-                            if (cpp.currentClaseIdCuaderno) {
-                                const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                                self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
-                            }
-                        } else {
-                            cpp.utils.showToast('Error: ' + (response.data.message || 'No se pudieron copiar los alumnos.'), 'error');
-                        }
-                    },
-                    error: function() {
-                        cpp.utils.showToast('Error de conexión al copiar los alumnos.', 'error');
-                    },
-                    complete: function() {
-                        cpp.utils.hideSpinner();
-                    }
-                });
-            });
-
-            // --- Handlers para cerrar/cancelar ---
-            $modal.find('.cpp-modal-close, .cpp-modal-cancel-btn').off('click').on('click', function() {
-                $modal.hide();
-            });
-        },
-
+        }
     };
 
 })(jQuery);
