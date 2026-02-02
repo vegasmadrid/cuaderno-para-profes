@@ -56,6 +56,12 @@
                 
                 $('#cpp-clase-modal-evaluaciones-container').html('<p>Abre una clase existente para gestionar sus evaluaciones.</p>');
                 $('#cpp-clase-modal-ponderaciones-container').html('<p>Abre una clase existente para gestionar sus ponderaciones.</p>');
+
+                // Resetear opciones de copia de alumnos
+                $('#cpp-opcion-copiar-alumnos-container').hide();
+                $('#cpp-copiar-alumnos-desde-otra').prop('checked', false);
+                $('#cpp-select-clase-origen-container').hide();
+                $('#cpp-select-clase-origen').empty().append('<option value="">-- Selecciona una clase --</option>');
             }
             this.currentClaseIdForModal = null;
         },
@@ -73,10 +79,39 @@
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
 
-            $('#cpp-opcion-clase-ejemplo-container').show();
-            $('#rellenar_clase_ejemplo').prop('checked', false);
+            $('#cpp-opcion-copiar-alumnos-container').show();
+            this.cargarClasesParaCopiar();
             
             $modal.fadeIn().find('#nombre_clase_modal').focus();
+        },
+
+        cargarClasesParaCopiar: function() {
+            const $select = $('#cpp-select-clase-origen');
+            $select.html('<option value="">Cargando clases...</option>').prop('disabled', true);
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_get_clases_for_filter',
+                    nonce: cppFrontendData.nonce
+                },
+                success: function(response) {
+                    $select.empty().prop('disabled', false);
+                    if (response.success && response.data.clases && response.data.clases.length > 0) {
+                        $select.append('<option value="">-- Selecciona una clase --</option>');
+                        response.data.clases.forEach(function(clase) {
+                            $select.append(`<option value="${clase.id}">${clase.nombre}</option>`);
+                        });
+                    } else {
+                        $select.append('<option value="">No hay otras clases disponibles</option>');
+                    }
+                },
+                error: function() {
+                    $select.html('<option value="">Error al cargar clases</option>').prop('disabled', false);
+                }
+            });
         },
 
         showParaEditar: function(e, goToPonderaciones = false, claseIdFromParam = null) { 
@@ -99,7 +134,7 @@
             this.resetForm();
             this.currentClaseIdForModal = claseId; 
 
-            $('#cpp-opcion-clase-ejemplo-container').hide();
+            $('#cpp-opcion-copiar-alumnos-container').hide();
 
             $modal.find('.cpp-tab-link').show();
 
@@ -189,15 +224,12 @@
             const baseNotaFinalClase = $form.find('[name="base_nota_final_clase"]').val().trim();
             const notaAprobadoClase = $form.find('[name="nota_aprobado_clase"]').val().trim();
             const colorClase = $form.find('#color_clase_hidden_modal').val();
-            const rellenarConEjemplo = $('#rellenar_clase_ejemplo').is(':checked');
+
+            const copiarAlumnos = $('#cpp-copiar-alumnos-desde-otra').is(':checked');
+            const claseOrigenId = $('#cpp-select-clase-origen').val();
 
             if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
             if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
-
-            if (!esEdicion && rellenarConEjemplo) {
-                this.crearClaseEjemplo(eventForm, nombreClase, colorClase);
-                return;
-            }
 
             const baseNotaNumerica = parseFloat(baseNotaFinalClase.replace(',', '.'));
             if (baseNotaFinalClase === '' || isNaN(baseNotaNumerica) || baseNotaNumerica <= 0) {
@@ -224,6 +256,10 @@
                 color_clase: colorClase, base_nota_final_clase: baseNotaNumerica.toFixed(2),
                 nota_aprobado_clase: notaAprobadoNumerica.toFixed(2)
             };
+
+            if (!esEdicion && copiarAlumnos && claseOrigenId) {
+                ajaxData.clase_origen_id = claseOrigenId;
+            }
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json', data: ajaxData,
@@ -276,41 +312,6 @@
             }
         },
 
-        crearClaseEjemplo: function(event, nombreClase, colorClase) {
-            event.preventDefault();
-            const self = this;
-            const $btn = $(event.currentTarget).is('form') ? $(event.currentTarget).find('button[type="submit"]') : $(event.currentTarget);
-            const originalBtnHtml = $btn.html();
-            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Creando...');
-
-            const ajaxData = {
-                action: 'cpp_crear_clase_ejemplo',
-                nonce: cppFrontendData.nonce,
-                nombre_clase: nombreClase,
-                color_clase: colorClase
-            };
-
-            $.ajax({
-                url: cppFrontendData.ajaxUrl,
-                type: 'POST',
-                dataType: 'json',
-                data: ajaxData,
-                success: function(response) {
-                    if (response.success) {
-                        self._handleSuccessfulClassCreation(response.data.clase);
-                    } else {
-                        alert('Error: ' + (response.data.message || 'No se pudo crear la clase de ejemplo.'));
-                    }
-                },
-                error: function() {
-                    alert('Error de conexión al crear la clase de ejemplo.');
-                },
-                complete: function() {
-                    $btn.prop('disabled', false).html(originalBtnHtml);
-                }
-            });
-        },
-
         bindEvents: function() {
             console.log("Binding Modals Clase events...");
             const $modalClase = $('#cpp-modal-clase');
@@ -321,7 +322,13 @@
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
 
-            $('body').on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
+            $modalClase.on('change', '#cpp-copiar-alumnos-desde-otra', (e) => {
+                if ($(e.currentTarget).is(':checked')) {
+                    $('#cpp-select-clase-origen-container').slideDown();
+                } else {
+                    $('#cpp-select-clase-origen-container').slideUp();
+                }
+            });
         }
     };
 
