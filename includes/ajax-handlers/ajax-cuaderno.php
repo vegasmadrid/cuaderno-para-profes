@@ -5,6 +5,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 add_action('wp_ajax_cpp_cargar_cuaderno_clase', 'cpp_ajax_cargar_cuaderno_clase');
 function cpp_ajax_cargar_cuaderno_clase() {
+    nocache_headers();
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     
@@ -16,37 +17,30 @@ function cpp_ajax_cargar_cuaderno_clase() {
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
     global $wpdb;
-    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
 
-    // Helper function for logging
-    if (!function_exists('cpp_debug_log')) {
-        function cpp_debug_log($message) {
-            $log_file = '/tmp/debug_log.txt';
-            $timestamp = date('Y-m-d H:i:s');
-            $formatted_message = sprintf("[%s] %s\n", $timestamp, print_r($message, true));
-            file_put_contents($log_file, $formatted_message, FILE_APPEND);
-        }
-    }
-
-    cpp_debug_log("--- AJAX: cpp_cargar_cuaderno_clase ---");
-    cpp_debug_log("Cargando cuaderno para clase ID: {$clase_id}");
-
     if (!$clase_db) {
-        cpp_debug_log("Error: Clase no encontrada o sin permiso para user_id: {$user_id}");
         wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']);
         return;
     }
 
-    $orden_guardado = isset($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : '(no establecido)';
-    cpp_debug_log("Orden guardado en la BD para esta clase: '{$orden_guardado}'");
+    // ATOMIC SAVE: Si se solicita guardar la preferencia, lo hacemos antes de cargar los datos
+    $db_save_status = 'not_requested';
+    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true' && isset($_POST['sort_order'])) {
+        $nuevo_orden = in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
+        $update_result = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        if ($update_result === false) {
+            $db_save_status = 'failed';
+            error_log("CPP ERROR: Fallo al guardar orden_alumnos_predeterminado ($nuevo_orden) para clase $clase_id");
+        } else {
+            $db_save_status = 'success';
+        }
+        $clase_db['orden_alumnos_predeterminado'] = $nuevo_orden; // Actualizamos en memoria para el resto de la función
+    }
 
     // Determinar el orden de los alumnos
     $default_sort_order = !empty($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'apellidos';
-    $sort_order_solicitado = isset($_POST['sort_order']) ? $_POST['sort_order'] : '(no solicitado)';
     $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : $default_sort_order;
-
-    cpp_debug_log("Orden de alumnos solicitado: '{$sort_order_solicitado}'. Orden por defecto usado: '{$default_sort_order}'. Orden final a aplicar: '{$sort_order}'");
 
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $evaluacion_activa_id = null;
@@ -133,7 +127,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -260,6 +254,12 @@ function cpp_ajax_cargar_cuaderno_clase() {
         'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'sort_order' => $sort_order,
         'has_students' => !empty($alumnos),
+        'debug' => [
+            'db_save_status' => $db_save_status,
+            'db_current_sort' => isset($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'undefined',
+            'received_sort' => isset($_POST['sort_order']) ? $_POST['sort_order'] : 'none',
+            'received_save' => isset($_POST['save_sort_preference']) ? $_POST['save_sort_preference'] : 'none'
+        ]
     ]);
 }
 
@@ -538,20 +538,34 @@ function cpp_ajax_get_evaluable_activity_data() {
 
 add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');
 function cpp_ajax_cargar_vista_final() {
+    nocache_headers();
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
 
     global $wpdb;
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : 'apellidos';
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
-    $clase_db = $wpdb->get_row($wpdb->prepare("SELECT id, nombre, user_id, color, base_nota_final, nota_aprobado FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
-    if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+    $clase_db_arr = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+    if (!$clase_db_arr) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
+    // ATOMIC SAVE:
+    $db_save_status = 'not_requested';
+    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true' && isset($_POST['sort_order'])) {
+        $nuevo_orden = in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
+        $update_result = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        if ($update_result === false) {
+            $db_save_status = 'failed';
+            error_log("CPP ERROR: Fallo al guardar orden_alumnos_predeterminado ($nuevo_orden) para clase $clase_id (vista final)");
+        } else {
+            $db_save_status = 'success';
+        }
+        $clase_db_arr['orden_alumnos_predeterminado'] = $nuevo_orden;
+    }
 
+    $default_sort_order = !empty($clase_db_arr['orden_alumnos_predeterminado']) ? $clase_db_arr['orden_alumnos_predeterminado'] : 'apellidos';
+    $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : $default_sort_order;
     // Obtener todas las evaluaciones y luego filtrar las que se deben mostrar
     $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $evaluaciones_seleccionadas_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
@@ -559,10 +573,11 @@ function cpp_ajax_cargar_vista_final() {
         return in_array($eval['id'], $evaluaciones_seleccionadas_ids);
     });
 
-    $base_nota_final_clase = isset($clase_db->base_nota_final) ? floatval($clase_db->base_nota_final) : 100.00;
-    $clase_color_actual = isset($clase_db->color) && !empty($clase_db->color) ? $clase_db->color : '#2962FF';
+    $base_nota_final_clase = isset($clase_db_arr['base_nota_final']) ? floatval($clase_db_arr['base_nota_final']) : 100.00;
+    $clase_color_actual = isset($clase_db_arr['color']) && !empty($clase_db_arr['color']) ? $clase_db_arr['color'] : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
 
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
     $notas_por_evaluacion = [];
     $notas_finales_promediadas = [];
 
@@ -600,7 +615,7 @@ function cpp_ajax_cargar_vista_final() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -681,11 +696,17 @@ function cpp_ajax_cargar_vista_final() {
         'html_cuaderno' => $html_cuaderno,
         'evaluaciones' => $evaluaciones_con_final,
         'evaluacion_activa_id' => 'final',
-        'nombre_clase' => $clase_db->nombre,
+        'nombre_clase' => $clase_db_arr['nombre'],
         'color_clase' => $clase_color_actual,
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
-        'nota_aprobado' => floatval($clase_db->nota_aprobado),
-        'has_students' => !empty($alumnos)
+        'nota_aprobado' => floatval($clase_db_arr['nota_aprobado']),
+        'has_students' => !empty($alumnos),
+        'debug' => [
+            'db_save_status' => $db_save_status,
+            'db_current_sort' => isset($clase_db_arr['orden_alumnos_predeterminado']) ? $clase_db_arr['orden_alumnos_predeterminado'] : 'undefined',
+            'received_sort' => isset($_POST['sort_order']) ? $_POST['sort_order'] : 'none',
+            'received_save' => isset($_POST['save_sort_preference']) ? $_POST['save_sort_preference'] : 'none'
+        ]
     ]);
 }

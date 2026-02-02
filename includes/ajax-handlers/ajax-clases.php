@@ -146,47 +146,4 @@ function cpp_ajax_crear_clase_ejemplo() {
     }
 }
 
-add_action('wp_ajax_cpp_guardar_orden_alumnos', 'cpp_ajax_guardar_orden_alumnos');
-function cpp_ajax_guardar_orden_alumnos() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
 
-    // Helper function for logging
-    if (!function_exists('cpp_debug_log')) {
-        function cpp_debug_log($message) {
-            $log_file = '/tmp/debug_log.txt';
-            $timestamp = date('Y-m-d H:i:s');
-            $formatted_message = sprintf("[%s] %s\n", $timestamp, print_r($message, true));
-            file_put_contents($log_file, $formatted_message, FILE_APPEND);
-        }
-    }
-
-    cpp_debug_log("--- AJAX: cpp_guardar_orden_alumnos ---");
-
-    if (!is_user_logged_in()) {
-        cpp_debug_log("Error: Usuario no autenticado.");
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
-
-    $user_id = get_current_user_id();
-    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
-    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : '';
-
-    cpp_debug_log("Datos recibidos: user_id={$user_id}, clase_id={$clase_id}, orden={$orden}");
-
-    if (empty($clase_id) || !in_array($orden, ['nombre', 'apellidos'])) {
-        cpp_debug_log("Error: Datos no válidos.");
-        wp_send_json_error(['message' => 'Datos no válidos proporcionados.']);
-        return;
-    }
-
-    $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $orden]);
-
-    if ($resultado !== false) {
-        cpp_debug_log("Éxito: La preferencia de orden se guardó correctamente en la BD. Filas afectadas: {$resultado}");
-        wp_send_json_success(['message' => 'Preferencia de orden guardada.']);
-    } else {
-        cpp_debug_log("Error: cpp_actualizar_clase_completa devolvió false.");
-        wp_send_json_error(['message' => 'Error al guardar la preferencia de orden.']);
-    }
-}

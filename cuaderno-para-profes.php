@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.4.0');
+define('CPP_VERSION', '2.5.2');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -63,17 +63,18 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-sidebar-js', CPP_PLUGIN_URL . 'assets/js/cpp-sidebar.js', ['cpp-core-js', 'cpp-modales-clase-js'], $plugin_version, true);
 
     wp_enqueue_script('cpp-programador-js', CPP_PLUGIN_URL . 'assets/js/cpp-programador.js', ['cpp-core-js', 'jquery-ui-droppable', 'jquery-ui-draggable'], $plugin_version, true);
-    wp_enqueue_script('cpp-cuaderno-js', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
+    // Renamed file to FORCE cache busting across all environments
+    wp_enqueue_script('cpp-cuaderno-app', CPP_PLUGIN_URL . 'assets/js/cpp-cuaderno-v252.js', ['cpp-core-js', 'cpp-programador-js'], $plugin_version, true);
 
     wp_enqueue_script('cpp-modales-general-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-general.js', ['cpp-core-js'], $plugin_version, true);
     wp_enqueue_script('cpp-configuracion-js', CPP_PLUGIN_URL . 'assets/js/cpp-configuracion.js', ['cpp-core-js'], $plugin_version, true);
     wp_register_script('cpp-resumen-js', CPP_PLUGIN_URL . 'assets/js/cpp-resumen.js', ['cpp-core-js', 'chart-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-actividad-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-actividad.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-actividad-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-actividad.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-app'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-excel-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-excel.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-asistencia-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-asistencia.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-app'], $plugin_version, true);
+    wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-app'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
-    wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-js'], $plugin_version, true);
+    wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
 
     // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
@@ -438,7 +439,24 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_to_many_to_many_v2_3_0_final();
     }
-    // Aquí se podrían añadir futuras migraciones con if(version_compare...)
+    if (version_compare($current_version, '2.4.6', '<')) {
+        cpp_crear_tablas(); // dbDelta se encargará de añadir la columna orden_alumnos_predeterminado
+    }
+
+    if (version_compare($current_version, '2.5.2', '<')) {
+        // Asegurar explícitamente que la columna existe y tiene valores por defecto
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cpp_clases';
+        $column_name = 'orden_alumnos_predeterminado';
+
+        $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+        if (!$column_exists) {
+            $wpdb->query("ALTER TABLE `$table_name` ADD `$column_name` VARCHAR(20) DEFAULT 'apellidos' AFTER `nota_aprobado` ");
+        }
+
+        // Forzar valor por defecto a las filas existentes que lo tengan vacío o NULL
+        $wpdb->query("UPDATE `$table_name` SET `$column_name` = 'apellidos' WHERE `$column_name` IS NULL OR `$column_name` = ''");
+    }
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
     // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.
     if (version_compare($current_version, CPP_VERSION, '<')) {
