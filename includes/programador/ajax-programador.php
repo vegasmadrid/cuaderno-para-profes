@@ -11,7 +11,6 @@ add_action('wp_ajax_cpp_add_inline_sesion', 'cpp_ajax_add_inline_sesion');
 add_action('wp_ajax_cpp_delete_programador_sesion', 'cpp_ajax_delete_programador_sesion');
 add_action('wp_ajax_cpp_save_sesiones_order', 'cpp_ajax_save_sesiones_order');
 add_action('wp_ajax_cpp_save_start_date', 'cpp_ajax_save_start_date');
-add_action('wp_ajax_cpp_create_programador_example_data', 'cpp_ajax_create_programador_example_data');
 add_action('wp_ajax_cpp_save_programador_config', 'cpp_ajax_save_programador_config');
 add_action('wp_ajax_cpp_check_schedule_conflict', 'cpp_ajax_check_schedule_conflict_handler');
 add_action('wp_ajax_cpp_copy_multiple_sesiones', 'cpp_ajax_copy_sessions');
@@ -166,15 +165,6 @@ function cpp_ajax_save_start_date() {
     } else {
         wp_send_json_error(['message' => 'Error al guardar la fecha.']);
     }
-}
-
-function cpp_ajax_create_programador_example_data() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
-    $user_id = get_current_user_id();
-    cpp_clear_programador_cache($user_id);
-    if (cpp_programador_create_example_data($user_id)) { wp_send_json_success(['message' => 'Datos de ejemplo creados.']); }
-    else { wp_send_json_error(['message' => 'No se pudieron crear los datos. Asegúrate de tener clases creadas.']); }
 }
 
 function cpp_ajax_add_inline_sesion() {

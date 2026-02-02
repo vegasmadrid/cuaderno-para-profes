@@ -75,6 +75,23 @@ function cpp_ajax_crear_clase() {
     } else {
         $nueva_clase_id = cpp_guardar_clase($user_id, $datos);
         if ($nueva_clase_id) {
+            // Asociación de alumnos si se ha proporcionado clase de origen
+            $clase_origen_id = isset($_POST['clase_origen_id']) ? intval($_POST['clase_origen_id']) : 0;
+            if ($clase_origen_id > 0 && cpp_es_propietario_clase($clase_origen_id, $user_id)) {
+                global $wpdb;
+                $alumnos_origen = cpp_obtener_alumnos_clase($clase_origen_id);
+                if (!empty($alumnos_origen)) {
+                    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+                    foreach ($alumnos_origen as $alumno) {
+                        $wpdb->insert(
+                            $tabla_alumnos_clases,
+                            ['alumno_id' => $alumno['id'], 'clase_id' => $nueva_clase_id],
+                            ['%d', '%d']
+                        );
+                    }
+                }
+            }
+
             $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
             wp_send_json_success(['message' => 'Clase guardada correctamente.', 'clase' => $nueva_clase_data]);
         } else {
@@ -120,28 +137,5 @@ function cpp_ajax_guardar_orden_clases() {
         wp_send_json_success(['message' => 'Orden de las clases guardado correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Error al guardar el orden de las clases.']);
-    }
-}
-
-add_action('wp_ajax_cpp_crear_clase_ejemplo', 'cpp_ajax_crear_clase_ejemplo');
-function cpp_ajax_crear_clase_ejemplo() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_error(['message' => 'Usuario no autenticado.']);
-        return;
-    }
-    $user_id = get_current_user_id();
-    $nombre_clase = isset($_POST['nombre_clase']) ? sanitize_text_field(trim($_POST['nombre_clase'])) : 'Clase Ejemplo';
-    if (empty($nombre_clase)) {
-        $nombre_clase = 'Clase Ejemplo';
-    }
-    $color_clase = isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#cd18be';
-
-    $nueva_clase_id = cpp_crear_clase_de_ejemplo_completa($user_id, $nombre_clase, $color_clase);
-    if ($nueva_clase_id) {
-        $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
-        wp_send_json_success(['message' => 'Clase de ejemplo creada correctamente.', 'clase' => $nueva_clase_data]);
-    } else {
-        wp_send_json_error(['message' => 'Error al crear la clase de ejemplo.']);
     }
 }
