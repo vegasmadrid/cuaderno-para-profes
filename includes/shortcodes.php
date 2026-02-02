@@ -106,12 +106,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <label for="nombre_clase_config">Nombre de la clase (máx. 16 caracteres):</label>
                                     <input type="text" id="nombre_clase_config" name="nombre_clase" required maxlength="16">
                                 </div>
-                                <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container" style="display: none;">
-                                    <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
-                                        <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
-                                        Rellenar la clase con datos de ejemplo
-                                    </label>
-                                </div>
                                 <div class="cpp-form-group">
                                     <label>Color de la clase:</label>
                                     <div class="cpp-color-swatches-container">
@@ -325,9 +319,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                         <div class="cpp-welcome-actions">
                                             <button class="cpp-btn cpp-btn-primary cpp-btn-lg" id="cpp-btn-crear-primera-clase">
                                                 <span class="dashicons dashicons-plus"></span> Crear mi primera clase
-                                            </button>
-                                            <button class="cpp-btn cpp-btn-secondary cpp-btn-lg" id="cpp-btn-crear-clase-ejemplo">
-                                                <span class="dashicons dashicons-admin-plugins"></span> Crear clase de ejemplo
                                             </button>
                                         </div>
                                     </div>
@@ -551,11 +542,17 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <label for="nombre_clase_modal">Nombre de la clase (máx. 16 caracteres):</label>
                             <input type="text" id="nombre_clase_modal" name="nombre_clase" required maxlength="16">
                         </div>
-                        <div class="cpp-form-group" id="cpp-opcion-clase-ejemplo-container">
+                        <div class="cpp-form-group" id="cpp-opcion-copiar-alumnos-container" style="display: none;">
                             <label style="font-weight:normal; display:flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="rellenar_clase_ejemplo" name="rellenar_clase_ejemplo">
-                                Rellenar la clase con datos de ejemplo
+                                <input type="checkbox" id="cpp-copiar-alumnos-desde-otra" name="copiar_alumnos_desde_otra">
+                                Copiar alumnos de otra clase existente
                             </label>
+                        </div>
+                        <div class="cpp-form-group" id="cpp-select-clase-origen-container" style="display: none; margin-top: 10px;">
+                            <label for="cpp-select-clase-origen" style="font-weight: normal; margin-bottom: 5px; display: block;">Selecciona la clase de origen:</label>
+                            <select id="cpp-select-clase-origen" name="clase_origen_id">
+                                <option value="">-- Selecciona una clase --</option>
+                            </select>
                         </div>
                         <div class="cpp-form-group">
                             <label>Color de la clase:</label>
