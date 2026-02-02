@@ -253,11 +253,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
         'base_nota_final' => $base_nota_final_clase,
         'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'sort_order' => $sort_order,
-        'has_students' => !empty($alumnos),
-        'debug' => [
-            'db_save_status' => $db_save_status,
-            'db_current_sort' => isset($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'undefined'
-        ]
+        'has_students' => !empty($alumnos)
     ]);
 }
 
@@ -575,6 +571,7 @@ function cpp_ajax_cargar_vista_final() {
     $clase_color_actual = isset($clase_db_arr['color']) && !empty($clase_db_arr['color']) ? $clase_db_arr['color'] : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
 
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
     $notas_por_evaluacion = [];
     $notas_finales_promediadas = [];
 
@@ -698,10 +695,6 @@ function cpp_ajax_cargar_vista_final() {
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
         'nota_aprobado' => floatval($clase_db_arr['nota_aprobado']),
-        'has_students' => !empty($alumnos),
-        'debug' => [
-            'db_save_status' => $db_save_status,
-            'db_current_sort' => isset($clase_db_arr['orden_alumnos_predeterminado']) ? $clase_db_arr['orden_alumnos_predeterminado'] : 'undefined'
-        ]
+        'has_students' => !empty($alumnos)
     ]);
 }
