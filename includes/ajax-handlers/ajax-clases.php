@@ -146,3 +146,27 @@ function cpp_ajax_crear_clase_ejemplo() {
     }
 }
 
+/**
+ * Fallback handler for older JavaScript versions that might still be cached
+ */
+add_action('wp_ajax_cpp_guardar_orden_alumnos', 'cpp_ajax_guardar_orden_alumnos_fallback');
+function cpp_ajax_guardar_orden_alumnos_fallback() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $orden = isset($_POST['orden']) ? sanitize_text_field($_POST['orden']) : '';
+
+    if (empty($clase_id) || !in_array($orden, ['nombre', 'apellidos'])) {
+        wp_send_json_error(['message' => 'Datos no válidos.']); return;
+    }
+
+    $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $orden]);
+
+    if ($resultado !== false) {
+        wp_send_json_success(['message' => 'Preferencia guardada (fallback).']);
+    } else {
+        wp_send_json_error(['message' => 'Error al guardar (fallback).']);
+    }
+}

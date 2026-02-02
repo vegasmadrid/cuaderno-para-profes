@@ -5,6 +5,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 add_action('wp_ajax_cpp_cargar_cuaderno_clase', 'cpp_ajax_cargar_cuaderno_clase');
 function cpp_ajax_cargar_cuaderno_clase() {
+    nocache_headers();
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     
@@ -535,6 +536,7 @@ function cpp_ajax_get_evaluable_activity_data() {
 
 add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');
 function cpp_ajax_cargar_vista_final() {
+    nocache_headers();
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
 

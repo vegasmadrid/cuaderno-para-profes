@@ -2,6 +2,7 @@
 
 (function($) {
     'use strict';
+    console.log("%c[CPP] Cuaderno Module v2.5.0 Active", "color: #cd18be; font-weight: bold; font-size: 14px;");
 
     if (typeof cpp === 'undefined') {
         console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-cuaderno.js no puede inicializarse.");
