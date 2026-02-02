@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.4.6');
+define('CPP_VERSION', '2.4.7');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -440,6 +440,17 @@ function cpp_run_migrations() {
     }
     if (version_compare($current_version, '2.4.6', '<')) {
         cpp_crear_tablas(); // dbDelta se encargará de añadir la columna orden_alumnos_predeterminado
+    }
+
+    if (version_compare($current_version, '2.4.7', '<')) {
+        // Asegurar explícitamente que la columna existe, por si dbDelta falló
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cpp_clases';
+        $column_name = 'orden_alumnos_predeterminado';
+        $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+        if (!$column_exists) {
+            $wpdb->query("ALTER TABLE `$table_name` ADD `$column_name` VARCHAR(20) DEFAULT 'apellidos' AFTER `nota_aprobado` ");
+        }
     }
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
     // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.

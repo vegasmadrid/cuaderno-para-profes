@@ -386,7 +386,7 @@
                     const activeTab = $('.cpp-main-tab-link.active').data('tab');
 
                     if (activeTab === 'cuaderno') {
-                        const sortOrder = $('#cpp-a1-sort-students-btn').data('sort');
+                        const sortOrder = $('#cpp-a1-sort-students-btn').attr('data-sort');
                         self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
                     } else if (activeTab === 'programacion') {
                         if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
@@ -403,7 +403,10 @@
                 const $button = $(this);
 
                 // ATOMIC STRATEGY: Debounce with is-handling-click
-                if ($button.data('is-handling-click')) return;
+                if ($button.data('is-handling-click')) {
+                    console.log("[CPP] Click ignored: already handling a click.");
+                    return;
+                }
                 $button.data('is-handling-click', true);
                 setTimeout(() => { $button.removeData('is-handling-click'); }, 600);
 
@@ -411,12 +414,15 @@
                 const currentSort = $button.attr('data-sort') || 'apellidos';
                 const newSort = currentSort === 'apellidos' ? 'nombre' : 'apellidos';
 
+                console.log(`[CPP] Sort button clicked. Current: ${currentSort}, New: ${newSort}`);
+
                 // Optimistically update the attribute
                 $button.attr('data-sort', newSort);
 
                 if (cpp.currentClaseIdCuaderno) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     // Send save_sort_preference: true to make the call atomic
+                    console.log(`[CPP] Calling cargarContenidoCuaderno with save_sort_preference=true and sort_order=${newSort}`);
                     self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, newSort, true);
                 }
             });
@@ -687,7 +693,11 @@
                         action: ajaxAction
                     },
                     success: function(response) {
+                        console.log("[CPP] AJAX Response received:", response);
                         if (response && response.success && response.data && typeof response.data.html_cuaderno !== 'undefined') {
+                            if (response.data.debug) {
+                                console.log(`[CPP] DB Save Status: ${response.data.debug.db_save_status}, DB Current Sort: ${response.data.debug.db_current_sort}`);
+                            }
                             if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
                                 cpp.utils.updateTopBar({
                                     nombre: response.data.nombre_clase,

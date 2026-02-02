@@ -24,9 +24,16 @@ function cpp_ajax_cargar_cuaderno_clase() {
     }
 
     // ATOMIC SAVE: Si se solicita guardar la preferencia, lo hacemos antes de cargar los datos
+    $db_save_status = 'not_requested';
     if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true' && isset($_POST['sort_order'])) {
         $nuevo_orden = in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
-        cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        $update_result = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        if ($update_result === false) {
+            $db_save_status = 'failed';
+            error_log("CPP ERROR: Fallo al guardar orden_alumnos_predeterminado ($nuevo_orden) para clase $clase_id");
+        } else {
+            $db_save_status = 'success';
+        }
         $clase_db['orden_alumnos_predeterminado'] = $nuevo_orden; // Actualizamos en memoria para el resto de la función
     }
 
@@ -119,7 +126,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -246,6 +253,10 @@ function cpp_ajax_cargar_cuaderno_clase() {
         'nota_aprobado' => floatval($clase_db['nota_aprobado']),
         'sort_order' => $sort_order,
         'has_students' => !empty($alumnos),
+        'debug' => [
+            'db_save_status' => $db_save_status,
+            'db_current_sort' => isset($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'undefined'
+        ]
     ]);
 }
 
@@ -536,9 +547,16 @@ function cpp_ajax_cargar_vista_final() {
     if (!$clase_db_arr) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
 
     // ATOMIC SAVE:
+    $db_save_status = 'not_requested';
     if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true' && isset($_POST['sort_order'])) {
         $nuevo_orden = in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
-        cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        $update_result = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        if ($update_result === false) {
+            $db_save_status = 'failed';
+            error_log("CPP ERROR: Fallo al guardar orden_alumnos_predeterminado ($nuevo_orden) para clase $clase_id (vista final)");
+        } else {
+            $db_save_status = 'success';
+        }
         $clase_db_arr['orden_alumnos_predeterminado'] = $nuevo_orden;
     }
 
@@ -592,7 +610,7 @@ function cpp_ajax_cargar_vista_final() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-icons-row">
-                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="apellidos">
+                                <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
@@ -678,6 +696,10 @@ function cpp_ajax_cargar_vista_final() {
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
         'nota_aprobado' => floatval($clase_db_arr['nota_aprobado']),
-        'has_students' => !empty($alumnos)
+        'has_students' => !empty($alumnos),
+        'debug' => [
+            'db_save_status' => $db_save_status,
+            'db_current_sort' => isset($clase_db_arr['orden_alumnos_predeterminado']) ? $clase_db_arr['orden_alumnos_predeterminado'] : 'undefined'
+        ]
     ]);
 }
