@@ -2,8 +2,8 @@
 
 (function($) {
     'use strict';
-    // UNIQUE_ID: 202602021112
-    console.log("%c[CPP] Cuaderno Module v2.5.1 Active (Atomic Strategy)", "color: #cd18be; font-weight: bold; font-size: 14px;");
+    // UNIQUE_REVISION_ID: 202602021118
+    console.log("%c[CPP] Cuaderno Module v2.5.2 Active (Atomic Strategy - Rev B)", "color: #cd18be; font-weight: bold; font-size: 14px;");
 
     if (typeof cpp === 'undefined') {
         console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-cuaderno.js no puede inicializarse.");

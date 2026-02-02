@@ -162,6 +162,16 @@ function cpp_ajax_guardar_orden_alumnos_fallback() {
         wp_send_json_error(['message' => 'Datos no válidos.']); return;
     }
 
+    // ANTI-DOUBLE-FIRE DEFENSE (Backend):
+    // If the user is running old cached JS, it might be sending two requests.
+    // We ignore any update to the same class within 2 seconds.
+    $transient_key = 'cpp_save_sort_lock_' . $user_id . '_' . $clase_id;
+    if (get_transient($transient_key)) {
+        wp_send_json_success(['message' => 'Guardado ignorado por duplicidad (cooldown activo).']);
+        return;
+    }
+    set_transient($transient_key, true, 2);
+
     $resultado = cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $orden]);
 
     if ($resultado !== false) {
