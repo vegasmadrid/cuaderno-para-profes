@@ -19,24 +19,10 @@ function cpp_obtener_clase_completa_por_id($clase_id, $user_id) {
 }
 
 function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
-    // Helper function for logging
-    if (!function_exists('cpp_debug_log')) {
-        function cpp_debug_log($message) {
-            $log_file = '/tmp/debug_log.txt';
-            $timestamp = date('Y-m-d H:i:s');
-            $formatted_message = sprintf("[%s] %s\n", $timestamp, print_r($message, true));
-            file_put_contents($log_file, $formatted_message, FILE_APPEND);
-        }
-    }
-
-    cpp_debug_log("--- DB: cpp_actualizar_clase_completa ---");
-    cpp_debug_log("Parámetros: clase_id={$clase_id}, user_id={$user_id}, datos=" . print_r($datos, true));
-
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     $clase_existente = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_clases WHERE id = %d", $clase_id));
     if (null === $clase_existente || $clase_existente != $user_id) {
-        cpp_debug_log("Error: La clase no existe o el usuario no tiene permisos.");
         return false; 
     }
     $update_data = [];
@@ -68,11 +54,8 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
         }
     }
     if (empty($update_data)) {
-        cpp_debug_log("Aviso: No hay datos que actualizar.");
         return 0; 
     }
-
-    cpp_debug_log("Datos a actualizar en la BD: " . print_r($update_data, true));
 
     $resultado = $wpdb->update(
         $tabla_clases,
@@ -82,10 +65,7 @@ function cpp_actualizar_clase_completa($clase_id, $user_id, $datos) {
         ['%d', '%d'] 
     );
 
-    cpp_debug_log("Resultado de \$wpdb->update: " . print_r($resultado, true));
-
     if ($resultado !== false) {
-        cpp_debug_log("Limpiando caché para el objeto: clase_{$clase_id}");
         wp_cache_delete('clase_' . $clase_id, 'cpp_clases');
     }
 

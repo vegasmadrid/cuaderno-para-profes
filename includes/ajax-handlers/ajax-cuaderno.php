@@ -16,22 +16,18 @@ function cpp_ajax_cargar_cuaderno_clase() {
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
     global $wpdb;
-
-    // ATOMIC SORT STRATEGY: Save preference if requested in the same call
-    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true') {
-        $requested_sort = isset($_POST['sort_order']) ? sanitize_text_field($_POST['sort_order']) : '';
-        if (in_array($requested_sort, ['nombre', 'apellidos'])) {
-            // FIXED: Corrected argument order ($clase_id, $user_id, $datos)
-            cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $requested_sort]);
-        }
-    }
-
-    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
 
     if (!$clase_db) {
         wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']);
         return;
+    }
+
+    // ATOMIC SAVE: Si se solicita guardar la preferencia, lo hacemos antes de cargar los datos
+    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true' && isset($_POST['sort_order'])) {
+        $nuevo_orden = in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
+        cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        $clase_db['orden_alumnos_predeterminado'] = $nuevo_orden; // Actualizamos en memoria para el resto de la función
     }
 
     // Determinar el orden de los alumnos
@@ -536,24 +532,18 @@ function cpp_ajax_cargar_vista_final() {
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
 
-    // ATOMIC SORT STRATEGY: Save preference if requested in the same call
-    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true') {
-        $requested_sort = isset($_POST['sort_order']) ? sanitize_text_field($_POST['sort_order']) : '';
-        if (in_array($requested_sort, ['nombre', 'apellidos'])) {
-            // FIXED: Corrected argument order ($clase_id, $user_id, $datos)
-            cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $requested_sort]);
-        }
+    $clase_db_arr = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+    if (!$clase_db_arr) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
+
+    // ATOMIC SAVE:
+    if (isset($_POST['save_sort_preference']) && $_POST['save_sort_preference'] === 'true' && isset($_POST['sort_order'])) {
+        $nuevo_orden = in_array($_POST['sort_order'], ['nombre', 'apellidos']) ? $_POST['sort_order'] : 'apellidos';
+        cpp_actualizar_clase_completa($clase_id, $user_id, ['orden_alumnos_predeterminado' => $nuevo_orden]);
+        $clase_db_arr['orden_alumnos_predeterminado'] = $nuevo_orden;
     }
 
-    $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
-    if (!$clase_db) { wp_send_json_error(['message' => 'Clase no encontrada o no tienes permiso.']); return; }
-
-    // Determinar el orden de los alumnos
-    $default_sort_order = !empty($clase_db['orden_alumnos_predeterminado']) ? $clase_db['orden_alumnos_predeterminado'] : 'apellidos';
+    $default_sort_order = !empty($clase_db_arr['orden_alumnos_predeterminado']) ? $clase_db_arr['orden_alumnos_predeterminado'] : 'apellidos';
     $sort_order = isset($_POST['sort_order']) && in_array($_POST['sort_order'], ['nombre', 'apellidos', 'nota_asc', 'nota_desc']) ? $_POST['sort_order'] : $default_sort_order;
-
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos');
-
     // Obtener todas las evaluaciones y luego filtrar las que se deben mostrar
     $todas_las_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
     $evaluaciones_seleccionadas_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
@@ -561,8 +551,8 @@ function cpp_ajax_cargar_vista_final() {
         return in_array($eval['id'], $evaluaciones_seleccionadas_ids);
     });
 
-    $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
-    $clase_color_actual = isset($clase_db['color']) && !empty($clase_db['color']) ? $clase_db['color'] : '#2962FF';
+    $base_nota_final_clase = isset($clase_db_arr['base_nota_final']) ? floatval($clase_db_arr['base_nota_final']) : 100.00;
+    $clase_color_actual = isset($clase_db_arr['color']) && !empty($clase_db_arr['color']) ? $clase_db_arr['color'] : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
 
     $notas_por_evaluacion = [];
@@ -683,11 +673,11 @@ function cpp_ajax_cargar_vista_final() {
         'html_cuaderno' => $html_cuaderno,
         'evaluaciones' => $evaluaciones_con_final,
         'evaluacion_activa_id' => 'final',
-        'nombre_clase' => $clase_db['nombre'],
+        'nombre_clase' => $clase_db_arr['nombre'],
         'color_clase' => $clase_color_actual,
         'sort_order' => $sort_order,
         'base_nota_final' => $base_nota_final_clase,
-        'nota_aprobado' => floatval($clase_db['nota_aprobado']),
+        'nota_aprobado' => floatval($clase_db_arr['nota_aprobado']),
         'has_students' => !empty($alumnos)
     ]);
 }

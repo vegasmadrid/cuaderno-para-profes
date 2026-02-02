@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 2.4.5
+Version: 1.9
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.4.5');
+define('CPP_VERSION', '2.4.6');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -349,15 +349,6 @@ function cpp_migrate_nullify_scheduled_activity_dates_v2_2_1() {
     );
 }
 
-function cpp_migrate_add_sort_preference_column_v2_4_0() {
-    global $wpdb;
-    $tabla_clases = $wpdb->prefix . 'cpp_clases';
-    $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE 'orden_alumnos_predeterminado'"));
-    if (!$column_exists) {
-        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `orden_alumnos_predeterminado` VARCHAR(20) NULL DEFAULT 'apellidos' AFTER `nota_aprobado`;");
-    }
-}
-
 function cpp_migrate_alumnos_to_many_to_many_v2_3_0_final() {
     global $wpdb;
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -447,8 +438,8 @@ function cpp_run_migrations() {
     if (version_compare($current_version, '2.3.0', '<')) {
         cpp_migrate_alumnos_to_many_to_many_v2_3_0_final();
     }
-    if (version_compare($current_version, '2.4.5', '<')) {
-        cpp_migrate_add_sort_preference_column_v2_4_0();
+    if (version_compare($current_version, '2.4.6', '<')) {
+        cpp_crear_tablas(); // dbDelta se encargará de añadir la columna orden_alumnos_predeterminado
     }
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
     // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.

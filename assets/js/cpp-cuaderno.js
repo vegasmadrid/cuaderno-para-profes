@@ -843,7 +843,7 @@
                 sortOrderForAjax = 'nota_asc';
             } else { // asc
                 nextSortState = 'none';
-                sortOrderForAjax = $('#cpp-a1-sort-students-btn').data('sort') || 'apellidos';
+                sortOrderForAjax = $('#cpp-a1-sort-students-btn').attr('data-sort') || 'apellidos';
             }
             self.finalGradeSortState = nextSortState;
 
@@ -996,6 +996,100 @@
                     cpp.alumnos.enter();
                 }
             }
+        },
+
+        showCopyStudentsModal: function() {
+            const self = this;
+            const $modal = $('#cpp-modal-copy-students');
+            const $select = $('#cpp-copy-students-source-class-select');
+            const $form = $('#cpp-form-copy-students');
+            const targetClaseId = cpp.currentClaseIdCuaderno;
+
+            if (!targetClaseId) {
+                alert('Error: No se ha seleccionado una clase de destino.');
+                return;
+            }
+
+            // Resetear el select y mostrar estado de carga
+            $select.html('<option value="">Cargando clases...</option>').prop('disabled', true);
+            $modal.css('display', 'flex');
+
+            // --- AJAX para obtener las clases de origen ---
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_get_source_classes_for_copy',
+                    nonce: cppFrontendData.nonce,
+                    target_clase_id: targetClaseId
+                },
+                success: function(response) {
+                    $select.empty();
+                    if (response.success && response.data.clases && response.data.clases.length > 0) {
+                        $select.append('<option value="">-- Selecciona una clase --</option>');
+                        response.data.clases.forEach(function(clase) {
+                            $select.append(`<option value="${clase.id}">${$('<div>').text(clase.nombre).html()}</option>`);
+                        });
+                        $select.prop('disabled', false);
+                    } else {
+                        $select.html('<option value="">No hay otras clases para copiar.</option>');
+                    }
+                },
+                error: function() {
+                    $select.html('<option value="">Error al cargar clases.</option>');
+                    cpp.utils.showToast('Error de conexión al cargar las clases.', 'error');
+                }
+            });
+
+            // --- Handler para el envío del formulario ---
+            $form.off('submit').on('submit', function(e) {
+                e.preventDefault();
+                const sourceClaseId = $select.val();
+                if (!sourceClaseId) {
+                    cpp.utils.showToast('Por favor, selecciona una clase de origen.', 'warning');
+                    return;
+                }
+
+                cpp.utils.showSpinner();
+
+                // --- AJAX para ejecutar la copia ---
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_copy_alumnos_to_clase',
+                        nonce: cppFrontendData.nonce,
+                        source_clase_id: sourceClaseId,
+                        target_clase_id: targetClaseId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            cpp.utils.showToast(response.data.message || 'Alumnos copiados con éxito.');
+                            $modal.hide();
+                            // Recargar el contenido del cuaderno para mostrar los nuevos alumnos
+                            if (cpp.currentClaseIdCuaderno) {
+                                const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                                self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
+                            }
+                        } else {
+                            cpp.utils.showToast('Error: ' + (response.data.message || 'No se pudieron copiar los alumnos.'), 'error');
+                        }
+                    },
+                    error: function() {
+                        cpp.utils.showToast('Error de conexión al copiar los alumnos.', 'error');
+                    },
+                    complete: function() {
+                        cpp.utils.hideSpinner();
+                    }
+                });
+            });
+
+            // --- Handlers para cerrar/cancelar ---
+            $modal.find('.cpp-modal-close, .cpp-modal-cancel-btn').off('click').on('click', function() {
+                $modal.hide();
+            });
         },
 
     };
