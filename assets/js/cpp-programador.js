@@ -1938,12 +1938,14 @@
         const today = new Date();
         const todayYMD = today.toISOString().slice(0, 10);
 
-        let headerHTML = `<div class="cpp-semana-nav">
-                            <button class="cpp-semana-prev-btn cpp-btn-icon" title="Semana Anterior">◄</button>
-                            <h3>Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}</h3>
-                            <button class="cpp-semana-next-btn cpp-btn-icon" title="Siguiente Semana">►</button>
-                          </div>`;
-        let tableHTML = `${headerHTML}<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
+        // Actualizar el título de la semana en la barra superior
+        const weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
+        const $headerDate = document.getElementById('cpp-semana-header-date');
+        if ($headerDate) {
+            $headerDate.textContent = weekTitle;
+        }
+
+        let tableHTML = `<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
 
         const renderedHeaders = [];
         Object.keys(daysToRender).forEach((dayKey) => {
