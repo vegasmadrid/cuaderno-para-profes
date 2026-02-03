@@ -16,14 +16,13 @@ const cpp = {
 
     init: function() {
         const $ = jQuery; // Asegurar que $ es jQuery dentro de esta función init
-        console.log("CPP Core: init() 시작");
+        console.log("CPP Core: init() start");
 
         if (typeof cppFrontendData === 'undefined' || !cppFrontendData.ajaxUrl || !cppFrontendData.nonce) {
             console.error("FATAL: cppFrontendData no está definido o está incompleto.");
             $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error crítico de configuración.</p></div>');
             return; 
         }
-        console.log("CPP Core: cppFrontendData disponible:", cppFrontendData);
 
         const modulesToInitialize = [
             'utils', 'sidebar', 'cuaderno', 'alumnos',
@@ -47,7 +46,6 @@ const cpp = {
 
             if (found && moduleObject) {
                 if (typeof moduleObject.init === 'function') {
-                    console.log(`CPP Core: Initializing ${modulePath}...`);
                     moduleObject.init();
                 }
                 // bindEvents se llama ahora desde el init de cada módulo
@@ -62,7 +60,6 @@ const cpp = {
 
         // El módulo programador se inicializa de forma independiente si existe
         if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
-            console.log(`CPP Core: Initializing CppProgramadorApp...`);
             const initialClaseId = this.getInitialClaseId();
             CppProgramadorApp.init(initialClaseId);
         }
@@ -80,7 +77,6 @@ const cpp = {
             if (lastOpenedTab) {
                 const $targetTab = $(`.cpp-main-tab-link[data-tab="${lastOpenedTab}"]`);
                 if ($targetTab.length && !$targetTab.hasClass('active')) {
-                    console.log(`CPP Core: Restaurando la pestaña ${lastOpenedTab}.`);
                     // El click ahora se maneja de forma centralizada, por lo que un simple trigger es suficiente y más limpio.
                     $targetTab.trigger('click');
                 }
@@ -96,18 +92,20 @@ const cpp = {
         const $ = jQuery;
         const $document = $(document);
 
-        // Este listener ahora solo delega al manejador centralizado en el módulo del cuaderno
+        // MANEJO CENTRALIZADO DE PESTAÑAS:
+        // Solo un listener aquí que delega la lógica pesada al módulo correspondiente.
         $document.on('click', '.cpp-main-tab-link', function(e) {
             e.preventDefault();
             if (cpp.cuaderno && typeof cpp.cuaderno.handleMainTabSwitch === 'function') {
-                cpp.cuaderno.handleMainTabSwitch(jQuery(this));
+                cpp.cuaderno.handleMainTabSwitch($(this));
             }
         });
 
         // Botón de crear primera clase desde el welcome screen
         $document.on('click', '#cpp-btn-crear-primera-clase', function(e) {
-            if (cpp.config && typeof cpp.config.showParaCrear === 'function') {
-                cpp.config.showParaCrear(e);
+            // Corregido para llamar al módulo correcto de modales
+            if (cpp.modals && cpp.modals.clase && typeof cpp.modals.clase.showParaCrear === 'function') {
+                cpp.modals.clase.showParaCrear(e);
             }
         });
     },
@@ -181,7 +179,6 @@ const cpp = {
             $('body').removeClass('cpp-cuaderno-page-active');
             return;
         }
-        console.log("CPP Core: initializeCuadernoView ejecutándose...");
         $('html, body').addClass('cpp-plugin-active'); 
         $('body').addClass('cpp-cuaderno-page-active');
 
@@ -218,7 +215,6 @@ const cpp = {
         }
 
         if (claseIdToLoad && $itemToActivate && $itemToActivate.length > 0) {
-            console.log("CPP Core: Clase inicial a cargar ID:", claseIdToLoad);
             $clasesSidebarItems.removeClass('cpp-sidebar-item-active');
             $itemToActivate.addClass('cpp-sidebar-item-active');
 
@@ -231,13 +227,12 @@ const cpp = {
                 // Pasamos null como tercer parámetro para que el backend cargue la primera evaluación por defecto.
                 cpp.cuaderno.cargarContenidoCuaderno(claseIdToLoad, claseNombreToLoad, null);
             } else {
-                 console.error("CPP Core: cpp.cuaderno.cargarContenidoCuaderno NO ESTÁ DEFINIDO. El cuaderno no se cargará.");
-                 $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Módulo del cuaderno no cargado.</p></div>');
+                 console.error("CPP Core: cpp.cuaderno.cargarContenidoCuaderno NOT DEFINED.");
+                 $('#cpp-cuaderno-contenido').html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error: Notebook module not loaded.</p></div>');
             }
         } else if ($clasesSidebarItems.length === 0) {
             // This is the welcome screen. The PHP has already rendered the welcome message.
             // No JS action is needed here.
-            console.log("CPP Core: No hay clases, mostrando pantalla de bienvenida.");
         } else {
             console.warn("CPP Core: No se pudo determinar la clase inicial a cargar.");
             $('#cpp-cuaderno-contenido').html('<p class="cpp-cuaderno-cargando">Error al seleccionar una clase para cargar.</p>');

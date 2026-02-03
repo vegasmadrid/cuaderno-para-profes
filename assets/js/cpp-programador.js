@@ -160,11 +160,8 @@
         $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
         // Navegación y Controles Generales
-        $document.on('click', '.cpp-main-tab-link[data-tab="programacion"]', () => {
-            setTimeout(() => {
-                self.updateBulkActionsUI();
-            }, 0);
-        });
+        // Se ha movido el manejo del click a cpp-core.js de forma centralizada.
+        // El programador reaccionará a través de la lógica de switchTab manejada globalmente.
         $document.on('click', 'body #cpp-horario-config-btn', function() {
             $('.cpp-main-tab-link[data-tab="configuracion"]').click();
             if (cpp.config && typeof cpp.config.handleConfigTabClick === 'function') {
@@ -1722,7 +1719,6 @@
         const currentSesionId = this.currentSesion ? this.currentSesion.id : null;
         this.fetchDataFromServer().then(result => {
             if (result.success) {
-                console.log("DEBUG: Datos recibidos en refresh", result.data);
                 this.clases = result.data.clases || [];
                 this.config = result.data.config || { time_slots: [], horario: {} };
                 this.sesiones = result.data.sesiones || [];

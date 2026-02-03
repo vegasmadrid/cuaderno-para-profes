@@ -573,6 +573,10 @@ function cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date) 
     return false;
 }
 
+function cpp_programador_create_example_data($user_id) {
+    // ... (función existente, se podría actualizar para añadir start_date a la evaluación de ejemplo)
+}
+
 function cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user_id) {
     global $wpdb;
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
