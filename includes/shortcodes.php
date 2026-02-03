@@ -47,7 +47,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <span class="dashicons dashicons-arrow-left-alt"></span>
                 </button>
                 <h2 id="cpp-fullscreen-tab-title"></h2>
-                <div id="cpp-semana-header-nav" style="display: none; align-items: center; gap: 20px; margin: 0 auto;">
+                <div id="cpp-semana-header-nav" style="display: none; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%);">
                     <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
                         <span class="dashicons dashicons-arrow-left-alt2"></span>
                     </button>

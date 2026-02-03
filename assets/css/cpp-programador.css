@@ -839,9 +839,9 @@ td.cpp-semana-td-hora {
 
 /* Nuevo estilo para el botón PDF y navegación de cabecera */
 .cpp-btn-pdf {
-    background-color: #fce8e6 !important;
-    color: #d93025 !important;
-    border: 1px solid #fad2cf !important;
+    background-color: #e8f0fe !important;
+    color: #1a73e8 !important;
+    border: 1px solid #d2e3fc !important;
     font-weight: 600 !important;
     border-radius: 20px !important;
     padding: 0 20px !important;
@@ -849,9 +849,9 @@ td.cpp-semana-td-hora {
 }
 
 .cpp-btn-pdf:hover {
-    background-color: #d93025 !important;
+    background-color: #1a73e8 !important;
     color: white !important;
-    box-shadow: 0 2px 6px rgba(217,48,37,0.3) !important;
+    box-shadow: 0 2px 6px rgba(26,115,232,0.3) !important;
 }
 
 #cpp-semana-header-nav .cpp-btn-icon {
