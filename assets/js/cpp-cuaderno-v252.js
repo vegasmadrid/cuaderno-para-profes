@@ -2,8 +2,8 @@
 
 (function($) {
     'use strict';
-    // UNIQUE_REVISION_ID: 202602021200
-    console.log("%c[CPP] Cuaderno Module v2.5.2 Active (Atomic Strategy - Rev C)", "color: #cd18be; font-weight: bold; font-size: 14px;");
+    // UNIQUE_REVISION_ID: 202602021230
+    console.log("%c[CPP] Cuaderno Module v2.5.2 Active (Atomic Strategy - Rev D)", "color: #cd18be; font-weight: bold; font-size: 14px;");
 
     if (typeof cpp === 'undefined') {
         console.error("Error: El objeto 'cpp' (de cpp-core.js) no está definido. El módulo cpp-cuaderno.js no puede inicializarse.");
@@ -11,6 +11,7 @@
     }
     
     cpp.cuaderno = {
+        isSortingLocked: false, // Flag global para evitar doble disparo por reemplazo de DOM
         localStorageKey_lastEval: 'cpp_last_opened_eval_clase_',
         currentCalculoNota: 'total',
         isDraggingSelection: false,
@@ -342,10 +343,8 @@
             });
 
             // --- Listener para las pestañas principales (Cuaderno/Programador) ---
-            $document.on('click', '.cpp-main-tab-link', function(e) {
-                e.preventDefault();
-                self.handleMainTabSwitch($(this));
-            });
+            // Se ha eliminado el listener de .cpp-main-tab-link de aquí ya que está en cpp-core.js
+            // y delegaba correctamente. Mantendremos solo uno centralizado en cpp-core.js.
             const $cuadernoContenido = $('#cpp-cuaderno-contenido');
 
             // Botón para crear la primera clase desde la pantalla de bienvenida
@@ -401,19 +400,23 @@
 
             $document.on('click', '#cpp-a1-sort-students-btn', function(e) {
                 e.preventDefault();
+                e.stopImmediatePropagation(); // Detener otros manejadores en este mismo elemento/evento
+
                 const $button = $(this);
 
-                // ATOMIC STRATEGY: Debounce with is-handling-click
-                if ($button.data('is-handling-click')) {
+                // BLOQUEO GLOBAL: Previene que disparos fantasma atraviesen el debounce si el DOM se reemplaza
+                if (cpp.cuaderno.isSortingLocked) {
                     return;
                 }
-                $button.data('is-handling-click', true);
-                setTimeout(() => { $button.removeData('is-handling-click'); }, 600);
+                cpp.cuaderno.isSortingLocked = true;
+
+                // Desbloqueo tras un tiempo prudencial (un segundo)
+                setTimeout(() => { cpp.cuaderno.isSortingLocked = false; }, 1000);
 
                 const currentSort = $button.attr('data-sort') || 'apellidos';
                 const newSort = currentSort === 'apellidos' ? 'nombre' : 'apellidos';
 
-                // Optimistically update the attribute
+                // Actualización optimista del atributo
                 $button.attr('data-sort', newSort);
 
                 if (cpp.currentClaseIdCuaderno) {
@@ -678,11 +681,7 @@
                         action: ajaxAction
                     },
                     success: function(response) {
-                        console.log("[CPP] AJAX Response received:", response);
                         if (response && response.success && response.data && typeof response.data.html_cuaderno !== 'undefined') {
-                            if (response.data.debug) {
-                                console.log(`[CPP] DB Save Status: ${response.data.debug.db_save_status}, DB Current Sort: ${response.data.debug.db_current_sort}`);
-                            }
                             if (cpp.utils && typeof cpp.utils.updateTopBar === 'function') {
                                 cpp.utils.updateTopBar({
                                     nombre: response.data.nombre_clase,
@@ -944,6 +943,11 @@
 
                 if (tabName === 'semana' && typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
                     CppProgramadorApp.renderSemanaTab();
+                }
+
+                // Asegurar que las acciones masivas se actualicen al entrar en pestañas del programador
+                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.updateBulkActionsUI === 'function') {
+                    setTimeout(() => { CppProgramadorApp.updateBulkActionsUI(); }, 50);
                 }
             } else if (tabName === 'cuaderno') {
                 const activeEvalInCuaderno = $('#cpp-cuaderno-contenido').attr('data-active-eval');
