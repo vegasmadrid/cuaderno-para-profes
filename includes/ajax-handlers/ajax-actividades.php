@@ -111,6 +111,7 @@ function cpp_ajax_actualizar_actividad_inline() {
 
     $user_id = get_current_user_id();
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+    $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
     $field = isset($_POST['field']) ? sanitize_text_field($_POST['field']) : '';
     $value = isset($_POST['value']) ? $_POST['value'] : '';
 
@@ -128,8 +129,24 @@ function cpp_ajax_actualizar_actividad_inline() {
 
     $datos = [
         'user_id' => $user_id,
-        $field => $value
+        'evaluacion_id' => $evaluacion_id
     ];
+
+    // Sanitización específica por campo
+    switch ($field) {
+        case 'nombre_actividad':
+            $datos[$field] = sanitize_text_field($value);
+            break;
+        case 'categoria_id':
+            $datos[$field] = intval($value);
+            break;
+        case 'nota_maxima':
+            $datos[$field] = floatval($value);
+            break;
+        case 'descripcion_actividad':
+            $datos[$field] = sanitize_textarea_field($value);
+            break;
+    }
 
     // Si actualizamos categoría o nota máxima, necesitamos forzar el recalculo de notas finales en el frontend
     // pero eso lo manejaremos con una señal de recarga.

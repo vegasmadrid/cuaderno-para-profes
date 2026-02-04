@@ -21,8 +21,8 @@
                 return;
             }
 
-            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
-                cpp.utils.showLoader();
+            if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+                cpp.utils.showSpinner();
             }
 
             $.ajax({
@@ -51,8 +51,8 @@
                     $container.html('<div class="cpp-empty-panel"><p>Error de conexión al cargar las actividades.</p></div>');
                 },
                 complete: function() {
-                    if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
-                        cpp.utils.hideLoader();
+                    if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                        cpp.utils.hideSpinner();
                     }
                 }
             });
@@ -78,6 +78,7 @@
                     action: 'cpp_actualizar_actividad_inline',
                     nonce: cppFrontendData.nonce,
                     actividad_id: actividadId,
+                    evaluacion_id: cpp.currentEvaluacionId,
                     field: field,
                     value: value
                 },
@@ -86,6 +87,10 @@
                         $input.data('original-value', value);
                         $input.addClass('cpp-success-flash');
                         setTimeout(() => $input.removeClass('cpp-success-flash'), 1000);
+
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast('Cambio guardado ✨', 'success');
+                        }
 
                         // Si cambiamos el nombre, categoría o nota máxima, el cuaderno debe saberlo
                         if (['nombre_actividad', 'categoria_id', 'nota_maxima'].includes(field)) {
@@ -127,6 +132,11 @@
                 success: function(response) {
                     if (response.success) {
                         $row.fadeOut(function() { $(this).remove(); });
+
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast('Actividad eliminada', 'success');
+                        }
+
                         $(document).trigger('cpp:forceGradebookReload');
                         if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
                             CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
