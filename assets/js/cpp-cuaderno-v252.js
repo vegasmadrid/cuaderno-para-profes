@@ -870,11 +870,15 @@
 
             $('#cpp-alumnos-top-bar-actions').hide();
             $('#cpp-semana-top-bar-actions').hide();
+            $('#cpp-semana-header-nav').hide();
+            $('#cpp-fullscreen-tab-title').show();
 
             if (tabName === 'alumnos') {
                 $('#cpp-alumnos-top-bar-actions').css('display', 'flex');
             } else if (tabName === 'semana') {
                 $('#cpp-semana-top-bar-actions').css('display', 'block');
+                $('#cpp-semana-header-nav').css('display', 'flex');
+                $('#cpp-fullscreen-tab-title').hide();
             }
 
             if (isRightTab) {
@@ -885,7 +889,11 @@
                 if ($content.length && $fullscreenContent.length) {
                     $fullscreenContent.empty();
                     $fullscreenContent.append($content.addClass('active'));
-                    $('#cpp-fullscreen-tab-title').text($tab.text());
+
+                    if (tabName !== 'semana') {
+                        $('#cpp-fullscreen-tab-title').text($tab.text());
+                    }
+
                     $('#cpp-cuaderno-main-content').hide();
                     $fullscreenContainer.show();
                     $('body').addClass('cpp-fullscreen-active');

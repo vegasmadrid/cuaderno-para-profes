@@ -47,9 +47,18 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <span class="dashicons dashicons-arrow-left-alt"></span>
                 </button>
                 <h2 id="cpp-fullscreen-tab-title"></h2>
+                <div id="cpp-semana-header-nav" style="display: none; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%);">
+                    <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
+                        <span class="dashicons dashicons-arrow-left-alt2"></span>
+                    </button>
+                    <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
+                    <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
+                        <span class="dashicons dashicons-arrow-right-alt2"></span>
+                    </button>
+                </div>
                 <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto;">
-                    <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-secondary">
-                        <span class="dashicons dashicons-download"></span> Descargar PDF
+                    <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
+                        <span class="dashicons dashicons-media-document"></span> Descargar PDF
                     </button>
                 </div>
                 <!-- Contenedor para los botones de la pestaña de alumnos (se mostrará/ocultará con JS) -->
