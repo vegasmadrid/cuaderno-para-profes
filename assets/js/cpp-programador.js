@@ -168,8 +168,8 @@
                 cpp.config.handleConfigTabClick(null, 'calendario');
             }
         });
-        $document.on('click', 'body .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab(); });
-        $document.on('click', 'body .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab(); });
+        $document.on('click', 'body .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab('prev'); });
+        $document.on('click', 'body .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab('next'); });
         $document.on('change', 'body #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
         // Edición Inline
@@ -1848,7 +1848,7 @@
         }, 3000);
     },
 
-    renderSemanaTab() {
+    renderSemanaTab(direction = null) {
         const content = this.tabContents.semana;
         if (!this.config || !this.config.calendar_config) {
             content.innerHTML = '<p>Cargando configuración...</p>';
@@ -1945,7 +1945,8 @@
             $headerDate.textContent = weekTitle;
         }
 
-        let tableHTML = `<table class="cpp-semana-table"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
+        const animationClass = direction ? (direction === 'next' ? 'slide-in-right' : 'slide-in-left') : '';
+        let tableHTML = `<div class="cpp-semana-table-container"><table class="cpp-semana-table ${animationClass}"><thead><tr class="cpp-semana-header-row"><th class="cpp-semana-th-hora"></th>`;
 
         const renderedHeaders = [];
         Object.keys(daysToRender).forEach((dayKey) => {
@@ -2004,7 +2005,25 @@
             });
             tableHTML += `</tr>`;
         });
-        tableHTML += `</tbody></table>`;
+        tableHTML += `</tbody></table></div>`;
+
+        if (direction) {
+            const oldTable = content.querySelector('.cpp-semana-table');
+            if (oldTable) {
+                // Prevenir múltiples clics rápidos si ya está animando
+                if (oldTable.classList.contains('animating')) return;
+                oldTable.classList.add('animating');
+
+                const outClass = direction === 'next' ? 'slide-out-left' : 'slide-out-right';
+                oldTable.classList.add(outClass);
+
+                setTimeout(() => {
+                    content.innerHTML = tableHTML;
+                }, 300);
+                return;
+            }
+        }
+
         content.innerHTML = tableHTML;
     },
     getWeekDates(d) {

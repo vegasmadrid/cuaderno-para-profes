@@ -879,6 +879,43 @@ td.cpp-semana-td-hora {
     line-height: 1;
 }
 
+/* Animaciones de deslizamiento para la semana */
+.cpp-semana-table-container {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.cpp-semana-table.slide-out-left {
+    animation: cppSlideOutLeft 0.3s forwards ease-in;
+}
+.cpp-semana-table.slide-in-right {
+    animation: cppSlideInRight 0.3s forwards ease-out;
+}
+.cpp-semana-table.slide-out-right {
+    animation: cppSlideOutRight 0.3s forwards ease-in;
+}
+.cpp-semana-table.slide-in-left {
+    animation: cppSlideInLeft 0.3s forwards ease-out;
+}
+
+@keyframes cppSlideOutLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-100%); opacity: 0; }
+}
+@keyframes cppSlideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes cppSlideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+@keyframes cppSlideInLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
 .cpp-semana-fijada-icon {
     font-size: 0.8em;
     cursor: help;
