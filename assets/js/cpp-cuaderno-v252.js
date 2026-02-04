@@ -394,6 +394,10 @@
                             // Cargar la nueva evaluación en el programador.
                             CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, nuevaEvaluacionId);
                         }
+                    } else if (activeTab === 'actividades') {
+                        if (cpp.actividades && typeof cpp.actividades.render === 'function') {
+                            cpp.actividades.render();
+                        }
                     }
                 }
             });
@@ -962,6 +966,10 @@
                 if (cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
+                }
+            } else if (tabName === 'actividades') {
+                if (cpp.actividades && typeof cpp.actividades.render === 'function') {
+                    cpp.actividades.render();
                 }
             } else if (tabName === 'resumen') {
                 if (window.cppResumenApp && typeof window.cppResumenApp.render === 'function') {

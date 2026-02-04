@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.5.5');
+define('CPP_VERSION', '2.5.6');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -75,6 +75,7 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-modales-ficha-alumno-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-ficha-alumno.js', ['cpp-core-js', 'cpp-modales-general-js', 'cpp-cuaderno-app'], $plugin_version, true);
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
     wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
+    wp_enqueue_script('cpp-actividades-js', CPP_PLUGIN_URL . 'assets/js/cpp-actividades.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
 
     // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [

@@ -291,6 +291,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <div class="cpp-top-bar-center cpp-tabs-clase-specific">
                     <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
                     <button class="cpp-main-tab-link" data-tab="programacion">Programación</button>
+                    <button class="cpp-main-tab-link" data-tab="actividades">Actividades</button>
                 </div>
                 <div class="cpp-top-bar-right">
                     <div class="cpp-tabs-general">
@@ -369,6 +370,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         </div>
                     </div>
                     <div id="cpp-main-tab-programacion" class="cpp-main-tab-content"></div>
+                    <div id="cpp-main-tab-actividades" class="cpp-main-tab-content"></div>
                     <div id="cpp-main-tab-alumnos" class="cpp-main-tab-content">
                         <div class="cpp-alumnos-view-container">
                             <div class="cpp-alumnos-view-sidebar">
