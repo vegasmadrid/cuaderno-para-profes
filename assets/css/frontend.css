@@ -2363,3 +2363,170 @@ body.admin-bar #cpp-main-loader {
 .offline-active .cpp-sidebar-overlay {
     display: none !important;
 }
+
+/* --- Pestaña de Actividades --- */
+.cpp-actividades-table-wrapper {
+    padding: 20px;
+    background-color: #fff;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.cpp-actividades-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    table-layout: fixed;
+}
+
+.cpp-actividades-table th {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 500;
+    color: #5f6368;
+    border-bottom: 2px solid #eee;
+}
+
+.cpp-sortable-header {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+    user-select: none;
+}
+
+.cpp-sortable-header:hover {
+    background-color: #f1f3f4;
+}
+
+.cpp-sortable-header .dashicons {
+    font-size: 16px;
+    vertical-align: middle;
+    margin-left: 4px;
+    color: #dadce0;
+    transition: color 0.2s;
+}
+
+.cpp-sortable-header:hover .dashicons {
+    color: #5f6368;
+}
+
+.cpp-sortable-header.active-sort {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.cpp-sortable-header.active-sort .dashicons {
+    color: #1a73e8;
+}
+
+.cpp-actividades-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+.cpp-actividades-table tr:last-child td {
+    border-bottom: none;
+}
+
+.cpp-actividades-table tr:hover {
+    background-color: #fcfdfe;
+}
+
+.cpp-actividades-table .cpp-inline-edit {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s;
+    color: #3c4043;
+}
+
+.cpp-actividades-table .cpp-inline-edit:hover {
+    background-color: #f1f3f4;
+    border-color: #dadce0;
+}
+
+.cpp-actividades-table .cpp-inline-edit:focus {
+    background-color: #fff;
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.cpp-actividades-table textarea.cpp-inline-edit {
+    resize: none;
+    min-height: 34px;
+    line-height: 1.4;
+    overflow: hidden;
+}
+
+.cpp-actividades-table select.cpp-inline-edit {
+    cursor: pointer;
+}
+
+.cpp-actividad-categoria-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cpp-category-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.cpp-actividad-fecha-display {
+    color: #5f6368;
+    font-size: 13px;
+}
+
+.cpp-actividad-fecha-display.is-programada {
+    font-weight: 500;
+    color: #1a73e8;
+    cursor: help;
+}
+
+.cpp-actividad-promedio {
+    font-size: 16px;
+    color: #202124;
+}
+
+.cpp-btn-delete-actividad {
+    color: #5f6368;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.cpp-btn-delete-actividad:hover {
+    background-color: #fce8e6;
+    color: #d93025;
+}
+
+/* Animaciones para edición en línea */
+@keyframes cppPulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.cpp-loading-pulse {
+    animation: cppPulse 1s infinite;
+    pointer-events: none;
+}
+
+.cpp-success-flash {
+    background-color: #e6f4ea !important;
+    border-color: #1e8e3e !important;
+}

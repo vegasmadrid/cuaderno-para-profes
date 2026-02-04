@@ -271,6 +271,43 @@ function cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id) {
 }
 
 /**
+ * Calcula la nota media de una actividad basándose en las calificaciones de los alumnos.
+ *
+ * @param int $actividad_id ID de la actividad.
+ * @return float|null La media calculada o null si no hay notas.
+ */
+function cpp_obtener_promedio_actividad($actividad_id) {
+    global $wpdb;
+    $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+
+    $notas_raw = $wpdb->get_col($wpdb->prepare(
+        "SELECT nota FROM $tabla_calificaciones WHERE actividad_id = %d",
+        $actividad_id
+    ));
+
+    if (empty($notas_raw)) {
+        return null;
+    }
+
+    $suma = 0;
+    $contador = 0;
+
+    foreach ($notas_raw as $nota_str) {
+        $nota_num = cpp_extraer_numero_de_calificacion($nota_str);
+        if ($nota_num !== null) {
+            $suma += $nota_num;
+            $contador++;
+        }
+    }
+
+    if ($contador === 0) {
+        return null;
+    }
+
+    return round($suma / $contador, 2);
+}
+
+/**
  * NUEVA FUNCIÓN PARA OBTENER ACTIVIDADES DE UNA EVALUACIÓN CON LAS CALIFICACIONES DE UN ALUMNO ESPECÍFICO.
  * Combina la obtención de actividades con las notas del alumno para simplificar la lógica en los AJAX Handlers.
  *

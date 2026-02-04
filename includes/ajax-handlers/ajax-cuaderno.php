@@ -472,69 +472,6 @@ function cpp_ajax_guardar_calificacion_alumno() {
     wp_send_json_success($response_data);
 }
 
-add_action('wp_ajax_cpp_eliminar_actividad', 'cpp_ajax_eliminar_actividad');
-function cpp_ajax_eliminar_actividad() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
-
-    $user_id = get_current_user_id();
-    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
-
-    if (empty($actividad_id)) {
-        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
-        return;
-    }
-
-    // Esta función ahora solo elimina actividades evaluables.
-    // La eliminación es total y no hay desvinculación.
-    $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
-
-    if ($resultado) {
-        wp_send_json_success(['message' => 'Actividad eliminada correctamente.']);
-    } else {
-        wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);
-    }
-}
-
-add_action('wp_ajax_cpp_get_evaluable_activity_data', 'cpp_ajax_get_evaluable_activity_data');
-function cpp_ajax_get_evaluable_activity_data() {
-    check_ajax_referer('cpp_frontend_nonce', 'nonce');
-    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
-
-    $user_id = get_current_user_id();
-    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
-
-    if (empty($actividad_id)) {
-        wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
-        return;
-    }
-
-    global $wpdb;
-    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
-    $actividad = $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM $tabla_actividades WHERE id = %d AND user_id = %d",
-        $actividad_id,
-        $user_id
-    ), ARRAY_A);
-
-    if ($actividad) {
-        // Envolver la actividad en un array para poder usar la función de hidratación
-        $actividades_a_hidratar = [$actividad];
-
-        // Llamar a la función de hidratación
-        $actividades_hidratadas = cpp_hidratar_fechas_de_actividades(
-            $actividades_a_hidratar,
-            $actividad['clase_id'],
-            $actividad['evaluacion_id'],
-            $user_id
-        );
-
-        // Devolver la primera (y única) actividad del array hidratado
-        wp_send_json_success($actividades_hidratadas[0]);
-    } else {
-        wp_send_json_error(['message' => 'Actividad no encontrada o no tienes permiso.']);
-    }
-}
 
 add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');
 function cpp_ajax_cargar_vista_final() {

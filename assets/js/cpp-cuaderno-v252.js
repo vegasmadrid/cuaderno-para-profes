@@ -394,6 +394,10 @@
                             // Cargar la nueva evaluación en el programador.
                             CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, nuevaEvaluacionId);
                         }
+                    } else if (activeTab === 'actividades') {
+                        if (cpp.actividades && typeof cpp.actividades.render === 'function') {
+                            cpp.actividades.render();
+                        }
                     }
                 }
             });
@@ -591,7 +595,8 @@
             $document.on('cpp:forceGradebookReload', function() {
                 if (cpp.currentClaseIdCuaderno) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId);
+                    // Al recargar por un evento de sincronización, no usamos el cargador de pantalla completa
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
                 }
             });
 
@@ -640,12 +645,19 @@
             $container.html(selectHtml);
         },
         
-        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder, saveSort = false) {
+        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder, saveSort = false, useFullLoader = true) {
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
-            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
-                cpp.utils.showLoader();
+            // Solo mostrar el cargador de pantalla completa si se solicita y la pestaña de cuaderno está activa
+            const isCuadernoTabActive = $('.cpp-main-tab-link[data-tab="cuaderno"]').hasClass('active');
+
+            if (cpp.utils && isCuadernoTabActive) {
+                if (useFullLoader && typeof cpp.utils.showLoader === 'function') {
+                    cpp.utils.showLoader();
+                } else if (typeof cpp.utils.showSpinner === 'function') {
+                    cpp.utils.showSpinner();
+                }
             }
 
             if (claseId && typeof localStorage !== 'undefined' && cppFrontendData && cppFrontendData.userId) {
@@ -728,8 +740,9 @@
                         $contenidoCuaderno.html('<div class="cpp-cuaderno-mensaje-vacio"><p class="cpp-error-message">Error de conexión al cargar el cuaderno.</p></div>');
                     },
                     complete: function() {
-                        if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
-                            cpp.utils.hideLoader();
+                        if (cpp.utils) {
+                            if (typeof cpp.utils.hideLoader === 'function') cpp.utils.hideLoader();
+                            if (typeof cpp.utils.hideSpinner === 'function') cpp.utils.hideSpinner();
                         }
                     }
                 });
@@ -962,6 +975,10 @@
                 if (cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
+                }
+            } else if (tabName === 'actividades') {
+                if (cpp.actividades && typeof cpp.actividades.render === 'function') {
+                    cpp.actividades.render();
                 }
             } else if (tabName === 'resumen') {
                 if (window.cppResumenApp && typeof window.cppResumenApp.render === 'function') {
