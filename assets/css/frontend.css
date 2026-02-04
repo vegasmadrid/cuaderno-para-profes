@@ -2392,6 +2392,38 @@ body.admin-bar #cpp-main-loader {
     border-bottom: 2px solid #eee;
 }
 
+.cpp-sortable-header {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+    user-select: none;
+}
+
+.cpp-sortable-header:hover {
+    background-color: #f1f3f4;
+}
+
+.cpp-sortable-header .dashicons {
+    font-size: 16px;
+    vertical-align: middle;
+    margin-left: 4px;
+    color: #dadce0;
+    transition: color 0.2s;
+}
+
+.cpp-sortable-header:hover .dashicons {
+    color: #5f6368;
+}
+
+.cpp-sortable-header.active-sort {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.cpp-sortable-header.active-sort .dashicons {
+    color: #1a73e8;
+}
+
 .cpp-actividades-table td {
     padding: 10px 15px;
     border-bottom: 1px solid #eee;

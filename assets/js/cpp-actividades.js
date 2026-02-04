@@ -8,6 +8,8 @@
     }
 
     cpp.actividades = {
+        currentSort: { key: null, direction: 'asc' },
+
         init: function() {
             this.bindEvents();
         },
@@ -161,6 +163,9 @@
 
             $document.on('blur', '.cpp-inline-edit', function() {
                 self.handleInLineUpdate(this);
+                // Also update data-sort-value of the parent cell
+                const $input = $(this);
+                $input.closest('td').attr('data-sort-value', $input.val());
             });
 
             $document.on('keypress', '.cpp-inline-edit', function(e) {
@@ -184,7 +189,67 @@
                 const $select = $(this);
                 const $selectedOption = $select.find('option:selected');
                 const color = $selectedOption.data('color');
+                const catName = $selectedOption.text().trim();
                 $select.closest('.cpp-actividad-categoria-cell').find('.cpp-category-dot').css('background-color', color);
+                // Update sort value for category
+                $select.closest('td').attr('data-sort-value', catName);
+            });
+
+            $document.on('click', '.cpp-sortable-header', function() {
+                const key = $(this).data('sort-key');
+                self.sortTable(key);
+            });
+        },
+
+        sortTable: function(key) {
+            const self = this;
+            const $table = $('#cpp-actividades-main-table');
+            if (!$table.length) return;
+
+            const $tbody = $table.find('tbody');
+            const $rows = $tbody.find('tr').get();
+            const $headers = $table.find('.cpp-sortable-header');
+            const $currentHeader = $headers.filter(`[data-sort-key="${key}"]`);
+
+            // Determine direction
+            let direction = 'asc';
+            if (self.currentSort.key === key && self.currentSort.direction === 'asc') {
+                direction = 'desc';
+            }
+            self.currentSort = { key, direction };
+
+            // Update UI headers
+            $headers.removeClass('active-sort asc desc');
+            $headers.find('.dashicons').attr('class', 'dashicons dashicons-sort');
+
+            $currentHeader.addClass('active-sort ' + direction);
+            $currentHeader.find('.dashicons').attr('class', 'dashicons dashicons-arrow-' + (direction === 'asc' ? 'up' : 'down') + '-alt2');
+
+            // Sort rows
+            $rows.sort(function(a, b) {
+                let valA = $(a).find(`td[data-sort-key="${key}"], td:eq(${$currentHeader.index()})`).attr('data-sort-value');
+                let valB = $(b).find(`td[data-sort-key="${key}"], td:eq(${$currentHeader.index()})`).attr('data-sort-value');
+
+                // Try numeric sort if applicable
+                let numA = parseFloat(valA);
+                let numB = parseFloat(valB);
+
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return direction === 'asc' ? numA - numB : numB - numA;
+                }
+
+                // String sort
+                valA = (valA || '').toLowerCase();
+                valB = (valB || '').toLowerCase();
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Re-append sorted rows
+            $.each($rows, function(index, row) {
+                $tbody.append(row);
             });
         }
     };

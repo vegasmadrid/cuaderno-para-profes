@@ -41,15 +41,15 @@ function cpp_ajax_get_actividades_tab_content() {
         </div>
     <?php else : ?>
         <div class="cpp-actividades-table-wrapper">
-            <table class="cpp-actividades-table">
+            <table class="cpp-actividades-table" id="cpp-actividades-main-table">
                 <thead>
                     <tr>
-                        <th style="width: 25%;">Nombre</th>
-                        <th style="width: 15%;">Categoría</th>
-                        <th style="width: 12%;">Fecha</th>
-                        <th style="width: 10%;">Nota Máx.</th>
-                        <th style="width: 20%;">Descripción</th>
-                        <th style="width: 10%;">Nota Media</th>
+                        <th style="width: 25%;" class="cpp-sortable-header" data-sort-key="nombre">Nombre <span class="dashicons dashicons-sort"></span></th>
+                        <th style="width: 15%;" class="cpp-sortable-header" data-sort-key="categoria">Categoría <span class="dashicons dashicons-sort"></span></th>
+                        <th style="width: 12%;" class="cpp-sortable-header" data-sort-key="fecha">Fecha <span class="dashicons dashicons-sort"></span></th>
+                        <th style="width: 10%;" class="cpp-sortable-header" data-sort-key="nota_max">Nota Máx. <span class="dashicons dashicons-sort"></span></th>
+                        <th style="width: 20%;" class="cpp-sortable-header" data-sort-key="descripcion">Descripción <span class="dashicons dashicons-sort"></span></th>
+                        <th style="width: 10%;" class="cpp-sortable-header" data-sort-key="media">Nota Media <span class="dashicons dashicons-sort"></span></th>
                         <th style="width: 8%;">Acciones</th>
                     </tr>
                 </thead>
@@ -58,12 +58,20 @@ function cpp_ajax_get_actividades_tab_content() {
                         $promedio = cpp_obtener_promedio_actividad($act['id']);
                         $categoria_color = !empty($act['categoria_color']) ? $act['categoria_color'] : '#e0e0e0';
                         $is_programada = !empty($act['sesion_id']);
+
+                        $cat_name = 'Sin categoría';
+                        foreach($categorias as $cat) {
+                            if($cat['id'] == $act['categoria_id']) {
+                                $cat_name = $cat['nombre_categoria'];
+                                break;
+                            }
+                        }
                     ?>
                         <tr data-actividad-id="<?php echo esc_attr($act['id']); ?>">
-                            <td>
+                            <td data-sort-value="<?php echo esc_attr($act['nombre_actividad']); ?>">
                                 <input type="text" class="cpp-inline-edit" data-field="nombre_actividad" value="<?php echo esc_attr($act['nombre_actividad']); ?>" placeholder="Nombre de la actividad">
                             </td>
-                            <td>
+                            <td data-sort-value="<?php echo esc_attr($cat_name); ?>">
                                 <div class="cpp-actividad-categoria-cell">
                                     <span class="cpp-category-dot" style="background-color: <?php echo esc_attr($categoria_color); ?>;"></span>
                                     <select class="cpp-inline-edit" data-field="categoria_id">
@@ -75,18 +83,18 @@ function cpp_ajax_get_actividades_tab_content() {
                                     </select>
                                 </div>
                             </td>
-                            <td>
+                            <td data-sort-value="<?php echo esc_attr($act['fecha_actividad'] ? $act['fecha_actividad'] : '0000-00-00'); ?>">
                                 <div class="cpp-actividad-fecha-display <?php echo $is_programada ? 'is-programada' : ''; ?>" title="<?php echo $is_programada ? 'Fecha gestionada desde la programación' : ''; ?>">
                                     <?php echo $act['fecha_actividad'] ? date('d/m/Y', strtotime($act['fecha_actividad'])) : '-'; ?>
                                 </div>
                             </td>
-                            <td>
+                            <td data-sort-value="<?php echo esc_attr($act['nota_maxima']); ?>">
                                 <input type="number" class="cpp-inline-edit" data-field="nota_maxima" value="<?php echo esc_attr($act['nota_maxima']); ?>" step="0.01" min="0.01">
                             </td>
-                            <td>
+                            <td data-sort-value="<?php echo esc_attr($act['descripcion_actividad']); ?>">
                                 <textarea class="cpp-inline-edit" data-field="descripcion_actividad" rows="1" placeholder="Añade una descripción..."><?php echo esc_textarea($act['descripcion_actividad']); ?></textarea>
                             </td>
-                            <td class="cpp-actividad-promedio">
+                            <td class="cpp-actividad-promedio" data-sort-value="<?php echo esc_attr($promedio !== null ? $promedio : -1); ?>">
                                 <strong><?php echo $promedio !== null ? cpp_formatear_nota_display($promedio) : '-'; ?></strong>
                             </td>
                             <td>
