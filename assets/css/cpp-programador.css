@@ -415,6 +415,13 @@
 }
 
 /* --- Pestaña de Semana (Rediseño) --- */
+#cpp-main-tab-semana.active {
+    height: auto;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .cpp-semana-nav {
     display: none; /* Movido a la barra superior */
 }
@@ -881,9 +888,11 @@ td.cpp-semana-td-hora {
 
 /* Animaciones de deslizamiento para la semana */
 .cpp-semana-table-container {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
     position: relative;
     width: 100%;
+    flex-grow: 1;
 }
 
 .cpp-semana-table.slide-out-left {
