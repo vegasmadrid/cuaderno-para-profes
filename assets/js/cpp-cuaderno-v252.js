@@ -388,19 +388,13 @@
 
                     // Determinar qué vista está activa y recargarla
                     const activeTab = $('.cpp-main-tab-link.active').data('tab');
+                    const relativeTabs = ['cuaderno', 'programacion', 'actividades', 'semana', 'horario'];
 
-                    if (activeTab === 'cuaderno') {
-                        const sortOrder = $('#cpp-a1-sort-students-btn').attr('data-sort');
+                    if (relativeTabs.includes(activeTab)) {
+                        // Para cualquiera de estas pestañas, usamos cargarContenidoCuaderno
+                        // Esto asegura que se vea el cargador de pantalla completa y todo se sincronice.
+                        const sortOrder = (activeTab === 'cuaderno') ? $('#cpp-a1-sort-students-btn').attr('data-sort') : null;
                         self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, nuevaEvaluacionId, sortOrder);
-                    } else if (activeTab === 'programacion') {
-                        if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                            // Cargar la nueva evaluación en el programador.
-                            CppProgramadorApp.loadClass(cpp.currentClaseIdCuaderno, nuevaEvaluacionId);
-                        }
-                    } else if (activeTab === 'actividades') {
-                        if (cpp.actividades && typeof cpp.actividades.render === 'function') {
-                            cpp.actividades.render();
-                        }
                     }
                 }
             });
@@ -652,10 +646,11 @@
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
-            // Solo mostrar el cargador de pantalla completa si se solicita y la pestaña de cuaderno está activa
-            const isCuadernoTabActive = $('.cpp-main-tab-link[data-tab="cuaderno"]').hasClass('active');
+            // Mostrar el cargador si estamos en alguna de las pestañas dependientes de la clase/evaluación
+            const activeTab = $('.cpp-main-tab-link.active').data('tab');
+            const isContextTabActive = ['cuaderno', 'programacion', 'actividades', 'semana', 'horario'].includes(activeTab);
 
-            if (cpp.utils && isCuadernoTabActive) {
+            if (cpp.utils && isContextTabActive) {
                 if (useFullLoader && typeof cpp.utils.showLoader === 'function') {
                     cpp.utils.showLoader();
                 } else if (typeof cpp.utils.showSpinner === 'function') {
@@ -727,10 +722,18 @@
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
                             self.updateSortButton(response.data.sort_order);
 
-                            // Refrescar pestaña de actividades si está activa
+                            // --- REFRESCAR PESTAÑA ACTIVA (si es relativa a la clase/evaluación) ---
                             const activeTab = $('.cpp-main-tab-link.active').data('tab');
                             if (activeTab === 'actividades' && cpp.actividades && typeof cpp.actividades.render === 'function') {
                                 cpp.actividades.render();
+                            } else if (['programacion', 'semana', 'horario'].includes(activeTab)) {
+                                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                                     // Sincronizar el programador con la nueva clase/evaluación
+                                     CppProgramadorApp.loadClass(claseId, response.data.evaluacion_activa_id);
+                                     if (activeTab === 'semana' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
+                                         CppProgramadorApp.renderSemanaTab();
+                                     }
+                                }
                             }
 
                             if (saveSort) {
