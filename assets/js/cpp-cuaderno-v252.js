@@ -373,6 +373,9 @@
             $document.on('change', '#cpp-global-evaluacion-selector', function(e) {
                 const nuevaEvaluacionId = $(this).val();
                 if (cpp.currentClaseIdCuaderno && nuevaEvaluacionId) {
+                    // Sincronizar el estado global
+                    cpp.currentEvaluacionId = nuevaEvaluacionId;
+
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
 
                     // Guardar la nueva evaluación en localStorage para persistencia
@@ -723,6 +726,13 @@
                             }
                             $('#clase_id_actividad_cuaderno_form').val(claseId);
                             self.updateSortButton(response.data.sort_order);
+
+                            // Refrescar pestaña de actividades si está activa
+                            const activeTab = $('.cpp-main-tab-link.active').data('tab');
+                            if (activeTab === 'actividades' && cpp.actividades && typeof cpp.actividades.render === 'function') {
+                                cpp.actividades.render();
+                            }
+
                             if (saveSort) {
                                 cpp.utils.showToast('Preferencia de orden guardada.');
                             }
