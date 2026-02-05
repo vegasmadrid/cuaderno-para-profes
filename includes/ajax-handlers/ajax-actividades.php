@@ -5,6 +5,7 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 add_action('wp_ajax_cpp_get_actividades_tab_content', 'cpp_ajax_get_actividades_tab_content');
 function cpp_ajax_get_actividades_tab_content() {
+    nocache_headers();
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
 
