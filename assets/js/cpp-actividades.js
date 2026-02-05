@@ -23,11 +23,16 @@
                 return;
             }
 
-            if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            // Limpiamos el contenedor para evitar ver datos de la clase anterior durante la carga
+            $container.empty();
+
+            // No mostramos el spinner individual si el loader principal ya está activo
+            const mainLoaderVisible = $('#cpp-main-loader').is(':visible');
+            if (!mainLoaderVisible && cpp.utils && typeof cpp.utils.showSpinner === 'function') {
                 cpp.utils.showSpinner();
             }
 
-            $.ajax({
+            return $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
                 dataType: 'json',
