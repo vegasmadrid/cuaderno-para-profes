@@ -589,13 +589,17 @@
             });
 
             // Listeners for cross-component updates
-            $document.on('cpp:forceGradebookReload', function() {
+            const forceReloadHandler = function() {
                 if (cpp.currentClaseIdCuaderno) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     // Al recargar por un evento de sincronización, no usamos el cargador de pantalla completa
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
+                    // y tampoco recargamos la pestaña activa (para no perder scroll/estado en Actividades)
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false, false);
                 }
-            });
+            };
+
+            $document.on('cpp:forceGradebookReload', forceReloadHandler);
+            document.addEventListener('cpp:forceGradebookReload', forceReloadHandler);
 
             $document.on('cpp:forceProgramadorReload', function() {
                 if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.programadorInicializado && CppProgramadorApp.currentClase) {
@@ -642,12 +646,14 @@
             $container.html(selectHtml);
         },
         
-        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder, saveSort = false, useFullLoader = true) {
+        cargarContenidoCuaderno: function(claseId, claseNombre, evaluacionId, sortOrder, saveSort = false, useFullLoader = true, reloadActiveTab = true) {
             const $contenidoCuaderno = $('#cpp-cuaderno-contenido');
             cpp.currentClaseIdCuaderno = claseId;
 
-            // Limpiar el contenido asíncrono anterior para evitar parpadeos de datos viejos
-            $('#cpp-main-tab-actividades').empty();
+            // Limpiar el contenido asíncrono anterior para evitar parpadeos de datos viejos (solo si se pide recargar pestaña)
+            if (reloadActiveTab) {
+                $('#cpp-main-tab-actividades').empty();
+            }
 
             // Mostrar el cargador si estamos en alguna de las pestañas dependientes de la clase/evaluación
             const activeTab = $('.cpp-main-tab-link.active').data('tab');
@@ -729,15 +735,17 @@
                             const activeTab = $('.cpp-main-tab-link.active').data('tab');
                             let renderPromise = null;
 
-                            if (activeTab === 'actividades' && cpp.actividades && typeof cpp.actividades.render === 'function') {
-                                renderPromise = cpp.actividades.render();
-                            } else if (['programacion', 'semana', 'horario'].includes(activeTab)) {
-                                if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
-                                     // Sincronizar el programador con la nueva clase/evaluación
-                                     CppProgramadorApp.loadClass(claseId, response.data.evaluacion_activa_id);
-                                     if (activeTab === 'semana' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
-                                         CppProgramadorApp.renderSemanaTab();
-                                     }
+                            if (reloadActiveTab) {
+                                if (activeTab === 'actividades' && cpp.actividades && typeof cpp.actividades.render === 'function') {
+                                    renderPromise = cpp.actividades.render();
+                                } else if (['programacion', 'semana', 'horario'].includes(activeTab)) {
+                                    if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.loadClass === 'function') {
+                                         // Sincronizar el programador con la nueva clase/evaluación
+                                         CppProgramadorApp.loadClass(claseId, response.data.evaluacion_activa_id);
+                                         if (activeTab === 'semana' && typeof CppProgramadorApp.renderSemanaTab === 'function') {
+                                             CppProgramadorApp.renderSemanaTab();
+                                         }
+                                    }
                                 }
                             }
 
