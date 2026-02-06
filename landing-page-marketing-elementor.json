@@ -1,6 +1,6 @@
 {
   "version": "0.4",
-  "title": "Landing Page Cuaderno para Profes (V2 - Estructura Corregida)",
+  "title": "Landing Page Cuaderno para Profes (V3 - Máxima Compatibilidad)",
   "type": "page",
   "content": [
     {
@@ -21,7 +21,7 @@
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "Recupera tu tiempo. Evalúa con sentido.",
+                "title": "El Cuaderno que vive en tu Portátil de Aula.",
                 "header_size": "h1",
                 "align": "center",
                 "title_color": "#ffffff",
@@ -33,7 +33,7 @@
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "El cuaderno digital definitivo creado por un profe en activo para ayudarte en tu día a día.",
+                "title": "Recupera tu tiempo. Evalúa con sentido. Registra todo mientras ocurre la magia.",
                 "header_size": "h3",
                 "align": "center",
                 "title_color": "#e8f0fe",
@@ -45,7 +45,7 @@
               "elType": "widget",
               "widgetType": "button",
               "settings": {
-                "text": "Empieza GRATIS ahora",
+                "text": "Empieza GRATIS ahora (Sin Publicidad)",
                 "align": "center",
                 "size": "xl",
                 "background_color": "#ffd600",
@@ -57,33 +57,35 @@
       ]
     },
     {
-      "id": "intro_marketing",
+      "id": "laptop_focus_section",
       "elType": "section",
       "settings": {
-        "padding": { "unit": "px", "top": "80", "right": "20", "bottom": "80", "left": "20" }
+        "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" },
+        "background_background": "classic",
+        "background_color": "#ffffff"
       },
       "elements": [
         {
-          "id": "intro_col",
+          "id": "laptop_col",
           "elType": "column",
           "elements": [
             {
-              "id": "intro_h",
+              "id": "laptop_h",
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "Basta de herramientas complicadas que no entienden el aula.",
+                "title": "Tu mejor aliado en la mesa del profesor",
                 "align": "center",
                 "title_color": "#1a73e8",
                 "typography_font_size": { "unit": "px", "size": 36 }
               }
             },
             {
-              "id": "intro_t",
+              "id": "laptop_t",
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='text-align: center; font-size: 20px; color: #3c4043;'>Sé lo que es corregir en el recreo, pelearse con hojas de cálculo infinitas y llegar a casa agotado. Por eso he creado el <strong>Cuaderno para Profes</strong>: una herramienta 100% gratuita, sin publicidad y pensada para trabajar con tu portátil directamente en clase.</p>"
+                "editor": "<p style='text-align: center; font-size: 20px; color: #3c4043;'>Este cuaderno no es una simple app móvil. Está diseñado específicamente para ser usado con <strong>portátil y navegador</strong> mientras tus alumnos trabajan. Registra calificaciones, incidencias y asistencia al instante, con la comodidad de un teclado real y pantalla completa.</p>"
               }
             }
           ]
@@ -91,29 +93,72 @@
       ]
     },
     {
-      "id": "feat_1_section",
+      "id": "founder_story_section",
       "elType": "section",
       "settings": {
         "background_background": "classic",
-        "background_color": "#f8f9fa",
-        "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
+        "background_color": "#f1f3f4",
+        "padding": { "unit": "px", "top": "80", "right": "20", "bottom": "80", "left": "20" }
       },
       "elements": [
         {
-          "id": "feat_1_col_img",
+          "id": "founder_col_img",
           "elType": "column",
-          "settings": { "width": "50" },
+          "settings": { "width": "40" },
           "elements": [
             {
-              "id": "img_ponderada",
+              "id": "img_founder_personal",
               "elType": "widget",
               "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Configuración de Medias Ponderadas LOMLOE" }
+              "settings": { "image": { "url": "" }, "caption": "Sube aquí tu foto en el aula" }
             }
           ]
         },
         {
-          "id": "feat_1_col_text",
+          "id": "founder_col_text",
+          "elType": "column",
+          "settings": { "width": "60" },
+          "elements": [
+            {
+              "id": "founder_h",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": { "title": "Hola, soy compañero tuyo.", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
+            },
+            {
+              "id": "founder_t",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style='font-size: 19px; color: #3c4043;'>Soy un maestro de primaria que, como tú, vive el día a día en el aula. Sé lo que es la burocracia infinita y lo difícil que es encontrar herramientas que de verdad nos ayuden sin costarnos un riñón o llenarnos de publi.</p><p style='font-size: 19px; color: #3c4043;'>He creado este cuaderno para mi propia clase y he decidido <strong>compartirlo gratis con todos mis compañeros</strong>. Mi objetivo es que construyamos juntos la herramienta definitiva. Hoy para portátil, mañana también en móvil, pero siempre libre y profesional.</p>"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "feat_1_row",
+      "elType": "section",
+      "settings": {
+        "padding": { "unit": "px", "top": "80", "right": "20", "bottom": "60", "left": "20" }
+      },
+      "elements": [
+        {
+          "id": "feat_1_img",
+          "elType": "column",
+          "settings": { "width": "50" },
+          "elements": [
+            {
+              "id": "img_ponderada_v3",
+              "elType": "widget",
+              "widgetType": "image",
+              "settings": { "image": { "url": "" }, "caption": "Captura de Medias LOMLOE" }
+            }
+          ]
+        },
+        {
+          "id": "feat_1_text",
           "elType": "column",
           "settings": { "width": "50" },
           "elements": [
@@ -121,14 +166,14 @@
               "id": "feat_1_h",
               "elType": "widget",
               "widgetType": "heading",
-              "settings": { "title": "Medias Ponderadas LOMLOE al instante", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
+              "settings": { "title": "Medias LOMLOE automáticas", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
             },
             {
               "id": "feat_1_t",
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>Ahorra horas de trabajo administrativo.</strong> Configura tus categorías (Exámenes 60%, Tareas 30%, Actitud 10%) una sola vez. El cuaderno calcula la media ponderada de cada alumno automáticamente según introduces las notas. ¡Llega a las juntas de evaluación con todo el trabajo hecho!</p>"
+                "editor": "<p style='font-size: 18px; color: #3c4043;'>Configura tus porcentajes (Contenidos, Actitud, Proyectos...) una sola vez. El sistema se encarga de calcular la media ponderada al instante. Llega a tus tutorías e informes con datos reales y actualizados sin tocar una calculadora.</p>"
               }
             }
           ]
@@ -136,50 +181,7 @@
       ]
     },
     {
-      "id": "feat_2_section",
-      "elType": "section",
-      "settings": {
-        "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
-      },
-      "elements": [
-        {
-          "id": "feat_2_col_text",
-          "elType": "column",
-          "settings": { "width": "50" },
-          "elements": [
-            {
-              "id": "feat_2_h",
-              "elType": "widget",
-              "widgetType": "heading",
-              "settings": { "title": "Registro de Asistencia en 5 segundos", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
-            },
-            {
-              "id": "feat_2_t",
-              "elType": "widget",
-              "widgetType": "text-editor",
-              "settings": {
-                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>No pierdas el ritmo de la clase.</strong> Pasa lista rápidamente desde tu portátil. Marca faltas, retrasos o justificaciones con un clic. La información se sincroniza automáticamente con la ficha del alumno para que tengas el historial completo en las tutorías.</p>"
-              }
-            }
-          ]
-        },
-        {
-          "id": "feat_2_col_img",
-          "elType": "column",
-          "settings": { "width": "50" },
-          "elements": [
-            {
-              "id": "img_asistencia",
-              "elType": "widget",
-              "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Panel de Asistencia Rápida" }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "feat_3_section",
+      "id": "feat_2_row",
       "elType": "section",
       "settings": {
         "background_background": "classic",
@@ -188,174 +190,167 @@
       },
       "elements": [
         {
-          "id": "feat_3_col_img",
+          "id": "feat_2_text",
           "elType": "column",
           "settings": { "width": "50" },
           "elements": [
             {
-              "id": "img_ficha",
+              "id": "feat_2_h",
               "elType": "widget",
-              "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Ficha del Alumno con Gráficos de Evolución" }
+              "widgetType": "heading",
+              "settings": { "title": "Asistencia y Nube Segura", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
+            },
+            {
+              "id": "feat_2_t",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style='font-size: 18px; color: #3c4043;'>Registra quién falta en segundos. Todo se almacena de forma segura en la nube: <strong>nunca perderás tus datos</strong> aunque cambies de ordenador o se estropee. Accede desde el centro o desde tu casa con total tranquilidad.</p>"
+              }
             }
           ]
         },
         {
-          "id": "feat_3_col_text",
+          "id": "feat_2_img",
           "elType": "column",
           "settings": { "width": "50" },
           "elements": [
             {
-              "id": "feat_3_h",
+              "id": "img_asistencia_v3",
               "elType": "widget",
-              "widgetType": "heading",
-              "settings": { "title": "Tutorías basadas en datos, no en sensaciones", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
-            },
-            {
-              "id": "feat_3_t",
-              "elType": "widget",
-              "widgetType": "text-editor",
-              "settings": {
-                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>Muestra a las familias la progresión real.</strong> Cada alumno tiene una ficha con gráficos de evolución. Podrás detectar al instante quién está bajando el rendimiento y actuar a tiempo. Los padres valorarán enormemente la precisión y profesionalidad de tus datos.</p>"
-              }
+              "widgetType": "image",
+              "settings": { "image": { "url": "" }, "caption": "Captura de Registro de Asistencia" }
             }
           ]
         }
       ]
     },
     {
-      "id": "feat_4_section",
+      "id": "opiniones_title_section",
       "elType": "section",
       "settings": {
-        "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
+        "padding": { "unit": "px", "top": "80", "right": "20", "bottom": "20", "left": "20" }
       },
       "elements": [
         {
-          "id": "feat_4_col_text",
-          "elType": "column",
-          "settings": { "width": "50" },
-          "elements": [
-            {
-              "id": "feat_4_h",
-              "elType": "widget",
-              "widgetType": "heading",
-              "settings": { "title": "Programación que 'sabe' el calendario", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
-            },
-            {
-              "id": "feat_4_t",
-              "elType": "widget",
-              "widgetType": "text-editor",
-              "settings": {
-                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>Organiza tu trimestre en un abrir y cerrar de ojos.</strong> Define tus sesiones y el cuaderno les asignará fecha automáticamente saltándose los festivos y vacaciones que tú marques. Exporta tu programación a PDF y olvídate de pelearte con Word.</p>"
-              }
-            }
-          ]
-        },
-        {
-          "id": "feat_4_col_img",
-          "elType": "column",
-          "settings": { "width": "50" },
-          "elements": [
-            {
-              "id": "img_programacion",
-              "elType": "widget",
-              "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Programador de Sesiones Inteligente" }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "testimonials_section",
-      "elType": "section",
-      "settings": {
-        "background_background": "classic",
-        "background_color": "#e8f0fe",
-        "padding": { "unit": "px", "top": "80", "right": "20", "bottom": "80", "left": "20" }
-      },
-      "elements": [
-        {
-          "id": "testimonials_main_col",
+          "id": "op_title_col",
           "elType": "column",
           "elements": [
             {
-              "id": "test_title",
+              "id": "h_opiniones_v3",
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "Lo que dicen otros compañeros",
+                "title": "Lo que dicen mis compañeros",
                 "align": "center",
                 "title_color": "#1a73e8",
                 "typography_font_size": { "unit": "px", "size": 42 }
               }
-            },
-            {
-              "id": "test_inner_section",
-              "elType": "inner_section",
-              "elements": [
-                {
-                  "id": "test_col_1",
-                  "elType": "column",
-                  "settings": { "width": "50" },
-                  "elements": [
-                    {
-                      "id": "test_1_widget",
-                      "elType": "widget",
-                      "widgetType": "testimonial",
-                      "settings": {
-                        "testimonial_content": "Por fin dejo de pelearme con el Excel oficial del centro. Con este cuaderno tengo las medias LOMLOE en dos minutos y puedo centrarme en lo importante: mis alumnos.",
-                        "testimonial_name": "Lucía Martínez",
-                        "testimonial_job": "Maestra de Primaria en Madrid"
-                      }
-                    },
-                    {
-                      "id": "test_2_widget",
-                      "elType": "widget",
-                      "widgetType": "testimonial",
-                      "settings": {
-                        "testimonial_content": "Lo uso en el portátil de aula mientras ellos trabajan. Es súper ágil y me encanta que sea gratis y sin publi. Se nota que lo ha hecho un profe.",
-                        "testimonial_name": "Jorge Ramos",
-                        "testimonial_job": "Tutor de 6º en Valencia"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "id": "test_col_2",
-                  "elType": "column",
-                  "settings": { "width": "50" },
-                  "elements": [
-                    {
-                      "id": "test_3_widget",
-                      "elType": "widget",
-                      "widgetType": "testimonial",
-                      "settings": {
-                        "testimonial_content": "Las fichas de alumno con gráficos han sido un antes y un después en mis tutorías. Los padres alucinan cuando les enseño la progresión visual de su hijo.",
-                        "testimonial_name": "Elena Belmonte",
-                        "testimonial_job": "Especialista de Inglés en Sevilla"
-                      }
-                    },
-                    {
-                      "id": "test_4_widget",
-                      "elType": "widget",
-                      "widgetType": "testimonial",
-                      "settings": {
-                        "testimonial_content": "La función de programación inteligente me ahorra media tarde de domingo. Que sepa los festivos y me lo pase a PDF es un regalo del cielo.",
-                        "testimonial_name": "Roberto Sanz",
-                        "testimonial_job": "Profe de Mates en Zaragoza"
-                      }
-                    }
-                  ]
-                }
-              ]
             }
           ]
         }
       ]
     },
     {
-      "id": "final_cta_section",
+      "id": "opiniones_grid_1",
+      "elType": "section",
+      "settings": {
+        "padding": { "unit": "px", "top": "20", "right": "20", "bottom": "20", "left": "20" }
+      },
+      "elements": [
+        {
+          "id": "op_col_1",
+          "elType": "column",
+          "settings": {
+            "width": "50",
+            "background_background": "classic",
+            "background_color": "#e8f0fe",
+            "padding": { "unit": "px", "top": "30", "right": "30", "bottom": "30", "left": "30" }
+          },
+          "elements": [
+            {
+              "id": "op_1_t",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style='font-style: italic; font-size: 17px; color: #3c4043;'>\"Por fin un cuaderno que entiende el aula. Lo tengo abierto en mi portátil mientras ellos hacen los ejercicios y paso las notas en un momento. ¡Me ha salvado las evaluaciones!\"</p><strong>- Lucía Martínez, Maestra en Madrid</strong>"
+              }
+            }
+          ]
+        },
+        {
+          "id": "op_col_2",
+          "elType": "column",
+          "settings": {
+            "width": "50",
+            "background_background": "classic",
+            "background_color": "#f1f3f4",
+            "padding": { "unit": "px", "top": "30", "right": "30", "bottom": "30", "left": "30" }
+          },
+          "elements": [
+            {
+              "id": "op_2_t",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style='font-style: italic; font-size: 17px; color: #3c4043;'>\"Me encanta que sea un proyecto altruista. Se nota que está hecho por un profe porque es súper sencillo y va al grano. La nube me da una paz mental increíble.\"</p><strong>- Jorge Ramos, Tutor en Valencia</strong>"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opiniones_grid_2",
+      "elType": "section",
+      "settings": {
+        "padding": { "unit": "px", "top": "20", "right": "20", "bottom": "80", "left": "20" }
+      },
+      "elements": [
+        {
+          "id": "op_col_3",
+          "elType": "column",
+          "settings": {
+            "width": "50",
+            "background_background": "classic",
+            "background_color": "#f1f3f4",
+            "padding": { "unit": "px", "top": "30", "right": "30", "bottom": "30", "left": "30" }
+          },
+          "elements": [
+            {
+              "id": "op_3_t",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style='font-style: italic; font-size: 17px; color: #3c4043;'>\"Los gráficos de evolución de los alumnos son una pasada para las tutorías. Las familias se quedan flipadas con la profesionalidad de los datos. ¡Gracias compañero!\"</p><strong>- Elena Belmonte, Sevilla</strong>"
+              }
+            }
+          ]
+        },
+        {
+          "id": "op_col_4",
+          "elType": "column",
+          "settings": {
+            "width": "50",
+            "background_background": "classic",
+            "background_color": "#e8f0fe",
+            "padding": { "unit": "px", "top": "30", "right": "30", "bottom": "30", "left": "30" }
+          },
+          "elements": [
+            {
+              "id": "op_4_t",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style='font-style: italic; font-size: 17px; color: #3c4043;'>\"Uso el portátil de mi mesa y en dos clics tengo la programación lista. Es ágil, rápido y totalmente gratis. No se puede pedir más para nuestro día a día.\"</p><strong>- Roberto Sanz, Zaragoza</strong>"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final_cta_v3",
       "elType": "section",
       "settings": {
         "background_background": "classic",
@@ -364,23 +359,22 @@
       },
       "elements": [
         {
-          "id": "final_cta_col",
+          "id": "final_col_v3",
           "elType": "column",
           "elements": [
             {
-              "id": "final_cta_title",
+              "id": "final_h_v3",
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "¿Listo para recuperar tu tiempo?",
-                "header_size": "h2",
+                "title": "¿Listo para dar el salto al cuaderno digital?",
                 "align": "center",
                 "title_color": "#ffffff",
                 "typography_font_size": { "unit": "px", "size": 48 }
               }
             },
             {
-              "id": "final_cta_btn",
+              "id": "final_b_v3",
               "elType": "widget",
               "widgetType": "button",
               "settings": {
@@ -392,11 +386,11 @@
               }
             },
             {
-              "id": "final_cta_note",
+              "id": "final_f_v3",
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "Un proyecto colaborativo: hoy en tu portátil, mañana en tu móvil. ¡Gratis para siempre!",
+                "title": "Recuerda: Hecho por un profe, 100% gratis, en la nube y para tu portátil de aula.",
                 "header_size": "p",
                 "align": "center",
                 "title_color": "#ffffff",
