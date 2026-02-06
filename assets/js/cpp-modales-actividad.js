@@ -356,7 +356,8 @@
                             $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
                             if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
                                 let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
-                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
+                                // Recarga en segundo plano para actualizar el cuaderno sin reiniciar la vista actual (si es Actividades)
+                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId, null, false, false, false);
                             }
                             // Recargar Programador si existe en la página
                             if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {

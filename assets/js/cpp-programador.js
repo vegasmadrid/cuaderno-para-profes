@@ -423,7 +423,7 @@
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId);
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId, null, false, false, false);
                         }
                     }
                 } else {
@@ -569,7 +569,7 @@
                     // --- AÑADIDO: Recargar cuaderno si es necesario ---
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId, null, false, false, false);
                         }
                     }
 
@@ -1155,7 +1155,7 @@
 
                 if (result.data.needs_gradebook_reload) {
                     if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                        cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId, null, false, false, false);
                     }
                 }
             } else {
@@ -1225,7 +1225,7 @@
                     // Forzar recarga del cuaderno si es necesario
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId, null, false, false, false);
                         }
                     }
                 }
@@ -1242,7 +1242,7 @@
                 this.fetchData(this.currentClase.id, this.currentEvaluacionId);
                 if (result.data.needs_gradebook_reload) {
                     if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                        cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                        cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId, null, false, false, false);
                     }
                 }
             } else {
@@ -2202,7 +2202,7 @@
 
                     if (result.data.needs_gradebook_reload) {
                         if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId, null, false, false, false);
                         }
                     }
                 } else {
