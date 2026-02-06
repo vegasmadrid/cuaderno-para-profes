@@ -1,6 +1,6 @@
 {
   "version": "0.4",
-  "title": "Landing Page Cuaderno para Profes (Expert Marketing)",
+  "title": "Landing Page Cuaderno para Profes (V2 - Estructura Corregida)",
   "type": "page",
   "content": [
     {
@@ -74,6 +74,7 @@
               "settings": {
                 "title": "Basta de herramientas complicadas que no entienden el aula.",
                 "align": "center",
+                "title_color": "#1a73e8",
                 "typography_font_size": { "unit": "px", "size": 36 }
               }
             },
@@ -82,7 +83,7 @@
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='text-align: center; font-size: 20px; color: #5f6368;'>Sé lo que es corregir en el recreo, pelearse con hojas de cálculo infinitas y llegar a casa agotado. Por eso he creado el <strong>Cuaderno para Profes</strong>: una herramienta 100% gratuita, sin publicidad y pensada para trabajar con tu portátil directamente en clase.</p>"
+                "editor": "<p style='text-align: center; font-size: 20px; color: #3c4043;'>Sé lo que es corregir en el recreo, pelearse con hojas de cálculo infinitas y llegar a casa agotado. Por eso he creado el <strong>Cuaderno para Profes</strong>: una herramienta 100% gratuita, sin publicidad y pensada para trabajar con tu portátil directamente en clase.</p>"
               }
             }
           ]
@@ -90,39 +91,12 @@
       ]
     },
     {
-      "id": "features_section",
+      "id": "feat_1_section",
       "elType": "section",
       "settings": {
         "background_background": "classic",
-        "background_color": "#f1f3f4",
+        "background_color": "#f8f9fa",
         "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
-      },
-      "elements": [
-        {
-          "id": "feat_h",
-          "elType": "column",
-          "elements": [
-            {
-              "id": "h_servicios",
-              "elType": "widget",
-              "widgetType": "heading",
-              "settings": {
-                "title": "Diseñado para resolver tus problemas reales",
-                "align": "center",
-                "typography_font_size": { "unit": "px", "size": 42 }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "feat_1_row",
-      "elType": "section",
-      "settings": {
-        "background_background": "classic",
-        "background_color": "#f1f3f4",
-        "padding": { "unit": "px", "top": "40", "right": "20", "bottom": "40", "left": "20" }
       },
       "elements": [
         {
@@ -134,7 +108,7 @@
               "id": "img_ponderada",
               "elType": "widget",
               "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Configuración de Medias Ponderadas" }
+              "settings": { "image": { "url": "" }, "caption": "Configuración de Medias Ponderadas LOMLOE" }
             }
           ]
         },
@@ -147,14 +121,14 @@
               "id": "feat_1_h",
               "elType": "widget",
               "widgetType": "heading",
-              "settings": { "title": "Medias Ponderadas LOMLOE al instante", "typography_font_size": { "unit": "px", "size": 32 } }
+              "settings": { "title": "Medias Ponderadas LOMLOE al instante", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
             },
             {
               "id": "feat_1_t",
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='font-size: 18px;'><strong>Olvida la calculadora y las fórmulas complejas.</strong> Define tus categorías de evaluación (Exámenes, Trabajo diario, Actitud...) y sus porcentajes una sola vez. El cuaderno calculará automáticamente la nota de cada alumno conforme vayas introduciendo calificaciones. Estarás siempre listo para cualquier sesión de evaluación.</p>"
+                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>Ahorra horas de trabajo administrativo.</strong> Configura tus categorías (Exámenes 60%, Tareas 30%, Actitud 10%) una sola vez. El cuaderno calcula la media ponderada de cada alumno automáticamente según introduces las notas. ¡Llega a las juntas de evaluación con todo el trabajo hecho!</p>"
               }
             }
           ]
@@ -162,7 +136,7 @@
       ]
     },
     {
-      "id": "feat_2_row",
+      "id": "feat_2_section",
       "elType": "section",
       "settings": {
         "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
@@ -177,14 +151,14 @@
               "id": "feat_2_h",
               "elType": "widget",
               "widgetType": "heading",
-              "settings": { "title": "Registro de Asistencia en un clic", "typography_font_size": { "unit": "px", "size": 32 } }
+              "settings": { "title": "Registro de Asistencia en 5 segundos", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
             },
             {
               "id": "feat_2_t",
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='font-size: 18px;'><strong>Pasa lista en segundos desde tu portátil.</strong> Marca ausencias, retrasos o faltas justificadas de forma visual y rápida. Toda la información se queda registrada en la ficha del alumno, permitiéndote detectar patrones de absentismo de manera inmediata para informar a jefatura o familias.</p>"
+                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>No pierdas el ritmo de la clase.</strong> Pasa lista rápidamente desde tu portátil. Marca faltas, retrasos o justificaciones con un clic. La información se sincroniza automáticamente con la ficha del alumno para que tengas el historial completo en las tutorías.</p>"
               }
             }
           ]
@@ -198,18 +172,18 @@
               "id": "img_asistencia",
               "elType": "widget",
               "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Módulo de Pasar Lista" }
+              "settings": { "image": { "url": "" }, "caption": "Panel de Asistencia Rápida" }
             }
           ]
         }
       ]
     },
     {
-      "id": "feat_3_row",
+      "id": "feat_3_section",
       "elType": "section",
       "settings": {
         "background_background": "classic",
-        "background_color": "#f1f3f4",
+        "background_color": "#f8f9fa",
         "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
       },
       "elements": [
@@ -219,10 +193,10 @@
           "settings": { "width": "50" },
           "elements": [
             {
-              "id": "img_programacion",
+              "id": "img_ficha",
               "elType": "widget",
               "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Programación Inteligente de Sesiones" }
+              "settings": { "image": { "url": "" }, "caption": "Ficha del Alumno con Gráficos de Evolución" }
             }
           ]
         },
@@ -235,14 +209,14 @@
               "id": "feat_3_h",
               "elType": "widget",
               "widgetType": "heading",
-              "settings": { "title": "Programación que se ajusta a tu vida", "typography_font_size": { "unit": "px", "size": 32 } }
+              "settings": { "title": "Tutorías basadas en datos, no en sensaciones", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
             },
             {
               "id": "feat_3_t",
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='font-size: 18px;'><strong>Planifica con inteligencia.</strong> El programador calcula las fechas de tus sesiones automáticamente basándose en tu horario y calendario escolar. Si un día es festivo, el sistema lo sabe. Además, puedes descargar toda tu programación en PDF, lista para presentar o archivar sin perder ni un minuto en formatos.</p>"
+                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>Muestra a las familias la progresión real.</strong> Cada alumno tiene una ficha con gráficos de evolución. Podrás detectar al instante quién está bajando el rendimiento y actuar a tiempo. Los padres valorarán enormemente la precisión y profesionalidad de tus datos.</p>"
               }
             }
           ]
@@ -250,7 +224,7 @@
       ]
     },
     {
-      "id": "feat_4_row",
+      "id": "feat_4_section",
       "elType": "section",
       "settings": {
         "padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20" }
@@ -265,14 +239,14 @@
               "id": "feat_4_h",
               "elType": "widget",
               "widgetType": "heading",
-              "settings": { "title": "Fichas de Alumno para Tutorías de Éxito", "typography_font_size": { "unit": "px", "size": 32 } }
+              "settings": { "title": "Programación que 'sabe' el calendario", "title_color": "#1a73e8", "typography_font_size": { "unit": "px", "size": 32 } }
             },
             {
               "id": "feat_4_t",
               "elType": "widget",
               "widgetType": "text-editor",
               "settings": {
-                "editor": "<p style='font-size: 18px;'><strong>Impresiona en tus reuniones con las familias.</strong> Accede a la ficha individual de cada alumno donde verás sus notas, su asistencia y, lo más importante, <strong>gráficos de evolución visual</strong>. Podrás mostrar claramente la tendencia del alumno y tomar decisiones educativas basadas en evidencias reales, no solo en sensaciones.</p>"
+                "editor": "<p style='font-size: 18px; color: #3c4043;'><strong>Organiza tu trimestre en un abrir y cerrar de ojos.</strong> Define tus sesiones y el cuaderno les asignará fecha automáticamente saltándose los festivos y vacaciones que tú marques. Exporta tu programación a PDF y olvídate de pelearte con Word.</p>"
               }
             }
           ]
@@ -283,10 +257,10 @@
           "settings": { "width": "50" },
           "elements": [
             {
-              "id": "img_ficha",
+              "id": "img_programacion",
               "elType": "widget",
               "widgetType": "image",
-              "settings": { "image": { "url": "" }, "caption": "Ficha de Alumno con Gráficos" }
+              "settings": { "image": { "url": "" }, "caption": "Programador de Sesiones Inteligente" }
             }
           ]
         }
@@ -302,66 +276,77 @@
       },
       "elements": [
         {
-          "id": "test_h",
+          "id": "testimonials_main_col",
           "elType": "column",
           "elements": [
             {
-              "id": "h_opiniones",
+              "id": "test_title",
               "elType": "widget",
               "widgetType": "heading",
-              "settings": { "title": "Opiniones de otros compañeros", "align": "center", "typography_font_size": { "unit": "px", "size": 42 } }
-            }
-          ]
-        },
-        {
-          "id": "test_inner",
-          "elType": "inner_section",
-          "elements": [
-            {
-              "id": "test_1",
-              "elType": "column",
-              "elements": [
-                {
-                  "id": "w_test_1",
-                  "elType": "widget",
-                  "widgetType": "testimonial",
-                  "settings": {
-                    "testimonial_content": "Desde que uso el Cuaderno, las reuniones de evaluación han dejado de ser un drama. Tengo todos los porcentajes LOMLOE calculados y puedo justificar cada nota con datos reales.",
-                    "testimonial_name": "Lucía M.",
-                    "testimonial_job": "Maestra en CEIP Juan Ramón Jiménez"
-                  }
-                }
-              ]
+              "settings": {
+                "title": "Lo que dicen otros compañeros",
+                "align": "center",
+                "title_color": "#1a73e8",
+                "typography_font_size": { "unit": "px", "size": 42 }
+              }
             },
             {
-              "id": "test_2",
-              "elType": "column",
+              "id": "test_inner_section",
+              "elType": "inner_section",
               "elements": [
                 {
-                  "id": "w_test_2",
-                  "elType": "widget",
-                  "widgetType": "testimonial",
-                  "settings": {
-                    "testimonial_content": "Lo mejor es que está pensado para el portátil del aula. Paso lista y anoto los positivos mientras ellos trabajan, y al llegar a casa lo tengo todo sincronizado.",
-                    "testimonial_name": "Jorge P.",
-                    "testimonial_job": "Tutor de 6º en Valencia"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "test_3",
-              "elType": "column",
-              "elements": [
+                  "id": "test_col_1",
+                  "elType": "column",
+                  "settings": { "width": "50" },
+                  "elements": [
+                    {
+                      "id": "test_1_widget",
+                      "elType": "widget",
+                      "widgetType": "testimonial",
+                      "settings": {
+                        "testimonial_content": "Por fin dejo de pelearme con el Excel oficial del centro. Con este cuaderno tengo las medias LOMLOE en dos minutos y puedo centrarme en lo importante: mis alumnos.",
+                        "testimonial_name": "Lucía Martínez",
+                        "testimonial_job": "Maestra de Primaria en Madrid"
+                      }
+                    },
+                    {
+                      "id": "test_2_widget",
+                      "elType": "widget",
+                      "widgetType": "testimonial",
+                      "settings": {
+                        "testimonial_content": "Lo uso en el portátil de aula mientras ellos trabajan. Es súper ágil y me encanta que sea gratis y sin publi. Se nota que lo ha hecho un profe.",
+                        "testimonial_name": "Jorge Ramos",
+                        "testimonial_job": "Tutor de 6º en Valencia"
+                      }
+                    }
+                  ]
+                },
                 {
-                  "id": "w_test_3",
-                  "elType": "widget",
-                  "widgetType": "testimonial",
-                  "settings": {
-                    "testimonial_content": "Es increíble que una herramienta así sea gratuita. Se nota que la ha hecho alguien que pisa el aula todos los días porque resuelve los problemas que de verdad tenemos.",
-                    "testimonial_name": "Elena B.",
-                    "testimonial_job": "Especialista de Inglés en Sevilla"
-                  }
+                  "id": "test_col_2",
+                  "elType": "column",
+                  "settings": { "width": "50" },
+                  "elements": [
+                    {
+                      "id": "test_3_widget",
+                      "elType": "widget",
+                      "widgetType": "testimonial",
+                      "settings": {
+                        "testimonial_content": "Las fichas de alumno con gráficos han sido un antes y un después en mis tutorías. Los padres alucinan cuando les enseño la progresión visual de su hijo.",
+                        "testimonial_name": "Elena Belmonte",
+                        "testimonial_job": "Especialista de Inglés en Sevilla"
+                      }
+                    },
+                    {
+                      "id": "test_4_widget",
+                      "elType": "widget",
+                      "widgetType": "testimonial",
+                      "settings": {
+                        "testimonial_content": "La función de programación inteligente me ahorra media tarde de domingo. Que sepa los festivos y me lo pase a PDF es un regalo del cielo.",
+                        "testimonial_name": "Roberto Sanz",
+                        "testimonial_job": "Profe de Mates en Zaragoza"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -370,7 +355,7 @@
       ]
     },
     {
-      "id": "cta_final_marketing",
+      "id": "final_cta_section",
       "elType": "section",
       "settings": {
         "background_background": "classic",
@@ -379,15 +364,15 @@
       },
       "elements": [
         {
-          "id": "cta_final_col",
+          "id": "final_cta_col",
           "elType": "column",
           "elements": [
             {
-              "id": "cta_h",
+              "id": "final_cta_title",
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "¿Empezamos a simplificar tu evaluación?",
+                "title": "¿Listo para recuperar tu tiempo?",
                 "header_size": "h2",
                 "align": "center",
                 "title_color": "#ffffff",
@@ -395,22 +380,11 @@
               }
             },
             {
-              "id": "cta_p",
-              "elType": "widget",
-              "widgetType": "heading",
-              "settings": {
-                "title": "Únete a cientos de profesores que ya han recuperado su tiempo libre.",
-                "header_size": "h4",
-                "align": "center",
-                "title_color": "#e8f0fe"
-              }
-            },
-            {
-              "id": "cta_b",
+              "id": "final_cta_btn",
               "elType": "widget",
               "widgetType": "button",
               "settings": {
-                "text": "Registrarme GRATIS ahora",
+                "text": "Registrarme GRATIS Ahora",
                 "align": "center",
                 "size": "xl",
                 "background_color": "#ffd600",
@@ -418,11 +392,11 @@
               }
             },
             {
-              "id": "cta_footer",
+              "id": "final_cta_note",
               "elType": "widget",
               "widgetType": "heading",
               "settings": {
-                "title": "Un proyecto colaborativo: hoy para portátil, mañana en tu móvil. ¡Gratis para siempre!",
+                "title": "Un proyecto colaborativo: hoy en tu portátil, mañana en tu móvil. ¡Gratis para siempre!",
                 "header_size": "p",
                 "align": "center",
                 "title_color": "#ffffff",
