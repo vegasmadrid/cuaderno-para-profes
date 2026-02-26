@@ -24,7 +24,7 @@
         lastActiveTab: 'cuaderno',
 
         // --- Propiedades para la paleta de símbolos ---
-        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❌', '📝', '❓', '⭐'],
+        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❤️', '📝', '❓', '⭐'],
         symbolLegends: {}, // Se cargará desde localStorage
         localStorageKey_symbolLegends: 'cpp_symbol_legends_user_',
         lastFocusedCell: null,
@@ -40,7 +40,7 @@
                 '✅': 'Tarea entregada',
                 '🏃‍♂️': 'Falta injustificada',
                 '⌛': 'Retraso',
-                '❌': 'No se presenta / No entrega',
+                '❤️': 'Positivo / Interés',
                 '📝': 'Falta justificada',
                 '❓': 'Duda / Necesita revisión',
                 '⭐': 'Trabajo destacado'
@@ -76,6 +76,108 @@
 
             // Mostrar el modal
             $('#cpp-modal-symbol-palette').css('display', 'flex');
+        },
+
+        handleDirectAbsence: function() {
+            const self = this;
+            let inputsToProcess = [];
+
+            if (self.currentSelectedInputs && self.currentSelectedInputs.length > 0) {
+                inputsToProcess = self.currentSelectedInputs;
+            } else if (self.lastFocusedCell) {
+                inputsToProcess = [self.lastFocusedCell];
+            }
+
+            if (inputsToProcess.length === 0) {
+                if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                    cpp.utils.showToast('Por favor, selecciona al menos una celda de nota.', 'error');
+                } else {
+                    alert('Por favor, selecciona al menos una celda de nota.');
+                }
+                return;
+            }
+
+            const activitiesWithoutDate = new Set();
+            const processDataByDate = {}; // { 'YYYY-MM-DD': [ alumnoIds ] }
+            const cellsToUpdate = [];
+
+            inputsToProcess.forEach(input => {
+                const $input = $(input);
+                const actividadId = $input.data('actividad-id');
+                const alumnoId = $input.data('alumno-id');
+                const $headerDiv = $(`.cpp-editable-activity-name[data-actividad-id="${actividadId}"]`);
+                let fechaRaw = $headerDiv.data('fecha-actividad');
+                const taskName = $headerDiv.data('nombre-actividad') || 'Tarea sin nombre';
+
+                if (!fechaRaw) {
+                    activitiesWithoutDate.add(taskName);
+                } else {
+                    const fecha = fechaRaw.split(' ')[0]; // YYYY-MM-DD
+                    if (!processDataByDate[fecha]) {
+                        processDataByDate[fecha] = new Set();
+                    }
+                    processDataByDate[fecha].add(alumnoId);
+                    cellsToUpdate.push({
+                        input: input,
+                        alumnoId: alumnoId,
+                        actividadId: actividadId
+                    });
+                }
+            });
+
+            if (activitiesWithoutDate.size > 0) {
+                const names = Array.from(activitiesWithoutDate).join(', ');
+                const msg = `No se puede poner falta en: ${names}. Primero configura la fecha de la tarea.`;
+                if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                    cpp.utils.showToast(msg, 'error');
+                } else {
+                    alert(msg);
+                }
+            }
+
+            if (cellsToUpdate.length > 0) {
+                // 1. Update notes with '❌'
+                cellsToUpdate.forEach(item => {
+                    const $input = $(item.input);
+                    const currentValue = $input.val().trim();
+                    const symbol = '❌';
+                    const newValue = currentValue ? (currentValue + ' ' + symbol) : symbol;
+                    $input.val(newValue);
+                    self.guardarNotaDesdeInput.call(item.input, { type: 'manual' }, null);
+                });
+
+                // 2. Register absences in attendance
+                Object.keys(processDataByDate).forEach(fecha => {
+                    const alumnoIds = Array.from(processDataByDate[fecha]);
+                    const asistencias = alumnoIds.map(id => ({
+                        alumno_id: id,
+                        estado: 'falta'
+                    }));
+
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_guardar_asistencia_clase',
+                            nonce: cppFrontendData.nonce,
+                            clase_id: cpp.currentClaseIdCuaderno,
+                            fecha_asistencia: fecha,
+                            asistencias: asistencias
+                        },
+                        success: function(response) {
+                            // console.log(`Asistencia guardada para ${fecha}`, response);
+                        },
+                        error: function() {
+                            console.error(`Error al guardar asistencia para ${fecha}`);
+                        }
+                    });
+                });
+
+                if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                    cpp.utils.showToast('Ausencias registradas correctamente.', 'success');
+                }
+            }
         },
 
         init: function() {
@@ -529,6 +631,11 @@
             $document.on('click', '#cpp-btn-agregar-alumnos-mano', function(e){ if (cpp.modals && cpp.modals.alumnos && typeof cpp.modals.alumnos.mostrar === 'function') { cpp.modals.alumnos.mostrar(e); } else { console.error("Función cpp.modals.alumnos.mostrar no encontrada.");} });
             $document.on('click', '#cpp-a1-download-excel-btn', function(e){ if (cpp.modals && cpp.modals.excel && typeof cpp.modals.excel.showDownloadOptions === 'function') { cpp.modals.excel.showDownloadOptions(e); } else { console.error("Función cpp.modals.excel.showDownloadOptions no encontrada.");} });
             $document.on('click', '#cpp-a1-take-attendance-btn', function(e) { e.preventDefault(); e.stopPropagation(); if (cpp.modals && cpp.modals.asistencia && typeof cpp.modals.asistencia.mostrar === 'function') { if (cpp.currentClaseIdCuaderno) { cpp.modals.asistencia.mostrar(cpp.currentClaseIdCuaderno); } else { alert("Por favor, selecciona o carga una clase primero."); } } else { console.error("Función cpp.modals.asistencia.mostrar no encontrada."); } });
+            $document.on('click', '#cpp-a1-direct-absence-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                self.handleDirectAbsence();
+            });
             $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); });
             $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } });
             $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); });
