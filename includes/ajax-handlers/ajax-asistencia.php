@@ -111,3 +111,30 @@ function cpp_ajax_obtener_asistencia_clase_fecha() {
     $asistencia_data = cpp_obtener_asistencia_por_fecha($user_id, $clase_id, $fecha_asistencia);
     wp_send_json_success(['asistencia' => $asistencia_data]);
 }
+
+add_action('wp_ajax_cpp_eliminar_asistencia_individual', 'cpp_ajax_eliminar_asistencia_individual');
+function cpp_ajax_eliminar_asistencia_individual() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    $fecha = isset($_POST['fecha']) ? sanitize_text_field($_POST['fecha']) : '';
+
+    if (empty($clase_id) || empty($alumno_id) || empty($fecha)) {
+        wp_send_json_error(['message' => 'Faltan datos para eliminar la asistencia.']);
+        return;
+    }
+
+    $resultado = cpp_eliminar_asistencia_alumno_fecha($user_id, $clase_id, $alumno_id, $fecha);
+
+    if ($resultado !== false) {
+        wp_send_json_success(['message' => 'Asistencia eliminada correctamente.']);
+    } else {
+        wp_send_json_error(['message' => 'Error al eliminar la asistencia.']);
+    }
+}

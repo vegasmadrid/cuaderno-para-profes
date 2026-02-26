@@ -134,3 +134,29 @@ function cpp_obtener_asistencia_alumno_para_clase($user_id, $alumno_id, $clase_i
 
     return $resultados ? $resultados : [];
 }
+
+/**
+ * Elimina un registro de asistencia para un alumno, clase y fecha específicos.
+ */
+function cpp_eliminar_asistencia_alumno_fecha($user_id, $clase_id, $alumno_id, $fecha) {
+    global $wpdb;
+    $tabla_asistencia = $wpdb->prefix . 'cpp_asistencia';
+    $user_id = intval($user_id);
+    $clase_id = intval($clase_id);
+    $alumno_id = intval($alumno_id);
+
+    if (!preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $fecha)) {
+        return false;
+    }
+
+    return $wpdb->delete(
+        $tabla_asistencia,
+        [
+            'clase_id' => $clase_id,
+            'alumno_id' => $alumno_id,
+            'user_id' => $user_id,
+            'fecha_asistencia' => $fecha
+        ],
+        ['%d', '%d', '%d', '%s']
+    );
+}
