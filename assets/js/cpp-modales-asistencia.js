@@ -78,103 +78,68 @@
 
             const self = this;
 
-            // 1. Obtener lista de alumnos
+            // 1. Obtener lista de alumnos directamente
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
                 dataType: 'json',
                 data: {
-                    action: 'cpp_obtener_alumnos', // Reutilizamos el AJAX existente
+                    action: 'cpp_obtener_alumnos_para_asistencia',
                     nonce: cppFrontendData.nonce,
                     clase_id: self.currentClaseId
                 },
-                success: function(responseAlumnos) {
-                    if (responseAlumnos.success && responseAlumnos.data.html) {
-                        // El HTML devuelto por cpp_obtener_alumnos es para el modal de gestión de alumnos.
-                        // Necesitamos extraer los datos de los alumnos de forma más directa o crear un nuevo endpoint.
-                        // Por ahora, vamos a parsear el HTML recibido (no ideal, pero para avanzar).
-                        // Mejor sería un endpoint que devuelva solo el array de alumnos.
-                        // Si tu `cpp_obtener_alumnos_clase` en PHP devuelve un array, podríamos usarlo directamente.
-                        // Suponiendo que `cpp_obtener_alumnos_clase` devuelve un array de objetos alumno:
-                        
-                        // Simularemos que tenemos un endpoint que devuelve solo el array de alumnos.
-                        // Idealmente, modificarías `cpp_ajax_obtener_alumnos` para que devuelva solo los datos.
-                        // O crear uno nuevo `cpp_ajax_obtener_alumnos_simple_list`.
-                        // Aquí vamos a usar una llamada a `cpp_obtener_alumnos_clase` (la función PHP)
-                        // a través de un nuevo (hipotético) AJAX action si fuera necesario,
-                        // o asumimos que podemos obtener los alumnos de alguna forma.
-
-                        // Para este ejemplo, vamos a obtenerlos de nuevo, pero solo la data.
-                        $.ajax({
-                             url: cppFrontendData.ajaxUrl,
-                             type: 'POST',
-                             dataType: 'json',
-                             data: {
-                                 action: 'cpp_obtener_alumnos_para_asistencia', // NUEVO AJAX ACTION NECESARIO
-                                 nonce: cppFrontendData.nonce,
-                                 clase_id: self.currentClaseId
-                             },
-                             success: function(alumnosResponse) {
-                                if (!alumnosResponse.success || !alumnosResponse.data.alumnos) {
-                                    $container.html('<p class="cpp-error-message">No se pudieron cargar los alumnos.</p>');
-                                    return;
-                                }
-                                const alumnos = alumnosResponse.data.alumnos;
-
-                                if (alumnos.length === 0) {
-                                    $container.html('<p>No hay alumnos en esta clase.</p>');
-                                    return;
-                                }
-        
-                                // 2. Obtener asistencia para la fecha actual
-                                $.ajax({
-                                    url: cppFrontendData.ajaxUrl,
-                                    type: 'POST',
-                                    dataType: 'json',
-                                    data: {
-                                        action: 'cpp_obtener_asistencia_clase_fecha',
-                                        nonce: cppFrontendData.nonce,
-                                        clase_id: self.currentClaseId,
-                                        fecha_asistencia: self.currentFecha
-                                    },
-                                    success: function(responseAsistencia) {
-                                        let htmlAlumnos = '';
-                                        const asistenciaGuardada = responseAsistencia.success ? responseAsistencia.data.asistencia : {};
-        
-                                        alumnos.forEach(function(alumno) {
-                                            const asistenciaAlumno = asistenciaGuardada[alumno.id] || { estado: 'presente', observaciones: '' }; // Por defecto 'presente'
-                                            htmlAlumnos += `
-                                                <div class="cpp-asistencia-alumno-fila" data-alumno-id="${alumno.id}">
-                                                    <span class="cpp-asistencia-alumno-nombre">${$('<div>').text(alumno.apellidos + ', ' + alumno.nombre).html()}</span>
-                                                    <div class="cpp-asistencia-alumno-estados">`;
-                                            self.estadosAsistencia.forEach(function(estadoInfo) {
-                                                const esActivo = asistenciaAlumno.estado === estadoInfo.id ? 'cpp-estado-activo' : '';
-                                                htmlAlumnos += `<button type="button" class="cpp-btn-asistencia-estado ${esActivo}" data-estado="${estadoInfo.id}" title="${estadoInfo.titulo}">${estadoInfo.texto}</button>`;
-                                            });
-                                            htmlAlumnos += `</div>
-                                                    <input type="text" class="cpp-asistencia-observaciones" value="${$('<div>').text(asistenciaAlumno.observaciones || '').html()}" placeholder="Observaciones...">
-                                                </div>`;
-                                        });
-                                        $container.html(htmlAlumnos);
-                                    },
-                                    error: function() {
-                                        $container.html('<p class="cpp-error-message">Error al cargar datos de asistencia.</p>');
-                                    }
-                                }); // Fin AJAX obtener asistencia
-                             },
-                             error: function() {
-                                 $container.html('<p class="cpp-error-message">Error al cargar la lista de alumnos (vía nuevo endpoint).</p>');
-                             }
-                        }); // Fin AJAX obtener alumnos (vía nuevo endpoint)
-
-                    } else {
-                        $container.html('<p class="cpp-error-message">No se pudieron cargar los alumnos (error en endpoint existente).</p>');
+                success: function(alumnosResponse) {
+                    if (!alumnosResponse.success || !alumnosResponse.data.alumnos) {
+                        $container.html('<p class="cpp-error-message">No se pudieron cargar los alumnos.</p>');
+                        return;
                     }
+                    const alumnos = alumnosResponse.data.alumnos;
+
+                    if (alumnos.length === 0) {
+                        $container.html('<p>No hay alumnos en esta clase.</p>');
+                        return;
+                    }
+
+                    // 2. Obtener asistencia para la fecha actual
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_obtener_asistencia_clase_fecha',
+                            nonce: cppFrontendData.nonce,
+                            clase_id: self.currentClaseId,
+                            fecha_asistencia: self.currentFecha
+                        },
+                        success: function(responseAsistencia) {
+                            let htmlAlumnos = '';
+                            const asistenciaGuardada = responseAsistencia.success ? responseAsistencia.data.asistencia : {};
+
+                            alumnos.forEach(function(alumno) {
+                                const asistenciaAlumno = asistenciaGuardada[alumno.id] || { estado: 'presente', observaciones: '' }; // Por defecto 'presente'
+                                htmlAlumnos += `
+                                    <div class="cpp-asistencia-alumno-fila" data-alumno-id="${alumno.id}">
+                                        <span class="cpp-asistencia-alumno-nombre">${$('<div>').text(alumno.apellidos + ', ' + alumno.nombre).html()}</span>
+                                        <div class="cpp-asistencia-alumno-estados">`;
+                                self.estadosAsistencia.forEach(function(estadoInfo) {
+                                    const esActivo = asistenciaAlumno.estado === estadoInfo.id ? 'cpp-estado-activo' : '';
+                                    htmlAlumnos += `<button type="button" class="cpp-btn-asistencia-estado ${esActivo}" data-estado="${estadoInfo.id}" title="${estadoInfo.titulo}">${estadoInfo.texto}</button>`;
+                                });
+                                htmlAlumnos += `</div>
+                                        <input type="text" class="cpp-asistencia-observaciones" value="${$('<div>').text(asistenciaAlumno.observaciones || '').html()}" placeholder="Observaciones...">
+                                    </div>`;
+                            });
+                            $container.html(htmlAlumnos);
+                        },
+                        error: function() {
+                            $container.html('<p class="cpp-error-message">Error al cargar datos de asistencia.</p>');
+                        }
+                    }); // Fin AJAX obtener asistencia
                 },
                 error: function() {
                     $container.html('<p class="cpp-error-message">Error de conexión al cargar alumnos.</p>');
                 }
-            }); // Fin AJAX obtener alumnos (vía endpoint existente)
+            }); // Fin AJAX obtener alumnos
         },
 
         handleEstadoChange: function(event) {
