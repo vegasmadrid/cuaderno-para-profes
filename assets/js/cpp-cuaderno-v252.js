@@ -151,7 +151,7 @@
                     const alumnoIds = Array.from(processDataByDate[fecha]);
                     const asistencias = alumnoIds.map(id => ({
                         alumno_id: id,
-                        estado: 'falta'
+                        estado: 'ausente'
                     }));
 
                     $.ajax({
