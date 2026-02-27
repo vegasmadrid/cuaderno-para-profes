@@ -67,10 +67,14 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
     $historial_incidencias = [];
 
     foreach($historial_asistencia_completo as $asistencia_item) {
-        if (isset($stats_asistencia[$asistencia_item['estado']])) {
-            $stats_asistencia[$asistencia_item['estado']]++;
+        $estado = $asistencia_item['estado'];
+        // Mapear 'falta' (obsoleto) a 'ausente' para las estadísticas
+        $estado_para_stats = ($estado === 'falta') ? 'ausente' : $estado;
+
+        if (isset($stats_asistencia[$estado_para_stats])) {
+            $stats_asistencia[$estado_para_stats]++;
         }
-        if ($asistencia_item['estado'] !== 'presente') {
+        if ($estado !== 'presente') {
             $historial_incidencias[] = $asistencia_item;
         }
     }
@@ -79,9 +83,26 @@ function cpp_ajax_obtener_datos_ficha_alumno_handler() {
         return strtotime($b['fecha_asistencia']) - strtotime($a['fecha_asistencia']);
     });
 
+    // --- Actividades con faltas (X) ---
+    $actividades_con_falta = [];
+    foreach ($evaluaciones as $evaluacion) {
+        $actividades_alumno = cpp_obtener_actividades_con_calificaciones_alumno($evaluacion['id'], $alumno_id, $user_id);
+        foreach ($actividades_alumno as $act) {
+            if ($act['calificacion'] && strpos($act['calificacion'], '❌') !== false) {
+                $actividades_con_falta[] = [
+                    'nombre' => $act['nombre_actividad'],
+                    'fecha' => $act['fecha_actividad'],
+                    'nota' => $act['calificacion'],
+                    'evaluacion' => $evaluacion['nombre_evaluacion']
+                ];
+            }
+        }
+    }
+
     $resumen_asistencia = [
         'stats' => $stats_asistencia,
-        'historial_completo' => $historial_incidencias
+        'historial_completo' => $historial_incidencias,
+        'actividades_con_falta' => $actividades_con_falta
     ];
 
     // --- Ensamblar datos finales ---

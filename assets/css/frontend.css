@@ -1920,7 +1920,7 @@ body.cpp-no-text-select {
     color: #fff;
 }
 
-.cpp-estado-ausente { background-color: #dc3545; }
+.cpp-estado-ausente, .cpp-estado-falta { background-color: #dc3545; }
 .cpp-estado-retraso { background-color: #ffc107; color: #212529; }
 .cpp-estado-justificado { background-color: #17a2b8; }
 

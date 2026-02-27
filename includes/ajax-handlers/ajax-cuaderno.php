@@ -134,6 +134,9 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM18 7H6v2h12V7zm-4.03 7.47l-1.41-1.41-4.03 4.03-1.48-1.48L6 17.02l2.88 2.88L13.97 14.5l-1.41-1.41-2.59 2.58z"/></svg>
                                 </button>
                                 <?php if ($evaluacion_activa_id !== 'final'): ?>
+                                <button class="cpp-btn-icon" id="cpp-a1-direct-absence-btn" title="Ausencia Directa (Poner X y falta en asistencia)" style="color: #d32f2f;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                                </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-symbol-palette-btn" title="Insertar Símbolo">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"/></svg>
                                 </button>

@@ -217,6 +217,26 @@
             }
             html += '</ul>';
             html += '</div>';
+
+            // Nueva sección: Faltas en Actividades Evaluables (donde tiene una X)
+            if (resumen.actividades_con_falta && resumen.actividades_con_falta.length > 0) {
+                html += '<h4 style="margin-top: 20px;">Faltas en Actividades Evaluables (X)</h4>';
+                html += '<div class="cpp-lista-scrollable cpp-ficha-actividades-falta-lista">';
+                html += '<ul>';
+                resumen.actividades_con_falta.forEach(function(act) {
+                    const fechaFormateada = act.fecha ? new Date(act.fecha + 'T00:00:00').toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Sin fecha';
+                    html += `<li class="cpp-asistencia-fila-item">
+                                <div class="cpp-asistencia-info-principal">
+                                    <span class="cpp-asistencia-fecha-item">${fechaFormateada}</span>
+                                    <span class="cpp-asistencia-estado-item" style="background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;">${$('<div>').text(act.nombre).html()}</span>
+                                </div>
+                                <small class="cpp-asistencia-observacion-item">Eval: ${$('<div>').text(act.evaluacion).html()} | Nota: ${$('<div>').text(act.nota).html()}</small>
+                             </li>`;
+                });
+                html += '</ul>';
+                html += '</div>';
+            }
+
             html += '</div>';
             return html;
         },

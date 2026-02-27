@@ -111,11 +111,49 @@ function cpp_ajax_get_alumno_ficha() {
 
         $nota_final_clase = cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id);
 
+        // --- Resumen de Asistencia por Clase ---
+        $historial_asistencia = cpp_obtener_asistencia_alumno_para_clase($user_id, $alumno_id, $clase_id);
+        $stats_asistencia = [ 'presente' => 0, 'ausente' => 0, 'retraso' => 0, 'justificado' => 0 ];
+        $incidencias = [];
+
+        foreach($historial_asistencia as $asistencia_item) {
+            $estado = $asistencia_item['estado'];
+            $estado_para_stats = ($estado === 'falta') ? 'ausente' : $estado;
+
+            if (isset($stats_asistencia[$estado_para_stats])) {
+                $stats_asistencia[$estado_para_stats]++;
+            }
+            if ($estado !== 'presente') {
+                $incidencias[] = $asistencia_item;
+            }
+        }
+
+        // --- Actividades con faltas (X) en esta clase ---
+        $actividades_con_falta = [];
+        foreach ($evaluaciones as $evaluacion) {
+            $actividades_alumno = cpp_obtener_actividades_con_calificaciones_alumno($evaluacion['id'], $alumno_id, $user_id);
+            foreach ($actividades_alumno as $act) {
+                if ($act['calificacion'] && strpos($act['calificacion'], '❌') !== false) {
+                    $actividades_con_falta[] = [
+                        'nombre' => $act['nombre_actividad'],
+                        'fecha' => $act['fecha_actividad'],
+                        'nota' => $act['calificacion'],
+                        'evaluacion' => $evaluacion['nombre_evaluacion']
+                    ];
+                }
+            }
+        }
+
         $calificaciones_por_clase[] = [
             'clase_id' => $clase_id,
             'clase_nombre' => $clase_info['nombre'],
             'evaluaciones' => $calificaciones_por_evaluacion,
             'nota_final_clase' => $nota_final_clase,
+            'resumen_asistencia' => [
+                'stats' => $stats_asistencia,
+                'historial' => $incidencias,
+                'actividades_con_falta' => $actividades_con_falta
+            ]
         ];
     }
 
