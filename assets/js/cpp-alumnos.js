@@ -405,6 +405,64 @@
                         calificacionesHtml += `</tbody></table></div></div>`;
                     });
 
+                    // Añadir Resumen de Asistencia de la clase al final del acordeón de la clase
+                    if (clase.resumen_asistencia) {
+                        const ra = clase.resumen_asistencia;
+                        calificacionesHtml += `
+                            <div class="cpp-accordion-item">
+                                <button class="cpp-accordion-header sub-header">Asistencia <span class="nota-final-pill">${ra.stats.ausente} faltas</span></button>
+                                <div class="cpp-accordion-content">
+                                    <div style="padding: 15px;">
+                                        <div class="cpp-ficha-stats-grid" style="margin-bottom: 20px;">
+                                            <div class="stat-item"><span class="stat-icon">✅</span><div><strong>${ra.stats.presente}</strong><br>Presente</div></div>
+                                            <div class="stat-item"><span class="stat-icon">❌</span><div><strong>${ra.stats.ausente}</strong><br>Ausente</div></div>
+                                            <div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${ra.stats.retraso}</strong><br>Retraso</div></div>
+                                            <div class="stat-item"><span class="stat-icon">📄</span><div><strong>${ra.stats.justificado}</strong><br>Justificado</div></div>
+                                        </div>`;
+
+                        if (ra.actividades_con_falta && ra.actividades_con_falta.length > 0) {
+                            calificacionesHtml += `
+                                        <h4>Faltas en Actividades Evaluables (X)</h4>
+                                        <div class="cpp-ficha-asistencia-lista" style="margin-bottom: 20px;">
+                                            <ul>`;
+                            ra.actividades_con_falta.forEach(act => {
+                                const fecha = act.fecha ? new Date(act.fecha + 'T00:00:00').toLocaleDateString() : 'Sin fecha';
+                                calificacionesHtml += `
+                                                <li class="cpp-asistencia-fila-item">
+                                                    <div class="cpp-asistencia-info-principal">
+                                                        <span class="cpp-asistencia-fecha-item">${fecha}</span>
+                                                        <span class="cpp-asistencia-estado-item" style="background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;">${$('<div>').text(act.nombre).html()}</span>
+                                                    </div>
+                                                    <small class="cpp-asistencia-observacion-item">Eval: ${$('<div>').text(act.evaluacion).html()} | Nota: ${$('<div>').text(act.nota).html()}</small>
+                                                </li>`;
+                            });
+                            calificacionesHtml += `</ul></div>`;
+                        }
+
+                        if (ra.historial && ra.historial.length > 0) {
+                            calificacionesHtml += `
+                                        <h4>Historial de Incidencias</h4>
+                                        <div class="cpp-ficha-asistencia-lista">
+                                            <ul>`;
+                            ra.historial.forEach(item => {
+                                const fecha = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'N/A';
+                                calificacionesHtml += `
+                                                <li class="cpp-asistencia-fila-item">
+                                                    <div class="cpp-asistencia-info-principal">
+                                                        <span class="cpp-asistencia-fecha-item">${fecha}</span>
+                                                        <span class="cpp-asistencia-estado-item cpp-estado-${item.estado}">${item.estado}</span>
+                                                    </div>
+                                                    ${item.observaciones ? `<small class="cpp-asistencia-observacion-item">${$('<div>').text(item.observaciones).html()}</small>` : ''}
+                                                </li>`;
+                            });
+                            calificacionesHtml += `</ul></div>`;
+                        } else {
+                            calificacionesHtml += '<p class="cpp-no-incidencias">No hay incidencias registradas en esta clase.</p>';
+                        }
+
+                        calificacionesHtml += `</div></div></div>`;
+                    }
+
                     calificacionesHtml += `</div></div>`;
                 });
 
