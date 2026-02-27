@@ -74,9 +74,13 @@
             });
 
             // Listeners para el acordeón y edición de notas
-            $document.on('click', '.cpp-accordion-header', function() {
-                $(this).next('.cpp-accordion-content').slideToggle('fast');
-                $(this).toggleClass('active');
+            $document.on('click', '.cpp-accordion-header', function(e) {
+                e.preventDefault();
+                const $header = $(this);
+                const $content = $header.next('.cpp-accordion-content');
+
+                $content.stop(true, true).slideToggle('fast');
+                $header.toggleClass('active');
             });
             $document.on('click', '.cpp-calificacion-editable span', function() {
                 const $span = $(this);
@@ -329,13 +333,15 @@
                         </button>
                         <input type="file" id="cpp-alumno-foto-input" data-alumno-id="${alumno.id}" style="display: none;" accept="image/*">
                     </div>
-                    <div class="cpp-alumno-name-container editing">
-                        <input type="text" class="cpp-editable-field-input" data-field="nombre" value="${alumno.nombre}" placeholder="Nombre">
-                        <input type="text" class="cpp-editable-field-input" data-field="apellidos" value="${alumno.apellidos}" placeholder="Apellidos">
+                    <div class="cpp-alumno-name-container">
+                        <h2 id="cpp-alumno-nombre-display" class="cpp-editable-field" data-field="nombre">${alumno.nombre}</h2>
+                        <h2 id="cpp-alumno-apellidos-display" class="cpp-editable-field" data-field="apellidos">${alumno.apellidos}</h2>
                         <input type="hidden" id="cpp-alumno-foto-url-input" value="${fotoUrl}">
                     </div>
-                    <div id="cpp-edit-actions-container">
+                    <button id="cpp-edit-alumno-btn" class="cpp-btn cpp-btn-icon" title="Editar Nombre/Apellidos"><span class="dashicons dashicons-edit"></span></button>
+                    <div id="cpp-edit-actions-container" style="display: none;">
                          <button id="cpp-save-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}"><span class="dashicons dashicons-saved"></span> Guardar</button>
+                         <button id="cpp-cancel-edit-btn" class="cpp-btn cpp-btn-secondary">Cancelar</button>
                     </div>
                 </div>`;
 
@@ -405,64 +411,6 @@
                         calificacionesHtml += `</tbody></table></div></div>`;
                     });
 
-                    // Añadir Resumen de Asistencia de la clase al final del acordeón de la clase
-                    if (clase.resumen_asistencia) {
-                        const ra = clase.resumen_asistencia;
-                        calificacionesHtml += `
-                            <div class="cpp-accordion-item">
-                                <button class="cpp-accordion-header sub-header">Asistencia <span class="nota-final-pill">${ra.stats.ausente} faltas</span></button>
-                                <div class="cpp-accordion-content">
-                                    <div style="padding: 15px;">
-                                        <div class="cpp-ficha-stats-grid" style="margin-bottom: 20px;">
-                                            <div class="stat-item"><span class="stat-icon">✅</span><div><strong>${ra.stats.presente}</strong><br>Presente</div></div>
-                                            <div class="stat-item"><span class="stat-icon">❌</span><div><strong>${ra.stats.ausente}</strong><br>Ausente</div></div>
-                                            <div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${ra.stats.retraso}</strong><br>Retraso</div></div>
-                                            <div class="stat-item"><span class="stat-icon">📄</span><div><strong>${ra.stats.justificado}</strong><br>Justificado</div></div>
-                                        </div>`;
-
-                        if (ra.actividades_con_falta && ra.actividades_con_falta.length > 0) {
-                            calificacionesHtml += `
-                                        <h4>Faltas en Actividades Evaluables (X)</h4>
-                                        <div class="cpp-ficha-asistencia-lista" style="margin-bottom: 20px;">
-                                            <ul>`;
-                            ra.actividades_con_falta.forEach(act => {
-                                const fecha = act.fecha ? new Date(act.fecha + 'T00:00:00').toLocaleDateString() : 'Sin fecha';
-                                calificacionesHtml += `
-                                                <li class="cpp-asistencia-fila-item">
-                                                    <div class="cpp-asistencia-info-principal">
-                                                        <span class="cpp-asistencia-fecha-item">${fecha}</span>
-                                                        <span class="cpp-asistencia-estado-item" style="background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;">${$('<div>').text(act.nombre).html()}</span>
-                                                    </div>
-                                                    <small class="cpp-asistencia-observacion-item">Eval: ${$('<div>').text(act.evaluacion).html()} | Nota: ${$('<div>').text(act.nota).html()}</small>
-                                                </li>`;
-                            });
-                            calificacionesHtml += `</ul></div>`;
-                        }
-
-                        if (ra.historial && ra.historial.length > 0) {
-                            calificacionesHtml += `
-                                        <h4>Historial de Incidencias</h4>
-                                        <div class="cpp-ficha-asistencia-lista">
-                                            <ul>`;
-                            ra.historial.forEach(item => {
-                                const fecha = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString() : 'N/A';
-                                calificacionesHtml += `
-                                                <li class="cpp-asistencia-fila-item">
-                                                    <div class="cpp-asistencia-info-principal">
-                                                        <span class="cpp-asistencia-fecha-item">${fecha}</span>
-                                                        <span class="cpp-asistencia-estado-item cpp-estado-${item.estado}">${item.estado}</span>
-                                                    </div>
-                                                    ${item.observaciones ? `<small class="cpp-asistencia-observacion-item">${$('<div>').text(item.observaciones).html()}</small>` : ''}
-                                                </li>`;
-                            });
-                            calificacionesHtml += `</ul></div>`;
-                        } else {
-                            calificacionesHtml += '<p class="cpp-no-incidencias">No hay incidencias registradas en esta clase.</p>';
-                        }
-
-                        calificacionesHtml += `</div></div></div>`;
-                    }
-
                     calificacionesHtml += `</div></div>`;
                 });
 
@@ -477,12 +425,63 @@
                 </div>
             `;
 
+            let asistenciaGlobalHtml = '';
+            if (!isNew && data.resumen_asistencia_global) {
+                const ra = data.resumen_asistencia_global;
+                asistenciaGlobalHtml = `
+                    <div class="cpp-ficha-section">
+                        <h3>Resumen Global de Asistencia</h3>
+                        <div class="cpp-ficha-stats-grid">
+                            <div class="stat-item"><span class="stat-icon">❌</span><div><strong>${ra.stats.ausente || 0}</strong><br>Ausente</div></div>
+                            <div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${ra.stats.retraso || 0}</strong><br>Retraso</div></div>
+                            <div class="stat-item"><span class="stat-icon">📄</span><div><strong>${ra.stats.justificado || 0}</strong><br>Justificado</div></div>
+                        </div>
+                        <div class="cpp-accordion-item cpp-asistencia-historial-accordion">
+                            <button class="cpp-accordion-header">Ver Historial Completo</button>
+                            <div class="cpp-accordion-content">
+                                <div class="cpp-ficha-asistencia-lista">
+                                    <ul class="cpp-asistencia-global-list">`;
+
+                if (ra.historial.length > 0) {
+                    ra.historial.forEach(entry => {
+                        const fechaFormateada = new Date(entry.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                        asistenciaGlobalHtml += `<li class="cpp-asistencia-fecha-grupo">
+                            <div class="cpp-asistencia-fecha-header">${fechaFormateada}</div>
+                            <ul class="cpp-asistencia-items-inner-list">`;
+
+                        entry.incidencias.forEach(inc => {
+                            asistenciaGlobalHtml += `
+                                <li class="cpp-asistencia-fila-item">
+                                    <div class="cpp-asistencia-info-principal">
+                                        <span class="cpp-asistencia-estado-item cpp-estado-${inc.estado}">${inc.estado}</span>
+                                        <span class="cpp-asistencia-clase-nombre">${inc.clase_nombre}</span>
+                                    </div>
+                                    ${inc.observaciones ? `<div class="cpp-asistencia-observacion-container"><span class="cpp-asistencia-observacion-item">${$('<div>').text(inc.observaciones).html()}</span></div>` : ''}
+                                </li>`;
+                        });
+
+                        asistenciaGlobalHtml += `</ul></li>`;
+                    });
+                } else {
+                    asistenciaGlobalHtml += '<li class="cpp-asistencia-lista-vacia">No hay incidencias registradas.</li>';
+                }
+
+                asistenciaGlobalHtml += `
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
             const finalHtml = `
                 <div class="cpp-alumno-ficha-card">
                     ${personalDataHtml}
                     ${clasesHtml}
                     ${visualDataHtml}
                     ${calificacionesHtml}
+                    ${asistenciaGlobalHtml}
                     ${footerHtml}
                 </div>`;
 
@@ -847,43 +846,47 @@
         },
 
         toggleEditMode: function(enable) {
-            const $nameContainer = $('.cpp-alumno-name-container');
+            const $container = $('#cpp-alumnos-view-main');
+            const $nameContainer = $container.find('.cpp-alumno-name-container');
             if (enable) {
                 // Entrar en modo edición
                 $nameContainer.addClass('editing');
-                $('.cpp-editable-field').each(function() {
+                $container.find('.cpp-editable-field').each(function() {
                     const $h2 = $(this);
                     const currentValue = $h2.text();
                     const fieldName = $h2.data('field');
                     const $input = $(`<input type="text" class="cpp-editable-field-input" data-field="${fieldName}" value="${currentValue}">`);
                     $input.data('original-value', currentValue); // Guardar valor original
                     $h2.after($input);
+                    $h2.hide();
                 });
-                $('#cpp-edit-alumno-btn').hide();
-                $('#cpp-edit-actions-container').show();
+                $container.find('#cpp-edit-alumno-btn').hide();
+                $container.find('#cpp-edit-actions-container').show();
             } else {
                 // Salir del modo edición (Cancelar)
                 $nameContainer.removeClass('editing');
-                $('.cpp-editable-field-input').each(function() {
+                $container.find('.cpp-editable-field-input').each(function() {
                     const $input = $(this);
                     const originalValue = $input.data('original-value');
                     const fieldName = $input.data('field');
-                    $(`#cpp-alumno-${fieldName}-display`).text(originalValue); // Restaurar texto original
+                    $container.find(`#cpp-alumno-${fieldName}-display`).text(originalValue).show(); // Restaurar texto original
                     $input.remove();
                 });
-                $('#cpp-edit-alumno-btn').show();
-                $('#cpp-edit-actions-container').hide();
+                $container.find('.cpp-editable-field').show();
+                $container.find('#cpp-edit-alumno-btn').show();
+                $container.find('#cpp-edit-actions-container').hide();
             }
         },
 
         handleSaveInline: function(e) {
+            const $container = $('#cpp-alumnos-view-main');
             const $button = $(e.currentTarget);
             const alumnoId = $button.data('alumno-id');
 
             const newData = {
-                nombre: $('.cpp-editable-field-input[data-field="nombre"]').val(),
-                apellidos: $('.cpp-editable-field-input[data-field="apellidos"]').val(),
-                foto: $('#cpp-alumno-foto-url-input').val(),
+                nombre: $container.find('.cpp-editable-field-input[data-field="nombre"]').val(),
+                apellidos: $container.find('.cpp-editable-field-input[data-field="apellidos"]').val(),
+                foto: $container.find('#cpp-alumno-foto-url-input').val(),
             };
 
             cpp.utils.showSpinner();
@@ -903,6 +906,7 @@
                         cpp.utils.showToast(response.data.message);
                         // Actualizar UI sin recargar todo
                         this.handleSearch(); // Actualizar la lista de la izquierda
+                        this.displayAlumnoFicha(alumnoId); // Recargar la ficha para reflejar cambios
 
                         // Forzar la recarga del cuaderno si está activo
                         if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {

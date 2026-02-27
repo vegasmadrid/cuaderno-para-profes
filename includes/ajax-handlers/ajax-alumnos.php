@@ -87,8 +87,10 @@ function cpp_ajax_get_alumno_ficha() {
     $todas_las_clases = cpp_obtener_clases_usuario($user_id);
     $clases_del_alumno_ids = cpp_get_clases_for_alumno($alumno_id);
 
-    // Obtener calificaciones de todas las clases
+    // Obtener calificaciones de todas las clases y asistencia global
     $calificaciones_por_clase = [];
+    $temp_incidencias = []; // Para agrupar y deduplicar
+
     foreach ($clases_del_alumno_ids as $clase_id) {
         $clase_info = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
         if (!$clase_info) continue;
@@ -97,7 +99,6 @@ function cpp_ajax_get_alumno_ficha() {
         $calificaciones_por_evaluacion = [];
 
         foreach ($evaluaciones as $evaluacion) {
-            // Utilizamos la nueva función que ya combina actividades y calificaciones
             $actividades = cpp_obtener_actividades_con_calificaciones_alumno($evaluacion['id'], $alumno_id, $user_id);
             $nota_final_evaluacion = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
 
@@ -107,40 +108,42 @@ function cpp_ajax_get_alumno_ficha() {
                 'actividades' => $actividades,
                 'nota_final' => $nota_final_evaluacion,
             ];
+
+            // Integrar Actividades con faltas (X)
+            foreach ($actividades as $act) {
+                if ($act['calificacion'] && strpos($act['calificacion'], '❌') !== false) {
+                    if ($act['fecha_actividad']) {
+                        $fecha = explode(' ', $act['fecha_actividad'])[0];
+
+                        // Agrupamos por fecha y clase para deduplicar luego
+                        $temp_incidencias[$fecha][$clase_id]['items'][] = [
+                            'estado' => 'ausente',
+                            'observaciones' => "Actividad: " . $act['nombre_actividad'] . " | Eval: " . $evaluacion['nombre_evaluacion'],
+                            'tipo' => 'actividad'
+                        ];
+                        $temp_incidencias[$fecha][$clase_id]['clase_nombre'] = $clase_info['nombre'];
+                    }
+                }
+            }
         }
 
         $nota_final_clase = cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id);
 
-        // --- Resumen de Asistencia por Clase ---
+        // --- Asistencia por Clase ---
         $historial_asistencia = cpp_obtener_asistencia_alumno_para_clase($user_id, $alumno_id, $clase_id);
-        $stats_asistencia = [ 'presente' => 0, 'ausente' => 0, 'retraso' => 0, 'justificado' => 0 ];
-        $incidencias = [];
 
         foreach($historial_asistencia as $asistencia_item) {
             $estado = $asistencia_item['estado'];
             $estado_para_stats = ($estado === 'falta') ? 'ausente' : $estado;
 
-            if (isset($stats_asistencia[$estado_para_stats])) {
-                $stats_asistencia[$estado_para_stats]++;
-            }
             if ($estado !== 'presente') {
-                $incidencias[] = $asistencia_item;
-            }
-        }
-
-        // --- Actividades con faltas (X) en esta clase ---
-        $actividades_con_falta = [];
-        foreach ($evaluaciones as $evaluacion) {
-            $actividades_alumno = cpp_obtener_actividades_con_calificaciones_alumno($evaluacion['id'], $alumno_id, $user_id);
-            foreach ($actividades_alumno as $act) {
-                if ($act['calificacion'] && strpos($act['calificacion'], '❌') !== false) {
-                    $actividades_con_falta[] = [
-                        'nombre' => $act['nombre_actividad'],
-                        'fecha' => $act['fecha_actividad'],
-                        'nota' => $act['calificacion'],
-                        'evaluacion' => $evaluacion['nombre_evaluacion']
-                    ];
-                }
+                $fecha = $asistencia_item['fecha_asistencia'];
+                $temp_incidencias[$fecha][$clase_id]['items'][] = [
+                    'estado' => $estado_para_stats,
+                    'observaciones' => $asistencia_item['observaciones'],
+                    'tipo' => 'asistencia'
+                ];
+                $temp_incidencias[$fecha][$clase_id]['clase_nombre'] = $clase_info['nombre'];
             }
         }
 
@@ -148,20 +151,65 @@ function cpp_ajax_get_alumno_ficha() {
             'clase_id' => $clase_id,
             'clase_nombre' => $clase_info['nombre'],
             'evaluaciones' => $calificaciones_por_evaluacion,
-            'nota_final_clase' => $nota_final_clase,
-            'resumen_asistencia' => [
-                'stats' => $stats_asistencia,
-                'historial' => $incidencias,
-                'actividades_con_falta' => $actividades_con_falta
-            ]
+            'nota_final_clase' => $nota_final_clase
         ];
     }
+
+    // Procesar $temp_incidencias para aplanar, deduplicar por fecha y calcular estadísticas correctas
+    $global_historial_agrupado = [];
+    $global_stats_asistencia = [ 'ausente' => 0, 'retraso' => 0, 'justificado' => 0 ];
+
+    foreach ($temp_incidencias as $fecha => $clases) {
+        $incidencias_fecha = [];
+        foreach ($clases as $clase_id => $data) {
+            // Deduplicación: si hay una falta de asistencia Y una de actividad el mismo día en la misma clase,
+            // intentamos no repetir el "Ausente" genérico si ya hay detalles de actividad.
+            $has_activity = false;
+            foreach ($data['items'] as $item) {
+                if ($item['tipo'] === 'actividad') $has_activity = true;
+            }
+
+            foreach ($data['items'] as $item) {
+                // Si ya tenemos detalle de actividad, ignoramos el registro de asistencia genérico "ausente"
+                if ($has_activity && $item['tipo'] === 'asistencia' && $item['estado'] === 'ausente') {
+                    continue;
+                }
+
+                $incidencias_fecha[] = [
+                    'estado' => $item['estado'],
+                    'observaciones' => $item['observaciones'],
+                    'clase_nombre' => $data['clase_nombre']
+                ];
+
+                // Incrementar estadísticas globales basadas en incidencias únicas/deduplicadas
+                if (isset($global_stats_asistencia[$item['estado']])) {
+                    $global_stats_asistencia[$item['estado']]++;
+                }
+            }
+        }
+
+        if (!empty($incidencias_fecha)) {
+            $global_historial_agrupado[] = [
+                'fecha' => $fecha,
+                'incidencias' => $incidencias_fecha
+            ];
+        }
+    }
+
+    // Ordenar por fecha descendente
+    usort($global_historial_agrupado, function($a, $b) {
+        return strtotime($b['fecha']) - strtotime($a['fecha']);
+    });
 
     $ficha_data = [
         'alumno' => $alumno,
         'todas_las_clases' => $todas_las_clases,
         'clases_del_alumno_ids' => $clases_del_alumno_ids,
-        'calificaciones_agrupadas' => $calificaciones_por_clase
+        'calificaciones_agrupadas' => $calificaciones_por_clase,
+        'resumen_asistencia_global' => [
+            'stats' => $global_stats_asistencia,
+            'historial' => $global_historial_agrupado
+        ]
     ];
 
     wp_send_json_success(['ficha' => $ficha_data]);

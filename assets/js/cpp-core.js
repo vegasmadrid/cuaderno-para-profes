@@ -28,7 +28,7 @@ const cpp = {
             'utils', 'sidebar', 'cuaderno', 'alumnos', 'actividades',
             'modals.general', 'config', 'modals.clase',
             'modals.actividades', 'modals.excel', 'modals.asistencia',
-            'modals.fichaAlumno', 'modals.evaluacion'
+            'modals.evaluacion'
         ];
         
         modulesToInitialize.forEach(modulePath => {
