@@ -774,41 +774,6 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             do_action('cpp_modal_asistencia_outputted');
         }
 
-        if (empty(did_action('cpp_modal_ficha_alumno_outputted'))) {
-            ?>
-            <div class="cpp-modal" id="cpp-modal-ficha-alumno">
-                <div class="cpp-modal-content">
-                    <span class="cpp-modal-close">&times;</span>
-                    <div class="cpp-ficha-alumno-header">
-                        <div id="cpp-ficha-alumno-avatar-container">
-                            <img id="cpp-ficha-alumno-foto" src="" alt="Foto Alumno" style="display:none;">
-                            <div id="cpp-ficha-alumno-avatar-inicial"></div>
-                        </div>
-                        <h2 id="cpp-ficha-display-nombre-completo" style="margin:0; font-size: 22px; font-weight: 500; flex-grow: 1; margin-left: 15px;">Ficha del Alumno</h2>
-                        <button type="button" class="cpp-btn cpp-btn-icon cpp-edit-info-alumno-btn" title="Editar Información"><span class="dashicons dashicons-edit"></span></button>
-                    </div>
-
-                    <div id="cpp-ficha-alumno-main-content">
-                        <!-- El contenido dinámico de dos columnas se insertará aquí por JS -->
-                        <p class="cpp-cuaderno-cargando">Cargando datos...</p>
-                    </div>
-
-                    <form id="cpp-form-editar-alumno-ficha" style="display:none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                        <input type="hidden" id="ficha_alumno_id_editar" name="alumno_id_editar">
-                        <h3>Editar Información</h3>
-                        <div class="cpp-form-group"><label for="ficha_nombre_alumno">Nombre:</label><input type="text" id="ficha_nombre_alumno" name="nombre_alumno" required></div>
-                        <div class="cpp-form-group"><label for="ficha_apellidos_alumno">Apellidos:</label><input type="text" id="ficha_apellidos_alumno" name="apellidos_alumno" required></div>
-                        <div class="cpp-form-group"><label for="ficha_foto_alumno">Cambiar Foto (opcional):</label><input type="file" id="ficha_foto_alumno" name="foto_alumno" accept="image/*"></div>
-                        <div class="cpp-modal-actions">
-                            <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-saved"></span> Guardar Cambios</button>
-                            <button type="button" class="cpp-btn cpp-btn-secondary cpp-cancel-edit-info-alumno-btn">Cancelar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <?php
-            do_action('cpp_modal_ficha_alumno_outputted');
-        }
         ?>
 
     </div> 

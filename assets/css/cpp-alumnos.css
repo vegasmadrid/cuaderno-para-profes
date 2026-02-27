@@ -501,3 +501,87 @@
     border-top: 1px solid #dee2e6;
     text-align: right;
 }
+
+/* --- Resumen Global de Asistencia --- */
+.cpp-ficha-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.cpp-ficha-stats-grid .stat-item {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cpp-ficha-stats-grid .stat-icon {
+    font-size: 24px;
+}
+
+.cpp-ficha-stats-grid .stat-item strong {
+    font-size: 18px;
+    display: block;
+    color: #212529;
+}
+
+.cpp-ficha-stats-grid .stat-item div {
+    font-size: 13px;
+    color: #6c757d;
+    line-height: 1.2;
+}
+
+.cpp-ficha-asistencia-lista ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cpp-asistencia-fila-item {
+    padding: 12px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.cpp-asistencia-fila-item:last-child {
+    border-bottom: none;
+}
+
+.cpp-asistencia-info-principal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.cpp-asistencia-fecha-item {
+    font-weight: 600;
+    color: #495057;
+}
+
+.cpp-asistencia-estado-item {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: #fff;
+    text-transform: capitalize;
+}
+
+.cpp-estado-ausente { background-color: #dc3545; }
+.cpp-estado-retraso { background-color: #ffc107; color: #212529; }
+.cpp-estado-justificado { background-color: #17a2b8; }
+
+.cpp-asistencia-observacion-item {
+    display: block;
+    color: #6c757d;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.cpp-asistencia-historial-accordion {
+    margin-top: 15px;
+}
