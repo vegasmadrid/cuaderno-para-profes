@@ -74,9 +74,13 @@
             });
 
             // Listeners para el acordeón y edición de notas
-            $document.on('click', '.cpp-accordion-header', function() {
-                $(this).next('.cpp-accordion-content').slideToggle('fast');
-                $(this).toggleClass('active');
+            $document.on('click', '.cpp-accordion-header', function(e) {
+                e.preventDefault();
+                const $header = $(this);
+                const $content = $header.next('.cpp-accordion-content');
+
+                $content.stop(true, true).slideToggle('fast');
+                $header.toggleClass('active');
             });
             $document.on('click', '.cpp-calificacion-editable span', function() {
                 const $span = $(this);
@@ -341,50 +345,6 @@
                     </div>
                 </div>`;
 
-            let asistenciaGlobalHtml = '';
-            if (!isNew && data.resumen_asistencia_global) {
-                const ra = data.resumen_asistencia_global;
-                asistenciaGlobalHtml = `
-                    <div class="cpp-ficha-section">
-                        <h3>Resumen Global de Asistencia</h3>
-                        <div class="cpp-ficha-stats-grid">
-                            <div class="stat-item"><span class="stat-icon">❌</span><div><strong>${ra.stats.ausente || 0}</strong><br>Ausente</div></div>
-                            <div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${ra.stats.retraso || 0}</strong><br>Retraso</div></div>
-                            <div class="stat-item"><span class="stat-icon">📄</span><div><strong>${ra.stats.justificado || 0}</strong><br>Justificado</div></div>
-                        </div>
-                        <div class="cpp-accordion-item cpp-asistencia-historial-accordion">
-                            <button class="cpp-accordion-header">Ver Historial Completo (${ra.historial.length})</button>
-                            <div class="cpp-accordion-content">
-                                <div class="cpp-ficha-asistencia-lista">
-                                    <ul>`;
-
-                if (ra.historial.length > 0) {
-                    ra.historial.forEach(item => {
-                        const fecha = item.fecha_asistencia ? new Date(item.fecha_asistencia + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A';
-                        asistenciaGlobalHtml += `
-                                        <li class="cpp-asistencia-fila-item">
-                                            <div class="cpp-asistencia-info-principal">
-                                                <div>
-                                                    <span class="cpp-asistencia-fecha-item">${fecha}</span>
-                                                    <span class="cpp-asistencia-estado-item cpp-estado-${item.estado}">${item.estado}</span>
-                                                </div>
-                                                <span class="cpp-asistencia-clase-nombre">${item.clase_nombre}</span>
-                                            </div>
-                                            ${item.observaciones ? `<div class="cpp-asistencia-observacion-container"><span class="cpp-asistencia-observacion-item">${$('<div>').text(item.observaciones).html()}</span></div>` : ''}
-                                        </li>`;
-                    });
-                } else {
-                    asistenciaGlobalHtml += '<li>No hay incidencias registradas.</li>';
-                }
-
-                asistenciaGlobalHtml += `
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-            }
-
             let clasesHtml = '';
             if (!isNew) {
                 const checkboxes = data.todas_las_clases.map(clase => `
@@ -465,13 +425,63 @@
                 </div>
             `;
 
+            let asistenciaGlobalHtml = '';
+            if (!isNew && data.resumen_asistencia_global) {
+                const ra = data.resumen_asistencia_global;
+                asistenciaGlobalHtml = `
+                    <div class="cpp-ficha-section">
+                        <h3>Resumen Global de Asistencia</h3>
+                        <div class="cpp-ficha-stats-grid">
+                            <div class="stat-item"><span class="stat-icon">❌</span><div><strong>${ra.stats.ausente || 0}</strong><br>Ausente</div></div>
+                            <div class="stat-item"><span class="stat-icon">🕒</span><div><strong>${ra.stats.retraso || 0}</strong><br>Retraso</div></div>
+                            <div class="stat-item"><span class="stat-icon">📄</span><div><strong>${ra.stats.justificado || 0}</strong><br>Justificado</div></div>
+                        </div>
+                        <div class="cpp-accordion-item cpp-asistencia-historial-accordion">
+                            <button class="cpp-accordion-header">Ver Historial Completo</button>
+                            <div class="cpp-accordion-content">
+                                <div class="cpp-ficha-asistencia-lista">
+                                    <ul class="cpp-asistencia-global-list">`;
+
+                if (ra.historial.length > 0) {
+                    ra.historial.forEach(entry => {
+                        const fechaFormateada = new Date(entry.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                        asistenciaGlobalHtml += `<li class="cpp-asistencia-fecha-grupo">
+                            <div class="cpp-asistencia-fecha-header">${fechaFormateada}</div>
+                            <ul class="cpp-asistencia-items-inner-list">`;
+
+                        entry.incidencias.forEach(inc => {
+                            asistenciaGlobalHtml += `
+                                <li class="cpp-asistencia-fila-item">
+                                    <div class="cpp-asistencia-info-principal">
+                                        <span class="cpp-asistencia-estado-item cpp-estado-${inc.estado}">${inc.estado}</span>
+                                        <span class="cpp-asistencia-clase-nombre">${inc.clase_nombre}</span>
+                                    </div>
+                                    ${inc.observaciones ? `<div class="cpp-asistencia-observacion-container"><span class="cpp-asistencia-observacion-item">${$('<div>').text(inc.observaciones).html()}</span></div>` : ''}
+                                </li>`;
+                        });
+
+                        asistenciaGlobalHtml += `</ul></li>`;
+                    });
+                } else {
+                    asistenciaGlobalHtml += '<li class="cpp-asistencia-lista-vacia">No hay incidencias registradas.</li>';
+                }
+
+                asistenciaGlobalHtml += `
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
             const finalHtml = `
                 <div class="cpp-alumno-ficha-card">
                     ${personalDataHtml}
-                    ${asistenciaGlobalHtml}
                     ${clasesHtml}
                     ${visualDataHtml}
                     ${calificacionesHtml}
+                    ${asistenciaGlobalHtml}
                     ${footerHtml}
                 </div>`;
 
