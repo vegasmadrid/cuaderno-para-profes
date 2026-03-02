@@ -45,7 +45,8 @@ function cpp_ajax_search_alumnos() {
             wp_send_json_error(['message' => 'Permiso denegado para esta clase.']);
             return;
         }
-        $alumnos = cpp_obtener_alumnos_clase($clase_id, $search_term, 'apellidos');
+        // En la pestaña global de alumnos, permitimos ver ocultos para poder gestionarlos
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, $search_term, 'apellidos', null);
     } else {
         $alumnos = cpp_obtener_todos_alumnos_usuario($user_id, 'apellidos', $search_term);
     }
@@ -86,6 +87,7 @@ function cpp_ajax_get_alumno_ficha() {
     // Obtener todas las clases del profesor y las del alumno
     $todas_las_clases = cpp_obtener_clases_usuario($user_id);
     $clases_del_alumno_ids = cpp_get_clases_for_alumno($alumno_id);
+    $visibilidad_clases = cpp_get_visibilidad_clases_alumno($alumno_id);
 
     // Obtener calificaciones de todas las clases y asistencia global
     $calificaciones_por_clase = [];
@@ -205,6 +207,7 @@ function cpp_ajax_get_alumno_ficha() {
         'alumno' => $alumno,
         'todas_las_clases' => $todas_las_clases,
         'clases_del_alumno_ids' => $clases_del_alumno_ids,
+        'visibilidad_clases' => $visibilidad_clases,
         'calificaciones_agrupadas' => $calificaciones_por_clase,
         'resumen_asistencia_global' => [
             'stats' => $global_stats_asistencia,
@@ -251,6 +254,31 @@ function cpp_ajax_save_alumno_details() {
 
     $alumno_guardado = cpp_obtener_alumno_por_id($new_alumno_id, $user_id);
     wp_send_json_success(['message' => 'Alumno guardado correctamente.', 'alumno' => $alumno_guardado]);
+}
+
+add_action('wp_ajax_cpp_toggle_alumno_visibility', 'cpp_ajax_toggle_alumno_visibility');
+function cpp_ajax_toggle_alumno_visibility() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $visible = isset($_POST['visible']) ? ($_POST['visible'] === 'true') : true;
+
+    if (empty($alumno_id) || empty($clase_id)) {
+        wp_send_json_error(['message' => 'Datos no válidos.']);
+    }
+
+    if (!cpp_es_propietario_clase($clase_id, $user_id) || !cpp_es_propietario_alumno($user_id, $alumno_id)) {
+        wp_send_json_error(['message' => 'Permiso denegado.']);
+    }
+
+    $result = cpp_actualizar_visibilidad_alumno_clase($alumno_id, $clase_id, $visible);
+
+    if ($result === false) {
+        wp_send_json_error(['message' => 'Error al actualizar la visibilidad.']);
+    }
+
+    wp_send_json_success(['message' => 'Visibilidad actualizada correctamente.']);
 }
 
 add_action('wp_ajax_cpp_update_alumno_clases', 'cpp_ajax_update_alumno_clases');
@@ -304,7 +332,7 @@ function cpp_ajax_get_alumnos_for_clase_config() {
         wp_send_json_error(['message' => 'Clase no válida o sin permisos.']);
     }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos');
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos', true);
 
     // Generar HTML
     ob_start();
@@ -432,8 +460,8 @@ function cpp_ajax_copy_alumnos_to_clase() {
     }
 
     // 3. Obtener Alumnos de Origen y Destino
-    $alumnos_origen = cpp_obtener_alumnos_clase($source_clase_id);
-    $alumnos_destino_actuales = cpp_obtener_alumnos_clase($target_clase_id);
+    $alumnos_origen = cpp_obtener_alumnos_clase($source_clase_id, '', 'apellidos', null);
+    $alumnos_destino_actuales = cpp_obtener_alumnos_clase($target_clase_id, '', 'apellidos', null);
     $ids_alumnos_destino = wp_list_pluck($alumnos_destino_actuales, 'id');
 
     $alumnos_a_copiar = array_filter($alumnos_origen, function($alumno) use ($ids_alumnos_destino) {

@@ -271,7 +271,7 @@ function cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id) {
 }
 
 /**
- * Calcula la nota media de una actividad basándose en las calificaciones de los alumnos.
+ * Calcula la nota media de una actividad basándose en las calificaciones de los alumnos VISIBLES.
  *
  * @param int $actividad_id ID de la actividad.
  * @return float|null La media calculada o null si no hay notas.
@@ -279,11 +279,15 @@ function cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id) {
 function cpp_obtener_promedio_actividad($actividad_id) {
     global $wpdb;
     $tabla_calificaciones = $wpdb->prefix . 'cpp_calificaciones_alumnos';
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
 
-    $notas_raw = $wpdb->get_col($wpdb->prepare(
-        "SELECT nota FROM $tabla_calificaciones WHERE actividad_id = %d",
-        $actividad_id
-    ));
+    $sql = "SELECT c.nota FROM $tabla_calificaciones c
+            INNER JOIN $tabla_actividades act ON c.actividad_id = act.id
+            INNER JOIN $tabla_alumnos_clases ac ON c.alumno_id = ac.alumno_id AND act.clase_id = ac.clase_id
+            WHERE c.actividad_id = %d AND ac.visible = 1";
+
+    $notas_raw = $wpdb->get_col($wpdb->prepare($sql, $actividad_id));
 
     if (empty($notas_raw)) {
         return null;

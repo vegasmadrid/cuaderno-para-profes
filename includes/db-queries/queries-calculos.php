@@ -306,7 +306,7 @@ function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_
 
 function cpp_calcular_ranking_alumno_en_clase($alumno_id, $clase_id, $user_id) {
     // Se pasa un string vacío para el término de búsqueda para obtener todos los alumnos de la clase
-    $alumnos_de_clase = cpp_obtener_alumnos_clase($clase_id, '');
+    $alumnos_de_clase = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos', true);
 
     if (empty($alumnos_de_clase)) {
         return null;
