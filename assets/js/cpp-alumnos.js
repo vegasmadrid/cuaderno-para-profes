@@ -801,6 +801,7 @@
                         cpp.utils.showToast(response.data.message);
                         this.handleSearch();
                         this.displayAlumnoFicha(alumnoId);
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -835,10 +836,7 @@
                         this.handleSearch();
                         $('#cpp-alumnos-view-main').html(this.getInitialMainContentHtml());
 
-                        // Forzar la recarga del cuaderno si está activo
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
-                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
-                        }
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -923,10 +921,7 @@
                         this.handleSearch(); // Actualizar la lista de la izquierda
                         this.displayAlumnoFicha(alumnoId); // Recargar la ficha para reflejar cambios
 
-                        // Forzar la recarga del cuaderno si está activo
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
-                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
-                        }
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -1041,10 +1036,7 @@
                             $btn.attr('title', 'Mostrar en esta clase');
                         }
 
-                        // Recargar el cuaderno si estamos en esa clase
-                        if (window.cpp && cpp.currentClaseIdCuaderno == claseId) {
-                            $(document).trigger('cpp:forceGradebookReload');
-                        }
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
