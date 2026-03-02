@@ -135,6 +135,7 @@ function cpp_crear_tablas() {
     $sql_alumnos_clases = "CREATE TABLE $tabla_alumnos_clases (
         alumno_id mediumint(9) UNSIGNED NOT NULL,
         clase_id mediumint(9) UNSIGNED NOT NULL,
+        visible tinyint(1) NOT NULL DEFAULT 1,
         PRIMARY KEY (alumno_id, clase_id),
         KEY alumno_id (alumno_id),
         KEY clase_id (clase_id)

@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.5.9');
+define('CPP_VERSION', '2.6.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -457,6 +457,18 @@ function cpp_run_migrations() {
         // Forzar valor por defecto a las filas existentes que lo tengan vacío o NULL
         $wpdb->query("UPDATE `$table_name` SET `$column_name` = 'apellidos' WHERE `$column_name` IS NULL OR `$column_name` = ''");
     }
+
+    if (version_compare($current_version, '2.6.0', '<')) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cpp_alumnos_clases';
+        $column_name = 'visible';
+
+        $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+        if (!$column_exists) {
+            $wpdb->query("ALTER TABLE `$table_name` ADD `$column_name` TINYINT(1) NOT NULL DEFAULT 1");
+        }
+    }
+
     // --- IMPORTANTE: Limpiar caché después de las migraciones ---
     // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.
     if (version_compare($current_version, CPP_VERSION, '<')) {

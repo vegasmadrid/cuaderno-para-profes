@@ -50,6 +50,7 @@
             $document.on('click', '#cpp-update-clases-btn', this.handleUpdateAlumnoClases.bind(this));
             $document.on('click', '#cpp-eliminar-alumno-global-btn', this.handleDeleteAlumno.bind(this));
             $document.on('change', '#cpp-alumnos-class-filter', this.handleSearch.bind(this));
+            $document.on('click', '.cpp-toggle-visibility-btn', this.handleToggleVisibility.bind(this));
 
             // Listeners para edición en el sitio
             $document.on('click', '#cpp-edit-alumno-btn', this.toggleEditMode.bind(this, true));
@@ -347,12 +348,26 @@
 
             let clasesHtml = '';
             if (!isNew) {
-                const checkboxes = data.todas_las_clases.map(clase => `
-                    <label>
-                        <input type="checkbox" name="clases_ids[]" value="${clase.id}" ${data.clases_del_alumno_ids.includes(clase.id) ? 'checked' : ''}>
-                        ${clase.nombre}
-                    </label>
-                `).join('');
+                const checkboxes = data.todas_las_clases.map(clase => {
+                    const isAssigned = data.clases_del_alumno_ids.includes(clase.id);
+                    const isVisible = data.visibilidad_clases && data.visibilidad_clases[clase.id] !== false;
+                    const eyeIcon = isAssigned ? `
+                        <span class="cpp-toggle-visibility-btn dashicons ${isVisible ? 'dashicons-visibility' : 'dashicons-hidden'}"
+                              data-clase-id="${clase.id}"
+                              data-alumno-id="${alumno.id}"
+                              data-visible="${isVisible}"
+                              title="${isVisible ? 'Ocultar de esta clase' : 'Mostrar en esta clase'}">
+                        </span>` : '';
+                    return `
+                        <div class="cpp-clase-checkbox-item">
+                            <label>
+                                <input type="checkbox" name="clases_ids[]" value="${clase.id}" ${isAssigned ? 'checked' : ''}>
+                                ${clase.nombre}
+                            </label>
+                            ${eyeIcon}
+                        </div>
+                    `;
+                }).join('');
 
                 clasesHtml = `
                     <div class="cpp-ficha-section">
@@ -786,6 +801,7 @@
                         cpp.utils.showToast(response.data.message);
                         this.handleSearch();
                         this.displayAlumnoFicha(alumnoId);
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -820,10 +836,7 @@
                         this.handleSearch();
                         $('#cpp-alumnos-view-main').html(this.getInitialMainContentHtml());
 
-                        // Forzar la recarga del cuaderno si está activo
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
-                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
-                        }
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -908,10 +921,7 @@
                         this.handleSearch(); // Actualizar la lista de la izquierda
                         this.displayAlumnoFicha(alumnoId); // Recargar la ficha para reflejar cambios
 
-                        // Forzar la recarga del cuaderno si está activo
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
-                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, cpp.currentEvaluacionId);
-                        }
+                        $(document).trigger('cpp:forceGradebookReload');
                     } else {
                         alert(`Error: ${response.data.message}`);
                     }
@@ -992,6 +1002,50 @@
             $('#cpp-alumno-foto-url-input').val(newFotoUrl);
 
             cpp.utils.showToast('Avatar regenerado. Pulsa "Guardar" para aplicar el cambio.');
+        },
+
+        handleToggleVisibility: function(e) {
+            const $btn = $(e.currentTarget);
+            const alumnoId = $btn.data('alumno-id');
+            const claseId = $btn.data('clase-id');
+            const currentVisible = $btn.data('visible');
+            const nextVisible = !currentVisible;
+
+            cpp.utils.showSpinner();
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_toggle_alumno_visibility',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: alumnoId,
+                    clase_id: claseId,
+                    visible: nextVisible
+                },
+                success: (response) => {
+                    cpp.utils.hideSpinner();
+                    if (response.success) {
+                        cpp.utils.showToast(response.data.message);
+                        $btn.data('visible', nextVisible);
+                        if (nextVisible) {
+                            $btn.removeClass('dashicons-hidden').addClass('dashicons-visibility');
+                            $btn.attr('title', 'Ocultar de esta clase');
+                        } else {
+                            $btn.removeClass('dashicons-visibility').addClass('dashicons-hidden');
+                            $btn.attr('title', 'Mostrar en esta clase');
+                        }
+
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        alert(`Error: ${response.data.message}`);
+                    }
+                },
+                error: () => {
+                    cpp.utils.hideSpinner();
+                    alert('Error de conexión.');
+                }
+            });
         },
     };
 

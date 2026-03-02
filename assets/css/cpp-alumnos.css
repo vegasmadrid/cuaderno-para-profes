@@ -167,22 +167,46 @@
     margin-bottom: 20px;
 }
 
-.cpp-clases-checkbox-container label {
+.cpp-clase-checkbox-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     background-color: #f8f9fa;
     padding: 10px;
     border-radius: 5px;
-    cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.cpp-clases-checkbox-container label:hover {
+.cpp-clase-checkbox-item:hover {
     background-color: #e9ecef;
+}
+
+.cpp-clase-checkbox-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-grow: 1;
+    margin: 0;
 }
 
 .cpp-clases-checkbox-container input[type="checkbox"] {
     margin-right: 10px;
+}
+
+.cpp-toggle-visibility-btn {
+    cursor: pointer;
+    color: #5f6368;
+    transition: color 0.2s, transform 0.1s;
+    padding: 5px;
+}
+
+.cpp-toggle-visibility-btn:hover {
+    color: #1a73e8;
+    transform: scale(1.1);
+}
+
+.cpp-toggle-visibility-btn.dashicons-hidden {
+    color: #d93025;
 }
 
 /* Estilos para la sección de calificaciones */

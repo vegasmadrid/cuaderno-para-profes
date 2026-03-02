@@ -12,6 +12,7 @@
     
     cpp.cuaderno = {
         isSortingLocked: false, // Flag global para evitar doble disparo por reemplazo de DOM
+        isDirty: false, // Flag to indicate if gradebook content needs reload
         localStorageKey_lastEval: 'cpp_last_opened_eval_clase_',
         currentCalculoNota: 'total',
         isDraggingSelection: false,
@@ -698,9 +699,17 @@
             // Listeners for cross-component updates
             $document.on('cpp:forceGradebookReload', function() {
                 if (cpp.currentClaseIdCuaderno) {
-                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    // Al recargar por un evento de sincronización, no usamos el cargador de pantalla completa
-                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
+                    // Si la pestaña de cuaderno está activa, recargamos inmediatamente.
+                    // Si no, marcamos como "sucio" para que se recargue al entrar.
+                    const activeTab = $('.cpp-main-tab-link.active').data('tab');
+                    if (activeTab === 'cuaderno') {
+                        const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                        // Al recargar por un evento de sincronización, no usamos el cargador de pantalla completa
+                        self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
+                        self.isDirty = false;
+                    } else {
+                        self.isDirty = true;
+                    }
                 }
             });
 
@@ -1240,9 +1249,12 @@
                 }
             } else if (tabName === 'cuaderno') {
                 const activeEvalInCuaderno = $('#cpp-cuaderno-contenido').attr('data-active-eval');
-                if (cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId) {
+                const evalChanged = cpp.currentClaseIdCuaderno && activeEvalInCuaderno && activeEvalInCuaderno != globalEvalId;
+
+                if (evalChanged || this.isDirty) {
                     const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
                     this.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, globalEvalId);
+                    this.isDirty = false;
                 }
             } else if (tabName === 'actividades') {
                 if (cpp.actividades && typeof cpp.actividades.render === 'function') {

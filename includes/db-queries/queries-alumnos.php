@@ -7,8 +7,12 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 /**
  * Obtiene todos los alumnos asociados a una clase específica.
+ * @param int $clase_id
+ * @param string $search_term
+ * @param string $sort_order 'apellidos' o 'nombre'
+ * @param bool|null $only_visible Si es true, solo devuelve visibles. Si es false, solo ocultos. Si es null, todos.
  */
-function cpp_obtener_alumnos_clase($clase_id, $search_term = '', $sort_order = 'apellidos') {
+function cpp_obtener_alumnos_clase($clase_id, $search_term = '', $sort_order = 'apellidos', $only_visible = true) {
     global $wpdb;
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
@@ -18,10 +22,15 @@ function cpp_obtener_alumnos_clase($clase_id, $search_term = '', $sort_order = '
         $order_by_clause = 'a.nombre, a.apellidos';
     }
 
-    $sql = "SELECT a.* FROM $tabla_alumnos a
+    $sql = "SELECT a.*, ac.visible FROM $tabla_alumnos a
             INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
             WHERE ac.clase_id = %d";
     $params = [$clase_id];
+
+    if ($only_visible !== null) {
+        $sql .= " AND ac.visible = %d";
+        $params[] = $only_visible ? 1 : 0;
+    }
 
     if (!empty($search_term)) {
         $sql .= " AND (a.nombre LIKE %s OR a.apellidos LIKE %s)";
@@ -84,6 +93,41 @@ function cpp_get_clases_for_alumno($alumno_id) {
         "SELECT clase_id FROM $tabla_alumnos_clases WHERE alumno_id = %d",
         $alumno_id
     ));
+}
+
+/**
+ * Obtiene la visibilidad de un alumno en sus clases asociadas.
+ * Retorna un array asociativo [clase_id => visible]
+ */
+function cpp_get_visibilidad_clases_alumno($alumno_id) {
+    global $wpdb;
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $results = $wpdb->get_results($wpdb->prepare(
+        "SELECT clase_id, visible FROM $tabla_alumnos_clases WHERE alumno_id = %d",
+        $alumno_id
+    ), ARRAY_A);
+
+    $visibilidad = [];
+    if ($results) {
+        foreach ($results as $row) {
+            $visibilidad[intval($row['clase_id'])] = (bool)$row['visible'];
+        }
+    }
+    return $visibilidad;
+}
+
+/**
+ * Actualiza la visibilidad de un alumno en una clase específica.
+ */
+function cpp_actualizar_visibilidad_alumno_clase($alumno_id, $clase_id, $visible) {
+    global $wpdb;
+    return $wpdb->update(
+        $wpdb->prefix . 'cpp_alumnos_clases',
+        ['visible' => $visible ? 1 : 0],
+        ['alumno_id' => $alumno_id, 'clase_id' => $clase_id],
+        ['%d'],
+        ['%d', '%d']
+    );
 }
 
 /**
