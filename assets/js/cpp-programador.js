@@ -515,8 +515,13 @@
     handleInlineEdit(element) {
         const newContent = element.innerHTML;
         if (newContent === this.originalContent) return;
-        const sesion = this.currentSesion;
+
+        // --- FIX: Identificar la sesión por el DOM para evitar problemas de concurrencia ---
+        const detailContainer = element.closest('.cpp-sesion-detail-container');
+        const sesionId = detailContainer ? detailContainer.dataset.sesionId : (this.currentSesion ? this.currentSesion.id : null);
+        const sesion = this.sesiones.find(s => s.id == sesionId);
         const field = element.dataset.field;
+
         if (!sesion || !field) return;
 
         // Guardamos una copia sin las actividades para no enviar datos innecesarios
@@ -1092,7 +1097,11 @@
                         updatedSesion.actividades_programadas = this.sesiones[index].actividades_programadas;
                         this.sesiones[index] = updatedSesion;
                     }
-                    this.currentSesion = this.sesiones.find(s => s.id == updatedSesion.id);
+
+                    // Sincronizar currentSesion solo si el ID coincide (evitar sobreescribir si el usuario ha cambiado de sesión mientras se guardaba)
+                    if (this.currentSesion && this.currentSesion.id == updatedSesion.id) {
+                        this.currentSesion = this.sesiones[index === -1 ? this.sesiones.length - 1 : index];
+                    }
 
                     if (cpp.utils && typeof cpp.utils.showToast === 'function') {
                         cpp.utils.showToast('Sesión guardada.');
@@ -1110,21 +1119,24 @@
                             const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                             const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                             const newDisplayIndex = sesionesFiltradas.length - 1;
-                            const newItemHTML = this.renderSingleSesionItemHTML(this.currentSesion, newDisplayIndex);
+                            const newItemHTML = this.renderSingleSesionItemHTML(updatedSesion, newDisplayIndex);
                             list.insertAdjacentHTML('beforeend', newItemHTML);
 
-                            const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
-                            if (newActiveElement) {
-                                const oldActive = list.querySelector('.active');
-                                if (oldActive) oldActive.classList.remove('active');
-                                newActiveElement.classList.add('active');
+                            // SOLO marcar como activo si es realmente la sesión actual
+                            if (this.currentSesion && this.currentSesion.id == updatedSesion.id) {
+                                const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
+                                if (newActiveElement) {
+                                    const oldActive = list.querySelector('.cpp-sesion-list-item.active');
+                                    if (oldActive) oldActive.classList.remove('active');
+                                    newActiveElement.classList.add('active');
+                                }
                             }
                         }
                     } else {
-                        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+                        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
                         if (listItem) {
-                            // --- FIX: Update DOM without replacing the element to preserve scroll ---
-                            const s = this.currentSesion; // The updated session
+                            // --- Update DOM without replacing the element to preserve scroll ---
+                            const s = updatedSesion; // The updated session
 
                             // Update Title and Date
                             const titleElement = listItem.querySelector('.cpp-sesion-title');
@@ -1158,8 +1170,12 @@
                                 listItem.classList.remove('cpp-sesion-hoy');
                             }
 
-                            // Ensure it remains active
-                            listItem.classList.add('active');
+                            // SOLO asegurar que es activo si realmente lo es en el estado global
+                            if (this.currentSesion && this.currentSesion.id == updatedSesion.id) {
+                                listItem.classList.add('active');
+                            } else {
+                                listItem.classList.remove('active');
+                            }
                         }
                     }
 
@@ -1519,8 +1535,11 @@
                             }
                         });
 
-                        // If the currently selected session was updated, re-render the right column
-                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id)) {
+                        // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
+                        // Y si NO estamos editando activamente un campo (para no perder el cursor)
+                        const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
+
+                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
                             const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
                             if (rightCol) {
                                 rightCol.innerHTML = this.renderProgramacionTabRightColumn();
@@ -1804,18 +1823,23 @@
                         cpp.utils.showToast('Tarea añadida.');
                     }
 
-                    // Usar un pequeño timeout para asegurar que cualquier blur o guardado pendiente no interfiera
+                    // Usar un timeout algo mayor para asegurar que el blur/save del título de sesión (si venía de ahí)
+                    // termine de procesarse y no robe el foco después.
                     setTimeout(() => {
                         const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
                         if (newElement) {
                             newElement.focus();
+                            // Selección forzada del texto
                             const range = document.createRange();
-                            const sel = window.getSelection();
                             range.selectNodeContents(newElement);
+                            const sel = window.getSelection();
                             sel.removeAllRanges();
                             sel.addRange(range);
+
+                            // Asegurar que el elemento es visible
+                            newElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }
-                    }, 150);
+                    }, 300);
                 } else {
                     this.showNotification(result.data.message || 'Error al añadir la tarea.', 'error');
                 }
