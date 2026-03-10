@@ -2492,9 +2492,13 @@
     },
 
     formatSessionDate(dateStr, options = { day: 'numeric', month: 'short' }) {
-        if (!dateStr || dateStr === '0000-00-00' || dateStr === 'null' || dateStr === 'Invalid Date' || dateStr === 'undefined') return '';
+        if (!dateStr || dateStr === '0000-00-00' || dateStr === 'null' || dateStr === 'Invalid Date' || dateStr === 'undefined' || dateStr.includes('NaN')) return '';
+
+        // Fix for "Year 1" (e.g., "0001-01-01") or other obviously wrong dates
+        if (dateStr.startsWith('0001') || dateStr.startsWith('1970-01-01')) return '';
+
         const date = new Date(dateStr + 'T12:00:00Z');
-        if (isNaN(date.getTime())) return '';
+        if (isNaN(date.getTime()) || date.getFullYear() < 2000) return '';
         return date.toLocaleDateString('es-ES', options);
     },
 
