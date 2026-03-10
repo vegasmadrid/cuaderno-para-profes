@@ -404,10 +404,16 @@
         if (this.isProcessing) return;
         this.isProcessing = true;
 
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
+        const idsToDelete = [...this.selectedSesiones];
+
         const data = new URLSearchParams({
             action: 'cpp_delete_multiple_sesiones',
             nonce: cppFrontendData.nonce,
-            session_ids: JSON.stringify(this.selectedSesiones),
+            session_ids: JSON.stringify(idsToDelete),
             delete_activities: deleteActivities
         });
 
@@ -415,16 +421,49 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.showNotification(result.data.message || 'Sesiones eliminadas con éxito.');
-                    if (this.currentSesion && this.selectedSesiones.includes(this.currentSesion.id.toString())) {
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast(result.data.message || 'Sesiones eliminadas.');
+                    } else {
+                        this.showNotification(result.data.message || 'Sesiones eliminadas.');
+                    }
+
+                    // Actualizar estado local
+                    this.sesiones = this.sesiones.filter(s => !idsToDelete.includes(s.id.toString()));
+
+                    if (this.currentSesion && idsToDelete.includes(this.currentSesion.id.toString())) {
                         this.currentSesion = null;
                     }
                     this.selectedSesiones = [];
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+
+                    // Actualización selectiva del DOM
+                    idsToDelete.forEach(id => {
+                        const item = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${id}"]`);
+                        if (item) item.remove();
+                    });
+
+                    // Re-enumerar y re-renderizar si es necesario
+                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    const remainingSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                    if (remainingSessions.length === 0) {
+                        this.render();
+                    } else {
+                        remainingSessions.forEach((sesion, index) => {
+                            const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                            if (item) {
+                                item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
+                            }
+                        });
+
+                        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                        if (rightCol) rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                    }
+
+                    // Recalcular fechas
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
+
                     if (result.data.needs_gradebook_reload) {
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
-                        }
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
                 } else {
                     alert(result.data.message || 'Error al eliminar las sesiones.');
@@ -433,6 +472,9 @@
             .finally(() => {
                 this.isProcessing = false;
                 this.updateBulkActionsUI();
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
+                }
             });
     },
 
@@ -473,8 +515,13 @@
     handleInlineEdit(element) {
         const newContent = element.innerHTML;
         if (newContent === this.originalContent) return;
-        const sesion = this.currentSesion;
+
+        // --- FIX: Identificar la sesión por el DOM para evitar problemas de concurrencia ---
+        const detailContainer = element.closest('.cpp-sesion-detail-container');
+        const sesionId = detailContainer ? detailContainer.dataset.sesionId : (this.currentSesion ? this.currentSesion.id : null);
+        const sesion = this.sesiones.find(s => s.id == sesionId);
         const field = element.dataset.field;
+
         if (!sesion || !field) return;
 
         // Guardamos una copia sin las actividades para no enviar datos innecesarios
@@ -496,6 +543,10 @@
             sesion: JSON.stringify(newSession),
             after_sesion_id: afterSesionId
         });
+
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
 
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
@@ -528,7 +579,6 @@
                         if (list) {
                             // 1. Añadir el nuevo elemento al DOM (puede estar en la posición incorrecta temporalmente)
                             const sesionesFiltradasAntes = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                            const lastSesionElement = list.querySelector('.cpp-sesion-list-item:last-child');
                             const newItemHTML = this.renderSingleSesionItemHTML(newSesion, sesionesFiltradasAntes.length); // Renderizar como si fuera el último
                             list.insertAdjacentHTML('beforeend', newItemHTML);
 
@@ -563,14 +613,29 @@
 
                             this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
                             this.makeActividadesSortable();
+
+                            // --- AUTO-FOCUS Y SELECCIÓN DEL TÍTULO ---
+                            const titleElement = this.appElement.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
+                            if (titleElement) {
+                                setTimeout(() => {
+                                    titleElement.focus();
+                                    const range = document.createRange();
+                                    const sel = window.getSelection();
+                                    range.selectNodeContents(titleElement);
+                                    sel.removeAllRanges();
+                                    sel.addRange(range);
+                                }, 50);
+                            }
                         }
                     });
 
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Sesión añadida.');
+                    }
+
                     // --- AÑADIDO: Recargar cuaderno si es necesario ---
                     if (result.data.needs_gradebook_reload) {
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
-                        }
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
 
                 } else if (result.success) { // Fallback
@@ -578,6 +643,11 @@
                     this.fetchData(this.currentClase.id, this.currentEvaluacionId, newSesionId);
                 } else {
                     alert('Error al añadir la sesión en línea.');
+                }
+            })
+            .finally(() => {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
                 }
             });
     },
@@ -862,14 +932,31 @@
     },
 
     fetchData(initialClaseId, evaluacionIdToSelect = null, sesionIdToSelect = null) {
-        if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
-            cpp.utils.showLoader();
+        // Solo mostramos el loader de pantalla completa si es la primera carga o cambio de clase,
+        // para otras actualizaciones usamos el spinner discreto.
+        const useFullLoader = !this.clases || this.clases.length === 0 || (this.currentClase && this.currentClase.id != initialClaseId);
+
+        if (useFullLoader) {
+            if (cpp.utils && typeof cpp.utils.showLoader === 'function') {
+                cpp.utils.showLoader();
+            }
+        } else {
+            if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+                cpp.utils.showSpinner();
+            }
         }
+
         this.fetchDataFromServer().then(result => {
             this.processInitialData(result, initialClaseId, evaluacionIdToSelect, sesionIdToSelect);
         }).finally(() => {
-            if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
-                cpp.utils.hideLoader();
+            if (useFullLoader) {
+                if (cpp.utils && typeof cpp.utils.hideLoader === 'function') {
+                    cpp.utils.hideLoader();
+                }
+            } else {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
+                }
             }
         });
     },
@@ -898,16 +985,36 @@
             sesion_id: sesionId,
             orden: JSON.stringify(newOrder)
         });
+
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.showNotification('Orden de actividades guardado.');
-                    // No es necesario un fetch completo, solo reordenar localmente si se quisiera optimizar
-                    this.fetchData(this.currentClase.id);
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Orden de actividades guardado.');
+                    } else {
+                        this.showNotification('Orden de actividades guardado.');
+                    }
+
+                    // Actualizar el orden localmente
+                    if (this.currentSesion && this.currentSesion.id == sesionId && this.currentSesion.actividades_programadas) {
+                        const actividadMap = new Map(this.currentSesion.actividades_programadas.map(a => [a.id.toString(), a]));
+                        this.currentSesion.actividades_programadas = newOrder
+                            .map(id => actividadMap.get(id.toString()))
+                            .filter(a => a !== undefined);
+                    }
                 } else {
-                    this.showNotification('Error al guardar el orden de las actividades.', 'error');
-                    this.fetchData(this.currentClase.id);
+                    this.showNotification(result.data.message || 'Error al guardar el orden de las actividades.', 'error');
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                }
+            })
+            .finally(() => {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
                 }
             });
     },
@@ -961,6 +1068,13 @@
 
         const data = new URLSearchParams({ action: 'cpp_save_programador_sesion', nonce: cppFrontendData.nonce, sesion: JSON.stringify(sesionData) });
 
+        // No mostramos el spinner para ediciones inline para no bloquear la interfaz
+        // y evitar que se "pierdan" los clics en botones al perder el foco.
+        // La notificación toast al final es suficiente feedback.
+        if (fromModal && cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
@@ -983,7 +1097,17 @@
                         updatedSesion.actividades_programadas = this.sesiones[index].actividades_programadas;
                         this.sesiones[index] = updatedSesion;
                     }
-                    this.currentSesion = this.sesiones.find(s => s.id == updatedSesion.id);
+
+                    // Sincronizar currentSesion solo si el ID coincide (evitar sobreescribir si el usuario ha cambiado de sesión mientras se guardaba)
+                    if (this.currentSesion && this.currentSesion.id == updatedSesion.id) {
+                        this.currentSesion = this.sesiones[index === -1 ? this.sesiones.length - 1 : index];
+                    }
+
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Sesión guardada.');
+                    } else {
+                        this.showNotification('Sesión guardada.');
+                    }
 
                     // Lógica de renderizado selectivo para evitar recargas completas
                     if (isNew) {
@@ -995,21 +1119,24 @@
                             const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                             const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                             const newDisplayIndex = sesionesFiltradas.length - 1;
-                            const newItemHTML = this.renderSingleSesionItemHTML(this.currentSesion, newDisplayIndex);
+                            const newItemHTML = this.renderSingleSesionItemHTML(updatedSesion, newDisplayIndex);
                             list.insertAdjacentHTML('beforeend', newItemHTML);
 
-                            const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
-                            if (newActiveElement) {
-                                const oldActive = list.querySelector('.active');
-                                if (oldActive) oldActive.classList.remove('active');
-                                newActiveElement.classList.add('active');
+                            // SOLO marcar como activo si es realmente la sesión actual
+                            if (this.currentSesion && this.currentSesion.id == updatedSesion.id) {
+                                const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
+                                if (newActiveElement) {
+                                    const oldActive = list.querySelector('.cpp-sesion-list-item.active');
+                                    if (oldActive) oldActive.classList.remove('active');
+                                    newActiveElement.classList.add('active');
+                                }
                             }
                         }
                     } else {
-                        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${this.currentSesion.id}"]`);
+                        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
                         if (listItem) {
-                            // --- FIX: Update DOM without replacing the element to preserve scroll ---
-                            const s = this.currentSesion; // The updated session
+                            // --- Update DOM without replacing the element to preserve scroll ---
+                            const s = updatedSesion; // The updated session
 
                             // Update Title and Date
                             const titleElement = listItem.querySelector('.cpp-sesion-title');
@@ -1043,16 +1170,24 @@
                                 listItem.classList.remove('cpp-sesion-hoy');
                             }
 
-                            // Ensure it remains active
-                            listItem.classList.add('active');
+                            // SOLO asegurar que es activo si realmente lo es en el estado global
+                            if (this.currentSesion && this.currentSesion.id == updatedSesion.id) {
+                                listItem.classList.add('active');
+                            } else {
+                                listItem.classList.remove('active');
+                            }
                         }
                     }
 
-                    // Siempre actualizar la columna derecha y buscar fechas
-                    const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
-                    if (rightCol) {
-                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                        this.makeActividadesSortable();
+                    // Solo actualizamos la columna derecha si el guardado vino de un modal (cambio mayor)
+                    // o si es una sesión nueva. Para ediciones inline del título/descripción,
+                    // no redibujamos la derecha para evitar perder el foco de otras acciones concurrentes.
+                    if (fromModal || isNew) {
+                        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                        if (rightCol) {
+                            rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                            this.makeActividadesSortable();
+                        }
                     }
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
                         // --- FIX: Reordenar después de guardar para mantener el orden cronológico ---
@@ -1093,6 +1228,9 @@
                 if ($btn) {
                     $btn.disabled = false;
                     $btn.innerHTML = originalBtnHtml;
+                }
+                if (fromModal && cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
                 }
             });
     },
@@ -1145,23 +1283,34 @@
         }
 
         const data = new URLSearchParams({ action: 'cpp_save_start_date', nonce: cppFrontendData.nonce, evaluacion_id: this.currentEvaluacionId, start_date: startDate });
+
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
                 if (currentEval) currentEval.start_date = startDate;
-                this.render();
-                // --- FIX: Recalcular y aplicar fechas ---
+
+                if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                    cpp.utils.showToast('Fecha de inicio actualizada.');
+                }
+
+                // --- OPTIMIZACIÓN: Recalcular y aplicar fechas sin renderizado completo ---
                 this.fetchAndApplyFechas(this.currentEvaluacionId);
 
                 if (result.data.needs_gradebook_reload) {
-                    if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                        cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
-                    }
+                    document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                 }
             } else {
                 alert(result.data.message || 'Error al guardar la fecha.');
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
                 this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+            }
+        }).finally(() => {
+            if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                cpp.utils.hideSpinner();
             }
         });
     },
@@ -1190,6 +1339,10 @@
         if (this.isProcessing) return;
         this.isProcessing = true;
 
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
         // --- LÓGICA PARA SELECCIONAR LA SESIÓN ANTERIOR ---
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
         const currentIndex = sesionesFiltradas.findIndex(s => s.id == sesionId);
@@ -1200,7 +1353,6 @@
             // Si se borra la primera y hay más, seleccionar la siguiente
             nextSesionToSelect = sesionesFiltradas[1];
         }
-        // Si no, nextSesionToSelect será null, que es el comportamiento deseado (ninguna seleccionada)
 
         const data = new URLSearchParams({
             action: 'cpp_delete_programador_sesion',
@@ -1216,40 +1368,127 @@
                     // Actualizar el array local de sesiones
                     this.sesiones = this.sesiones.filter(s => s.id != sesionId);
 
-                    // Asignar la nueva sesión actual
-                    this.currentSesion = nextSesionToSelect;
+                    // --- OPTIMIZACIÓN: Actualización selectiva del DOM ---
+                    const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionId}"]`);
+                    if (listItem) {
+                        listItem.remove();
+                    }
 
-                    // Re-renderizar la UI
-                    this.render();
+                    // Re-enumerar las sesiones restantes en el DOM
+                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    if (list) {
+                        const remainingSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                        if (remainingSessions.length === 0) {
+                            // Si no quedan sesiones, necesitamos re-renderizar para mostrar el mensaje de bienvenida
+                            this.render();
+                        } else {
+                            remainingSessions.forEach((sesion, index) => {
+                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                                if (item) {
+                                    item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
+                                }
+                            });
+
+                            // Seleccionar la siguiente sesión si existe
+                            if (nextSesionToSelect) {
+                                const nextItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${nextSesionToSelect.id}"]`);
+                                if (nextItem) {
+                                    nextItem.click(); // Esto disparará la carga de la columna derecha
+                                    nextItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                }
+                            } else {
+                                this.currentSesion = null;
+                                const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                                if (rightCol) rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                            }
+                        }
+                    }
+
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Sesión eliminada.');
+                    } else {
+                        this.showNotification('Sesión eliminada.');
+                    }
+
+                    // Recalcular fechas para el resto
+                    this.fetchAndApplyFechas(this.currentEvaluacionId);
 
                     // Forzar recarga del cuaderno si es necesario
                     if (result.data.needs_gradebook_reload) {
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
-                        }
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
                 }
                 else { alert('Error al eliminar la sesión.'); }
             })
             .finally(() => {
                 this.isProcessing = false;
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
+                }
             });
     },
     saveSesionOrder(newOrder) {
         const data = new URLSearchParams({ action: 'cpp_save_sesiones_order', nonce: cppFrontendData.nonce, clase_id: this.currentClase.id, evaluacion_id: this.currentEvaluacionId, orden: JSON.stringify(newOrder) });
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
-            if (result.success) {
-                this.fetchData(this.currentClase.id, this.currentEvaluacionId);
-                if (result.data.needs_gradebook_reload) {
-                    if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                        cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
+
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    // Actualizar el orden local en el array de sesiones
+                    const sesionMap = new Map(this.sesiones.map(s => [s.id.toString(), s]));
+                    const orderedSessions = [];
+                    const otherSessions = this.sesiones.filter(s => s.clase_id != this.currentClase.id || s.evaluacion_id != this.currentEvaluacionId);
+
+                    newOrder.forEach(id => {
+                        if (sesionMap.has(id.toString())) {
+                            orderedSessions.push(sesionMap.get(id.toString()));
+                        }
+                    });
+
+                    this.sesiones = [...orderedSessions, ...otherSessions];
+
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Orden de sesiones guardado.');
+                    } else {
+                        this.showNotification('Orden guardado.');
                     }
+
+                    // Recalcular y aplicar fechas basándose en el nuevo orden
+                    this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
+                        // Actualizar los números de sesión en el DOM sin redibujar todo
+                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        if (list) {
+                            const currentEvalSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                            currentEvalSessions.forEach((sesion, index) => {
+                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                                if (item) {
+                                    const numberElement = item.querySelector('.cpp-sesion-number');
+                                    if (numberElement) {
+                                        numberElement.textContent = `${index + 1}.`;
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    if (result.data.needs_gradebook_reload) {
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    }
+                } else {
+                    alert(result.data.message || 'Error al guardar el orden.');
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
                 }
-            } else {
-                alert('Error al guardar el orden.');
-                this.fetchData(this.currentClase.id, this.currentEvaluacionId);
-            }
-        });
+            })
+            .finally(() => {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
+                }
+            });
     },
 
     // --- Renderizado y UI ---
@@ -1296,8 +1535,11 @@
                             }
                         });
 
-                        // If the currently selected session was updated, re-render the right column
-                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id)) {
+                        // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
+                        // Y si NO estamos editando activamente un campo (para no perder el cursor)
+                        const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
+
+                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
                             const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
                             if (rightCol) {
                                 rightCol.innerHTML = this.renderProgramacionTabRightColumn();
@@ -1413,6 +1655,23 @@
         if (sesionesFiltradas.length > 0) {
             this.makeSesionesSortable();
         }
+
+        // Si se acaba de añadir una sesión (por ejemplo, desde el mensaje de "no hay sesiones")
+        // el render se llama de nuevo. Verificamos si hay que enfocar el título.
+        if (this.currentSesion && this.currentSesion.titulo === 'Nueva Sesión') {
+            const titleElement = this.appElement.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
+            if (titleElement) {
+                setTimeout(() => {
+                    titleElement.focus();
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(titleElement);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }, 100);
+            }
+        }
+
         if (this.currentSesion) {
             this.makeActividadesSortable();
         }
@@ -1541,6 +1800,11 @@
             nonce: cppFrontendData.nonce,
             actividad: JSON.stringify(newActividadData)
         });
+
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
@@ -1554,17 +1818,35 @@
                     if (list) {
                         list.insertAdjacentHTML('beforeend', this.renderActividadItem(newActividad));
                     }
-                    const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
-                    if (newElement) {
-                        newElement.focus();
-                        const range = document.createRange();
-                        const sel = window.getSelection();
-                        range.selectNodeContents(newElement);
-                        sel.removeAllRanges();
-                        sel.addRange(range);
+
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Tarea añadida.');
                     }
+
+                    // Usar un timeout algo mayor para asegurar que el blur/save del título de sesión (si venía de ahí)
+                    // termine de procesarse y no robe el foco después.
+                    setTimeout(() => {
+                        const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
+                        if (newElement) {
+                            newElement.focus();
+                            // Selección forzada del texto
+                            const range = document.createRange();
+                            range.selectNodeContents(newElement);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+
+                            // Asegurar que el elemento es visible
+                            newElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 300);
                 } else {
-                    this.showNotification('Error al añadir la tarea.', 'error');
+                    this.showNotification(result.data.message || 'Error al añadir la tarea.', 'error');
+                }
+            })
+            .finally(() => {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
                 }
             });
     },
@@ -1631,6 +1913,10 @@
 
         if (!confirm(confirmMessage)) return;
 
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
+
         const data = new URLSearchParams({
             action: action,
             nonce: cppFrontendData.nonce,
@@ -1640,7 +1926,12 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.showNotification('Actividad eliminada.');
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Actividad eliminada.');
+                    } else {
+                        this.showNotification('Actividad eliminada.');
+                    }
+
                     if (this.currentSesion && this.currentSesion.actividades_programadas) {
                         const index = this.currentSesion.actividades_programadas.findIndex(a => a.id == actividadId);
                         if (index > -1) {
@@ -1656,6 +1947,11 @@
                     }
                 } else {
                     this.showNotification(result.data.message || 'Error al eliminar la actividad.', 'error');
+                }
+            })
+            .finally(() => {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
                 }
             });
     },
@@ -1674,19 +1970,28 @@
             nonce: cppFrontendData.nonce,
             actividad: JSON.stringify(updatedActividad)
         });
+
+        // No mostramos spinner para evitar perder clics externos
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.showNotification('Título guardado.');
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Título guardado.');
+                    } else {
+                        this.showNotification('Título guardado.');
+                    }
                     if (result.data.needs_gradebook_reload) {
                         document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
                 } else {
-                    this.showNotification('Error al guardar.', 'error');
+                    this.showNotification(result.data.message || 'Error al guardar.', 'error');
                     element.textContent = oldTitle;
                     actividad.titulo = oldTitle;
                 }
+            })
+            .finally(() => {
+                // No spinner to hide
             });
     },
 
@@ -2201,9 +2506,7 @@
                     });
 
                     if (result.data.needs_gradebook_reload) {
-                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && this.currentClase && this.currentEvaluacionId) {
-                            cpp.cuaderno.cargarContenidoCuaderno(this.currentClase.id, this.currentClase.nombre, this.currentEvaluacionId);
-                        }
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     }
                 } else {
                     alert(result.data.message || 'Error al realizar la operación.');
@@ -2287,10 +2590,22 @@
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    this.showNotification(result.data.message || 'Sesiones copiadas con éxito.');
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast(result.data.message || 'Sesiones copiadas.');
+                    } else {
+                        this.showNotification(result.data.message || 'Sesiones copiadas.');
+                    }
                     this.closeCopySesionModal();
                     this.selectedSesiones = [];
-                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+
+                    // Solo recargamos si no hay más remedio, pero como hemos copiado a OTRA clase,
+                    // realmente no necesitamos recargar la vista actual.
+                    // Sin embargo, si hemos copiado a la misma clase (aunque el modal lo intenta evitar), sí haría falta.
+                    if (destClaseId == this.currentClase.id) {
+                         this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                    } else {
+                         this.updateBulkActionsUI();
+                    }
                 } else {
                     alert(result.data.message || 'Error al copiar las sesiones.');
                 }

@@ -132,7 +132,14 @@
 .cpp-delete-sesion-btn {
     color: #a00;
 }
-.cpp-sesion-placeholder { height: 45px; background-color: #f0f8ff; border: 1px dashed #a0c4e0; }
+.cpp-sesion-placeholder {
+    height: 45px;
+    background-color: #e8f0fe;
+    border: 2px dashed #1a73e8;
+    border-radius: 4px;
+    margin: 5px 0;
+    visibility: visible !important;
+}
 
 .cpp-sesion-detail-header {
     display: flex;
