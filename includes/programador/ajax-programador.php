@@ -162,7 +162,16 @@ function cpp_ajax_save_start_date() {
     }
 
     if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date)) {
-        wp_send_json_success(['message' => 'Fecha de inicio guardada.', 'needs_gradebook_reload' => true]);
+        // --- AÑADIDO: Obtener las nuevas fechas para actualizar la UI inmediatamente ---
+        global $wpdb;
+        $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d", $evaluacion_id));
+        $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
+
+        wp_send_json_success([
+            'message' => 'Fecha de inicio guardada.',
+            'needs_gradebook_reload' => true,
+            'fechas' => $fechas
+        ]);
     } else {
         wp_send_json_error(['message' => 'Error al guardar la fecha.']);
     }

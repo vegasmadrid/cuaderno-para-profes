@@ -1296,7 +1296,8 @@
                 }
 
                 // --- OPTIMIZACIÓN: Recalcular y aplicar fechas sin renderizado completo ---
-                this.fetchAndApplyFechas(this.currentEvaluacionId);
+                // Usamos las fechas devueltas por el servidor para evitar una petición extra
+                this.fetchAndApplyFechas(this.currentEvaluacionId, result.data.fechas || null);
 
                 if (result.data.needs_gradebook_reload) {
                     document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
@@ -1490,39 +1491,29 @@
     },
 
     // --- Renderizado y UI ---
-    fetchAndApplyFechas(evaluacionId) {
+    fetchAndApplyFechas(evaluacionId, providedFechas = null) {
         if (!evaluacionId || !this.currentClase) return Promise.resolve();
 
-        const data = new URLSearchParams({
-            action: 'cpp_get_fechas_evaluacion',
-            nonce: cppFrontendData.nonce,
-            evaluacion_id: evaluacionId,
-            clase_id: this.currentClase.id
-        });
+        const applyData = (fechas) => {
+            const fetchedFechas = fechas || {};
+            const changedSesiones = [];
 
-        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success) {
-                    const fetchedFechas = result.data.fechas || {};
-                    const changedSesiones = [];
+            this.sesiones.forEach(sesion => {
+                if (sesion.evaluacion_id == evaluacionId) {
+                    const hasNewData = fetchedFechas.hasOwnProperty(sesion.id);
+                    const newFecha = hasNewData ? fetchedFechas[sesion.id].fecha : null;
+                    const newNotas = hasNewData ? fetchedFechas[sesion.id].notas : '';
 
-                    this.sesiones.forEach(sesion => {
-                        if (sesion.evaluacion_id == evaluacionId) {
-                            const hasNewData = fetchedFechas.hasOwnProperty(sesion.id);
-                            const newFecha = hasNewData ? fetchedFechas[sesion.id].fecha : null;
-                            const newNotas = hasNewData ? fetchedFechas[sesion.id].notas : '';
+                    if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
+                        sesion.fecha_calculada = newFecha;
+                        sesion.notas_horario = newNotas;
+                        changedSesiones.push(sesion);
+                    }
+                }
+            });
 
-                            if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
-                                sesion.fecha_calculada = newFecha;
-                                sesion.notas_horario = newNotas;
-                                changedSesiones.push(sesion);
-                            }
-                        }
-                    });
-
-                    // Actualizar UI del aviso si la fecha de inicio ha cambiado (se asume que si se llama a esta función es porque algo cambió)
-                    const currentEval = this.currentClase.evaluaciones.find(e => e.id == evaluacionId);
+            // Actualizar UI del aviso si la fecha de inicio ha cambiado (se asume que si se llama a esta función es porque algo cambió)
+            const currentEval = this.currentClase.evaluaciones.find(e => e.id == evaluacionId);
                     const hasStartDate = currentEval && !!currentEval.start_date;
                     const hasSchedule = this.config.horario && Object.values(this.config.horario).some(daySlots =>
                         Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
@@ -1552,34 +1543,57 @@
                         }
                     }
 
-                    if (changedSesiones.length > 0) {
-                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
-                        if (list) {
-                            const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+            if (changedSesiones.length > 0) {
+                const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                if (list) {
+                    const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
-                            changedSesiones.forEach(sesion => {
-                                const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
-                                if (listItem) {
-                                    const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
-                                    listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
-                                }
-                            });
-                        }
-
-                        // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
-                        // Y si NO estamos editando activamente un campo (para no perder el cursor)
-                        const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
-
-                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
-                            const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
-                            if (rightCol) {
-                                rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                                this.makeActividadesSortable();
+                    // Si cambian muchas sesiones (más del 50%), es más eficiente re-renderizar la lista entera
+                    if (changedSesiones.length > sesionesEnLista.length / 2) {
+                        list.innerHTML = this.renderSesionList();
+                    } else {
+                        changedSesiones.forEach(sesion => {
+                            const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                            if (listItem) {
+                                const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
+                                listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
                             }
-                        }
+                        });
                     }
                 }
-                // No hacemos nada en caso de error para no molestar al usuario
+
+                // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
+                // Y si NO estamos editando activamente un campo (para no perder el cursor)
+                const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
+
+                if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
+                    const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                        this.makeActividadesSortable();
+                    }
+                }
+            }
+        };
+
+        if (providedFechas) {
+            applyData(providedFechas);
+            return Promise.resolve();
+        }
+
+        const data = new URLSearchParams({
+            action: 'cpp_get_fechas_evaluacion',
+            nonce: cppFrontendData.nonce,
+            evaluacion_id: evaluacionId,
+            clase_id: this.currentClase.id
+        });
+
+        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    applyData(result.data.fechas);
+                }
             }).catch(error => console.error('Error fetching session dates:', error));
     },
 
