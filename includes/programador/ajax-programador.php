@@ -430,15 +430,25 @@ function cpp_ajax_copy_sessions() {
         return;
     }
 
-    $result = cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id);
+    $nuevos_ids = cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destination_evaluacion_id, $user_id);
 
-    if ($result) {
+    if ($nuevos_ids) {
+        // Obtener las sesiones recién creadas para devolverlas al frontend
+        $nuevas_sesiones = [];
+        foreach ($nuevos_ids as $id) {
+            $sesion = cpp_programador_get_sesion_by_id($id, $user_id);
+            if ($sesion) {
+                $nuevas_sesiones[] = $sesion;
+            }
+        }
+
         // --- FIX: Devolver las nuevas fechas para actualizar la UI del destino ---
         $fechas_actualizadas = cpp_programador_get_fechas_for_evaluacion($user_id, $destination_clase_id, $destination_evaluacion_id);
         wp_send_json_success([
             'message' => 'Sesiones copiadas correctamente.',
             'needs_gradebook_reload' => true,
-            'fechas' => $fechas_actualizadas
+            'fechas' => $fechas_actualizadas,
+            'nuevas_sesiones' => $nuevas_sesiones
         ]);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al copiar las sesiones.']);

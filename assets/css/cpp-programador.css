@@ -37,7 +37,21 @@
     transition: background-color 0.3s ease, color 0.3s ease;
     position: sticky;
     top: 0;
+    z-index: 101;
+}
+
+.cpp-programacion-alert-sticky {
+    position: sticky;
+    top: 65px; /* Ajustar según altura de controles */
     z-index: 100;
+    background-color: #fff4f4;
+    border: 1px solid #ffcccc;
+    color: #cc0000;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .cpp-programacion-main-controls {
     display: flex;

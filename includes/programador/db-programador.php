@@ -355,6 +355,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
         $destination_clase_id, $destination_evaluacion_id, $user_id
     ));
     $current_order = is_null($max_orden) ? 0 : $max_orden + 1;
+    $nuevos_ids = [];
 
     foreach ($session_ids as $session_id) {
         $session_id = intval($session_id);
@@ -380,6 +381,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
             return false;
         }
         $new_session_id = $wpdb->insert_id;
+        $nuevos_ids[] = $new_session_id;
 
         // 3. Fetch and duplicate associated activities
         // Non-evaluable activities
@@ -435,7 +437,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
     }
 
     $wpdb->query('COMMIT');
-    return true;
+    return $nuevos_ids;
 }
 
 function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden_sesiones) {
