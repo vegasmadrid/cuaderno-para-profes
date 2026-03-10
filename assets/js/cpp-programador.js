@@ -608,6 +608,19 @@
 
                             this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
                             this.makeActividadesSortable();
+
+                            // --- AUTO-FOCUS Y SELECCIÓN DEL TÍTULO ---
+                            const titleElement = this.appElement.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
+                            if (titleElement) {
+                                setTimeout(() => {
+                                    titleElement.focus();
+                                    const range = document.createRange();
+                                    const sel = window.getSelection();
+                                    range.selectNodeContents(titleElement);
+                                    sel.removeAllRanges();
+                                    sel.addRange(range);
+                                }, 50);
+                            }
                         }
                     });
 
@@ -1050,7 +1063,10 @@
 
         const data = new URLSearchParams({ action: 'cpp_save_programador_sesion', nonce: cppFrontendData.nonce, sesion: JSON.stringify(sesionData) });
 
-        if (!fromModal && cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+        // No mostramos el spinner para ediciones inline para no bloquear la interfaz
+        // y evitar que se "pierdan" los clics en botones al perder el foco.
+        // La notificación toast al final es suficiente feedback.
+        if (fromModal && cpp.utils && typeof cpp.utils.showSpinner === 'function') {
             cpp.utils.showSpinner();
         }
 
@@ -1193,7 +1209,7 @@
                     $btn.disabled = false;
                     $btn.innerHTML = originalBtnHtml;
                 }
-                if (!fromModal && cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                if (fromModal && cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
                     cpp.utils.hideSpinner();
                 }
             });
@@ -1616,6 +1632,23 @@
         if (sesionesFiltradas.length > 0) {
             this.makeSesionesSortable();
         }
+
+        // Si se acaba de añadir una sesión (por ejemplo, desde el mensaje de "no hay sesiones")
+        // el render se llama de nuevo. Verificamos si hay que enfocar el título.
+        if (this.currentSesion && this.currentSesion.titulo === 'Nueva Sesión') {
+            const titleElement = this.appElement.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
+            if (titleElement) {
+                setTimeout(() => {
+                    titleElement.focus();
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(titleElement);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }, 100);
+            }
+        }
+
         if (this.currentSesion) {
             this.makeActividadesSortable();
         }
@@ -1907,10 +1940,7 @@
             actividad: JSON.stringify(updatedActividad)
         });
 
-        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
-            cpp.utils.showSpinner();
-        }
-
+        // No mostramos spinner para evitar perder clics externos
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
@@ -1930,9 +1960,7 @@
                 }
             })
             .finally(() => {
-                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
-                    cpp.utils.hideSpinner();
-                }
+                // No spinner to hide
             });
     },
 
