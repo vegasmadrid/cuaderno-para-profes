@@ -224,11 +224,9 @@
                             }
 
                         } else {
-                            // Siempre recargar al crear una nueva actividad para añadir la nueva columna.
-                            if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
-                                let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || "Cuaderno";
-                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId);
-                            }
+                            // Al crear una nueva actividad, disparamos el evento de recarga del cuaderno.
+                            // Esto permite que el cuaderno se actualice en segundo plano sin recargar todo.
+                            document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                         }
 
 

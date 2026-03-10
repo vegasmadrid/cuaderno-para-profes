@@ -1163,11 +1163,15 @@
                         }
                     }
 
-                    // Siempre actualizar la columna derecha y buscar fechas
-                    const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
-                    if (rightCol) {
-                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                        this.makeActividadesSortable();
+                    // Solo actualizamos la columna derecha si el guardado vino de un modal (cambio mayor)
+                    // o si es una sesión nueva. Para ediciones inline del título/descripción,
+                    // no redibujamos la derecha para evitar perder el foco de otras acciones concurrentes.
+                    if (fromModal || isNew) {
+                        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                        if (rightCol) {
+                            rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                            this.makeActividadesSortable();
+                        }
                     }
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
                         // --- FIX: Reordenar después de guardar para mantener el orden cronológico ---
@@ -1800,15 +1804,18 @@
                         cpp.utils.showToast('Tarea añadida.');
                     }
 
-                    const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
-                    if (newElement) {
-                        newElement.focus();
-                        const range = document.createRange();
-                        const sel = window.getSelection();
-                        range.selectNodeContents(newElement);
-                        sel.removeAllRanges();
-                        sel.addRange(range);
-                    }
+                    // Usar un pequeño timeout para asegurar que cualquier blur o guardado pendiente no interfiera
+                    setTimeout(() => {
+                        const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
+                        if (newElement) {
+                            newElement.focus();
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            range.selectNodeContents(newElement);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        }
+                    }, 150);
                 } else {
                     this.showNotification(result.data.message || 'Error al añadir la tarea.', 'error');
                 }
