@@ -714,11 +714,6 @@ function cpp_programador_calculate_activity_date($sesion_id, $user_id) {
     return isset($fechas[$sesion_id]) ? $fechas[$sesion_id]['fecha'] : null;
 }
 
-function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id) {
-    // Esta función ahora usa la lógica centralizada en db-programador.php
-    require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
-    return cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
-}
 
 // --- Nuevas acciones para los símbolos ---
 add_action('wp_ajax_cpp_get_programador_simbolos', 'cpp_ajax_get_programador_simbolos');
