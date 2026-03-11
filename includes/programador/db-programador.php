@@ -101,28 +101,24 @@ function cpp_programador_get_all_data($user_id) {
 
     // Calcular y adjuntar las fechas de las sesiones
     if (!empty($clases) && !empty($sesiones)) {
+        $horario = isset($config['horario']) ? $config['horario'] : [];
+        $calendar_config = isset($config['calendar_config']) ? $config['calendar_config'] : [];
+
         foreach ($clases as $clase) {
             foreach ($clase['evaluaciones'] as $evaluacion) {
                 if (!empty($evaluacion['start_date'])) {
-                    $sesiones_de_la_evaluacion = array_filter($sesiones, function($s) use ($evaluacion) {
-                        return $s->evaluacion_id == $evaluacion['id'];
+                    $sesiones_eval = array_filter($sesiones, function($s) use ($clase, $evaluacion) {
+                        return $s->clase_id == $clase['id'] && $s->evaluacion_id == $evaluacion['id'];
                     });
 
-                    if (!empty($sesiones_de_la_evaluacion)) {
-                        $schedule = cpp_programador_calculate_schedule_for_evaluation(
-                            array_values($sesiones_de_la_evaluacion),
-                            $evaluacion['start_date'],
-                            $config['horario'],
-                            $config['calendar_config'],
-                            $clase['id']
-                        );
+                    if (!empty($sesiones_eval)) {
+                        $fechas_calculadas = cpp_programador_calculate_fechas($sesiones_eval, $evaluacion['start_date'], $horario, $calendar_config, $clase['id']);
 
-                        $i = 0;
-                        foreach ($sesiones_de_la_evaluacion as $sesion_obj) {
-                            if (isset($schedule[$i])) {
-                                $sesiones[$sesion_obj->id]->fecha_calculada = explode('_', $schedule[$i])[0];
+                        foreach ($fechas_calculadas as $sesion_id => $data) {
+                            if (isset($sesiones[$sesion_id])) {
+                                $sesiones[$sesion_id]->fecha_calculada = $data['fecha'];
+                                $sesiones[$sesion_id]->notas_horario = $data['notas'];
                             }
-                            $i++;
                         }
                     }
                 }
@@ -355,6 +351,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
         $destination_clase_id, $destination_evaluacion_id, $user_id
     ));
     $current_order = is_null($max_orden) ? 0 : $max_orden + 1;
+    $nuevos_ids = [];
 
     foreach ($session_ids as $session_id) {
         $session_id = intval($session_id);
@@ -380,6 +377,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
             return false;
         }
         $new_session_id = $wpdb->insert_id;
+        $nuevos_ids[] = $new_session_id;
 
         // 3. Fetch and duplicate associated activities
         // Non-evaluable activities
@@ -435,7 +433,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
     }
 
     $wpdb->query('COMMIT');
-    return true;
+    return $nuevos_ids;
 }
 
 function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden_sesiones) {
@@ -513,34 +511,26 @@ function cpp_programador_recalculate_and_update_activity_dates($evaluacion_id, $
     }
 
     // Calcular el nuevo calendario de fechas para las sesiones
-    $schedule = cpp_programador_calculate_schedule_for_evaluation(
-        $sesiones_en_evaluacion,
-        $start_date,
-        $all_data['config']['horario'],
-        $all_data['config']['calendar_config'],
-        $clase_id
-    );
+    $fechas_calculadas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
 
     $wpdb->query('START TRANSACTION');
 
     $errors = false;
-    foreach ($sesiones_en_evaluacion as $index => $sesion) {
-        if (isset($schedule[$index])) {
-            $fecha_calculada_str = explode('_', $schedule[$index])[0];
+    foreach ($fechas_calculadas as $sesion_id => $data) {
+        $fecha_calculada_str = $data['fecha'];
 
-            // Actualizar todas las actividades evaluables de esta sesión
-            $update_result = $wpdb->update(
-                $tabla_act_evaluables,
-                ['fecha_actividad' => $fecha_calculada_str],
-                ['sesion_id' => $sesion->id, 'user_id' => $user_id],
-                ['%s'],
-                ['%d', '%d']
-            );
+        // Actualizar todas las actividades evaluables de esta sesión
+        $update_result = $wpdb->update(
+            $tabla_act_evaluables,
+            ['fecha_actividad' => $fecha_calculada_str],
+            ['sesion_id' => $sesion_id, 'user_id' => $user_id],
+            ['%s'],
+            ['%d', '%d']
+        );
 
-            if ($update_result === false) {
-                $errors = true;
-                break;
-            }
+        if ($update_result === false) {
+            $errors = true;
+            break;
         }
     }
 
@@ -629,54 +619,51 @@ function cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user
 // --- Funciones de Lógica de Horario ---
 
 /**
- * Calculates all the dates for a given evaluation's sessions based on a start date and schedule.
- *
- * @param array $sesiones_en_evaluacion Array of session objects for the evaluation.
- * @param string $start_date_str The start date in 'Y-m-d' format.
- * @param array $horario The user's schedule.
- * @param array $calendar_config The user's calendar config (working_days, holidays, vacations).
- * @param int $clase_id The ID of the class.
- * @return array An array of calculated dates for each session, e.g., ['2025-09-15_09:00', '2025-09-15_10:00'].
+ * Pure function to calculate session dates based on start date and schedule.
  */
-function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluacion, $start_date_str, $horario, $calendar_config, $clase_id) {
+function cpp_programador_calculate_fechas($sesiones_en_evaluacion, $start_date_str, $horario, $calendar_config, $clase_id) {
     if (empty($start_date_str) || empty($sesiones_en_evaluacion) || empty($horario)) {
         return [];
     }
 
+    // Asegurar orden por el campo 'orden'
+    usort($sesiones_en_evaluacion, function($a, $b) {
+        return $a->orden <=> $b->orden;
+    });
+
+    // 1. Separar sesiones fijadas y no fijadas, y registrar fechas ocupadas
     $sesiones_fijadas = [];
     $sesiones_no_fijadas = [];
+    $fechas_ocupadas = [];
+    $resultados = [];
+
     foreach ($sesiones_en_evaluacion as $sesion) {
         if (!empty($sesion->fecha_fijada)) {
             $sesiones_fijadas[] = $sesion;
+            $fechas_ocupadas[] = $sesion->fecha_fijada;
         } else {
             $sesiones_no_fijadas[] = $sesion;
         }
     }
 
-    $occupied_slots_by_fixed_sessions = [];
-    foreach ($sesiones_fijadas as $sesion_fijada) {
-        // Una mejora futura podría ser más granular si se necesita.
-        $occupied_slots_by_fixed_sessions[] = $sesion_fijada->fecha_fijada;
-    }
-    $occupied_slots_by_fixed_sessions = array_unique($occupied_slots_by_fixed_sessions);
-
-    $schedule = [];
+    // 2. Calcular fechas para sesiones NO fijadas
     try {
         $current_date = new DateTime($start_date_str . 'T12:00:00Z');
     } catch (Exception $e) {
-        return []; // Formato de fecha inválido
+        return [];
     }
 
     $session_index = 0;
     $safety_counter = 0;
-    $max_iterations = 365 * 5;
+    $max_iterations = 365 * 5; // 5 años de margen
+    $day_mapping = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
     while ($session_index < count($sesiones_no_fijadas) && $safety_counter < $max_iterations) {
-        $day_key = strtolower($current_date->format('D'));
+        $day_key = $day_mapping[intval($current_date->format('w'))];
         $ymd = $current_date->format('Y-m-d');
 
-        $is_working_day = in_array($day_key, $calendar_config['working_days']);
-        $is_holiday = in_array($ymd, $calendar_config['holidays']);
+        $is_working_day = in_array($day_key, isset($calendar_config['working_days']) ? $calendar_config['working_days'] : []);
+        $is_holiday = in_array($ymd, isset($calendar_config['holidays']) ? $calendar_config['holidays'] : []);
         $is_vacation = false;
         if (!empty($calendar_config['vacations'])) {
             foreach ($calendar_config['vacations'] as $v) {
@@ -686,58 +673,98 @@ function cpp_programador_calculate_schedule_for_evaluation($sesiones_en_evaluaci
                 }
             }
         }
-
-        // --- LÓGICA CLAVE ---
-        // Saltar el día si está ocupado por una sesión fijada
-        $is_occupied_by_fixed = in_array($ymd, $occupied_slots_by_fixed_sessions);
+        $is_occupied_by_fixed = in_array($ymd, $fechas_ocupadas);
 
         if ($is_working_day && !$is_holiday && !$is_vacation && !$is_occupied_by_fixed && isset($horario[$day_key])) {
             $slots_del_dia = $horario[$day_key];
             ksort($slots_del_dia);
 
-            foreach ($slots_del_dia as $slot => $slot_data) {
-                if (isset($slot_data['claseId']) && strval($slot_data['claseId']) === strval($clase_id)) {
+            foreach ($slots_del_dia as $slot => $data) {
+                if (isset($data['claseId']) && strval($data['claseId']) === strval($clase_id)) {
                     if ($session_index < count($sesiones_no_fijadas)) {
-                        // Importante: Guardar el ID de la sesión junto con su fecha calculada
-                        $schedule[$sesiones_no_fijadas[$session_index]->id] = $ymd . '_' . $slot;
+                        $sesion_actual = $sesiones_no_fijadas[$session_index];
+                        $resultados[$sesion_actual->id] = [
+                            'fecha' => $ymd,
+                            'notas' => !empty($data['notas']) ? $data['notas'] : ''
+                        ];
                         $session_index++;
+                        if ($session_index >= count($sesiones_no_fijadas)) break 2;
                     }
                 }
             }
         }
-
         $current_date->add(new DateInterval('P1D'));
         $safety_counter++;
     }
 
-    // Añadir las sesiones fijadas al schedule
+    // 3. Añadir las sesiones fijadas al resultado
     foreach ($sesiones_fijadas as $sesion_fijada) {
-        // Para las sesiones fijadas, necesitamos encontrar un slot válido en su día fijado.
-        // Usaremos el primer slot disponible para esa clase en ese día.
-        $day_key_fijado = strtolower((new DateTime($sesion_fijada->fecha_fijada))->format('D'));
-        $slot_encontrado = '00:00'; // Fallback
+        $day_key_fijado = $day_mapping[intval((new DateTime($sesion_fijada->fecha_fijada . 'T12:00:00Z'))->format('w'))];
+        $notas = '';
         if (isset($horario[$day_key_fijado])) {
              $slots_del_dia_fijado = $horario[$day_key_fijado];
              ksort($slots_del_dia_fijado);
-             foreach($slots_del_dia_fijado as $slot => $slot_data) {
-                 if (isset($slot_data['claseId']) && strval($slot_data['claseId']) === strval($clase_id)) {
-                     $slot_encontrado = $slot;
+             foreach($slots_del_dia_fijado as $slot => $data) {
+                 if (isset($data['claseId']) && strval($data['claseId']) === strval($clase_id)) {
+                     $notas = !empty($data['notas']) ? $data['notas'] : '';
                      break;
                  }
              }
         }
-        $schedule[$sesion_fijada->id] = $sesion_fijada->fecha_fijada . '_' . $slot_encontrado;
+        $resultados[$sesion_fijada->id] = [
+            'fecha' => $sesion_fijada->fecha_fijada,
+            'notas' => $notas
+        ];
     }
 
-    // Finalmente, necesitamos devolver un array ordenado según el `orden` original de las sesiones.
-    $final_ordered_schedule = [];
-    foreach ($sesiones_en_evaluacion as $sesion) {
-        if (isset($schedule[$sesion->id])) {
-            $final_ordered_schedule[] = $schedule[$sesion->id];
+    return $resultados;
+}
+
+/**
+ * Calculates all the dates for a given evaluation's sessions.
+ *
+ * @param int $user_id
+ * @param int $clase_id
+ * @param int $evaluacion_id
+ * @return array An associative array [session_id => ['fecha' => 'YYYY-MM-DD', 'notas' => '...']]
+ */
+function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id) {
+    if (empty($user_id) || empty($clase_id) || empty($evaluacion_id)) {
+        return [];
+    }
+
+    // Reutilizar la lógica robusta de fetching y caché de get_all_data
+    $all_data = cpp_programador_get_all_data($user_id);
+
+    $horario = isset($all_data['config']['horario']) ? $all_data['config']['horario'] : [];
+    $calendar_config = isset($all_data['config']['calendar_config']) ? $all_data['config']['calendar_config'] : [];
+
+    $start_date_str = null;
+    foreach ($all_data['clases'] as $clase) {
+        if ($clase['id'] == $clase_id) {
+            foreach ($clase['evaluaciones'] as $eval) {
+                if ($eval['id'] == $evaluacion_id) {
+                    $start_date_str = $eval['start_date'];
+                    break 2;
+                }
+            }
         }
     }
 
-    return $final_ordered_schedule;
+    if (empty($start_date_str)) {
+        return [];
+    }
+
+    $sesiones_eval = array_filter($all_data['sesiones'], function($s) use ($clase_id, $evaluacion_id) {
+        return $s->clase_id == $clase_id && $s->evaluacion_id == $evaluacion_id;
+    });
+
+    if (empty($sesiones_eval)) {
+        return [];
+    }
+
+    // Calcular usando la función pura
+    return cpp_programador_calculate_fechas($sesiones_eval, $start_date_str, $horario, $calendar_config, $clase_id);
 }
 
 /**
@@ -768,22 +795,33 @@ function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_cheq
 
     foreach ($otras_evaluaciones as $eval) {
         if (!empty($eval->start_date)) {
-            $sesiones_de_esta_eval = array_filter($sesiones_de_la_clase, function($sesion) use ($eval) {
-                return $sesion->evaluacion_id == $eval->id;
-            });
-            $schedule = cpp_programador_calculate_schedule_for_evaluation(array_values($sesiones_de_esta_eval), $eval->start_date, $all_data['config']['horario'], $all_data['config']['calendar_config'], $clase_id);
-            $occupied_slots = array_merge($occupied_slots, $schedule);
+            $fechas_eval = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $eval->id);
+            foreach ($fechas_eval as $f) {
+                $occupied_slots[] = $f['fecha'];
+            }
         }
     }
 
     $occupied_slots = array_unique($occupied_slots);
 
-    $sesiones_a_chequear = array_filter($sesiones_de_la_clase, function($sesion) use ($evaluacion_id_a_chequear) {
-        return $sesion->evaluacion_id == $evaluacion_id_a_chequear;
-    });
-    $proposed_schedule = cpp_programador_calculate_schedule_for_evaluation(array_values($sesiones_a_chequear), $nueva_start_date, $all_data['config']['horario'], $all_data['config']['calendar_config'], $clase_id);
+    // Guardar temporalmente la nueva fecha para el chequeo
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $old_start_date = $wpdb->get_var($wpdb->prepare("SELECT start_date FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id_a_chequear));
 
-    $conflict = array_intersect($proposed_schedule, $occupied_slots);
+    $wpdb->update($tabla_evaluaciones, ['start_date' => $nueva_start_date], ['id' => $evaluacion_id_a_chequear]);
+    cpp_clear_programador_cache($user_id); // Limpiar caché para que refleje el cambio
+
+    $fechas_propuestas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id_a_chequear);
+    $proposed_slots = [];
+    foreach ($fechas_propuestas as $f) {
+        $proposed_slots[] = $f['fecha'];
+    }
+
+    // Restaurar fecha antigua
+    $wpdb->update($tabla_evaluaciones, ['start_date' => $old_start_date], ['id' => $evaluacion_id_a_chequear]);
+    cpp_clear_programador_cache($user_id);
+
+    $conflict = array_intersect($proposed_slots, $occupied_slots);
 
     return !empty($conflict);
 }

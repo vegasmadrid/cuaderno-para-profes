@@ -1141,10 +1141,8 @@
                             // Update Title and Date
                             const titleElement = listItem.querySelector('.cpp-sesion-title');
                             if (titleElement) {
-                                const fechaMostrada = s.fecha_calculada
-                                    ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-                                    : '';
-                                const titleHTML = s.fecha_calculada
+                                const fechaMostrada = this.formatSessionDate(s.fecha_calculada, { day: 'numeric', month: 'short' });
+                                const titleHTML = fechaMostrada
                                     ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada}</small>`
                                     : s.titulo;
                                 titleElement.innerHTML = titleHTML;
@@ -1298,7 +1296,8 @@
                 }
 
                 // --- OPTIMIZACIÓN: Recalcular y aplicar fechas sin renderizado completo ---
-                this.fetchAndApplyFechas(this.currentEvaluacionId);
+                // Usamos las fechas devueltas por el servidor para evitar una petición extra
+                this.fetchAndApplyFechas(this.currentEvaluacionId, result.data.fechas || null);
 
                 if (result.data.needs_gradebook_reload) {
                     document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
@@ -1492,8 +1491,95 @@
     },
 
     // --- Renderizado y UI ---
-    fetchAndApplyFechas(evaluacionId) {
+    fetchAndApplyFechas(evaluacionId, providedFechas = null) {
         if (!evaluacionId || !this.currentClase) return Promise.resolve();
+
+        const applyData = (fechas) => {
+            const fetchedFechas = fechas || {};
+            const changedSesiones = [];
+
+            this.sesiones.forEach(sesion => {
+                if (sesion.evaluacion_id == evaluacionId) {
+                    const hasNewData = fetchedFechas.hasOwnProperty(sesion.id);
+                    const newFecha = hasNewData ? fetchedFechas[sesion.id].fecha : null;
+                    const newNotas = hasNewData ? fetchedFechas[sesion.id].notas : '';
+
+                    if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
+                        sesion.fecha_calculada = newFecha;
+                        sesion.notas_horario = newNotas;
+                        changedSesiones.push(sesion);
+                    }
+                }
+            });
+
+            // Actualizar UI del aviso si la fecha de inicio ha cambiado (se asume que si se llama a esta función es porque algo cambió)
+            const currentEval = this.currentClase.evaluaciones.find(e => e.id == evaluacionId);
+                    const hasStartDate = currentEval && !!currentEval.start_date;
+                    const hasSchedule = this.config.horario && Object.values(this.config.horario).some(daySlots =>
+                        Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
+                    );
+
+                    const alertSticky = this.appElement.querySelector('.cpp-programacion-alert-sticky');
+                    if (alertSticky) {
+                        if (hasStartDate && hasSchedule) {
+                            alertSticky.remove();
+                        } else {
+                            let alertMsg = '';
+                            if (!hasStartDate && !hasSchedule) {
+                                alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.';
+                            } else if (!hasStartDate) {
+                                alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.';
+                            } else {
+                                alertMsg = 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.';
+                            }
+                            alertSticky.innerHTML = alertMsg;
+                        }
+                    } else if (!hasStartDate || !hasSchedule) {
+                        // Si no existe el aviso y debería, forzamos un re-render parcial de la estructura o simplemente insertamos el aviso
+                        const controls = this.appElement.querySelector('.cpp-programacion-controls');
+                        if (controls) {
+                            let alertMsg = (!hasStartDate && !hasSchedule) ? 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.' : (!hasStartDate ? 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.' : 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.');
+                            controls.insertAdjacentHTML('afterend', `<div class="cpp-programacion-alert-sticky">${alertMsg}</div>`);
+                        }
+                    }
+
+            if (changedSesiones.length > 0) {
+                const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                if (list) {
+                    const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+
+                    // Si cambian muchas sesiones (más del 50%), es más eficiente re-renderizar la lista entera
+                    if (changedSesiones.length > sesionesEnLista.length / 2) {
+                        list.innerHTML = this.renderSesionList();
+                    } else {
+                        changedSesiones.forEach(sesion => {
+                            const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                            if (listItem) {
+                                const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
+                                listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
+                            }
+                        });
+                    }
+                }
+
+                // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
+                // Y si NO estamos editando activamente un campo (para no perder el cursor)
+                const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
+
+                if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
+                    const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                    if (rightCol) {
+                        rightCol.innerHTML = this.renderProgramacionTabRightColumn();
+                        this.makeActividadesSortable();
+                    }
+                }
+            }
+        };
+
+        if (providedFechas) {
+            applyData(providedFechas);
+            return Promise.resolve();
+        }
 
         const data = new URLSearchParams({
             action: 'cpp_get_fechas_evaluacion',
@@ -1505,50 +1591,9 @@
         return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
-                if (result.success && result.data.fechas) {
-                    const changedSesiones = [];
-                    this.sesiones.forEach(sesion => {
-                        if (sesion.evaluacion_id == evaluacionId && result.data.fechas.hasOwnProperty(sesion.id)) {
-                            const fechaData = result.data.fechas[sesion.id];
-                            const newFecha = fechaData.fecha;
-                            const newNotas = fechaData.notas;
-
-                            if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
-                                sesion.fecha_calculada = newFecha;
-                                sesion.notas_horario = newNotas;
-                                changedSesiones.push(sesion);
-                            }
-                        }
-                    });
-
-                    if (changedSesiones.length > 0) {
-                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
-                        if (!list) return;
-
-                        const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-
-                        changedSesiones.forEach(sesion => {
-                            const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
-                            if (listItem) {
-                                const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
-                                listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
-                            }
-                        });
-
-                        // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
-                        // Y si NO estamos editando activamente un campo (para no perder el cursor)
-                        const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
-
-                        if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
-                            const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
-                            if (rightCol) {
-                                rightCol.innerHTML = this.renderProgramacionTabRightColumn();
-                                this.makeActividadesSortable();
-                            }
-                        }
-                    }
+                if (result.success) {
+                    applyData(result.data.fechas);
                 }
-                // No hacemos nada en caso de error para no molestar al usuario
             }).catch(error => console.error('Error fetching session dates:', error));
     },
 
@@ -1651,7 +1696,26 @@
             layoutHTML = `<div class="cpp-programacion-layout"><div class="cpp-programacion-left-col"><ul class="cpp-sesiones-list-detailed">${this.renderSesionList()}</ul></div><div class="cpp-programacion-right-col" id="cpp-programacion-right-col">${this.renderProgramacionTabRightColumn()}</div></div>`;
         }
 
-        content.innerHTML = controlsHTML + layoutHTML;
+        // --- AÑADIDO: Aviso de falta de fecha de inicio o horario ---
+        let alertHTML = '';
+        const hasStartDate = !!startDate;
+        const hasSchedule = this.config.horario && Object.values(this.config.horario).some(daySlots =>
+            Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
+        );
+
+        if (!hasStartDate || !hasSchedule) {
+            let alertMsg = '';
+            if (!hasStartDate && !hasSchedule) {
+                alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.';
+            } else if (!hasStartDate) {
+                alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.';
+            } else {
+                alertMsg = 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.';
+            }
+            alertHTML = `<div class="cpp-programacion-alert-sticky">${alertMsg}</div>`;
+        }
+
+        content.innerHTML = controlsHTML + alertHTML + layoutHTML;
         if (sesionesFiltradas.length > 0) {
             this.makeSesionesSortable();
         }
@@ -1680,12 +1744,10 @@
         // Scroll to selected session only if it's a new one, handled in addInlineSesion
     },
     renderSingleSesionItemHTML(s, index) {
-        const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${new Date(s.fecha_fijada + 'T12:00:00Z').toLocaleDateString('es-ES')}">📌</span>` : '';
-        const fechaMostrada = s.fecha_calculada
-            ? new Date(s.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
-            : '';
+        const fijadaIconHTML = s.fecha_fijada ? `<span class="cpp-sesion-fijada-icon" title="Fecha fijada: ${this.formatSessionDate(s.fecha_fijada, { day: 'numeric', month: 'long', year: 'numeric' })}">📌</span>` : '';
+        const fechaMostrada = this.formatSessionDate(s.fecha_calculada, { weekday: 'short', day: 'numeric', month: 'short' });
 
-        const titleHTML = s.fecha_calculada
+        const titleHTML = fechaMostrada
             ? `${s.titulo}<br><small class="cpp-sesion-date">${fechaMostrada} ${fijadaIconHTML}</small>`
             : s.titulo;
 
@@ -1720,9 +1782,7 @@
     renderProgramacionTabRightColumn() {
         if (!this.currentSesion) return '<p class="cpp-empty-panel">Selecciona una sesión para ver su contenido.</p>';
 
-        const fechaMostrada = this.currentSesion.fecha_calculada
-            ? new Date(this.currentSesion.fecha_calculada + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-            : '';
+        const fechaMostrada = this.formatSessionDate(this.currentSesion.fecha_calculada, { day: 'numeric', month: 'long', year: 'numeric' });
 
         const notasHorarioHTML = this.currentSesion.notas_horario
             ? `<div class="cpp-sesion-detail-notas">${this.currentSesion.notas_horario.replace(/\n/g, '<br>')}</div>`
@@ -2431,6 +2491,17 @@
         }
     },
 
+    formatSessionDate(dateStr, options = { day: 'numeric', month: 'short' }) {
+        if (!dateStr || dateStr === '0000-00-00' || dateStr === 'null' || dateStr === 'Invalid Date' || dateStr === 'undefined' || dateStr.includes('NaN')) return '';
+
+        // Fix for "Year 1" (e.g., "0001-01-01") or other obviously wrong dates
+        if (dateStr.startsWith('0001') || dateStr.startsWith('1970-01-01')) return '';
+
+        const date = new Date(dateStr + 'T12:00:00Z');
+        if (isNaN(date.getTime()) || date.getFullYear() < 2000) return '';
+        return date.toLocaleDateString('es-ES', options);
+    },
+
     handleFijarSesionClick() {
         if (!this.currentSesion) return;
         const fijar = !this.currentSesion.fecha_fijada;
@@ -2598,9 +2669,12 @@
                     this.closeCopySesionModal();
                     this.selectedSesiones = [];
 
-                    // Solo recargamos si no hay más remedio, pero como hemos copiado a OTRA clase,
-                    // realmente no necesitamos recargar la vista actual.
-                    // Sin embargo, si hemos copiado a la misma clase (aunque el modal lo intenta evitar), sí haría falta.
+                    // --- FIX: Actualizar el estado local con las nuevas sesiones copiadas ---
+                    if (result.data.nuevas_sesiones && Array.isArray(result.data.nuevas_sesiones)) {
+                        this.sesiones = [...this.sesiones, ...result.data.nuevas_sesiones];
+                    }
+
+                    // Si hemos copiado a la clase actual, recargar la vista.
                     if (destClaseId == this.currentClase.id) {
                          this.fetchData(this.currentClase.id, this.currentEvaluacionId);
                     } else {
