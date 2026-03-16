@@ -247,11 +247,15 @@ function cpp_migrar_categorias_a_criterios() {
     $tabla_evaluacion_criterios = $wpdb->prefix . 'cpp_evaluacion_criterios';
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
 
-    // 1. Verificar si ya se ha migrado (comprobar si hay actividades con criterio_id)
-    // O mejor, verificar si la tabla de criterios globales tiene datos y si hay actividades pendientes.
-    $pendientes = $wpdb->get_var("SELECT COUNT(*) FROM $tabla_actividades WHERE criterio_id IS NULL AND categoria_id IS NOT NULL");
+    // 1. Asegurar que las columnas existen antes de consultar
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabla_actividades LIKE 'criterio_id'")) {
+        $wpdb->query("ALTER TABLE $tabla_actividades ADD criterio_id MEDIUMINT(9) UNSIGNED DEFAULT NULL AFTER categoria_id, ADD KEY criterio_id (criterio_id)");
+    }
 
-    if ($pendientes == 0) {
+    // 2. Verificar si hay actividades pendientes de migrar
+    $pendientes = $wpdb->get_var("SELECT COUNT(*) FROM $tabla_actividades WHERE criterio_id IS NULL AND (categoria_id IS NOT NULL AND categoria_id > 0)");
+
+    if (intval($pendientes) === 0) {
         return; // Ya migrado o no hay nada que migrar
     }
 

@@ -98,6 +98,11 @@ function cpp_obtener_criterios_por_evaluacion($evaluacion_id, $user_id) {
     $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
 
+    // Safety check for table existence (prevents crash if migration partially failed)
+    if($wpdb->get_var("SHOW TABLES LIKE '$tabla_eval_crit'") === null) {
+        return [];
+    }
+
     return $wpdb->get_results($wpdb->prepare(
         "SELECT ec.*, cg.nombre, cg.color
          FROM $tabla_eval_crit ec

@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.7.0');
+define('CPP_VERSION', '2.7.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -469,18 +469,25 @@ function cpp_run_migrations() {
         }
     }
 
-    // --- IMPORTANTE: Limpiar caché después de las migraciones ---
-    // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.
-    if (version_compare($current_version, CPP_VERSION, '<')) {
-        // Forzamos la limpieza de la caché de datos del programador para todos los usuarios
-        // para asegurar que los datos se regeneran con la nueva estructura.
+    // --- MIGRACIÓN v2.7.0: Criterios Globales ---
+    if (version_compare($current_version, '2.7.1', '<')) {
+        // 1. Asegurar que las nuevas tablas y columnas existen
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+
+        // 2. Limpiar caché de todos los usuarios
         delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
 
-        // --- MIGRACIÓN v2.7.0: Criterios Globales ---
-        // Llamamos a la función definida en db.php para migrar categorías a criterios globales
+        // 3. Ejecutar la migración de datos
         if (function_exists('cpp_migrar_categorias_a_criterios')) {
             cpp_migrar_categorias_a_criterios();
         }
+    }
+
+    // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
+    if (version_compare($current_version, CPP_VERSION, '<')) {
+        delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
     }
     update_option('cpp_version', CPP_VERSION);
 }
