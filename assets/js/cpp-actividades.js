@@ -100,7 +100,7 @@
                         }
 
                         // Si cambiamos el nombre, categoría o nota máxima, el cuaderno debe saberlo
-                        if (['nombre_actividad', 'categoria_id', 'nota_maxima'].includes(field)) {
+                        if (['nombre_actividad', 'categoria_id', 'criterio_id', 'nota_maxima'].includes(field)) {
                             $(document).trigger('cpp:forceGradebookReload');
                         }
                     } else {
@@ -190,7 +190,7 @@
                 self.handleDelete(this);
             });
 
-            $document.on('change', 'select[data-field="categoria_id"]', function() {
+            $document.on('change', 'select[data-field="categoria_id"], select[data-field="criterio_id"]', function() {
                 const $select = $(this);
                 const $selectedOption = $select.find('option:selected');
                 const color = $selectedOption.data('color');

@@ -2103,27 +2103,28 @@
     },
 
     updateActividadCategoria(selector, actividadId) {
-        const newCategoriaId = selector.value;
+        const newCriterioId = selector.value;
         const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId);
-        if (!actividad || newCategoriaId == actividad.categoria_id) return;
+        if (!actividad || newCriterioId == actividad.criterio_id) return;
 
         const data = new URLSearchParams({
             action: 'cpp_toggle_actividad_evaluable',
             nonce: cppFrontendData.nonce,
             actividad_id: actividadId,
             es_evaluable: 1,
-            categoria_id: newCategoriaId
+            categoria_id: 0,
+            criterio_id: newCriterioId
         });
 
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    actividad.categoria_id = newCategoriaId;
-                    this.showNotification('Categoría actualizada.');
+                    actividad.criterio_id = newCriterioId;
+                    this.showNotification('Criterio actualizado.');
                 } else {
-                    this.showNotification('Error al actualizar categoría.', 'error');
-                    selector.value = actividad.categoria_id;
+                    this.showNotification('Error al actualizar criterio.', 'error');
+                    selector.value = actividad.criterio_id;
                 }
             });
     },

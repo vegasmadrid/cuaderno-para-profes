@@ -31,7 +31,7 @@ function cpp_ajax_get_actividades_tab_content() {
     }
 
     $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
-    $categorias = cpp_obtener_categorias_por_evaluacion($evaluacion_id, $user_id);
+    $criterios = cpp_obtener_criterios_por_evaluacion($evaluacion_id, $user_id);
 
     ob_start();
     if (empty($actividades)) : ?>
@@ -60,10 +60,10 @@ function cpp_ajax_get_actividades_tab_content() {
                         $categoria_color = !empty($act['categoria_color']) ? $act['categoria_color'] : '#e0e0e0';
                         $is_programada = !empty($act['sesion_id']);
 
-                        $cat_name = 'Sin categoría';
-                        foreach($categorias as $cat) {
-                            if($cat['id'] == $act['categoria_id']) {
-                                $cat_name = $cat['nombre_categoria'];
+                        $crit_name = 'Sin criterio';
+                        foreach($criterios as $crit) {
+                            if($crit['criterio_id'] == $act['criterio_id']) {
+                                $crit_name = $crit['nombre'];
                                 break;
                             }
                         }
@@ -72,13 +72,14 @@ function cpp_ajax_get_actividades_tab_content() {
                             <td data-sort-value="<?php echo esc_attr($act['nombre_actividad']); ?>">
                                 <input type="text" class="cpp-inline-edit" data-field="nombre_actividad" value="<?php echo esc_attr($act['nombre_actividad']); ?>" placeholder="Nombre de la actividad">
                             </td>
-                            <td data-sort-value="<?php echo esc_attr($cat_name); ?>">
+                            <td data-sort-value="<?php echo esc_attr($crit_name); ?>">
                                 <div class="cpp-actividad-categoria-cell">
                                     <span class="cpp-category-dot" style="background-color: <?php echo esc_attr($categoria_color); ?>;"></span>
-                                    <select class="cpp-inline-edit" data-field="categoria_id">
-                                        <?php foreach ($categorias as $cat) : ?>
-                                            <option value="<?php echo esc_attr($cat['id']); ?>" <?php selected($act['categoria_id'], $cat['id']); ?> data-color="<?php echo esc_attr($cat['color']); ?>">
-                                                <?php echo esc_html($cat['nombre_categoria']); ?>
+                                    <select class="cpp-inline-edit" data-field="criterio_id">
+                                        <option value="">-- Sin criterio --</option>
+                                        <?php foreach ($criterios as $crit) : ?>
+                                            <option value="<?php echo esc_attr($crit['criterio_id']); ?>" <?php selected($act['criterio_id'], $crit['criterio_id']); ?> data-color="<?php echo esc_attr($crit['color']); ?>">
+                                                <?php echo esc_html($crit['nombre']); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -130,7 +131,7 @@ function cpp_ajax_actualizar_actividad_inline() {
     }
 
     // Validar el campo a actualizar
-    $campos_permitidos = ['nombre_actividad', 'categoria_id', 'nota_maxima', 'descripcion_actividad'];
+    $campos_permitidos = ['nombre_actividad', 'categoria_id', 'criterio_id', 'nota_maxima', 'descripcion_actividad'];
     if (!in_array($field, $campos_permitidos)) {
         wp_send_json_error(['message' => 'Campo no permitido para edición en línea.']);
         return;
@@ -147,6 +148,7 @@ function cpp_ajax_actualizar_actividad_inline() {
             $datos[$field] = sanitize_text_field($value);
             break;
         case 'categoria_id':
+        case 'criterio_id':
             $datos[$field] = intval($value);
             break;
         case 'nota_maxima':

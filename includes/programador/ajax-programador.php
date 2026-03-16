@@ -342,11 +342,15 @@ function cpp_ajax_toggle_actividad_evaluable() {
         $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
         $sesion_info = $wpdb->get_row($wpdb->prepare("SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d", $actividad_prog->sesion_id));
 
-        if (!$categoria_id) {
-            $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
-            $categoria_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM $tabla_categorias WHERE evaluacion_id = %d ORDER BY id ASC LIMIT 1", $sesion_info->evaluacion_id));
-            if (!$categoria_id) {
-                wp_send_json_error(['message' => 'No se encontró una categoría por defecto para esta evaluación.']);
+        $criterio_id = isset($_POST['criterio_id']) ? intval($_POST['criterio_id']) : null;
+
+        if (!$criterio_id && !$categoria_id) {
+            // Fallback para legacy o si no se envía criterio
+            $tabla_eval_crit = $wpdb->prefix . 'cpp_evaluacion_criterios';
+            $criterio_id = $wpdb->get_var($wpdb->prepare("SELECT criterio_id FROM $tabla_eval_crit WHERE evaluacion_id = %d ORDER BY id ASC LIMIT 1", $sesion_info->evaluacion_id));
+
+            if (!$criterio_id) {
+                wp_send_json_error(['message' => 'No se encontró un criterio asignado para esta evaluación. Por favor, asigna uno en Ponderaciones.']);
                 return;
             }
         }
@@ -355,7 +359,8 @@ function cpp_ajax_toggle_actividad_evaluable() {
             'id' => $actividad_prog->actividad_calificable_id, // Puede ser null si es nueva
             'clase_id' => $sesion_info->clase_id,
             'evaluacion_id' => $sesion_info->evaluacion_id,
-            'categoria_id' => $categoria_id,
+            'categoria_id' => $categoria_id ? $categoria_id : 0,
+            'criterio_id' => $criterio_id,
             'nombre_actividad' => $actividad_prog->titulo,
             // 'fecha_actividad' ya no se pasa, se guardará como NULL por defecto
             'user_id' => $user_id,
@@ -394,9 +399,9 @@ function cpp_ajax_toggle_actividad_evaluable() {
     $actividad_actualizada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id), ARRAY_A);
 
     if ($actividad_actualizada) {
-        // FIX: Devolver la categoría ID para que el frontend pueda renderizar el selector correctamente.
-        // Si se está marcando como evaluable, $categoria_id tendrá un valor. Si no, será null, lo cual es correcto.
+        // FIX: Devolver los IDs para que el frontend pueda renderizar el selector correctamente.
         $actividad_actualizada['categoria_id'] = $categoria_id;
+        $actividad_actualizada['criterio_id'] = $criterio_id;
     }
 
     wp_send_json_success(['message' => 'Estado actualizado.', 'actividad' => $actividad_actualizada]);

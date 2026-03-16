@@ -33,16 +33,16 @@
                 type: 'POST',
                 dataType: 'json',
                 data: {
-                    action: 'cpp_obtener_categorias_evaluacion',
+                    action: 'cpp_obtener_criterios_evaluacion', // CAMBIO v2.7.0: Usar criterios
                     nonce: cppFrontendData.nonce,
                     evaluacion_id: evaluacionId
                 },
                 success: function(response) {
                     if (response.success) {
                         $container.html(response.data.html);
-                        self.resetCategoriaForm(containerSelector);
+                        // self.resetCategoriaForm(containerSelector); // Ya no hay formulario de creación local
                     } else {
-                        $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar las categorías.'}</p>`);
+                        $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar los criterios.'}</p>`);
                     }
                 },
                 error: function() {
@@ -305,21 +305,78 @@
                 });
             });
 
-            $document.on('click', `${containerSelector} #cpp-submit-categoria-btn`, function() {
-                self.submitCategoriaForm($(this));
+            $document.on('click', `${containerSelector} #cpp-btn-asignar-criterio-eval`, function() {
+                const $btn = $(this);
+                const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                const evaluacionId = $settingsContainer.data('evaluacion-id');
+                const criterioId = $('#cpp-select-criterio-global').val();
+
+                if (!criterioId) { alert('Selecciona un criterio.'); return; }
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_asignar_criterio_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, criterio_id: criterioId },
+                    success: (response) => {
+                        if (response.success) {
+                            self.refreshCategoriasList(evaluacionId, containerSelector);
+                        } else {
+                            alert(response.data.message);
+                        }
+                    }
+                });
             });
 
-            $document.on('click', `${containerSelector} .cpp-btn-editar-categoria`, function(e) {
-                e.stopPropagation();
-                self.cargarParaEditar(this);
+            $document.on('click', `${containerSelector} #cpp-guardar-pesos-criterios-btn`, function() {
+                const $btn = $(this);
+                const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                const evaluacionId = $settingsContainer.data('evaluacion-id');
+                const pesos = {};
+                let total = 0;
+
+                $settingsContainer.find('.cpp-criterio-peso-input').each(function() {
+                    const critId = $(this).closest('li').data('criterio-id');
+                    const val = parseInt($(this).val()) || 0;
+                    pesos[critId] = val;
+                    total += val;
+                });
+
+                if (total > 100) { alert('La suma no puede superar el 100%.'); return; }
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_guardar_pesos_criterios', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, pesos: pesos },
+                    success: (response) => {
+                        if (response.success) {
+                            cpp.showToast(response.data.message);
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                        } else {
+                            alert(response.data.message);
+                        }
+                    }
+                });
             });
 
-            $document.on('click', `${containerSelector} #cpp-cancelar-edicion-categoria-btn`, function() {
-                self.resetCategoriaForm('#cpp-ponderaciones-settings-content');
-            });
+            $document.on('click', `${containerSelector} .cpp-btn-eliminar-criterio-eval`, function() {
+                const $btn = $(this);
+                const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                const evaluacionId = $settingsContainer.data('evaluacion-id');
+                const criterioId = $btn.data('criterio-id');
+                const nombre = $btn.closest('li').find('.cpp-criterio-nombre-listado').text();
 
-            $document.on('click', `${containerSelector} .cpp-btn-eliminar-categoria`, function() {
-                self.eliminarCategoria($(this));
+                if (confirm(`¿Quitar el criterio "${nombre}" de esta evaluación?\n\nLas actividades asignadas a este criterio se quedarán sin peso en la nota.`)) {
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                        data: { action: 'cpp_desasignar_criterio_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, criterio_id: criterioId },
+                        success: (response) => {
+                            if (response.success) {
+                                self.refreshCategoriasList(evaluacionId, containerSelector);
+                                cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                            } else {
+                                alert(response.data.message);
+                            }
+                        }
+                    });
+                }
             });
         }
     };

@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.6.0');
+define('CPP_VERSION', '2.7.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -475,6 +475,12 @@ function cpp_run_migrations() {
         // Forzamos la limpieza de la caché de datos del programador para todos los usuarios
         // para asegurar que los datos se regeneran con la nueva estructura.
         delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
+
+        // --- MIGRACIÓN v2.7.0: Criterios Globales ---
+        // Llamamos a la función definida en db.php para migrar categorías a criterios globales
+        if (function_exists('cpp_migrar_categorias_a_criterios')) {
+            cpp_migrar_categorias_a_criterios();
+        }
     }
     update_option('cpp_version', CPP_VERSION);
 }

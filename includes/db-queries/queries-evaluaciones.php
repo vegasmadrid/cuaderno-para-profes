@@ -20,6 +20,7 @@ function cpp_obtener_evaluaciones_por_clase($clase_id, $user_id) {
     if (!empty($evaluaciones)) {
         foreach ($evaluaciones as $key => $evaluacion) {
             $evaluaciones[$key]['categorias'] = cpp_obtener_categorias_por_evaluacion($evaluacion['id'], $user_id);
+            $evaluaciones[$key]['criterios'] = cpp_obtener_criterios_por_evaluacion($evaluacion['id'], $user_id);
         }
     }
 
@@ -123,6 +124,14 @@ function cpp_copiar_categorias_de_evaluacion($id_evaluacion_origen, $id_evaluaci
     $evaluacion_origen_owner = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d", $id_evaluacion_origen));
     $evaluacion_destino_owner = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d", $id_evaluacion_destino));
     if ($evaluacion_origen_owner != $user_id || $evaluacion_destino_owner != $user_id) { return false; }
+
+    // --- CAMBIO v2.7.0: Copiar criterios globales asignados ---
+    $criterios_origen = cpp_obtener_criterios_por_evaluacion($id_evaluacion_origen, $user_id);
+    foreach ($criterios_origen as $crit) {
+        cpp_asignar_criterio_a_evaluacion($id_evaluacion_destino, $crit['criterio_id'], $crit['porcentaje'], $user_id);
+    }
+
+    // Mantener copia de categorías locales para compatibilidad legacy
     $categorias_origen = cpp_obtener_categorias_por_evaluacion($id_evaluacion_origen, $user_id);
     if (empty($categorias_origen)) { return true; }
     foreach ($categorias_origen as $categoria) {

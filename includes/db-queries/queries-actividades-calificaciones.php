@@ -73,9 +73,14 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
     }
     
     // 1. Obtener las actividades de la base de datos
+    // CAMBIO v2.7.0: Unir con criterios globales para obtener nombre y color
+    $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
     $actividades = $wpdb->get_results( $wpdb->prepare(
-        "SELECT a.*, cat.nombre_categoria, cat.color AS categoria_color
+        "SELECT a.*,
+                COALESCE(cg.nombre, cat.nombre_categoria) as nombre_categoria,
+                COALESCE(cg.color, cat.color) as categoria_color
          FROM $tabla_actividades a
+         LEFT JOIN $tabla_criterios cg ON a.criterio_id = cg.id
          LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id
          WHERE a.clase_id = %d AND a.user_id = %d AND a.evaluacion_id = %d",
         $clase_id, $user_id, $evaluacion_id
@@ -106,22 +111,28 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
 function cpp_guardar_actividad_evaluable($datos) {
     global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
-    if (empty($datos['clase_id']) || empty($datos['user_id']) || !isset($datos['categoria_id']) || empty(trim($datos['nombre_actividad'])) || empty($datos['evaluacion_id'])) { return false; }
+    if (empty($datos['clase_id']) || empty($datos['user_id']) || empty(trim($datos['nombre_actividad'])) || empty($datos['evaluacion_id'])) { return false; }
+
+    // Validar que tenga al menos categoria_id (legacy) o criterio_id (nuevo)
+    if (!isset($datos['categoria_id']) && !isset($datos['criterio_id'])) { return false; }
+
     $nota_maxima = isset($datos['nota_maxima']) ? floatval($datos['nota_maxima']) : 10.00;
     if ($nota_maxima <= 0) { $nota_maxima = 10.00; }
     $sesion_id = isset($datos['sesion_id']) && !empty($datos['sesion_id']) ? intval($datos['sesion_id']) : null;
+
     $data_to_insert = [
         'clase_id' => intval($datos['clase_id']),
         'sesion_id' => $sesion_id,
         'evaluacion_id' => intval($datos['evaluacion_id']),
         'user_id' => intval($datos['user_id']),
-        'categoria_id' => intval($datos['categoria_id']),
+        'categoria_id' => isset($datos['categoria_id']) ? intval($datos['categoria_id']) : 0,
+        'criterio_id' => isset($datos['criterio_id']) ? intval($datos['criterio_id']) : null,
         'nombre_actividad' => sanitize_text_field($datos['nombre_actividad']),
         'descripcion_actividad' => isset($datos['descripcion_actividad']) ? sanitize_textarea_field($datos['descripcion_actividad']) : '',
         'nota_maxima' => $nota_maxima,
         'orden' => isset($datos['orden']) ? intval($datos['orden']) : 0,
     ];
-    $formats = ['%d', '%d', '%d', '%d', '%d', '%s', '%s', '%f', '%d'];
+    $formats = ['%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%f', '%d'];
     // La fecha se procesa siempre, ya que el backend puede pasar una fecha calculada
     // para actividades de la programación. La validación en la actualización previene cambios no deseados.
     if (!empty($datos['fecha_actividad'])) {
@@ -142,6 +153,10 @@ function cpp_actualizar_actividad_evaluable($actividad_id, $datos) {
     if (!$actividad_existente || $actividad_existente->user_id != $user_id_actual) { return false; }
     $data_to_update = []; $formats_update = [];
     if (isset($datos['nombre_actividad']) && !empty(trim($datos['nombre_actividad']))) { $data_to_update['nombre_actividad'] = sanitize_text_field(trim($datos['nombre_actividad'])); $formats_update[] = '%s'; }
+    if (isset($datos['criterio_id'])) {
+        $data_to_update['criterio_id'] = intval($datos['criterio_id']);
+        $formats_update[] = '%d';
+    }
     if (isset($datos['categoria_id']) && isset($datos['evaluacion_id'])) {
         $categoria_valida = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE id = %d AND evaluacion_id = %d", intval($datos['categoria_id']), intval($datos['evaluacion_id'])));
         if ($categoria_valida > 0) { $data_to_update['categoria_id'] = intval($datos['categoria_id']); $formats_update[] = '%d'; }

@@ -906,7 +906,7 @@
             }
         },
 
-        actualizarSelectCategoriasActividad: function(evaluacionId, callback) {
+        actualizarSelectCriteriosActividad: function(evaluacionId, callback) {
             const $select = $('#categoria_id_actividad_cuaderno_select');
             const $formGroup = $select.closest('.cpp-form-group');
             if (!$select.length || !$formGroup.length) { if (typeof callback === 'function') callback(false); return; }
@@ -915,15 +915,15 @@
             if (!evaluacionId) { if (typeof callback === 'function') callback(false); return; }
             $.ajax({
                 url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
-                data: { action: 'cpp_get_json_categorias_por_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId },
+                data: { action: 'cpp_obtener_criterios_evaluacion_json', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId },
                 success: function(response) {
-                    if (response.success && typeof response.data.categorias !== 'undefined' && Array.isArray(response.data.categorias)) {
-                        const categorias = response.data.categorias;
-                        if (categorias.length > 1 || (categorias.length === 1 && categorias[0].nombre_categoria !== 'General' && categorias[0].nombre_categoria !== 'Sin categoría')) {
+                    if (response.success && typeof response.data.criterios !== 'undefined' && Array.isArray(response.data.criterios)) {
+                        const criterios = response.data.criterios;
+                        if (criterios.length > 0) {
                             $formGroup.show();
-                            $select.append($('<option>', { value: '', text: '-- Selecciona una categoría --' }));
-                            $.each(categorias, function(i, categoria) {
-                                $select.append($('<option>', { value: categoria.id, text: `${$('<div>').text(categoria.nombre_categoria).html()} (${categoria.porcentaje}%)` }));
+                            $select.append($('<option>', { value: '', text: '-- Selecciona un criterio --' }));
+                            $.each(criterios, function(i, crit) {
+                                $select.append($('<option>', { value: crit.criterio_id, text: `${$('<div>').text(crit.nombre).html()} (${crit.porcentaje}%)` }));
                             });
                         }
                         if (typeof callback === 'function') callback(true);
