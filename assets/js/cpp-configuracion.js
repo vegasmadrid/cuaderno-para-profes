@@ -418,11 +418,11 @@
             criterios.forEach(crit => {
                 html += `
                     <li data-criterio-id="${crit.id}">
-                        <span class="cpp-category-color-indicator" style="background-color: ${crit.color};"></span>
+                        <span class="cpp-category-color-indicator" style="background-color: ${crit.color}; width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;"></span>
                         <span class="cpp-criterio-nombre">${$('<div>').text(crit.nombre).html()}</span>
                         <div class="cpp-config-list-actions">
-                            <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-editar-criterio-global" title="Editar"><span class="dashicons dashicons-edit"></span></button>
-                            <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-criterio-global" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
+                            <button type="button" class="cpp-btn-icon cpp-btn-editar-criterio-global" title="Editar"><span class="dashicons dashicons-edit"></span></button>
+                            <button type="button" class="cpp-btn-icon cpp-btn-eliminar-criterio-global" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
                         </div>
                     </li>`;
             });
