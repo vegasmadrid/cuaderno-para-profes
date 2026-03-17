@@ -309,7 +309,7 @@
                 const $btn = $(this);
                 const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
                 const evaluacionId = $settingsContainer.data('evaluacion-id');
-                const criterioId = $('#cpp-select-criterio-global').val();
+                const criterioId = $settingsContainer.find('#cpp-select-criterio-global').val();
 
                 if (!criterioId) { alert('Selecciona un criterio.'); return; }
 
@@ -318,7 +318,7 @@
                     data: { action: 'cpp_asignar_criterio_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, criterio_id: criterioId },
                     success: (response) => {
                         if (response.success) {
-                            self.refreshCategoriasList(evaluacionId, containerSelector);
+                            self.refreshCategoriasList(evaluacionId, '#' + $settingsContainer.attr('id'));
                         } else {
                             alert(response.data.message);
                         }

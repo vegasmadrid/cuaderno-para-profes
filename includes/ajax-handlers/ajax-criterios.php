@@ -174,8 +174,13 @@ function cpp_ajax_guardar_pesos_criterios() {
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
     $pesos = isset($_POST['pesos']) ? $_POST['pesos'] : []; // Array de [criterio_id => porcentaje]
 
-    if (!$evaluacion_id || empty($pesos)) {
-        wp_send_json_error(['message' => 'Datos incompletos.']);
+    if (!$evaluacion_id) {
+        wp_send_json_error(['message' => 'Error: No se ha identificado la evaluación.']);
+        return;
+    }
+
+    if (empty($pesos)) {
+        wp_send_json_error(['message' => 'Error: No se han recibido ponderaciones para guardar.']);
         return;
     }
 
