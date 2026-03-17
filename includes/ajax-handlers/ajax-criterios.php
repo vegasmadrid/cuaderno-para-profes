@@ -104,22 +104,36 @@ function cpp_ajax_obtener_criterios_evaluacion() {
             <?php if (empty($criterios_asignados)): ?>
                 <p>No hay criterios asignados.</p>
             <?php else: ?>
-                <ul>
+                <ul class="cpp-assigned-criteria-ul">
                     <?php
                     $total_p = 0;
                     foreach ($criterios_asignados as $crit):
                         $total_p += $crit['porcentaje'];
                         ?>
-                        <li data-criterio-id="<?php echo esc_attr($crit['criterio_id']); ?>">
+                        <li data-original-criterio-id="<?php echo esc_attr($crit['criterio_id']); ?>">
                             <span class="cpp-category-color-indicator" style="background-color: <?php echo esc_attr($crit['color']); ?>;"></span>
-                            <span class="cpp-criterio-nombre-listado"><?php echo esc_html($crit['nombre']); ?></span>:
-                            <input type="number" class="cpp-criterio-peso-input" value="<?php echo esc_attr($crit['porcentaje']); ?>" min="0" max="100" style="width: 60px; display: inline-block;"> %
-                            <button type="button" class="cpp-btn cpp-btn-icon cpp-btn-eliminar-criterio-eval" data-criterio-id="<?php echo esc_attr($crit['criterio_id']); ?>" title="Quitar de esta evaluación"><span class="dashicons dashicons-dismiss"></span></button>
+                            <select class="cpp-criterio-swap-select">
+                                <?php foreach ($criterios_globales as $cg): ?>
+                                    <option value="<?php echo esc_attr($cg['id']); ?>" <?php selected($cg['id'], $crit['criterio_id']); ?> data-color="<?php echo esc_attr($cg['color']); ?>">
+                                        <?php echo esc_html($cg['nombre']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <span class="cpp-separator">:</span>
+                            <div class="cpp-peso-input-wrapper">
+                                <input type="number" class="cpp-criterio-peso-input" value="<?php echo esc_attr($crit['porcentaje']); ?>" min="0" max="100">
+                                <span class="cpp-percent-symbol">%</span>
+                            </div>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-btn-eliminar-criterio-eval" data-criterio-id="<?php echo esc_attr($crit['criterio_id']); ?>" title="Quitar de esta evaluación">
+                                <span class="dashicons dashicons-dismiss"></span>
+                            </button>
                         </li>
                     <?php endforeach; ?>
                 </ul>
-                <p><strong>Total: <span id="cpp-total-porcentaje-display"><?php echo $total_p; ?></span>%</strong></p>
-                <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-guardar-pesos-criterios-btn">Guardar Ponderaciones</button>
+                <div class="cpp-criterios-footer">
+                    <p><strong>Total: <span id="cpp-total-porcentaje-display"><?php echo $total_p; ?></span>%</strong></p>
+                    <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-guardar-pesos-criterios-btn">Guardar Ponderaciones</button>
+                </div>
             <?php endif; ?>
         </div>
 
@@ -185,14 +199,18 @@ function cpp_ajax_guardar_pesos_criterios() {
     }
 
     $total = 0;
-    foreach ($pesos as $p) $total += intval($p);
+    foreach ($pesos as $original_crit_id => $data) {
+        $total += intval($data['peso']);
+    }
     if ($total > 100) {
         wp_send_json_error(['message' => 'La suma de porcentajes no puede superar el 100%.']);
         return;
     }
 
-    foreach ($pesos as $crit_id => $porcentaje) {
-        cpp_actualizar_peso_criterio_evaluacion($evaluacion_id, intval($crit_id), intval($porcentaje), $user_id);
+    foreach ($pesos as $original_crit_id => $data) {
+        $new_crit_id = isset($data['new_id']) ? intval($data['new_id']) : intval($original_crit_id);
+        $porcentaje = intval($data['peso']);
+        cpp_actualizar_peso_criterio_evaluacion($evaluacion_id, intval($original_crit_id), $porcentaje, $user_id, $new_crit_id);
     }
 
     wp_send_json_success(['message' => 'Ponderaciones guardadas correctamente.']);

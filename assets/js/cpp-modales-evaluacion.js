@@ -330,13 +330,19 @@
                 const $btn = $(this);
                 const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
                 const evaluacionId = $settingsContainer.data('evaluacion-id');
-                const pesos = {};
+                const pesos = {}; // Usaremos un objeto de objetos: { original_id: { new_id: X, peso: Y } }
                 let total = 0;
 
-                $settingsContainer.find('.cpp-criterio-peso-input').each(function() {
-                    const critId = $(this).closest('li').data('criterio-id');
-                    const val = parseInt($(this).val()) || 0;
-                    pesos[critId] = val;
+                $settingsContainer.find('.cpp-assigned-criteria-ul li').each(function() {
+                    const $li = $(this);
+                    const originalId = $li.data('original-criterio-id');
+                    const newId = $li.find('.cpp-criterio-swap-select').val();
+                    const val = parseInt($li.find('.cpp-criterio-peso-input').val()) || 0;
+
+                    pesos[originalId] = {
+                        new_id: newId,
+                        peso: val
+                    };
                     total += val;
                 });
 
@@ -348,12 +354,20 @@
                     success: (response) => {
                         if (response.success) {
                             cpp.utils.showToast(response.data.message);
+                            self.refreshCategoriasList(evaluacionId, '#' + $settingsContainer.attr('id'));
                             cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                         } else {
                             alert(response.data.message);
                         }
                     }
                 });
+            });
+
+            // Evento para cambiar el color del indicador al cambiar el select
+            $document.on('change', `${containerSelector} .cpp-criterio-swap-select`, function() {
+                const $select = $(this);
+                const color = $select.find(':selected').data('color');
+                $select.closest('li').find('.cpp-category-color-indicator').css('background-color', color);
             });
 
             $document.on('input', `${containerSelector} .cpp-criterio-peso-input`, function() {
