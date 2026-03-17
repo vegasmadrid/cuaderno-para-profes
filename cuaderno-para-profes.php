@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.7.7');
+define('CPP_VERSION', '2.7.8');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -620,6 +620,45 @@ function cpp_add_modals_to_footer() {
             </div>
             <div class="cpp-modal-footer">
                 <button id="cpp-save-final-grade-evals-btn" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Desasignar Criterio con Reasignación de Tareas -->
+    <div id="cpp-modal-delete-criterion-eval" class="cpp-modal">
+        <div class="cpp-modal-content" style="max-width: 450px;">
+            <span class="cpp-close-btn">&times;</span>
+            <h2>Quitar Criterio de la Evaluación</h2>
+            <div class="cpp-modal-body">
+                <p>¿Qué quieres hacer con las actividades que tienen asignado el criterio <strong id="cpp-delete-crit-name"></strong>?</p>
+
+                <div class="cpp-form-group">
+                    <label>Acción para las actividades:</label>
+                    <div class="cpp-radio-group">
+                        <label>
+                            <input type="radio" name="cpp_delete_crit_action" value="none" checked>
+                            Dejarlas "Sin criterio" (no sumarán en la nota media)
+                        </label>
+                        <label>
+                            <input type="radio" name="cpp_delete_crit_action" value="reassign">
+                            Reasignarlas a otro criterio de esta evaluación:
+                        </label>
+                    </div>
+                </div>
+
+                <div id="cpp-reassign-select-wrapper" style="display: none;">
+                    <div class="cpp-form-group">
+                        <select id="cpp-reassign-crit-target">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <p class="description" style="color: #d93025;">Esta acción quitará el criterio de la evaluación y modificará las actividades vinculadas.</p>
+            </div>
+            <div class="cpp-modal-footer">
+                <button id="cpp-confirm-delete-crit-eval-btn" class="cpp-btn cpp-btn-danger">Confirmar y Quitar</button>
+                <button class="cpp-btn cpp-btn-secondary cpp-close-btn-generic">Cancelar</button>
             </div>
         </div>
     </div>

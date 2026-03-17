@@ -174,7 +174,7 @@ function cpp_actualizar_peso_criterio_evaluacion($evaluacion_id, $criterio_id, $
     }
 }
 
-function cpp_desasignar_criterio_de_evaluacion($evaluacion_id, $criterio_id, $user_id) {
+function cpp_desasignar_criterio_de_evaluacion($evaluacion_id, $criterio_id, $user_id, $new_criterio_id = null) {
     global $wpdb;
     $tabla_eval_crit = $wpdb->prefix . 'cpp_evaluacion_criterios';
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
@@ -188,9 +188,10 @@ function cpp_desasignar_criterio_de_evaluacion($evaluacion_id, $criterio_id, $us
     // 1. Eliminar relación de pesos
     $res1 = $wpdb->delete($tabla_eval_crit, ['evaluacion_id' => $evaluacion_id, 'criterio_id' => $criterio_id], ['%d', '%d']);
 
-    // 2. Actividades de esta evaluación que usaban este criterio pasan a NULL
+    // 2. Reasignar o dejar a NULL las actividades de esta evaluación
+    $update_data = ['criterio_id' => $new_criterio_id ? intval($new_criterio_id) : null];
     $res2 = $wpdb->update($tabla_actividades,
-        ['criterio_id' => null],
+        $update_data,
         ['evaluacion_id' => $evaluacion_id, 'criterio_id' => $criterio_id, 'user_id' => $user_id]
     );
 

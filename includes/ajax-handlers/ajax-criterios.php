@@ -224,13 +224,14 @@ function cpp_ajax_desasignar_criterio_evaluacion() {
     $user_id = get_current_user_id();
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
     $criterio_id = isset($_POST['criterio_id']) ? intval($_POST['criterio_id']) : 0;
+    $new_criterio_id = isset($_POST['new_criterio_id']) ? intval($_POST['new_criterio_id']) : null;
 
     if (!$evaluacion_id || !$criterio_id) {
         wp_send_json_error(['message' => 'Datos incompletos.']);
         return;
     }
 
-    $res = cpp_desasignar_criterio_de_evaluacion($evaluacion_id, $criterio_id, $user_id);
+    $res = cpp_desasignar_criterio_de_evaluacion($evaluacion_id, $criterio_id, $user_id, $new_criterio_id);
     if ($res) wp_send_json_success(['message' => 'Criterio desasignado.']);
     else wp_send_json_error(['message' => 'Error al desasignar.']);
 }
