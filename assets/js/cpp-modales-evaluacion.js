@@ -356,6 +356,21 @@
                 });
             });
 
+            $document.on('input', `${containerSelector} .cpp-criterio-peso-input`, function() {
+                const $settingsContainer = $(this).closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                let total = 0;
+                $settingsContainer.find('.cpp-criterio-peso-input').each(function() {
+                    total += parseInt($(this).val()) || 0;
+                });
+                $settingsContainer.find('#cpp-total-porcentaje-display').text(total);
+
+                if (total > 100) {
+                    $settingsContainer.find('#cpp-total-porcentaje-display').css('color', '#d93025');
+                } else {
+                    $settingsContainer.find('#cpp-total-porcentaje-display').css('color', '');
+                }
+            });
+
             $document.on('click', `${containerSelector} .cpp-btn-eliminar-criterio-eval`, function() {
                 const $btn = $(this);
                 const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
