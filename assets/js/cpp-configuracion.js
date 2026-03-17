@@ -138,7 +138,7 @@
                 success: (response) => {
                     cpp.hideSpinner();
                     if (response.success) {
-                        cpp.showToast(response.data.message);
+                        cpp.utils.showToast(response.data.message);
                         this.loadAlumnosData(claseId);
                     } else {
                         alert(`Error: ${response.data.message}`);
@@ -449,7 +449,7 @@
                 },
                 success: (response) => {
                     if (response.success) {
-                        cpp.showToast(response.data.message);
+                        cpp.utils.showToast(response.data.message);
                         this.resetCriterioGlobalForm();
                         this.loadCriteriosGlobales();
                     } else {
@@ -509,7 +509,7 @@
                     },
                     success: (response) => {
                         if (response.success) {
-                            cpp.showToast(response.data.message);
+                            cpp.utils.showToast(response.data.message);
                             this.loadCriteriosGlobales();
                         } else {
                             alert(response.data.message);

@@ -347,7 +347,7 @@
                     data: { action: 'cpp_guardar_pesos_criterios', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, pesos: pesos },
                     success: (response) => {
                         if (response.success) {
-                            cpp.showToast(response.data.message);
+                            cpp.utils.showToast(response.data.message);
                             cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
                         } else {
                             alert(response.data.message);
