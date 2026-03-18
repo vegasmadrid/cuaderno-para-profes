@@ -327,17 +327,6 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
         }
     }
 
-    // Helper function to get a category by name for a given evaluation
-    if (!function_exists('cpp_get_category_id_by_name')) {
-        function cpp_get_category_id_by_name($evaluacion_id, $category_name) {
-            global $wpdb;
-            $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
-            return $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM $tabla_categorias WHERE evaluacion_id = %d AND nombre_categoria = %s",
-                $evaluacion_id, $category_name
-            ));
-        }
-    }
 
 
     $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
@@ -402,28 +391,30 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
             $new_activity_data['sesion_id'] = $new_session_id;
 
             // Forzar la fecha a NULL para que herede la fecha de la nueva sesión.
-            // Esta es la corrección clave para la regresión.
             if (!empty($new_activity_data['sesion_id'])) {
                 $new_activity_data['fecha_actividad'] = null;
             }
 
-            // Handle category mapping
-            $original_category_name = $wpdb->get_var($wpdb->prepare("SELECT nombre_categoria FROM $tabla_categorias WHERE id = %d", $activity['categoria_id']));
-            if ($original_category_name) {
-                $new_category_id = cpp_get_category_id_by_name($destination_evaluacion_id, $original_category_name);
-                if (!$new_category_id) {
-                    $new_category_id = cpp_get_default_category_id_for_evaluacion($destination_evaluacion_id);
-                }
-                $new_activity_data['categoria_id'] = $new_category_id;
+            // --- CAMBIO v2.7.0: Mapeo de Criterios Globales ---
+            // Los criterios globales tienen el mismo ID para todas las clases del mismo usuario.
+            // Solo necesitamos asegurar que el criterio esté asignado a la nueva evaluación para que pondere.
+            $criterio_id = $activity['criterio_id'];
+            if ($criterio_id) {
+                $tabla_eval_crit = $wpdb->prefix . 'cpp_evaluacion_criterios';
+                $esta_asignado = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM $tabla_eval_crit WHERE evaluacion_id = %d AND criterio_id = %d",
+                    $destination_evaluacion_id, $criterio_id
+                ));
+
+                // Si no está asignado, se copia la actividad pero el usuario recibirá el aviso de "Sin criterio"
+                // (esto se manejará mejor en el cálculo y en el frontend)
+                $new_activity_data['criterio_id'] = $criterio_id;
             } else {
-                $new_activity_data['categoria_id'] = cpp_get_default_category_id_for_evaluacion($destination_evaluacion_id);
+                $new_activity_data['criterio_id'] = null;
             }
 
-            if (!$new_activity_data['categoria_id']) {
-                // If there's still no category, we can't proceed
-                $wpdb->query('ROLLBACK');
-                return false;
-            }
+            // Mantener categoria_id (legacy) para compatibilidad
+            $new_activity_data['categoria_id'] = 0;
 
             if (!$wpdb->insert($tabla_act_evaluables, $new_activity_data)) {
                 $wpdb->query('ROLLBACK');

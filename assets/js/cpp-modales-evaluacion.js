@@ -33,16 +33,16 @@
                 type: 'POST',
                 dataType: 'json',
                 data: {
-                    action: 'cpp_obtener_categorias_evaluacion',
+                    action: 'cpp_obtener_criterios_evaluacion', // CAMBIO v2.7.0: Usar criterios
                     nonce: cppFrontendData.nonce,
                     evaluacion_id: evaluacionId
                 },
                 success: function(response) {
                     if (response.success) {
                         $container.html(response.data.html);
-                        self.resetCategoriaForm(containerSelector);
+                        self.updateCriteriaSelectsOptions($container);
                     } else {
-                        $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar las categorías.'}</p>`);
+                        $container.html(`<p class="cpp-error-message">${response.data.message || 'Error al cargar los criterios.'}</p>`);
                     }
                 },
                 error: function() {
@@ -252,6 +252,58 @@
             });
         },
 
+        updateCriteriaSelectsOptions: function($container) {
+            const $swapSelects = $container.find('.cpp-criterio-swap-select');
+            const $addSelect = $container.find('#cpp-select-criterio-global');
+
+            // Recoger todos los IDs seleccionados actualmente en los swap selects
+            const selectedIds = $swapSelects.map(function() { return $(this).val(); }).get();
+
+            // 1. Para cada swap select, deshabilitar opciones que estén seleccionadas en OTROS swap selects
+            $swapSelects.each(function() {
+                const $currentSelect = $(this);
+                const currentVal = $currentSelect.val();
+
+                $currentSelect.find('option').each(function() {
+                    const optVal = $(this).val();
+                    if (!optVal) return; // Saltar el "Seleccionar..."
+
+                    // Si el valor está en la lista de seleccionados Y no es el valor de este select específico
+                    const isOtherSelected = selectedIds.includes(optVal) && optVal !== currentVal;
+                    const originalText = $(this).data('original-text') || $(this).text().replace(' (Ya seleccionado)', '');
+
+                    if (!$(this).data('original-text')) {
+                        $(this).data('original-text', originalText);
+                    }
+
+                    if (isOtherSelected) {
+                        $(this).prop('disabled', true).text(originalText + ' (Ya seleccionado)');
+                    } else {
+                        $(this).prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+
+            // 2. Para el select de "Asignar nuevo", deshabilitar todos los que ya están asignados
+            $addSelect.find('option').each(function() {
+                const optVal = $(this).val();
+                if (!optVal) return;
+
+                const isSelected = selectedIds.includes(optVal);
+                const originalText = $(this).data('original-text') || $(this).text().replace(' (Ya seleccionado)', '');
+
+                if (!$(this).data('original-text')) {
+                    $(this).data('original-text', originalText);
+                }
+
+                if (isSelected) {
+                    $(this).prop('disabled', true).text(originalText + ' (Ya seleccionado)');
+                } else {
+                    $(this).prop('disabled', false).text(originalText);
+                }
+            });
+        },
+
         bindEvents: function() {
             const $document = $(document);
             const self = this;
@@ -305,21 +357,171 @@
                 });
             });
 
-            $document.on('click', `${containerSelector} #cpp-submit-categoria-btn`, function() {
-                self.submitCategoriaForm($(this));
+            $document.on('click', `${containerSelector} #cpp-btn-asignar-criterio-eval`, function() {
+                const $btn = $(this);
+                const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                const evaluacionId = $settingsContainer.data('evaluacion-id');
+                const criterioId = $settingsContainer.find('#cpp-select-criterio-global').val();
+
+                if (!criterioId) { alert('Selecciona un criterio.'); return; }
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_asignar_criterio_evaluacion', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, criterio_id: criterioId },
+                    success: (response) => {
+                        if (response.success) {
+                            self.refreshCategoriasList(evaluacionId, '#' + $settingsContainer.attr('id'));
+                        } else {
+                            alert(response.data.message);
+                        }
+                    }
+                });
             });
 
-            $document.on('click', `${containerSelector} .cpp-btn-editar-categoria`, function(e) {
-                e.stopPropagation();
-                self.cargarParaEditar(this);
+            $document.on('click', `${containerSelector} #cpp-guardar-pesos-criterios-btn`, function() {
+                const $btn = $(this);
+                const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                const evaluacionId = $settingsContainer.data('evaluacion-id');
+                const pesos = {}; // Usaremos un objeto de objetos: { original_id: { new_id: X, peso: Y } }
+                let total = 0;
+
+                $settingsContainer.find('.cpp-assigned-criteria-ul li').each(function() {
+                    const $li = $(this);
+                    const originalId = $li.data('original-criterio-id');
+                    const newId = $li.find('.cpp-criterio-swap-select').val();
+                    const val = parseInt($li.find('.cpp-criterio-peso-input').val()) || 0;
+
+                    pesos[originalId] = {
+                        new_id: newId,
+                        peso: val
+                    };
+                    total += val;
+                });
+
+                if (total > 100) { alert('La suma no puede superar el 100%.'); return; }
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_guardar_pesos_criterios', nonce: cppFrontendData.nonce, evaluacion_id: evaluacionId, pesos: pesos },
+                    success: (response) => {
+                        if (response.success) {
+                            cpp.utils.showToast(response.data.message);
+                            self.refreshCategoriasList(evaluacionId, '#' + $settingsContainer.attr('id'));
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                        } else {
+                            alert(response.data.message);
+                        }
+                    }
+                });
             });
 
-            $document.on('click', `${containerSelector} #cpp-cancelar-edicion-categoria-btn`, function() {
-                self.resetCategoriaForm('#cpp-ponderaciones-settings-content');
+            // Evento para cambiar el color del indicador al cambiar el select
+            $document.on('change', `${containerSelector} .cpp-criterio-swap-select`, function() {
+                const $select = $(this);
+                const color = $select.find(':selected').data('color');
+                $select.closest('li').find('.cpp-category-color-indicator').css('background-color', color);
+
+                // Actualizar deshabilitados en los demás selects
+                self.updateCriteriaSelectsOptions($select.closest(containerSelector));
             });
 
-            $document.on('click', `${containerSelector} .cpp-btn-eliminar-categoria`, function() {
-                self.eliminarCategoria($(this));
+            $document.on('input', `${containerSelector} .cpp-criterio-peso-input`, function() {
+                const $settingsContainer = $(this).closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                let total = 0;
+                $settingsContainer.find('.cpp-criterio-peso-input').each(function() {
+                    total += parseInt($(this).val()) || 0;
+                });
+                $settingsContainer.find('#cpp-total-porcentaje-display').text(total);
+
+                if (total > 100) {
+                    $settingsContainer.find('#cpp-total-porcentaje-display').css('color', '#d93025');
+                } else {
+                    $settingsContainer.find('#cpp-total-porcentaje-display').css('color', '');
+                }
+            });
+
+            $document.on('click', `${containerSelector} .cpp-btn-eliminar-criterio-eval`, function() {
+                const $btn = $(this);
+                const $settingsContainer = $btn.closest('#cpp-ponderaciones-settings-content, #cpp-ponderaciones-settings-content-config');
+                const evaluacionId = $settingsContainer.data('evaluacion-id');
+                const criterioId = $btn.data('criterio-id');
+                const $li = $btn.closest('li');
+                const nombre = $li.find('.cpp-criterio-swap-select :selected').text().trim();
+
+                const $modal = $('#cpp-modal-delete-criterion-eval');
+                $modal.find('.cpp-delete-crit-name').text(nombre);
+                $modal.data('evaluacion-id', evaluacionId);
+                $modal.data('criterio-id', criterioId);
+
+                // Poblar el selector de reasignación con los OTROS criterios
+                const $reassignSelect = $modal.find('.cpp-reassign-crit-target');
+                $reassignSelect.empty();
+
+                $settingsContainer.find('.cpp-criterio-swap-select').each(function() {
+                    const val = $(this).val();
+                    const text = $(this).find(':selected').text().trim();
+                    if (val != criterioId) {
+                        $reassignSelect.append(`<option value="${val}">${text}</option>`);
+                    }
+                });
+
+                if ($reassignSelect.find('option').length === 0) {
+                    $modal.find('label:has(input[value="reassign"])').hide();
+                } else {
+                    $modal.find('label:has(input[value="reassign"])').show();
+                }
+
+                $modal.find('input[name="cpp_delete_crit_action"][value="none"]').prop('checked', true);
+                $modal.find('.cpp-reassign-select-wrapper').hide();
+                $modal.fadeIn();
+            });
+
+            // Eventos del modal de borrado inteligente
+            $document.on('change', '#cpp-modal-delete-criterion-eval input[name="cpp_delete_crit_action"]', function() {
+                if ($(this).val() === 'reassign') {
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideDown();
+                } else {
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideUp();
+                }
+            });
+
+            $document.on('click', '#cpp-confirm-delete-crit-eval-btn', function() {
+                const $btn = $(this);
+                const $modal = $('#cpp-modal-delete-criterion-eval');
+                const evaluacionId = $modal.data('evaluacion-id');
+                const criterioId = $modal.data('criterio-id');
+                const action = $modal.find('input[name="cpp_delete_crit_action"]:checked').val();
+                const reassignTo = (action === 'reassign') ? $modal.find('.cpp-reassign-crit-target').val() : null;
+
+                const originalText = $btn.text();
+                $btn.prop('disabled', true).text('Procesando...');
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_desasignar_criterio_evaluacion',
+                        nonce: cppFrontendData.nonce,
+                        evaluacion_id: evaluacionId,
+                        criterio_id: criterioId,
+                        new_criterio_id: reassignTo
+                    },
+                    success: (response) => {
+                        if (response.success) {
+                            $modal.fadeOut();
+                            // Encontrar el contenedor correcto para refrescar
+                            const targetContainer = $('#cpp-ponderaciones-settings-content').length ? '#cpp-ponderaciones-settings-content' : '#cpp-ponderaciones-settings-content-config';
+                            self.refreshCategoriasList(evaluacionId, targetContainer);
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, null, evaluacionId);
+                        } else {
+                            alert(response.data.message);
+                        }
+                    },
+                    complete: () => {
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
             });
         }
     };

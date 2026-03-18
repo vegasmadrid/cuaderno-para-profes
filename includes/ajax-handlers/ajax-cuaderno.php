@@ -72,11 +72,12 @@ function cpp_ajax_cargar_cuaderno_clase() {
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_activa_id);
 
     // FIX: Crear el mapa de categorías y porcentajes que faltaba
-    $map_categorias_porcentajes = [];
+    // CAMBIO v2.7.0: Usar criterios
+    $map_criterios_porcentajes = [];
     if ($metodo_calculo === 'ponderada') {
-        $categorias_evaluacion = cpp_obtener_categorias_por_evaluacion($evaluacion_activa_id, $user_id);
-        foreach ($categorias_evaluacion as $categoria) {
-            $map_categorias_porcentajes[$categoria['id']] = $categoria['porcentaje'];
+        $criterios_evaluacion = cpp_obtener_criterios_por_evaluacion($evaluacion_activa_id, $user_id);
+        foreach ($criterios_evaluacion as $crit) {
+            $map_criterios_porcentajes[$crit['criterio_id']] = $crit['porcentaje'];
         }
     }
 
@@ -173,7 +174,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                 <div class="cpp-editable-activity-name"
                                         data-actividad-id="<?php echo esc_attr($actividad['id']); ?>"
                                         data-nombre-actividad="<?php echo esc_attr($actividad['nombre_actividad']); ?>"
-                                        data-categoria-id="<?php echo esc_attr($actividad['categoria_id']); ?>"
+                                        data-categoria-id="<?php echo esc_attr($actividad['criterio_id']); // Aquí pasamos el criterio_id ?>"
                                         data-nota-maxima="<?php echo esc_attr($actividad['nota_maxima']); ?>"
                                         data-fecha-actividad="<?php echo esc_attr($actividad['fecha_actividad']); ?>"
                                         data-descripcion-actividad="<?php echo esc_attr($actividad['descripcion_actividad']); ?>"
@@ -182,8 +183,8 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     <?php echo esc_html($actividad['nombre_actividad']); ?>
                                 </div>
                                 <div class="cpp-actividad-notamax" style="color: <?php echo esc_attr($contrasting_text_color); ?>;">(Sobre <?php echo cpp_formatear_nota_display($actividad['nota_maxima']); ?>)</div>
-                                <?php if ($metodo_calculo === 'ponderada' && !empty($actividad['nombre_categoria']) && !in_array($actividad['nombre_categoria'], ['General', 'Sin categoría'])): ?>
-                                    <div class="cpp-actividad-categoria" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php echo esc_html($actividad['nombre_categoria']); ?> (<?php echo esc_html(isset($map_categorias_porcentajes[$actividad['categoria_id']]) ? $map_categorias_porcentajes[$actividad['categoria_id']] . '%' : 'N/A'); ?>)</div>
+                                <?php if ($metodo_calculo === 'ponderada' && !empty($actividad['nombre_categoria']) && !in_array($actividad['nombre_categoria'], ['General', 'Sin categoría', 'Sin criterio'])): ?>
+                                    <div class="cpp-actividad-categoria" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php echo esc_html($actividad['nombre_categoria']); ?> (<?php echo esc_html(isset($map_criterios_porcentajes[$actividad['criterio_id']]) ? $map_criterios_porcentajes[$actividad['criterio_id']] . '%' : 'N/A'); ?>)</div>
                                 <?php endif; ?>
                                 <div class="cpp-actividad-fecha" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php if($actividad['fecha_actividad']) echo esc_html(date('d/m/Y', strtotime($actividad['fecha_actividad']))); ?></div>
                             </th>
@@ -288,6 +289,7 @@ function cpp_ajax_guardar_actividad_evaluable() {
     }
     
     $categoria_id = isset($_POST['categoria_id_actividad']) && $_POST['categoria_id_actividad'] !== '' ? intval($_POST['categoria_id_actividad']) : 0;
+    $criterio_id = isset($_POST['criterio_id_actividad']) && !empty($_POST['criterio_id_actividad']) ? intval($_POST['criterio_id_actividad']) : null;
 
     if (empty($clase_id) || empty($evaluacion_id) || empty($nombre_actividad) || $nota_maxima <= 0) {
         wp_send_json_error(['message' => 'Faltan datos esenciales (clase, evaluación, nombre o nota).']);
@@ -310,7 +312,8 @@ function cpp_ajax_guardar_actividad_evaluable() {
     }
 
 
-    if ($categoria_id === 0) {
+    if (!$criterio_id && $categoria_id === 0) {
+        // Legacy: if no criterion and category is 0, we still handle the default category for now
         $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
         $nombre_categoria_defecto = 'Sin categoría';
         
@@ -330,18 +333,12 @@ function cpp_ajax_guardar_actividad_evaluable() {
             }
         }
     }
-
-    if(empty($categoria_id) && $categoria_id !== 0) {
-        wp_send_json_error(['message' => 'El ID de la categoría no es válido.']);
-        return;
-    }
     
     $clase_valida = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cpp_clases WHERE id = %d AND user_id = %d", $clase_id, $user_id));
-    $categoria_valida = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE id = %d AND evaluacion_id = %d", $categoria_id, $evaluacion_id));
     $evaluacion_valida = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d AND clase_id = %d", $evaluacion_id, $user_id, $clase_id));
     
-    if ($clase_valida == 0 || $categoria_valida == 0 || $evaluacion_valida == 0) {
-        wp_send_json_error(['message' => 'Clase, categoría o evaluación no válida, o no tienes permiso.']);
+    if ($clase_valida == 0 || $evaluacion_valida == 0) {
+        wp_send_json_error(['message' => 'Clase o evaluación no válida, o no tienes permiso.']);
         return;
     }
     
@@ -351,6 +348,7 @@ function cpp_ajax_guardar_actividad_evaluable() {
         'evaluacion_id' => $evaluacion_id,
         'user_id' => $user_id,
         'categoria_id' => $categoria_id,
+        'criterio_id' => $criterio_id,
         'nombre_actividad' => $nombre_actividad,
         'nota_maxima' => $nota_maxima,
         'fecha_actividad' => $fecha_actividad,
@@ -386,11 +384,19 @@ function cpp_ajax_guardar_actividad_evaluable() {
             $actividad_completa['tipo'] = 'evaluable';
             $actividad_completa['titulo'] = $actividad_completa['nombre_actividad'];
 
-            // Añadir el nombre y color de la categoría a la respuesta
-            $categoria_info = $wpdb->get_row($wpdb->prepare("SELECT nombre_categoria, color FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE id = %d", $categoria_id));
-            if ($categoria_info) {
-                $actividad_completa['nombre_categoria'] = $categoria_info->nombre_categoria;
-                $actividad_completa['categoria_color'] = $categoria_info->color;
+            // Añadir el nombre y color del criterio/categoría a la respuesta
+            if ($criterio_id) {
+                $crit_info = $wpdb->get_row($wpdb->prepare("SELECT nombre, color FROM {$wpdb->prefix}cpp_criterios_globales WHERE id = %d", $criterio_id));
+                if ($crit_info) {
+                    $actividad_completa['nombre_categoria'] = $crit_info->nombre;
+                    $actividad_completa['categoria_color'] = $crit_info->color;
+                }
+            } else if ($categoria_id) {
+                $categoria_info = $wpdb->get_row($wpdb->prepare("SELECT nombre_categoria, color FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE id = %d", $categoria_id));
+                if ($categoria_info) {
+                    $actividad_completa['nombre_categoria'] = $categoria_info->nombre_categoria;
+                    $actividad_completa['categoria_color'] = $categoria_info->color;
+                }
             }
 
             $response_data['actividad'] = $actividad_completa;

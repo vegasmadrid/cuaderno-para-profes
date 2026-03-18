@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.6.0');
+define('CPP_VERSION', '2.8.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -469,11 +469,32 @@ function cpp_run_migrations() {
         }
     }
 
-    // --- IMPORTANTE: Limpiar caché después de las migraciones ---
-    // Si se ha ejecutado alguna migración, la versión actual será diferente a la de la BBDD.
+    // --- MIGRACIÓN v2.8.1: Limpiar categorías legacy inconsistentes ---
+    if (version_compare($current_version, '2.8.1', '<')) {
+        global $wpdb;
+        $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+        // Si tiene criterio (o explícitamente no tiene), la categoría legacy debe ser 0
+        $wpdb->query("UPDATE $tabla_actividades SET categoria_id = 0 WHERE criterio_id IS NOT NULL OR (categoria_id > 0 AND criterio_id IS NULL AND id_actividad_programada IS NOT NULL)");
+    }
+
+    // --- MIGRACIÓN v2.7.0: Criterios Globales ---
+    if (version_compare($current_version, '2.7.1', '<')) {
+        // 1. Asegurar que las nuevas tablas y columnas existen
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+
+        // 2. Limpiar caché de todos los usuarios
+        delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
+
+        // 3. Ejecutar la migración de datos
+        if (function_exists('cpp_migrar_categorias_a_criterios')) {
+            cpp_migrar_categorias_a_criterios();
+        }
+    }
+
+    // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
     if (version_compare($current_version, CPP_VERSION, '<')) {
-        // Forzamos la limpieza de la caché de datos del programador para todos los usuarios
-        // para asegurar que los datos se regeneran con la nueva estructura.
         delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
     }
     update_option('cpp_version', CPP_VERSION);
@@ -599,7 +620,7 @@ function cpp_add_modals_to_footer() {
     <!-- Modal para Gestionar Evaluaciones en la Nota Final -->
     <div id="cpp-modal-manage-final-grade-evals" class="cpp-modal">
         <div class="cpp-modal-content">
-            <span class="cpp-close-btn">&times;</span>
+            <span class="cpp-modal-close">&times;</span>
             <h2 id="cpp-modal-manage-final-grade-evals-title">Configurar Evaluaciones para la Media</h2>
             <div id="cpp-manage-final-grade-evals-container" class="cpp-modal-body">
                 <!-- El contenido se cargará aquí vía AJAX -->
@@ -607,6 +628,85 @@ function cpp_add_modals_to_footer() {
             </div>
             <div class="cpp-modal-footer">
                 <button id="cpp-save-final-grade-evals-btn" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Desasignar Criterio con Reasignación de Tareas (Local Evaluación) -->
+    <div id="cpp-modal-delete-criterion-eval" class="cpp-modal">
+        <div class="cpp-modal-content" style="max-width: 450px;">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Quitar Criterio de la Evaluación</h2>
+            <div class="cpp-modal-body">
+                <p>¿Qué quieres hacer con las actividades de esta evaluación que tienen el criterio <strong class="cpp-delete-crit-name"></strong>?</p>
+
+                <div class="cpp-form-group">
+                    <label>Acción para las actividades:</label>
+                    <div class="cpp-radio-group">
+                        <label>
+                            <input type="radio" name="cpp_delete_crit_action" value="none" checked>
+                            Dejarlas "Sin criterio" (no sumarán en la nota media)
+                        </label>
+                        <label>
+                            <input type="radio" name="cpp_delete_crit_action" value="reassign">
+                            Reasignarlas a otro criterio de esta evaluación:
+                        </label>
+                    </div>
+                </div>
+
+                <div class="cpp-reassign-select-wrapper" style="display: none;">
+                    <div class="cpp-form-group">
+                        <select class="cpp-reassign-crit-target">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <p class="description" style="color: #d93025;">Esta acción quitará el criterio de la evaluación y modificará las actividades vinculadas.</p>
+            </div>
+            <div class="cpp-modal-footer">
+                <button id="cpp-confirm-delete-crit-eval-btn" class="cpp-btn cpp-btn-danger">Confirmar y Quitar</button>
+                <button class="cpp-btn cpp-btn-secondary cpp-close-btn-generic">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Eliminar Criterio GLOBAL (Configuración) -->
+    <div id="cpp-modal-delete-global-criterion" class="cpp-modal">
+        <div class="cpp-modal-content" style="max-width: 450px;">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Eliminar Criterio GLOBAL</h2>
+            <div class="cpp-modal-body">
+                <p>Estás a punto de borrar el criterio <strong class="cpp-delete-crit-name"></strong> para TODAS tus clases y evaluaciones.</p>
+                <p>¿Qué quieres hacer con las actividades (de cualquier clase) que tengan este criterio?</p>
+
+                <div class="cpp-form-group">
+                    <label>Acción para las actividades:</label>
+                    <div class="cpp-radio-group">
+                        <label>
+                            <input type="radio" name="cpp_delete_global_crit_action" value="none" checked>
+                            Dejarlas "Sin criterio"
+                        </label>
+                        <label>
+                            <input type="radio" name="cpp_delete_global_crit_action" value="reassign">
+                            Reasignarlas a otro criterio global:
+                        </label>
+                    </div>
+                </div>
+
+                <div class="cpp-reassign-select-wrapper" style="display: none;">
+                    <div class="cpp-form-group">
+                        <select class="cpp-reassign-crit-target">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <p class="description" style="color: #d93025;"><strong>¡ADVERTENCIA!</strong> Esta acción es irreversible. Se eliminarán los pesos de este criterio en todas las evaluaciones.</p>
+            </div>
+            <div class="cpp-modal-actions">
+                <button id="cpp-confirm-delete-global-crit-btn" class="cpp-btn cpp-btn-danger">Eliminar para Siempre</button>
+                <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-close">Cancelar</button>
             </div>
         </div>
     </div>

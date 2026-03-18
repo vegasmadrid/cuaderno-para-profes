@@ -81,6 +81,7 @@ function cpp_crear_tablas() {
         sesion_id bigint(20) UNSIGNED NULL DEFAULT NULL,
         evaluacion_id mediumint(9) UNSIGNED DEFAULT NULL,
         categoria_id mediumint(9) UNSIGNED NOT NULL, 
+        criterio_id mediumint(9) UNSIGNED DEFAULT NULL,
         nombre_actividad varchar(150) NOT NULL,
         fecha_actividad date DEFAULT NULL,
         descripcion_actividad text,
@@ -93,6 +94,7 @@ function cpp_crear_tablas() {
         KEY sesion_id (sesion_id),
         KEY evaluacion_id (evaluacion_id),
         KEY categoria_id (categoria_id),
+        KEY criterio_id (criterio_id),
         KEY user_id (user_id)
     ) $charset_collate;";
 
@@ -202,12 +204,122 @@ function cpp_crear_tablas() {
         KEY sesion_id (sesion_id)
     ) $charset_collate;";
     dbDelta($sql_programador_actividades);
+
+    // --- NUEVAS TABLAS PARA CRITERIOS CENTRALIZADOS (v2.7.0) ---
+    $tabla_criterios_globales = $wpdb->prefix . 'cpp_criterios_globales';
+    $sql_criterios_globales = "CREATE TABLE $tabla_criterios_globales (
+        id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        nombre varchar(100) NOT NULL,
+        color varchar(7) DEFAULT '#FFFFFF' NOT NULL,
+        fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY (id),
+        KEY user_id (user_id)
+    ) $charset_collate;";
+    dbDelta($sql_criterios_globales);
+
+    $tabla_evaluacion_criterios = $wpdb->prefix . 'cpp_evaluacion_criterios';
+    $sql_evaluacion_criterios = "CREATE TABLE $tabla_evaluacion_criterios (
+        id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
+        evaluacion_id mediumint(9) UNSIGNED NOT NULL,
+        criterio_id mediumint(9) UNSIGNED NOT NULL,
+        porcentaje tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
+        fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY (id),
+        KEY evaluacion_id (evaluacion_id),
+        KEY criterio_id (criterio_id),
+        UNIQUE KEY evaluacion_criterio (evaluacion_id, criterio_id)
+    ) $charset_collate;";
+    dbDelta($sql_evaluacion_criterios);
+
+    // Ejecutar migración si es necesario
+    cpp_migrar_categorias_a_criterios();
+}
+
+/**
+ * Función de migración para pasar de categorías locales a criterios globales.
+ */
+function cpp_migrar_categorias_a_criterios() {
+    global $wpdb;
+    $tabla_categorias = $wpdb->prefix . 'cpp_categorias_evaluacion';
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $tabla_criterios_globales = $wpdb->prefix . 'cpp_criterios_globales';
+    $tabla_evaluacion_criterios = $wpdb->prefix . 'cpp_evaluacion_criterios';
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+
+    // 1. Asegurar que las columnas existen antes de consultar
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabla_actividades LIKE 'criterio_id'")) {
+        $wpdb->query("ALTER TABLE $tabla_actividades ADD criterio_id MEDIUMINT(9) UNSIGNED DEFAULT NULL AFTER categoria_id, ADD KEY criterio_id (criterio_id)");
+    }
+
+    // 2. Verificar si hay actividades pendientes de migrar
+    $pendientes = $wpdb->get_var("SELECT COUNT(*) FROM $tabla_actividades WHERE criterio_id IS NULL AND (categoria_id IS NOT NULL AND categoria_id > 0)");
+
+    if (intval($pendientes) === 0) {
+        return; // Ya migrado o no hay nada que migrar
+    }
+
+    // 2. Obtener todas las categorías únicas por usuario
+    $categorias = $wpdb->get_results("
+        SELECT cat.*, ev.user_id
+        FROM $tabla_categorias cat
+        INNER JOIN $tabla_evaluaciones ev ON cat.evaluacion_id = ev.id
+    ");
+
+    $map_criterios = []; // [user_id][nombre_categoria] => criterio_id
+
+    foreach ($categorias as $cat) {
+        $user_id = $cat->user_id;
+        $nombre = $cat->nombre_categoria;
+        $color = $cat->color;
+
+        if (!isset($map_criterios[$user_id][$nombre])) {
+            // Crear criterio global si no existe para este usuario
+            $criterio_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $tabla_criterios_globales WHERE user_id = %d AND nombre = %s",
+                $user_id, $nombre
+            ));
+
+            if (!$criterio_id) {
+                $wpdb->insert($tabla_criterios_globales, [
+                    'user_id' => $user_id,
+                    'nombre' => $nombre,
+                    'color' => $color
+                ]);
+                $criterio_id = $wpdb->insert_id;
+            }
+            $map_criterios[$user_id][$nombre] = $criterio_id;
+        }
+
+        $criterio_id_global = $map_criterios[$user_id][$nombre];
+
+        // Crear relación evaluación-criterio (el peso)
+        $rel_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $tabla_evaluacion_criterios WHERE evaluacion_id = %d AND criterio_id = %d",
+            $cat->evaluacion_id, $criterio_id_global
+        ));
+
+        if (!$rel_id) {
+            $wpdb->insert($tabla_evaluacion_criterios, [
+                'evaluacion_id' => $cat->evaluacion_id,
+                'criterio_id' => $criterio_id_global,
+                'porcentaje' => $cat->porcentaje
+            ]);
+        }
+
+        // Actualizar actividades que apuntaban a esta categoría
+        $wpdb->update($tabla_actividades,
+            ['criterio_id' => $criterio_id_global],
+            ['categoria_id' => $cat->id, 'evaluacion_id' => $cat->evaluacion_id]
+        );
+    }
 }
 
 // --- CARGADOR DE ARCHIVOS DE CONSULTAS A LA BBDD ---
 $db_queries_dir = CPP_PLUGIN_DIR . 'includes/db-queries/';
 
 require_once $db_queries_dir . 'queries-categorias.php';
+require_once $db_queries_dir . 'queries-criterios.php';
 require_once $db_queries_dir . 'queries-evaluaciones.php';
 require_once $db_queries_dir . 'queries-asistencia.php';
 require_once $db_queries_dir . 'queries-clases.php';

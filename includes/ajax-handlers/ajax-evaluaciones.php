@@ -13,6 +13,12 @@ function cpp_ajax_obtener_evaluaciones() {
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
     $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
+    // CAMBIO v2.7.0: Asegurar que los criterios globales asignados se incluyan
+    if (!empty($evaluaciones)) {
+        foreach ($evaluaciones as $key => $eval) {
+            $evaluaciones[$key]['criterios'] = cpp_obtener_criterios_por_evaluacion($eval['id'], $user_id);
+        }
+    }
     wp_send_json_success(['evaluaciones' => $evaluaciones]);
 }
 

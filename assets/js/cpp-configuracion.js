@@ -75,6 +75,7 @@
             if (window.CppProgramadorApp && typeof window.CppProgramadorApp.populateConfigModal === 'function') {
                 window.CppProgramadorApp.populateConfigModal();
             }
+            this.loadCriteriosGlobales();
         },
 
         hideGeneralSettings: function() {
@@ -137,7 +138,7 @@
                 success: (response) => {
                     cpp.hideSpinner();
                     if (response.success) {
-                        cpp.showToast(response.data.message);
+                        cpp.utils.showToast(response.data.message);
                         this.loadAlumnosData(claseId);
                     } else {
                         alert(`Error: ${response.data.message}`);
@@ -230,6 +231,65 @@
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
             $classSettingsPage.on('click', '#cpp-eliminar-clase-config-btn', this.eliminarDesdeConfig.bind(this));
+
+            // --- EVENTOS DE AJUSTES GENERALES (CRITERIOS GLOBALES) ---
+            const $generalSettingsPage = $('#cpp-general-settings-page-container');
+            $generalSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
+            $generalSettingsPage.on('click', '#cpp-btn-guardar-criterio-global', this.saveCriterioGlobal.bind(this));
+            $generalSettingsPage.on('click', '.cpp-btn-editar-criterio-global', this.loadCriterioGlobalForEdit.bind(this));
+            $generalSettingsPage.on('click', '.cpp-btn-eliminar-criterio-global', this.deleteCriterioGlobal.bind(this));
+
+            // Eventos del modal de borrado inteligente GLOBAL
+            $body.on('change', '#cpp-modal-delete-global-criterion input[name="cpp_delete_global_crit_action"]', function() {
+                if ($(this).val() === 'reassign') {
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideDown();
+                } else {
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideUp();
+                }
+            });
+
+            $body.on('click', '#cpp-confirm-delete-global-crit-btn', (e) => {
+                const $btn = $(e.currentTarget);
+                const $modal = $('#cpp-modal-delete-global-criterion');
+                const id = $modal.data('criterio-id');
+                const action = $modal.find('input[name="cpp_delete_global_crit_action"]:checked').val();
+                const reassignTo = (action === 'reassign') ? $modal.find('.cpp-reassign-crit-target').val() : null;
+
+                const originalText = $btn.text();
+                $btn.prop('disabled', true).text('Borrando...');
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_eliminar_criterio_global',
+                        nonce: cppFrontendData.nonce,
+                        criterio_id: id,
+                        new_criterio_id: reassignTo
+                    },
+                    success: (response) => {
+                        if (response.success) {
+                            $modal.fadeOut();
+                            cpp.utils.showToast(response.data.message);
+                            this.loadCriteriosGlobales();
+                            // Forzar recarga del cuaderno en el fondo
+                            $(document).trigger('cpp:forceGradebookReload');
+                        } else {
+                            alert(response.data.message);
+                        }
+                    },
+                    complete: () => {
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+
+            $generalSettingsPage.on('click', '#cpp-btn-cancelar-criterio-global', this.resetCriterioGlobalForm.bind(this));
+            $generalSettingsPage.on('click', '#cpp-criterio-global-colors .cpp-color-swatch', function() {
+                $(this).addClass('selected').siblings().removeClass('selected');
+                $('#cpp-criterio-global-color-hidden').val($(this).data('color'));
+            });
 
             // --- NUEVOS EVENTOS PARA LA PESTAÑA ALUMNOS EN CONFIG ---
             $classSettingsPage.on('click', '.cpp-btn-quitar-de-clase', this.handleQuitarAlumnoDeClase.bind(this));
@@ -354,10 +414,13 @@
             if (event) event.preventDefault();
             const tabId = targetTabId || $(event.currentTarget).data('config-tab');
             
-            $('.cpp-config-tab-link').removeClass('active');
-            $('.cpp-config-tab-content').removeClass('active');
-            $(`.cpp-config-tab-link[data-config-tab="${tabId}"]`).addClass('active');
-            $(`#cpp-config-tab-${tabId}`).addClass('active');
+            // Buscar dentro del contenedor padre para no mezclar pestañas de clase con generales
+            const $container = event ? $(event.currentTarget).closest('.cpp-fullscreen-settings-page') : $('.cpp-fullscreen-settings-page:visible');
+
+            $container.find('.cpp-config-tab-link').removeClass('active');
+            $container.find('.cpp-config-tab-content').removeClass('active');
+            $container.find(`.cpp-config-tab-link[data-config-tab="${tabId}"]`).addClass('active');
+            $container.find(`#cpp-config-tab-${tabId}`).addClass('active');
 
             if (tabId === 'alumnos') {
                 this.loadAlumnosData(this.currentClaseIdForConfig);
@@ -367,6 +430,153 @@
             else if (tabId === 'ponderaciones') {
                 this.loadPonderacionesData(this.currentClaseIdForConfig);
             }
+            else if (tabId === 'criterios-globales') {
+                this.loadCriteriosGlobales();
+            }
+        },
+
+        loadCriteriosGlobales: function() {
+            const $ul = $('#cpp-criterios-globales-ul');
+            $ul.html('<p class="cpp-cuaderno-cargando">Cargando criterios...</p>');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'cpp_obtener_criterios_globales', nonce: cppFrontendData.nonce },
+                success: (response) => {
+                    if (response.success) {
+                        this.renderCriteriosGlobales(response.data.criterios);
+                    } else {
+                        $ul.html('<p class="cpp-error-message">Error al cargar criterios.</p>');
+                    }
+                }
+            });
+        },
+
+        renderCriteriosGlobales: function(criterios) {
+            const $ul = $('#cpp-criterios-globales-ul');
+            if (!criterios || criterios.length === 0) {
+                $ul.html('<p>No has definido criterios globales todavía.</p>');
+                return;
+            }
+
+            let html = '';
+            criterios.forEach(crit => {
+                html += `
+                    <li data-criterio-id="${crit.id}">
+                        <span class="cpp-category-color-indicator" style="background-color: ${crit.color}; width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); margin-right: 12px;"></span>
+                        <span class="cpp-criterio-nombre">${$('<div>').text(crit.nombre).html()}</span>
+                        <div class="cpp-config-list-actions">
+                            <button type="button" class="cpp-btn-icon cpp-btn-editar-criterio-global" title="Editar"><span class="dashicons dashicons-edit"></span></button>
+                            <button type="button" class="cpp-btn-icon cpp-btn-eliminar-criterio-global" title="Eliminar"><span class="dashicons dashicons-trash"></span></button>
+                        </div>
+                    </li>`;
+            });
+            $ul.html(html);
+        },
+
+        saveCriterioGlobal: function() {
+            const id = $('#cpp-criterio-global-id-editar').val();
+            const nombre = $('#cpp-criterio-global-nombre').val().trim();
+            const color = $('#cpp-criterio-global-color-hidden').val();
+
+            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_guardar_o_actualizar_criterio_global',
+                    nonce: cppFrontendData.nonce,
+                    criterio_id: id,
+                    nombre: nombre,
+                    color: color
+                },
+                success: (response) => {
+                    if (response.success) {
+                        cpp.utils.showToast(response.data.message);
+                        this.resetCriterioGlobalForm();
+                        this.loadCriteriosGlobales();
+                    } else {
+                        alert(response.data.message);
+                    }
+                }
+            });
+        },
+
+        loadCriterioGlobalForEdit: function(e) {
+            const $li = $(e.currentTarget).closest('li');
+            const id = $li.data('criterio-id');
+            const nombre = $li.find('.cpp-criterio-nombre').text();
+            const color = $li.find('.cpp-category-color-indicator').css('background-color');
+
+            // Convertir rgb a hex
+            const hex = this.rgb2hex(color);
+
+            $('#cpp-criterio-global-id-editar').val(id);
+            $('#cpp-criterio-global-nombre').val(nombre).focus();
+            $('#cpp-criterio-global-color-hidden').val(hex);
+
+            const self = this;
+            $(`#cpp-criterio-global-colors .cpp-color-swatch`).each(function() {
+                if (self.rgb2hex($(this).css('background-color')).toUpperCase() === hex.toUpperCase()) {
+                    $(this).addClass('selected').siblings().removeClass('selected');
+                }
+            });
+
+            $('#cpp-criterio-global-form-title').text('Editar Criterio');
+            $('#cpp-btn-guardar-criterio-global-text').text('Actualizar Criterio');
+            $('#cpp-btn-cancelar-criterio-global').show();
+        },
+
+        resetCriterioGlobalForm: function() {
+            $('#cpp-criterio-global-id-editar').val('');
+            $('#cpp-criterio-global-nombre').val('');
+            $('#cpp-criterio-global-form-title').text('Añadir Nuevo Criterio');
+            $('#cpp-btn-guardar-criterio-global-text').text('Añadir Criterio');
+            $('#cpp-btn-cancelar-criterio-global').hide();
+        },
+
+        deleteCriterioGlobal: function(e) {
+            const $li = $(e.currentTarget).closest('li');
+            const id = $li.data('criterio-id');
+            const nombre = $li.find('.cpp-criterio-nombre').text();
+
+            const $modal = $('#cpp-modal-delete-global-criterion');
+            $modal.find('.cpp-delete-crit-name').text(nombre);
+            $modal.data('criterio-id', id);
+
+            // Poblar el selector de reasignación con los OTROS criterios globales
+            const $reassignSelect = $modal.find('.cpp-reassign-crit-target');
+            $reassignSelect.empty();
+
+            $('#cpp-criterios-globales-ul li').each(function() {
+                const val = $(this).data('criterio-id');
+                const text = $(this).find('.cpp-criterio-nombre').text().trim();
+                if (val != id) {
+                    $reassignSelect.append(`<option value="${val}">${text}</option>`);
+                }
+            });
+
+            if ($reassignSelect.find('option').length === 0) {
+                $modal.find('label:has(input[value="reassign"])').hide();
+            } else {
+                $modal.find('label:has(input[value="reassign"])').show();
+            }
+
+            $modal.find('input[name="cpp_delete_global_crit_action"][value="none"]').prop('checked', true);
+            $modal.find('.cpp-reassign-select-wrapper').hide();
+            $modal.fadeIn();
+        },
+
+        rgb2hex: function(rgb) {
+            if (/^#[0-9A-F]{6}$/i.test(rgb)) return rgb;
+            var parts = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!parts) return rgb;
+            function hex(x) { return ("0" + parseInt(x).toString(16)).slice(-2); }
+            return "#" + hex(parts[1]) + hex(parts[2]) + hex(parts[3]);
         },
 
         loadPonderacionesData: function(claseId) {

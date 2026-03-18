@@ -186,7 +186,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <span class="dashicons dashicons-calendar-alt"></span>
                             <span>Calendario</span>
                         </a>
-                        <!-- Futuras opciones generales irían aquí -->
+                        <a href="#" class="cpp-config-tab-link" data-config-tab="criterios-globales">
+                            <span class="dashicons dashicons-chart-pie"></span>
+                            <span>Criterios Globales</span>
+                        </a>
                     </div>
                     <div class="cpp-config-content-area">
                         <div id="cpp-config-tab-calendario" class="cpp-config-tab-content active">
@@ -225,6 +228,43 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <button type="submit" class="cpp-btn cpp-btn-primary">Guardar Configuración</button>
                                 </div>
                             </form>
+                        </div>
+                        <div id="cpp-config-tab-criterios-globales" class="cpp-config-tab-content">
+                            <h2>Gestión de Criterios Globales</h2>
+                            <p>Define aquí los criterios de calificación (ej. Exámenes, Proyectos, Actitud) que podrás usar en todas tus clases. El color que elijas será el mismo en todo el cuaderno.</p>
+
+                            <div class="cpp-criterios-globales-list-container">
+                                <ul id="cpp-criterios-globales-ul" class="cpp-config-list">
+                                    <!-- Se cargará por AJAX -->
+                                    <p class="cpp-cuaderno-cargando">Cargando criterios...</p>
+                                </ul>
+                            </div>
+
+                            <div class="cpp-form-criterio-global-container" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <h3 id="cpp-criterio-global-form-title">Añadir Nuevo Criterio</h3>
+                                <input type="hidden" id="cpp-criterio-global-id-editar" value="">
+                                <div class="cpp-form-group">
+                                    <label for="cpp-criterio-global-nombre">Nombre del Criterio:</label>
+                                    <input type="text" id="cpp-criterio-global-nombre" placeholder="Ej: Exámenes, Prácticas...">
+                                </div>
+                                <div class="cpp-form-group">
+                                    <label>Color:</label>
+                                    <div class="cpp-color-swatches-container" id="cpp-criterio-global-colors">
+                                        <?php
+                                        $pastel_colors = ['#FFB6C1', '#ADD8E6', '#98FB98', '#E6E6FA', '#FFDAB9', '#FFFFE0', '#AFEEEE', '#F08080', '#D8BFD8', '#EEE8AA', '#FFE4E1', '#B0E0E6'];
+                                        foreach ($pastel_colors as $hex): ?>
+                                            <span class="cpp-color-swatch" data-color="<?php echo esc_attr($hex); ?>" style="background-color: <?php echo esc_attr($hex); ?>;"></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <input type="hidden" id="cpp-criterio-global-color-hidden" value="#ADD8E6">
+                                </div>
+                                <div class="cpp-config-actions">
+                                    <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-btn-guardar-criterio-global">
+                                        <span class="dashicons dashicons-plus-alt"></span> <span id="cpp-btn-guardar-criterio-global-text">Añadir Criterio</span>
+                                    </button>
+                                    <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-cancelar-criterio-global" style="display:none;">Cancelar</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

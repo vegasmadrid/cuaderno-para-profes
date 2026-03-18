@@ -62,12 +62,13 @@
             const $form = $('#cpp-form-actividad-evaluable-cuaderno');
             const $selectCategoriasGroup = $form.find('[name="categoria_id_actividad"]').closest('.cpp-form-group');
 
+            // Lógica para mostrar/ocultar el campo al editar
             if (cpp.cuaderno.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
-                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
-                    cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCriteriosActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCriteriosActividad(cpp.currentEvaluacionId, function(success) {
                         if (!success) {
-                             alert("Error al cargar las categorías. Inténtalo de nuevo.");
+                             alert("Error al cargar los criterios. Inténtalo de nuevo.");
                         }
                     });
                 }
@@ -117,7 +118,14 @@
             // Lógica para mostrar/ocultar el campo al editar
             if (cpp.cuaderno.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
-                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCriteriosActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCriteriosActividad(cpp.currentEvaluacionId, function(success) {
+                        if (success) {
+                            $form.find('#categoria_id_actividad_cuaderno_select').val(categoriaId); // Aquí categoriaId contiene el criterio_id de la actividad
+                        }
+                    });
+                } else if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                    // Fallback to legacy
                     cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
                         if (success) {
                             $form.find('#categoria_id_actividad_cuaderno_select').val(categoriaId);
@@ -168,13 +176,18 @@
             const $selectCategoria = $form.find('[name="categoria_id_actividad"]');
             const $formGroupCategoria = $selectCategoria.closest('.cpp-form-group');
             let categoriaId = $selectCategoria.val();
+            let criterioId = null;
 
             if ($formGroupCategoria.is(':hidden')) {
                 categoriaId = '0';
+                criterioId = null;
+            } else {
+                criterioId = categoriaId;
+                categoriaId = '0'; // Forzar categoria legacy a 0
             }
 
             if (!nombreActividad) { alert('El nombre de la actividad es obligatorio.'); return; }
-            if ($formGroupCategoria.is(':visible') && (categoriaId === '' || categoriaId === null)) { alert('Por favor, selecciona una categoría de la lista.'); return; }
+            if ($formGroupCategoria.is(':visible') && (criterioId === '' || criterioId === null)) { alert('Por favor, selecciona un criterio de la lista.'); return; }
             if (parseFloat(notaMaxima) <= 0 || isNaN(parseFloat(notaMaxima))) { alert('La nota máxima debe ser un número positivo.'); return; }
 
             const originalBtnHtml = $btn.html();
@@ -185,6 +198,7 @@
                 clase_id_actividad: claseId,
                 evaluacion_id: cpp.currentEvaluacionId,
                 categoria_id_actividad: categoriaId,
+                criterio_id_actividad: criterioId,
                 nombre_actividad: nombreActividad,
                 nota_maxima_actividad: notaMaxima,
                 fecha_actividad: $form.find('[name="fecha_actividad"]').val(),
@@ -260,6 +274,12 @@
             if (cpp.cuaderno.currentCalculoNota === 'ponderada') {
                 $selectCategoriasGroup.show();
                 if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
+                    cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
+                        if (success) {
+                            $form.find('#categoria_id_actividad_cuaderno_select').val(actividad.criterio_id || actividad.categoria_id);
+                        }
+                    });
+                } else if (cpp.cuaderno && typeof cpp.cuaderno.actualizarSelectCategoriasActividad === 'function') {
                     cpp.cuaderno.actualizarSelectCategoriasActividad(cpp.currentEvaluacionId, function(success) {
                         if (success) {
                             $form.find('#categoria_id_actividad_cuaderno_select').val(actividad.categoria_id);
@@ -392,16 +412,16 @@
             $modal.find('#cpp-eliminar-actividad-btn-modal').hide(); // Ocultar botón de eliminar en este contexto
 
             // Lógica de categorías
-            if (evaluacion && evaluacion.calculo_nota === 'ponderada' && evaluacion.categorias && evaluacion.categorias.length > 0) {
+            if (evaluacion && evaluacion.calculo_nota === 'ponderada' && evaluacion.criterios && evaluacion.criterios.length > 0) {
                 $selectCategoriasGroup.show();
                 const $select = $form.find('#categoria_id_actividad_cuaderno_select');
-                $select.empty().append($('<option>', { value: '', text: '-- Selecciona categoría --' }));
-                evaluacion.categorias.forEach(cat => {
-                    $select.append($('<option>', { value: cat.id, text: cat.nombre_categoria }));
+                $select.empty().append($('<option>', { value: '', text: '-- Selecciona criterio --' }));
+                evaluacion.criterios.forEach(crit => {
+                    $select.append($('<option>', { value: crit.criterio_id, text: crit.nombre }));
                 });
-                // Si la actividad ya tiene una categoría asignada, seleccionarla
-                if (actividad.categoria_id) {
-                    $select.val(actividad.categoria_id);
+                // Si la actividad ya tiene un criterio asignado, seleccionarlo
+                if (actividad.criterio_id) {
+                    $select.val(actividad.criterio_id);
                 }
             } else {
                 $selectCategoriasGroup.hide();
