@@ -78,6 +78,14 @@ function cpp_ajax_obtener_criterios_evaluacion() {
     $criterios_asignados = cpp_obtener_criterios_por_evaluacion($evaluacion_id, $user_id);
     $criterios_globales = cpp_obtener_criterios_globales($user_id);
 
+    // Filtrar "Sin categoría"
+    $criterios_asignados = array_filter($criterios_asignados, function($c) {
+        return strtolower($c['nombre']) !== 'sin categoría';
+    });
+    $criterios_globales = array_filter($criterios_globales, function($c) {
+        return strtolower($c['nombre']) !== 'sin categoría';
+    });
+
     global $wpdb;
     $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id, $user_id));
 

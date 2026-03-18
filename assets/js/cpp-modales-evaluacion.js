@@ -269,10 +269,17 @@
                     if (!optVal) return; // Saltar el "Seleccionar..."
 
                     // Si el valor está en la lista de seleccionados Y no es el valor de este select específico
-                    if (selectedIds.includes(optVal) && optVal !== currentVal) {
-                        $(this).prop('disabled', true);
+                    const isOtherSelected = selectedIds.includes(optVal) && optVal !== currentVal;
+                    const originalText = $(this).data('original-text') || $(this).text().replace(' (Ya seleccionado)', '');
+
+                    if (!$(this).data('original-text')) {
+                        $(this).data('original-text', originalText);
+                    }
+
+                    if (isOtherSelected) {
+                        $(this).prop('disabled', true).text(originalText + ' (Ya seleccionado)');
                     } else {
-                        $(this).prop('disabled', false);
+                        $(this).prop('disabled', false).text(originalText);
                     }
                 });
             });
@@ -282,10 +289,17 @@
                 const optVal = $(this).val();
                 if (!optVal) return;
 
-                if (selectedIds.includes(optVal)) {
-                    $(this).prop('disabled', true);
+                const isSelected = selectedIds.includes(optVal);
+                const originalText = $(this).data('original-text') || $(this).text().replace(' (Ya seleccionado)', '');
+
+                if (!$(this).data('original-text')) {
+                    $(this).data('original-text', originalText);
+                }
+
+                if (isSelected) {
+                    $(this).prop('disabled', true).text(originalText + ' (Ya seleccionado)');
                 } else {
-                    $(this).prop('disabled', false);
+                    $(this).prop('disabled', false).text(originalText);
                 }
             });
         },
