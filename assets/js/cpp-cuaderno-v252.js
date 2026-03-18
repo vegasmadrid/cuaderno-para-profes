@@ -262,10 +262,12 @@
                 if (typeof actividad.nombre_categoria !== 'undefined') {
                     const $categoriaContainer = $headerContainer.find('.cpp-actividad-categoria');
                     if ($categoriaContainer.length) {
-                        if (actividad.nombre_categoria && actividad.nombre_categoria !== 'Sin categoría' && actividad.nombre_categoria !== 'General') {
-                            // Idealmente, el backend también devolvería el porcentaje actualizado si pudiera cambiar.
-                            // Por ahora, solo actualizamos el nombre.
-                            $categoriaContainer.text(actividad.nombre_categoria).show();
+                        if (actividad.nombre_categoria && actividad.nombre_categoria !== 'Sin categoría' && actividad.nombre_categoria !== 'General' && actividad.nombre_categoria !== 'Sin criterio') {
+                            let text = actividad.nombre_categoria;
+                            if (typeof actividad.porcentaje_criterio !== 'undefined' && actividad.porcentaje_criterio !== null) {
+                                text += ` (${actividad.porcentaje_criterio}%)`;
+                            }
+                            $categoriaContainer.text(text).show();
                         } else {
                             $categoriaContainer.text('').hide();
                         }
@@ -273,25 +275,28 @@
                 }
 
                 // Actualizar el color de fondo
-                if (typeof actividad.categoria_color !== 'undefined' && this.currentCalculoNota === 'ponderada') {
-                    let newBgColor = '';
-                    if (actividad.categoria_color && actividad.nombre_categoria !== 'Sin categoría' && actividad.nombre_categoria !== 'General') {
+                if (this.currentCalculoNota === 'ponderada') {
+                    let newBgColor = '#FFFFFF'; // Default white as requested
+
+                    if (actividad.categoria_color && actividad.nombre_categoria &&
+                        !['Sin categoría', 'General', 'Sin criterio'].includes(actividad.nombre_categoria)) {
                         newBgColor = actividad.categoria_color;
-                    } else {
-                        // Fallback al color suave de la clase si la categoría es general o no tiene color
-                        const claseColor = $('.cpp-main-tabs-content').css('background-color'); // Una forma de obtener el color de la clase
-                        newBgColor = cpp.utils.lightenColor(claseColor, 92); // Usar una función de utilidad para aclarar
                     }
 
-                    if (newBgColor) {
-                        const newTextColor = cpp.utils.getContrastingTextColor(newBgColor);
-                        $headerContainer.css({
-                            'background-color': newBgColor,
-                            'color': newTextColor
-                        });
-                        // También actualizar el color de los elementos hijos que lo puedan necesitar
-                        $headerContainer.find('.cpp-actividad-notamax, .cpp-actividad-categoria, .cpp-actividad-fecha').css('color', newTextColor);
-                    }
+                    const newTextColor = cpp.utils.getContrastingTextColor(newBgColor);
+                    $headerContainer.css({
+                        'background-color': newBgColor,
+                        'color': newTextColor
+                    });
+                    // También actualizar el color de los elementos hijos que lo puedan necesitar
+                    $headerContainer.find('.cpp-actividad-notamax, .cpp-actividad-categoria, .cpp-actividad-fecha').css('color', newTextColor);
+                } else {
+                    // Si no es ponderada, forzar blanco
+                    $headerContainer.css({
+                        'background-color': '#FFFFFF',
+                        'color': '#333333'
+                    });
+                    $headerContainer.find('.cpp-actividad-notamax, .cpp-actividad-categoria, .cpp-actividad-fecha').css('color', '#666666');
                 }
 
             } else {
