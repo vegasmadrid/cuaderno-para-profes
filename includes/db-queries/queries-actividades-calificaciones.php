@@ -73,12 +73,18 @@ function cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id) 
     }
     
     // 1. Obtener las actividades de la base de datos
-    // CAMBIO v2.7.0: Unir con criterios globales para obtener nombre y color
+    // CAMBIO v2.8.1: Priorizar siempre el criterio. Si criterio_id es NULL (no 0), probar categoría legacy.
     $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
     $actividades = $wpdb->get_results( $wpdb->prepare(
         "SELECT a.*,
-                COALESCE(cg.nombre, cat.nombre_categoria) as nombre_categoria,
-                COALESCE(cg.color, cat.color) as categoria_color
+                CASE
+                    WHEN a.criterio_id IS NOT NULL THEN cg.nombre
+                    ELSE cat.nombre_categoria
+                END as nombre_categoria,
+                CASE
+                    WHEN a.criterio_id IS NOT NULL THEN cg.color
+                    ELSE cat.color
+                END as categoria_color
          FROM $tabla_actividades a
          LEFT JOIN $tabla_criterios cg ON a.criterio_id = cg.id
          LEFT JOIN $tabla_categorias cat ON a.categoria_id = cat.id
@@ -125,8 +131,8 @@ function cpp_guardar_actividad_evaluable($datos) {
         'sesion_id' => $sesion_id,
         'evaluacion_id' => intval($datos['evaluacion_id']),
         'user_id' => intval($datos['user_id']),
-        'categoria_id' => isset($datos['categoria_id']) ? intval($datos['categoria_id']) : 0,
-        'criterio_id' => isset($datos['criterio_id']) ? intval($datos['criterio_id']) : null,
+        'categoria_id' => 0, // Reset legacy always on new activities
+        'criterio_id' => isset($datos['criterio_id']) ? (intval($datos['criterio_id']) ?: null) : null,
         'nombre_actividad' => sanitize_text_field($datos['nombre_actividad']),
         'descripcion_actividad' => isset($datos['descripcion_actividad']) ? sanitize_textarea_field($datos['descripcion_actividad']) : '',
         'nota_maxima' => $nota_maxima,
@@ -154,7 +160,10 @@ function cpp_actualizar_actividad_evaluable($actividad_id, $datos) {
     $data_to_update = []; $formats_update = [];
     if (isset($datos['nombre_actividad']) && !empty(trim($datos['nombre_actividad']))) { $data_to_update['nombre_actividad'] = sanitize_text_field(trim($datos['nombre_actividad'])); $formats_update[] = '%s'; }
     if (isset($datos['criterio_id'])) {
-        $data_to_update['criterio_id'] = intval($datos['criterio_id']);
+        $data_to_update['criterio_id'] = intval($datos['criterio_id']) ?: null;
+        $formats_update[] = '%d';
+        // Always reset legacy category when updating criteria
+        $data_to_update['categoria_id'] = 0;
         $formats_update[] = '%d';
     }
     if (isset($datos['categoria_id']) && isset($datos['evaluacion_id'])) {

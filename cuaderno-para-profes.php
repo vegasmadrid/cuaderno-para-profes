@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.8.0');
+define('CPP_VERSION', '2.8.1');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -467,6 +467,14 @@ function cpp_run_migrations() {
         if (!$column_exists) {
             $wpdb->query("ALTER TABLE `$table_name` ADD `$column_name` TINYINT(1) NOT NULL DEFAULT 1");
         }
+    }
+
+    // --- MIGRACIÓN v2.8.1: Limpiar categorías legacy inconsistentes ---
+    if (version_compare($current_version, '2.8.1', '<')) {
+        global $wpdb;
+        $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+        // Si tiene criterio (o explícitamente no tiene), la categoría legacy debe ser 0
+        $wpdb->query("UPDATE $tabla_actividades SET categoria_id = 0 WHERE criterio_id IS NOT NULL OR (categoria_id > 0 AND criterio_id IS NULL AND id_actividad_programada IS NOT NULL)");
     }
 
     // --- MIGRACIÓN v2.7.0: Criterios Globales ---
