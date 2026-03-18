@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.7.9');
+define('CPP_VERSION', '2.8.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -612,7 +612,7 @@ function cpp_add_modals_to_footer() {
     <!-- Modal para Gestionar Evaluaciones en la Nota Final -->
     <div id="cpp-modal-manage-final-grade-evals" class="cpp-modal">
         <div class="cpp-modal-content">
-            <span class="cpp-close-btn">&times;</span>
+            <span class="cpp-modal-close">&times;</span>
             <h2 id="cpp-modal-manage-final-grade-evals-title">Configurar Evaluaciones para la Media</h2>
             <div id="cpp-manage-final-grade-evals-container" class="cpp-modal-body">
                 <!-- El contenido se cargará aquí vía AJAX -->
@@ -624,13 +624,13 @@ function cpp_add_modals_to_footer() {
         </div>
     </div>
 
-    <!-- Modal para Desasignar Criterio con Reasignación de Tareas -->
+    <!-- Modal para Desasignar Criterio con Reasignación de Tareas (Local Evaluación) -->
     <div id="cpp-modal-delete-criterion-eval" class="cpp-modal">
         <div class="cpp-modal-content" style="max-width: 450px;">
-            <span class="cpp-close-btn">&times;</span>
+            <span class="cpp-modal-close">&times;</span>
             <h2>Quitar Criterio de la Evaluación</h2>
             <div class="cpp-modal-body">
-                <p>¿Qué quieres hacer con las actividades que tienen asignado el criterio <strong id="cpp-delete-crit-name"></strong>?</p>
+                <p>¿Qué quieres hacer con las actividades de esta evaluación que tienen el criterio <strong class="cpp-delete-crit-name"></strong>?</p>
 
                 <div class="cpp-form-group">
                     <label>Acción para las actividades:</label>
@@ -646,9 +646,9 @@ function cpp_add_modals_to_footer() {
                     </div>
                 </div>
 
-                <div id="cpp-reassign-select-wrapper" style="display: none;">
+                <div class="cpp-reassign-select-wrapper" style="display: none;">
                     <div class="cpp-form-group">
-                        <select id="cpp-reassign-crit-target">
+                        <select class="cpp-reassign-crit-target">
                             <!-- Opciones cargadas dinámicamente -->
                         </select>
                     </div>
@@ -659,6 +659,46 @@ function cpp_add_modals_to_footer() {
             <div class="cpp-modal-footer">
                 <button id="cpp-confirm-delete-crit-eval-btn" class="cpp-btn cpp-btn-danger">Confirmar y Quitar</button>
                 <button class="cpp-btn cpp-btn-secondary cpp-close-btn-generic">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Eliminar Criterio GLOBAL (Configuración) -->
+    <div id="cpp-modal-delete-global-criterion" class="cpp-modal">
+        <div class="cpp-modal-content" style="max-width: 450px;">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Eliminar Criterio GLOBAL</h2>
+            <div class="cpp-modal-body">
+                <p>Estás a punto de borrar el criterio <strong class="cpp-delete-crit-name"></strong> para TODAS tus clases y evaluaciones.</p>
+                <p>¿Qué quieres hacer con las actividades (de cualquier clase) que tengan este criterio?</p>
+
+                <div class="cpp-form-group">
+                    <label>Acción para las actividades:</label>
+                    <div class="cpp-radio-group">
+                        <label>
+                            <input type="radio" name="cpp_delete_global_crit_action" value="none" checked>
+                            Dejarlas "Sin criterio"
+                        </label>
+                        <label>
+                            <input type="radio" name="cpp_delete_global_crit_action" value="reassign">
+                            Reasignarlas a otro criterio global:
+                        </label>
+                    </div>
+                </div>
+
+                <div class="cpp-reassign-select-wrapper" style="display: none;">
+                    <div class="cpp-form-group">
+                        <select class="cpp-reassign-crit-target">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <p class="description" style="color: #d93025;"><strong>¡ADVERTENCIA!</strong> Esta acción es irreversible. Se eliminarán los pesos de este criterio en todas las evaluaciones.</p>
+            </div>
+            <div class="cpp-modal-actions">
+                <button id="cpp-confirm-delete-global-crit-btn" class="cpp-btn cpp-btn-danger">Eliminar para Siempre</button>
+                <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-close">Cancelar</button>
             </div>
         </div>
     </div>

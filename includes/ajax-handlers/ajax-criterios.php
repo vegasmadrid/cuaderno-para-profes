@@ -13,7 +13,12 @@ function cpp_ajax_obtener_criterios_globales() {
     $user_id = get_current_user_id();
     $criterios = cpp_obtener_criterios_globales($user_id);
 
-    wp_send_json_success(['criterios' => $criterios]);
+    // Filtrar "Sin categoría"
+    $criterios = array_filter($criterios, function($c) {
+        return strtolower($c['nombre']) !== 'sin categoría';
+    });
+
+    wp_send_json_success(['criterios' => array_values($criterios)]);
 }
 
 add_action('wp_ajax_cpp_guardar_o_actualizar_criterio_global', 'cpp_ajax_guardar_o_actualizar_criterio_global');
@@ -49,13 +54,14 @@ function cpp_ajax_eliminar_criterio_global() {
 
     $user_id = get_current_user_id();
     $criterio_id = isset($_POST['criterio_id']) ? intval($_POST['criterio_id']) : 0;
+    $new_criterio_id = isset($_POST['new_criterio_id']) ? intval($_POST['new_criterio_id']) : null;
 
     if (empty($criterio_id)) {
         wp_send_json_error(['message' => 'ID de criterio no proporcionado.']);
         return;
     }
 
-    $res = cpp_eliminar_criterio_global($criterio_id, $user_id);
+    $res = cpp_eliminar_criterio_global($criterio_id, $user_id, $new_criterio_id);
     if ($res) wp_send_json_success(['message' => 'Criterio eliminado globalmente.']);
     else wp_send_json_error(['message' => 'Error al eliminar el criterio.']);
 }

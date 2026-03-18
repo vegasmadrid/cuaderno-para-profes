@@ -238,6 +238,53 @@
             $generalSettingsPage.on('click', '#cpp-btn-guardar-criterio-global', this.saveCriterioGlobal.bind(this));
             $generalSettingsPage.on('click', '.cpp-btn-editar-criterio-global', this.loadCriterioGlobalForEdit.bind(this));
             $generalSettingsPage.on('click', '.cpp-btn-eliminar-criterio-global', this.deleteCriterioGlobal.bind(this));
+
+            // Eventos del modal de borrado inteligente GLOBAL
+            $body.on('change', '#cpp-modal-delete-global-criterion input[name="cpp_delete_global_crit_action"]', function() {
+                if ($(this).val() === 'reassign') {
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideDown();
+                } else {
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideUp();
+                }
+            });
+
+            $body.on('click', '#cpp-confirm-delete-global-crit-btn', (e) => {
+                const $btn = $(e.currentTarget);
+                const $modal = $('#cpp-modal-delete-global-criterion');
+                const id = $modal.data('criterio-id');
+                const action = $modal.find('input[name="cpp_delete_global_crit_action"]:checked').val();
+                const reassignTo = (action === 'reassign') ? $modal.find('.cpp-reassign-crit-target').val() : null;
+
+                const originalText = $btn.text();
+                $btn.prop('disabled', true).text('Borrando...');
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_eliminar_criterio_global',
+                        nonce: cppFrontendData.nonce,
+                        criterio_id: id,
+                        new_criterio_id: reassignTo
+                    },
+                    success: (response) => {
+                        if (response.success) {
+                            $modal.fadeOut();
+                            cpp.utils.showToast(response.data.message);
+                            this.loadCriteriosGlobales();
+                            // Forzar recarga del cuaderno en el fondo
+                            $(document).trigger('cpp:forceGradebookReload');
+                        } else {
+                            alert(response.data.message);
+                        }
+                    },
+                    complete: () => {
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+
             $generalSettingsPage.on('click', '#cpp-btn-cancelar-criterio-global', this.resetCriterioGlobalForm.bind(this));
             $generalSettingsPage.on('click', '#cpp-criterio-global-colors .cpp-color-swatch', function() {
                 $(this).addClass('selected').siblings().removeClass('selected');
@@ -497,26 +544,31 @@
             const id = $li.data('criterio-id');
             const nombre = $li.find('.cpp-criterio-nombre').text();
 
-            if (confirm(`¿Seguro que quieres eliminar el criterio "${nombre}" de forma GLOBAL?\n\nEsto lo quitará de TODAS las evaluaciones donde esté asignado y las actividades asociadas se quedarán sin criterio.`)) {
-                $.ajax({
-                    url: cppFrontendData.ajaxUrl,
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        action: 'cpp_eliminar_criterio_global',
-                        nonce: cppFrontendData.nonce,
-                        criterio_id: id
-                    },
-                    success: (response) => {
-                        if (response.success) {
-                            cpp.utils.showToast(response.data.message);
-                            this.loadCriteriosGlobales();
-                        } else {
-                            alert(response.data.message);
-                        }
-                    }
-                });
+            const $modal = $('#cpp-modal-delete-global-criterion');
+            $modal.find('.cpp-delete-crit-name').text(nombre);
+            $modal.data('criterio-id', id);
+
+            // Poblar el selector de reasignación con los OTROS criterios globales
+            const $reassignSelect = $modal.find('.cpp-reassign-crit-target');
+            $reassignSelect.empty();
+
+            $('#cpp-criterios-globales-ul li').each(function() {
+                const val = $(this).data('criterio-id');
+                const text = $(this).find('.cpp-criterio-nombre').text().trim();
+                if (val != id) {
+                    $reassignSelect.append(`<option value="${val}">${text}</option>`);
+                }
+            });
+
+            if ($reassignSelect.find('option').length === 0) {
+                $modal.find('label:has(input[value="reassign"])').hide();
+            } else {
+                $modal.find('label:has(input[value="reassign"])').show();
             }
+
+            $modal.find('input[name="cpp_delete_global_crit_action"][value="none"]').prop('checked', true);
+            $modal.find('.cpp-reassign-select-wrapper').hide();
+            $modal.fadeIn();
         },
 
         rgb2hex: function(rgb) {

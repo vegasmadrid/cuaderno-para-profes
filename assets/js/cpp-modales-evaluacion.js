@@ -449,12 +449,12 @@
                 const nombre = $li.find('.cpp-criterio-swap-select :selected').text().trim();
 
                 const $modal = $('#cpp-modal-delete-criterion-eval');
-                $modal.find('#cpp-delete-crit-name').text(nombre);
+                $modal.find('.cpp-delete-crit-name').text(nombre);
                 $modal.data('evaluacion-id', evaluacionId);
                 $modal.data('criterio-id', criterioId);
 
                 // Poblar el selector de reasignación con los OTROS criterios
-                const $reassignSelect = $modal.find('#cpp-reassign-crit-target');
+                const $reassignSelect = $modal.find('.cpp-reassign-crit-target');
                 $reassignSelect.empty();
 
                 $settingsContainer.find('.cpp-criterio-swap-select').each(function() {
@@ -472,16 +472,16 @@
                 }
 
                 $modal.find('input[name="cpp_delete_crit_action"][value="none"]').prop('checked', true);
-                $modal.find('#cpp-reassign-select-wrapper').hide();
+                $modal.find('.cpp-reassign-select-wrapper').hide();
                 $modal.fadeIn();
             });
 
             // Eventos del modal de borrado inteligente
-            $document.on('change', 'input[name="cpp_delete_crit_action"]', function() {
+            $document.on('change', '#cpp-modal-delete-criterion-eval input[name="cpp_delete_crit_action"]', function() {
                 if ($(this).val() === 'reassign') {
-                    $('#cpp-reassign-select-wrapper').slideDown();
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideDown();
                 } else {
-                    $('#cpp-reassign-select-wrapper').slideUp();
+                    $(this).closest('.cpp-modal-content').find('.cpp-reassign-select-wrapper').slideUp();
                 }
             });
 
@@ -491,7 +491,7 @@
                 const evaluacionId = $modal.data('evaluacion-id');
                 const criterioId = $modal.data('criterio-id');
                 const action = $modal.find('input[name="cpp_delete_crit_action"]:checked').val();
-                const reassignTo = (action === 'reassign') ? $modal.find('#cpp-reassign-crit-target').val() : null;
+                const reassignTo = (action === 'reassign') ? $modal.find('.cpp-reassign-crit-target').val() : null;
 
                 const originalText = $btn.text();
                 $btn.prop('disabled', true).text('Procesando...');

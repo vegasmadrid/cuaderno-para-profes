@@ -63,7 +63,7 @@ function cpp_actualizar_criterio_global($criterio_id, $user_id, $datos) {
     return $wpdb->update($tabla, $update_data, ['id' => $criterio_id, 'user_id' => $user_id], $update_formats, ['%d', '%d']);
 }
 
-function cpp_eliminar_criterio_global($criterio_id, $user_id) {
+function cpp_eliminar_criterio_global($criterio_id, $user_id, $new_criterio_id = null) {
     global $wpdb;
     $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
     $tabla_eval_crit = $wpdb->prefix . 'cpp_evaluacion_criterios';
@@ -72,11 +72,12 @@ function cpp_eliminar_criterio_global($criterio_id, $user_id) {
     // Iniciar transacción
     $wpdb->query('START TRANSACTION');
 
-    // 1. Desasignar de todas las evaluaciones
+    // 1. Desasignar de todas las evaluaciones (los pesos mueren siempre porque el ID global desaparece)
     $wpdb->delete($tabla_eval_crit, ['criterio_id' => $criterio_id], ['%d']);
 
-    // 2. Marcar actividades como "Sin criterio" (NULL)
-    $wpdb->update($tabla_actividades, ['criterio_id' => null], ['criterio_id' => $criterio_id, 'user_id' => $user_id]);
+    // 2. Reasignar o dejar a NULL las actividades de TODAS las clases
+    $update_data = ['criterio_id' => $new_criterio_id ? intval($new_criterio_id) : null];
+    $wpdb->update($tabla_actividades, $update_data, ['criterio_id' => $criterio_id, 'user_id' => $user_id]);
 
     // 3. Eliminar el criterio global
     $resultado = $wpdb->delete($tabla_criterios, ['id' => $criterio_id, 'user_id' => $user_id], ['%d', '%d']);
