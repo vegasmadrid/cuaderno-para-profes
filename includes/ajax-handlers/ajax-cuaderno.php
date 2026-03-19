@@ -162,19 +162,28 @@ function cpp_ajax_cargar_cuaderno_clase() {
                         <th class="cpp-cuaderno-th-no-actividades">No hay actividades en esta evaluación.</th>
                     <?php else: ?>
                         <?php foreach ($actividades_raw as $actividad):
-                            $header_bg_color = $soft_class_color;
-                            if ($metodo_calculo === 'ponderada') {
-                                if (!empty($actividad['categoria_color']) && !in_array($actividad['nombre_categoria'], ['General', 'Sin categoría'])) {
-                                    $header_bg_color = $actividad['categoria_color'];
+                            $header_bg_color = '#FFFFFF';
+                            $has_valid_criterion = false;
+                            $display_crit_name = '';
+
+                            if ($metodo_calculo === 'ponderada' && !empty($actividad['criterio_id'])) {
+                                if (isset($map_criterios_porcentajes[$actividad['criterio_id']])) {
+                                    $has_valid_criterion = true;
+                                    if (!empty($actividad['categoria_color'])) {
+                                        $header_bg_color = $actividad['categoria_color'];
+                                    }
+                                    $porcentaje = $map_criterios_porcentajes[$actividad['criterio_id']];
+                                    $display_crit_name = esc_html($actividad['nombre_categoria']) . ' (' . $porcentaje . '%)';
                                 }
                             }
+
                             $contrasting_text_color = cpp_get_contrasting_text_color($header_bg_color);
                         ?>
                             <th class="cpp-cuaderno-th-actividad" style="background-color: <?php echo esc_attr($header_bg_color); ?>; color: <?php echo esc_attr($contrasting_text_color); ?>;">
                                 <div class="cpp-editable-activity-name"
                                         data-actividad-id="<?php echo esc_attr($actividad['id']); ?>"
                                         data-nombre-actividad="<?php echo esc_attr($actividad['nombre_actividad']); ?>"
-                                        data-categoria-id="<?php echo esc_attr($actividad['criterio_id']); // Aquí pasamos el criterio_id ?>"
+                                        data-categoria-id="<?php echo esc_attr($actividad['criterio_id']); ?>"
                                         data-nota-maxima="<?php echo esc_attr($actividad['nota_maxima']); ?>"
                                         data-fecha-actividad="<?php echo esc_attr($actividad['fecha_actividad']); ?>"
                                         data-descripcion-actividad="<?php echo esc_attr($actividad['descripcion_actividad']); ?>"
@@ -183,8 +192,8 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     <?php echo esc_html($actividad['nombre_actividad']); ?>
                                 </div>
                                 <div class="cpp-actividad-notamax" style="color: <?php echo esc_attr($contrasting_text_color); ?>;">(Sobre <?php echo cpp_formatear_nota_display($actividad['nota_maxima']); ?>)</div>
-                                <?php if ($metodo_calculo === 'ponderada' && !empty($actividad['nombre_categoria']) && !in_array($actividad['nombre_categoria'], ['General', 'Sin categoría', 'Sin criterio'])): ?>
-                                    <div class="cpp-actividad-categoria" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php echo esc_html($actividad['nombre_categoria']); ?> (<?php echo esc_html(isset($map_criterios_porcentajes[$actividad['criterio_id']]) ? $map_criterios_porcentajes[$actividad['criterio_id']] . '%' : 'N/A'); ?>)</div>
+                                <?php if ($has_valid_criterion): ?>
+                                    <div class="cpp-actividad-categoria" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php echo $display_crit_name; ?></div>
                                 <?php endif; ?>
                                 <div class="cpp-actividad-fecha" style="color: <?php echo esc_attr($contrasting_text_color); ?>;"><?php if($actividad['fecha_actividad']) echo esc_html(date('d/m/Y', strtotime($actividad['fecha_actividad']))); ?></div>
                             </th>
@@ -390,6 +399,13 @@ function cpp_ajax_guardar_actividad_evaluable() {
                 if ($crit_info) {
                     $actividad_completa['nombre_categoria'] = $crit_info->nombre;
                     $actividad_completa['categoria_color'] = $crit_info->color;
+
+                    // También obtener el porcentaje para esta evaluación específica
+                    $porcentaje = $wpdb->get_var($wpdb->prepare(
+                        "SELECT porcentaje FROM {$wpdb->prefix}cpp_evaluacion_criterios WHERE evaluacion_id = %d AND criterio_id = %d",
+                        $evaluacion_id, $criterio_id
+                    ));
+                    $actividad_completa['porcentaje_criterio'] = $porcentaje;
                 }
             } else if ($categoria_id) {
                 $categoria_info = $wpdb->get_row($wpdb->prepare("SELECT nombre_categoria, color FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE id = %d", $categoria_id));

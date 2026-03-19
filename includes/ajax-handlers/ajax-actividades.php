@@ -57,7 +57,7 @@ function cpp_ajax_get_actividades_tab_content() {
                 <tbody>
                     <?php foreach ($actividades as $act) :
                         $promedio = cpp_obtener_promedio_actividad($act['id']);
-                        $categoria_color = !empty($act['categoria_color']) ? $act['categoria_color'] : '#e0e0e0';
+                        $categoria_color = !empty($act['categoria_color']) ? $act['categoria_color'] : '#FFFFFF';
                         $is_programada = !empty($act['sesion_id']);
 
                         $crit_name = 'Sin criterio';
