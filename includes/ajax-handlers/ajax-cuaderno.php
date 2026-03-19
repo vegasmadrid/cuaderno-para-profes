@@ -497,6 +497,29 @@ function cpp_ajax_guardar_calificacion_alumno() {
     wp_send_json_success($response_data);
 }
 
+add_action('wp_ajax_cpp_save_symbol_legends', 'cpp_ajax_save_symbol_legends');
+function cpp_ajax_save_symbol_legends() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $legends = isset($_POST['legends']) ? $_POST['legends'] : [];
+
+    if (!is_array($legends)) {
+        wp_send_json_error(['message' => 'Datos no válidos.']);
+        return;
+    }
+
+    // Sanitizar leyendas
+    $sanitized_legends = [];
+    foreach ($legends as $symbol => $legend) {
+        $sanitized_legends[sanitize_text_field($symbol)] = sanitize_text_field($legend);
+    }
+
+    update_user_meta($user_id, 'cpp_symbol_legends', $sanitized_legends);
+    wp_send_json_success(['message' => 'Leyendas guardadas correctamente.']);
+}
+
 
 add_action('wp_ajax_cpp_cargar_vista_final', 'cpp_ajax_cargar_vista_final');
 function cpp_ajax_cargar_vista_final() {

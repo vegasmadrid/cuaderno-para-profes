@@ -33,10 +33,13 @@
         triggerDownload: function(event, downloadType) {
             if (event) event.preventDefault();
 
+            const includeSymbols = $('#cpp-excel-include-symbols').is(':checked') ? '1' : '0';
+
             let url = cppFrontendData.ajaxUrl +
                         '?action=cpp_download_handler' +
                         '&nonce=' + cppFrontendData.nonce +
-                        '&download_type=' + downloadType;
+                        '&download_type=' + downloadType +
+                        '&include_symbols=' + includeSymbols;
             // El nombre del archivo ('filename') se genera y maneja completamente en el backend (PHP)
 
             if (downloadType === 'single_class') {

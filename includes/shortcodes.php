@@ -738,6 +738,14 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <h2 id="cpp-modal-excel-options-titulo">Opciones de Descarga Excel</h2>
                     <div class="cpp-modal-excel-options-buttons" style="text-align: center;">
                         <p style="margin-bottom: 20px;">¿Qué datos deseas descargar en formato Excel?</p>
+
+                        <div class="cpp-form-group" style="margin-bottom: 20px;">
+                            <label style="font-weight: normal; cursor: pointer;">
+                                <input type="checkbox" id="cpp-excel-include-symbols" name="include_symbols">
+                                Tener en cuenta los símbolos para la exportación
+                            </label>
+                        </div>
+
                         <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-btn-download-excel-current-class" style="margin-right: 10px;"><span class="dashicons dashicons-download"></span> Solo esta Clase</button>
                         <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-download-excel-all-classes"><span class="dashicons dashicons-archive"></span> Todo el Cuaderno</button>
                     </div>

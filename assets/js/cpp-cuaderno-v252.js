@@ -25,7 +25,7 @@
         lastActiveTab: 'cuaderno',
 
         // --- Propiedades para la paleta de símbolos ---
-        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❤️', '📝', '❓', '⭐'],
+        availableSymbols: ['👍', '✅', '🏃‍♂️', '⌛', '❤️', '📝', '❓', '⭐', '❌'],
         symbolLegends: {}, // Se cargará desde localStorage
         localStorageKey_symbolLegends: 'cpp_symbol_legends_user_',
         lastFocusedCell: null,
@@ -44,7 +44,8 @@
                 '❤️': 'Positivo / Interés',
                 '📝': 'Falta justificada',
                 '❓': 'Duda / Necesita revisión',
-                '⭐': 'Trabajo destacado'
+                '⭐': 'Trabajo destacado',
+                '❌': 'Ausencia'
             };
             let savedLegends = {};
             try {
@@ -675,10 +676,34 @@
                     self.symbolLegends = newLegends;
                     const $button = $(this);
                     const originalText = $button.text();
-                    $button.text('¡Guardado!').css('background-color', '#28a745');
-                    setTimeout(function() {
-                        $button.text(originalText).css('background-color', '');
-                    }, 1500);
+                    $button.prop('disabled', true).text('Guardando...');
+
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_save_symbol_legends',
+                            nonce: cppFrontendData.nonce,
+                            legends: newLegends
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $button.text('¡Guardado!').css('background-color', '#28a745');
+                            } else {
+                                $button.text('Error').css('background-color', '#dc3545');
+                            }
+                        },
+                        error: function() {
+                            $button.text('Error').css('background-color', '#dc3545');
+                        },
+                        complete: function() {
+                            setTimeout(function() {
+                                $button.prop('disabled', false).text(originalText).css('background-color', '');
+                            }, 1500);
+                        }
+                    });
+
                 } catch (e) {
                     console.error("Error al guardar las leyendas en localStorage:", e);
                     alert("Hubo un error al guardar la leyenda.");
