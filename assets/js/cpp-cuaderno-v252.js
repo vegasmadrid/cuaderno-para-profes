@@ -32,52 +32,54 @@
 
         openSymbolPalette: function() {
             const self = this;
-            const userId = (cppFrontendData && cppFrontendData.userId) ? cppFrontendData.userId : '0';
-            const storageKey = self.localStorageKey_symbolLegends + userId;
 
-            // Cargar leyendas desde localStorage o usar valores por defecto
-            const defaultLegends = {
-                '👍': 'Buen trabajo / Positivo',
-                '✅': 'Tarea entregada',
-                '🏃‍♂️': 'Falta injustificada',
-                '⌛': 'Retraso',
-                '❤️': 'Positivo / Interés',
-                '📝': 'Falta justificada',
-                '❓': 'Duda / Necesita revisión',
-                '⭐': 'Trabajo destacado',
-                '❌': 'Ausencia'
-            };
-            let savedLegends = {};
-            try {
-                const savedLegendsRaw = localStorage.getItem(storageKey);
-                if (savedLegendsRaw) {
-                    savedLegends = JSON.parse(savedLegendsRaw);
-                }
-            } catch (e) {
-                console.error("Error al leer las leyendas de los símbolos desde localStorage:", e);
+            if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+                cpp.utils.showSpinner();
             }
-            // Unir los defaults con los guardados por el usuario
-            self.symbolLegends = Object.assign({}, defaultLegends, savedLegends);
 
-            const $listContainer = $('#cpp-symbol-list-container');
-            $listContainer.empty();
+            // Cargar leyendas desde el servidor para asegurar sincronización
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_get_symbol_legends',
+                    nonce: cppFrontendData.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.legends) {
+                        self.symbolLegends = response.data.legends;
+                    }
 
-            self.availableSymbols.forEach(symbol => {
-                const legendText = self.symbolLegends[symbol] || '';
+                    const $listContainer = $('#cpp-symbol-list-container');
+                    $listContainer.empty();
 
-                const row = $('<div class="cpp-symbol-row"></div>');
+                    self.availableSymbols.forEach(symbol => {
+                        const legendText = self.symbolLegends[symbol] || '';
 
-                const symbolItem = $('<div class="cpp-symbol-item"></div>').text(symbol).data('symbol', symbol);
-                const legendInput = $(`<input type="text" class="cpp-legend-input" data-symbol="${symbol}" value="${legendText}" placeholder="Significado...">`);
+                        const row = $('<div class="cpp-symbol-row"></div>');
 
-                row.append(symbolItem);
-                row.append(legendInput);
+                        const symbolItem = $('<div class="cpp-symbol-item"></div>').text(symbol).data('symbol', symbol);
+                        const legendInput = $(`<input type="text" class="cpp-legend-input" data-symbol="${symbol}" value="${legendText}" placeholder="Significado...">`);
 
-                $listContainer.append(row);
+                        row.append(symbolItem);
+                        row.append(legendInput);
+
+                        $listContainer.append(row);
+                    });
+
+                    // Mostrar el modal
+                    $('#cpp-modal-symbol-palette').css('display', 'flex');
+                },
+                error: function() {
+                    cpp.utils.showToast('Error al cargar las leyendas.', 'error');
+                },
+                complete: function() {
+                    if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                        cpp.utils.hideSpinner();
+                    }
+                }
             });
-
-            // Mostrar el modal
-            $('#cpp-modal-symbol-palette').css('display', 'flex');
         },
 
         handleDirectAbsence: function() {

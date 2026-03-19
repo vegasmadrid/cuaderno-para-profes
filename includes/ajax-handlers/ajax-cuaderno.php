@@ -497,6 +497,17 @@ function cpp_ajax_guardar_calificacion_alumno() {
     wp_send_json_success($response_data);
 }
 
+add_action('wp_ajax_cpp_get_symbol_legends', 'cpp_ajax_get_symbol_legends');
+function cpp_ajax_get_symbol_legends() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $legends = cpp_get_symbol_legends($user_id);
+
+    wp_send_json_success(['legends' => $legends]);
+}
+
 add_action('wp_ajax_cpp_save_symbol_legends', 'cpp_ajax_save_symbol_legends');
 function cpp_ajax_save_symbol_legends() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
@@ -512,8 +523,14 @@ function cpp_ajax_save_symbol_legends() {
 
     // Sanitizar leyendas
     $sanitized_legends = [];
+    $allowed_symbols = ['👍', '✅', '🏃‍♂️', '⌛', '❤️', '📝', '❓', '⭐', '❌'];
+
     foreach ($legends as $symbol => $legend) {
-        $sanitized_legends[sanitize_text_field($symbol)] = sanitize_text_field($legend);
+        // No usamos sanitize_text_field en el símbolo (key) porque es un emoji
+        // En su lugar, comprobamos si está en la lista de permitidos
+        if (in_array($symbol, $allowed_symbols)) {
+            $sanitized_legends[$symbol] = sanitize_text_field($legend);
+        }
     }
 
     update_user_meta($user_id, 'cpp_symbol_legends', $sanitized_legends);

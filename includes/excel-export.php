@@ -196,8 +196,15 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
 
                 if ($include_symbols && $nota_actividad_raw !== null && $nota_actividad_raw !== '') {
                     $final_value = $nota_actividad_raw;
+
+                    // Ordenar leyendas por longitud de símbolo descendente para evitar reemplazos parciales
+                    // de emojis compuestos.
+                    uksort($symbol_legends, function($a, $b) {
+                        return mb_strlen($b) - mb_strlen($a);
+                    });
+
                     foreach ($symbol_legends as $symbol => $legend) {
-                        if (strpos($final_value, $symbol) !== false) {
+                        if (mb_strpos($final_value, $symbol) !== false) {
                             $final_value = str_replace($symbol, ' ' . $legend, $final_value);
                         }
                     }
