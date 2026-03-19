@@ -746,7 +746,7 @@
                                 self.displayAlumnoFicha(newAlumnoId);
                             }).catch(errorMsg => {
                                 cpp.utils.hideSpinner();
-                                alert(errorMsg); // Muestra el error de la subida de foto
+                                cpp.utils.showToast(errorMsg, 'error'); // Muestra el error de la subida de foto
                                 self.handleSearch();
                                 self.displayAlumnoFicha(newAlumnoId);
                             });
@@ -757,12 +757,12 @@
                         }
                     } else {
                         cpp.utils.hideSpinner();
-                        alert(`Error: ${response.data.message}`);
+                        cpp.utils.showToast(response.data.message, 'error');
                     }
                 },
                 error: () => {
                     cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
+                    cpp.utils.showToast('Error de conexión.', 'error');
                 }
             });
         },
@@ -803,12 +803,12 @@
                         this.displayAlumnoFicha(alumnoId);
                         $(document).trigger('cpp:forceGradebookReload');
                     } else {
-                        alert(`Error: ${response.data.message}`);
+                        cpp.utils.showToast(response.data.message, 'error');
                     }
                 },
                 error: () => {
                     cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
+                    cpp.utils.showToast('Error de conexión.', 'error');
                 }
             });
         },
@@ -838,12 +838,12 @@
 
                         $(document).trigger('cpp:forceGradebookReload');
                     } else {
-                        alert(`Error: ${response.data.message}`);
+                        cpp.utils.showToast(response.data.message, 'error');
                     }
                 },
                 error: () => {
                     cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
+                    cpp.utils.showToast('Error de conexión.', 'error');
                 }
             });
         },
@@ -923,12 +923,12 @@
 
                         $(document).trigger('cpp:forceGradebookReload');
                     } else {
-                        alert(`Error: ${response.data.message}`);
+                        cpp.utils.showToast(response.data.message || 'Error al actualizar el avatar', 'error');
                     }
                 },
                 error: () => {
                     cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
+                    cpp.utils.showToast('Error de conexión.', 'error');
                 }
             });
         },
@@ -956,7 +956,7 @@
                 })
                 .catch(errorMsg => {
                     cpp.utils.hideSpinner();
-                    alert(errorMsg);
+                    cpp.utils.showToast(errorMsg, 'error');
                 });
         },
 
@@ -997,11 +997,36 @@
             const randomSeed = Math.random().toString(36).substring(2, 15);
             const newFotoUrl = `https://api.dicebear.com/8.x/avataaars/svg?seed=${randomSeed}`;
 
-            // Actualizar la imagen en la UI y el campo oculto
-            $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
-            $('#cpp-alumno-foto-url-input').val(newFotoUrl);
+            cpp.utils.showSpinner();
 
-            cpp.utils.showToast('Avatar regenerado. Pulsa "Guardar" para aplicar el cambio.');
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_update_alumno_avatar',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: alumnoId,
+                    foto_url: newFotoUrl
+                },
+                success: (response) => {
+                    cpp.utils.hideSpinner();
+                    if (response.success) {
+                        cpp.utils.showToast('Avatar actualizado.');
+                        // Actualizar la imagen en la UI y el campo oculto
+                        $('#cpp-alumno-foto-editable').attr('src', newFotoUrl);
+                        $('#cpp-alumno-foto-url-input').val(newFotoUrl);
+
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        cpp.utils.showToast(response.data.message, 'error');
+                    }
+                },
+                error: () => {
+                    cpp.utils.hideSpinner();
+                    cpp.utils.showToast('Error de conexión.', 'error');
+                }
+            });
         },
 
         handleToggleVisibility: function(e) {
@@ -1038,12 +1063,12 @@
 
                         $(document).trigger('cpp:forceGradebookReload');
                     } else {
-                        alert(`Error: ${response.data.message}`);
+                        cpp.utils.showToast(response.data.message, 'error');
                     }
                 },
                 error: () => {
                     cpp.utils.hideSpinner();
-                    alert('Error de conexión.');
+                    cpp.utils.showToast('Error de conexión.', 'error');
                 }
             });
         },
