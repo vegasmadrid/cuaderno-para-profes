@@ -52,12 +52,14 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
             wp_die('La clase no tiene evaluaciones para exportar.');
         }
 
+        $include_symbols = isset($_GET['include_symbols']) && $_GET['include_symbols'] === '1';
+
         foreach ($evaluaciones as $evaluacion) {
             if ($sheet_index > 0) {
                 $spreadsheet->createSheet();
             }
             $sheet = $spreadsheet->getSheet($sheet_index);
-            cpp_populate_sheet_with_class_data($sheet, $clase_actual_info, $user_id, $evaluacion['id']);
+            cpp_populate_sheet_with_class_data($sheet, $clase_actual_info, $user_id, $evaluacion['id'], $include_symbols);
 
             $sheet_name = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $evaluacion['nombre_evaluacion']), 0, 31);
             $sheet->setTitle($sheet_name ?: ('Evaluación ' . ($sheet_index + 1)));
@@ -69,6 +71,8 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
         if (empty($clases)) {
             wp_die('No tienes clases para exportar.');
         }
+
+        $include_symbols = isset($_GET['include_symbols']) && $_GET['include_symbols'] === '1';
 
         foreach ($clases as $clase_info_loop) {
             $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_info_loop['id'], $user_id);
@@ -83,7 +87,7 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
                     $spreadsheet->createSheet();
                 }
                 $sheet = $spreadsheet->getSheet($sheet_index);
-                cpp_populate_sheet_with_class_data($sheet, $clase_completa_info, $user_id, $evaluacion['id']);
+                cpp_populate_sheet_with_class_data($sheet, $clase_completa_info, $user_id, $evaluacion['id'], $include_symbols);
 
                 $clase_nombre_sanitized = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $clase_info_loop['nombre']), 0, 15);
                 $eval_nombre_sanitized = substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $evaluacion['nombre_evaluacion']), 0, 15);
@@ -127,7 +131,7 @@ function cpp_generate_excel_for_download($user_id, $clase_id_para_exportar = nul
  * (Esta función es usada por cpp_generate_excel_for_download)
  */
 
-function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $evaluacion_id) {
+function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id, $evaluacion_id, $include_symbols = false) {
 
     $clase_id = $clase_info_array['id'];
     $nombre_clase = $clase_info_array['nombre'];
@@ -176,6 +180,11 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
 
     $current_row_excel = 4;
     if (!empty($alumnos)) {
+        $symbol_legends = [];
+        if ($include_symbols) {
+            $symbol_legends = cpp_get_symbol_legends($user_id);
+        }
+
         foreach ($alumnos as $alumno) {
             $col_index_data = 1;
             $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, $alumno['apellidos'] . ', ' . $alumno['nombre']);
@@ -184,7 +193,30 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
             foreach ($actividades as $act) {
                 $col_index_data++;
                 $nota_actividad_raw = isset($calificaciones_raw[$alumno['id']][$act['id']]) ? $calificaciones_raw[$alumno['id']][$act['id']] : null;
-                if (is_numeric($nota_actividad_raw)) {
+
+                if ($include_symbols && $nota_actividad_raw !== null && $nota_actividad_raw !== '') {
+                    $final_value = $nota_actividad_raw;
+
+                    // Ordenar leyendas por longitud de símbolo descendente para evitar reemplazos parciales
+                    // de emojis compuestos.
+                    uksort($symbol_legends, function($a, $b) {
+                        return mb_strlen($b) - mb_strlen($a);
+                    });
+
+                    foreach ($symbol_legends as $symbol => $legend) {
+                        if (mb_strpos($final_value, $symbol) !== false) {
+                            $final_value = str_replace($symbol, ' ' . $legend, $final_value);
+                        }
+                    }
+                    $final_value = trim($final_value);
+
+                    if (is_numeric(str_replace(',', '.', $final_value))) {
+                        $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, floatval(str_replace(',', '.', $final_value)));
+                        $sheet->getStyle(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel)->getNumberFormat()->setFormatCode('0.00');
+                    } else {
+                        $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, $final_value);
+                    }
+                } elseif (is_numeric($nota_actividad_raw)) {
                     $sheet->setCellValue(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel, floatval($nota_actividad_raw));
                     $sheet->getStyle(Coordinate::stringFromColumnIndex($col_index_data) . $current_row_excel)->getNumberFormat()->setFormatCode('0.00');
                 } else {

@@ -81,6 +81,29 @@ if (!function_exists('cpp_formatear_nota_display')) {
     }
 }
 
+if (!function_exists('cpp_get_symbol_legends')) {
+    function cpp_get_symbol_legends($user_id) {
+        $default_legends = [
+            '👍' => 'Buen trabajo / Positivo',
+            '✅' => 'Tarea entregada',
+            '🏃‍♂️' => 'Falta injustificada',
+            '⌛' => 'Retraso',
+            '❤️' => 'Positivo / Interés',
+            '📝' => 'Falta justificada',
+            '❓' => 'Duda / Necesita revisión',
+            '⭐' => 'Trabajo destacado',
+            '❌' => 'Ausencia'
+        ];
+
+        $saved_legends = get_user_meta($user_id, 'cpp_symbol_legends', true);
+        if (!is_array($saved_legends)) {
+            $saved_legends = [];
+        }
+
+        return array_merge($default_legends, $saved_legends);
+    }
+}
+
 if (!function_exists('cpp_get_avatar_url')) {
     function cpp_get_avatar_url($alumno) {
         if (!empty($alumno['foto'])) {
