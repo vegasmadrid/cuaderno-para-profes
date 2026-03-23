@@ -213,7 +213,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <div class="cpp-form-group" style="display: flex; gap: 10px; align-items: flex-end;">
                                         <div style="flex-grow: 1;">
                                             <label for="cpp-new-holiday-name">Nombre (opcional):</label>
-                                            <input type="text" id="cpp-new-holiday-name" placeholder="Ej: Navidad, Día del Trabajador...">
+                                            <input type="text" id="cpp-new-holiday-name" placeholder="Ej: Navidad, Día del Trabajador..." maxlength="40">
                                         </div>
                                         <div>
                                             <label for="cpp-new-holiday-date">Fecha:</label>
@@ -228,7 +228,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <div class="cpp-form-group" style="display: flex; flex-direction: column; gap: 10px;">
                                         <div style="width: 100%;">
                                             <label for="cpp-new-vacation-name">Nombre (opcional):</label>
-                                            <input type="text" id="cpp-new-vacation-name" placeholder="Ej: Semana Santa, Vacaciones de Verano..." style="width: 100%;">
+                                            <input type="text" id="cpp-new-vacation-name" placeholder="Ej: Semana Santa, Vacaciones de Verano..." style="width: 100%;" maxlength="40">
                                         </div>
                                         <div style="display: flex; gap: 10px; align-items: flex-end;">
                                             <div style="flex-grow: 1;">

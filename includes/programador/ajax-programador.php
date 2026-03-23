@@ -46,7 +46,26 @@ function cpp_ajax_save_programador_config() {
         return;
     }
 
-    // Aquí podrías añadir validación extra para el formato de calendar_config si es necesario
+    // Validar y sanitizar la configuración antes de guardar
+    if (isset($calendar_config['holidays']) && is_array($calendar_config['holidays'])) {
+        foreach ($calendar_config['holidays'] as &$h) {
+            if (is_array($h)) {
+                $h['date'] = sanitize_text_field($h['date'] ?? '');
+                $h['name'] = sanitize_text_field(mb_substr($h['name'] ?? '', 0, 40));
+            } else {
+                $h = sanitize_text_field($h);
+            }
+        }
+    }
+    if (isset($calendar_config['vacations']) && is_array($calendar_config['vacations'])) {
+        foreach ($calendar_config['vacations'] as &$v) {
+            if (is_array($v)) {
+                $v['start'] = sanitize_text_field($v['start'] ?? '');
+                $v['end'] = sanitize_text_field($v['end'] ?? '');
+                $v['name'] = sanitize_text_field(mb_substr($v['name'] ?? '', 0, 40));
+            }
+        }
+    }
 
     cpp_programador_save_config_value($user_id, 'calendar_config', $calendar_config);
     wp_send_json_success(['message' => 'Configuración del calendario guardada correctamente.']);
