@@ -67,7 +67,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
         }
     }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos', true);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos', true);
     $actividades_raw = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_activa_id);
     $calificaciones_raw = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_activa_id);
 
@@ -421,7 +421,7 @@ function cpp_ajax_guardar_actividad_evaluable() {
         }
 
         if ($categoria_cambiada) {
-            $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos', true);
+            $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', 'apellidos', true);
             $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
             $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
             $notas_finales_actualizadas = [];
@@ -579,7 +579,7 @@ function cpp_ajax_cargar_vista_final() {
     $clase_color_actual = isset($clase_db_arr['color']) && !empty($clase_db_arr['color']) ? $clase_db_arr['color'] : '#2962FF';
     $texto_color_barra_fija = cpp_get_contrasting_text_color($clase_color_actual);
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos', true);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos', true);
     $notas_por_evaluacion = [];
     $notas_finales_promediadas = [];
 

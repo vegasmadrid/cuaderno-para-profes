@@ -59,7 +59,7 @@ function cpp_ajax_get_resumen_data()
         $nota_aprobado_100 = ($nota_aprobado_clase / floatval($clase['base_nota_final'])) * 100;
 
         // 2. Obtener los alumnos de la clase (solo visibles)
-        $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos', true);
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', 'apellidos', true);
         $totalAlumnos += count($alumnos);
 
         if (empty($alumnos)) {
