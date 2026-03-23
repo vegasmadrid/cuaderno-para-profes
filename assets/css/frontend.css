@@ -1679,7 +1679,7 @@ body.cpp-no-text-select {
     word-break: break-word;
 }
 
-.cpp-config-list-actions {
+.cpp-config-list-actions, .cpp-list-item-actions {
     display: flex;
     gap: 4px;
     flex-shrink: 0;

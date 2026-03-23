@@ -220,6 +220,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                             <input type="date" id="cpp-new-holiday-date">
                                         </div>
                                         <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir</button>
+                                        <button type="button" id="cpp-cancel-holiday-edit-btn" class="cpp-btn" style="display: none;">Cancelar</button>
                                     </div>
                                 </div>
                                 <div class="cpp-form-section">
@@ -238,6 +239,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                                 <label>Fin: <input type="date" id="cpp-new-vacation-end" style="width: 100%;"></label>
                                             </div>
                                             <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir</button>
+                                            <button type="button" id="cpp-cancel-vacation-edit-btn" class="cpp-btn" style="display: none;">Cancelar</button>
                                         </div>
                                     </div>
                                 </div>

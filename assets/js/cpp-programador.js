@@ -10,6 +10,7 @@
     appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, pdfDownloadModal: {}, pdfRangeModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
+    editingHolidayIndex: null, editingVacationIndex: null,
     selectedSesiones: [],
     lastClickedSesionId: null,
     originalContent: '', semanaDate: new Date(),
@@ -187,9 +188,13 @@
         // --- Eventos de Configuración General (delegados desde body) ---
         const $body = $('body');
         $body.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
-        $body.on('click', '.cpp-remove-holiday-btn', function() { self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '#cpp-cancel-holiday-edit-btn', () => this.cancelHolidayEdit());
+        $body.on('click', '.cpp-remove-holiday-btn', function(e) { e.stopPropagation(); self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-edit-holiday-btn', function() { self.loadHolidayForEdit(this.closest('.cpp-list-item').dataset.index); });
         $body.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
-        $body.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '#cpp-cancel-vacation-edit-btn', () => this.cancelVacationEdit());
+        $body.on('click', '.cpp-remove-vacation-btn', function(e) { e.stopPropagation(); self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-edit-vacation-btn', function() { self.loadVacationForEdit(this.closest('.cpp-list-item').dataset.index); });
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
@@ -782,32 +787,78 @@
         this.isProcessing = true;
         const dateInput = document.getElementById('cpp-new-holiday-date');
         const nameInput = document.getElementById('cpp-new-holiday-name');
+        const cancelBtn = document.getElementById('cpp-cancel-holiday-edit-btn');
         const date = dateInput.value;
         const name = nameInput.value.trim();
 
-        // Verificar si la fecha ya existe (pueden venir como string o como objeto)
-        const exists = this.config.calendar_config.holidays.some(h => {
-            const hDate = (typeof h === 'string') ? h : h.date;
-            return hDate === date;
+        if (!date) {
+            alert('Por favor, selecciona una fecha para el festivo.');
+            this.isProcessing = false;
+            return;
+        }
+
+        if (this.editingHolidayIndex !== null) {
+            // Modo Edición
+            this.config.calendar_config.holidays[this.editingHolidayIndex] = { date, name };
+            this.editingHolidayIndex = null;
+            document.getElementById('cpp-add-holiday-btn').textContent = 'Añadir';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+        } else {
+            // Modo Añadir
+            const exists = this.config.calendar_config.holidays.some(h => {
+                const hDate = (typeof h === 'string') ? h : h.date;
+                return hDate === date;
+            });
+
+            if (exists) {
+                alert('Esa fecha ya está en la lista de festivos.');
+                this.isProcessing = false;
+                return;
+            }
+            this.config.calendar_config.holidays.push({ date, name });
+        }
+
+        this.config.calendar_config.holidays.sort((a, b) => {
+            const dateA = (typeof a === 'string') ? a : a.date;
+            const dateB = (typeof b === 'string') ? b : b.date;
+            return dateA.localeCompare(dateB);
         });
 
-        if (date && !exists) {
-            this.config.calendar_config.holidays.push({ date, name });
-            this.config.calendar_config.holidays.sort((a, b) => {
-                const dateA = (typeof a === 'string') ? a : a.date;
-                const dateB = (typeof b === 'string') ? b : b.date;
-                return dateA.localeCompare(dateB);
-            });
-            this.renderHolidaysList();
-            dateInput.value = '';
-            nameInput.value = '';
-        } else {
-            alert('Por favor, selecciona una fecha válida que no esté ya en la lista.');
-        }
+        this.renderHolidaysList();
+        dateInput.value = '';
+        nameInput.value = '';
         this.isProcessing = false;
     },
 
+    loadHolidayForEdit(index) {
+        const holiday = this.config.calendar_config.holidays[index];
+        if (!holiday) return;
+
+        this.editingHolidayIndex = index;
+        const date = (typeof holiday === 'string') ? holiday : holiday.date;
+        const name = (typeof holiday === 'string') ? '' : (holiday.name || '');
+
+        document.getElementById('cpp-new-holiday-date').value = date;
+        document.getElementById('cpp-new-holiday-name').value = name;
+        document.getElementById('cpp-add-holiday-btn').textContent = 'Actualizar';
+        const cancelBtn = document.getElementById('cpp-cancel-holiday-edit-btn');
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        document.getElementById('cpp-new-holiday-name').focus();
+    },
+
+    cancelHolidayEdit() {
+        this.editingHolidayIndex = null;
+        document.getElementById('cpp-new-holiday-date').value = '';
+        document.getElementById('cpp-new-holiday-name').value = '';
+        document.getElementById('cpp-add-holiday-btn').textContent = 'Añadir';
+        const cancelBtn = document.getElementById('cpp-cancel-holiday-edit-btn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+    },
+
     removeHoliday(index) {
+        if (this.editingHolidayIndex !== null) {
+            this.cancelHolidayEdit();
+        }
         this.config.calendar_config.holidays.splice(index, 1);
         this.renderHolidaysList();
     },
@@ -819,12 +870,20 @@
         const endInput = document.getElementById('cpp-new-vacation-end');
         const nameInput = document.getElementById('cpp-new-vacation-name');
         const addButton = document.getElementById('cpp-add-vacation-btn');
+        const cancelBtn = document.getElementById('cpp-cancel-vacation-edit-btn');
         const start = startInput.value;
         const end = endInput.value;
         const name = nameInput.value.trim();
 
         if (start && end && new Date(start) <= new Date(end)) {
-            this.config.calendar_config.vacations.push({ start, end, name });
+            if (this.editingVacationIndex !== null) {
+                this.config.calendar_config.vacations[this.editingVacationIndex] = { start, end, name };
+                this.editingVacationIndex = null;
+                addButton.textContent = 'Añadir';
+                if (cancelBtn) cancelBtn.style.display = 'none';
+            } else {
+                this.config.calendar_config.vacations.push({ start, end, name });
+            }
             this.renderVacationsList();
             startInput.value = '';
             endInput.value = '';
@@ -838,7 +897,34 @@
         this.isProcessing = false;
     },
 
+    loadVacationForEdit(index) {
+        const vacation = this.config.calendar_config.vacations[index];
+        if (!vacation) return;
+
+        this.editingVacationIndex = index;
+        document.getElementById('cpp-new-vacation-start').value = vacation.start;
+        document.getElementById('cpp-new-vacation-end').value = vacation.end;
+        document.getElementById('cpp-new-vacation-name').value = vacation.name || '';
+        document.getElementById('cpp-add-vacation-btn').textContent = 'Actualizar';
+        const cancelBtn = document.getElementById('cpp-cancel-vacation-edit-btn');
+        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+        document.getElementById('cpp-new-vacation-name').focus();
+    },
+
+    cancelVacationEdit() {
+        this.editingVacationIndex = null;
+        document.getElementById('cpp-new-vacation-start').value = '';
+        document.getElementById('cpp-new-vacation-end').value = '';
+        document.getElementById('cpp-new-vacation-name').value = '';
+        document.getElementById('cpp-add-vacation-btn').textContent = 'Añadir';
+        const cancelBtn = document.getElementById('cpp-cancel-vacation-edit-btn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+    },
+
     removeVacation(index) {
+        if (this.editingVacationIndex !== null) {
+            this.cancelVacationEdit();
+        }
         this.config.calendar_config.vacations.splice(index, 1);
         this.renderVacationsList();
     },
@@ -868,11 +954,14 @@
             const name = (typeof holiday === 'string') ? '' : (holiday.name || '');
             return `
                 <div class="cpp-list-item" data-index="${index}">
-                    <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; flex-direction: column; flex-grow: 1;">
                         <strong>${this.escapeHtml(date)}</strong>
                         ${name ? `<small>${this.escapeHtml(name)}</small>` : ''}
                     </div>
-                    <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn">&times;</button>
+                    <div class="cpp-list-item-actions">
+                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-holiday-btn" title="Editar"><span class="dashicons dashicons-edit"></span></button>
+                        <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn" title="Eliminar">&times;</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -883,11 +972,14 @@
         const vacations = this.config.calendar_config.vacations || [];
         list.innerHTML = vacations.map((vac, index) => `
             <div class="cpp-list-item" data-index="${index}">
-                <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: column; flex-grow: 1;">
                     <strong>${this.escapeHtml(vac.start)} al ${this.escapeHtml(vac.end)}</strong>
                     ${vac.name ? `<small>${this.escapeHtml(vac.name)}</small>` : ''}
                 </div>
-                <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn">&times;</button>
+                <div class="cpp-list-item-actions">
+                    <button type="button" class="cpp-btn-icon-minimal cpp-edit-vacation-btn" title="Editar"><span class="dashicons dashicons-edit"></span></button>
+                    <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn" title="Eliminar">&times;</button>
+                </div>
             </div>
         `).join('');
     },
