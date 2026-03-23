@@ -981,6 +981,10 @@
     renderHolidaysList() {
         const list = document.getElementById('cpp-holidays-list');
         const holidays = this.config.calendar_config.holidays || [];
+        const editSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
+        const deleteSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>';
+        const saveSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>';
+
         list.innerHTML = holidays.map((holiday, index) => {
             const isEditing = this.editingHolidayIndex == index;
             const date = (typeof holiday === 'string') ? holiday : holiday.date;
@@ -994,8 +998,8 @@
                             <input type="text" class="cpp-inline-edit-name" value="${this.escapeHtml(name)}" placeholder="Nombre..." style="flex-grow: 1;">
                         </div>
                         <div class="cpp-list-item-actions">
-                            <button type="button" class="cpp-btn-icon-minimal cpp-save-holiday-inline-btn" title="Guardar"><span class="dashicons dashicons-yes"></span></button>
-                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-holiday-inline-btn" title="Cancelar"><span class="dashicons dashicons-no-alt"></span></button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-save-holiday-inline-btn" title="Guardar">${saveSVG}</button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-holiday-inline-btn" title="Cancelar">${deleteSVG}</button>
                         </div>
                     </div>
                 `;
@@ -1008,8 +1012,8 @@
                         ${name ? `<small>${this.escapeHtml(name)}</small>` : ''}
                     </div>
                     <div class="cpp-list-item-actions">
-                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-holiday-btn" title="Editar"><span class="dashicons dashicons-edit"></span></button>
-                        <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn" title="Eliminar">&times;</button>
+                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-holiday-btn" title="Editar">${editSVG}</button>
+                        <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn" title="Eliminar">${deleteSVG}</button>
                     </div>
                 </div>
             `;
@@ -1019,6 +1023,10 @@
     renderVacationsList() {
         const list = document.getElementById('cpp-vacations-list');
         const vacations = this.config.calendar_config.vacations || [];
+        const editSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
+        const deleteSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>';
+        const saveSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>';
+
         list.innerHTML = vacations.map((vac, index) => {
             const isEditing = this.editingVacationIndex == index;
 
@@ -1033,8 +1041,8 @@
                             <input type="text" class="cpp-inline-edit-name" value="${this.escapeHtml(vac.name || '')}" placeholder="Nombre del periodo...">
                         </div>
                         <div class="cpp-list-item-actions">
-                            <button type="button" class="cpp-btn-icon-minimal cpp-save-vacation-inline-btn" title="Guardar"><span class="dashicons dashicons-yes"></span></button>
-                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-vacation-inline-btn" title="Cancelar"><span class="dashicons dashicons-no-alt"></span></button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-save-vacation-inline-btn" title="Guardar">${saveSVG}</button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-vacation-inline-btn" title="Cancelar">${deleteSVG}</button>
                         </div>
                     </div>
                 `;
@@ -1047,8 +1055,8 @@
                         ${vac.name ? `<small>${this.escapeHtml(vac.name)}</small>` : ''}
                     </div>
                     <div class="cpp-list-item-actions">
-                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-vacation-btn" title="Editar"><span class="dashicons dashicons-edit"></span></button>
-                        <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn" title="Eliminar">&times;</button>
+                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-vacation-btn" title="Editar">${editSVG}</button>
+                        <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn" title="Eliminar">${deleteSVG}</button>
                     </div>
                 </div>
             `;
