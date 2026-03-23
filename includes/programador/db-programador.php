@@ -654,7 +654,16 @@ function cpp_programador_calculate_fechas($sesiones_en_evaluacion, $start_date_s
         $ymd = $current_date->format('Y-m-d');
 
         $is_working_day = in_array($day_key, isset($calendar_config['working_days']) ? $calendar_config['working_days'] : []);
-        $is_holiday = in_array($ymd, isset($calendar_config['holidays']) ? $calendar_config['holidays'] : []);
+        $is_holiday = false;
+        if (!empty($calendar_config['holidays'])) {
+            foreach ($calendar_config['holidays'] as $h) {
+                $h_date = is_array($h) ? $h['date'] : $h;
+                if ($h_date === $ymd) {
+                    $is_holiday = true;
+                    break;
+                }
+            }
+        }
         $is_vacation = false;
         if (!empty($calendar_config['vacations'])) {
             foreach ($calendar_config['vacations'] as $v) {

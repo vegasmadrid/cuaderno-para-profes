@@ -651,6 +651,28 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     margin: 2px;
 }
 
+.cpp-semana-holiday-cell {
+    background-color: #f1f3f4 !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    padding: 0 !important;
+}
+
+.cpp-vertical-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #5f6368;
+    letter-spacing: 2px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 16px;
+}
+
 .cpp-horario-header-row th {
     padding-top: 8px;
     padding-bottom: 8px;

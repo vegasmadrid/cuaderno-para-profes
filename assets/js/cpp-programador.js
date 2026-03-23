@@ -781,12 +781,26 @@
         if (this.isProcessing) return;
         this.isProcessing = true;
         const dateInput = document.getElementById('cpp-new-holiday-date');
+        const nameInput = document.getElementById('cpp-new-holiday-name');
         const date = dateInput.value;
-        if (date && !this.config.calendar_config.holidays.includes(date)) {
-            this.config.calendar_config.holidays.push(date);
-            this.config.calendar_config.holidays.sort();
+        const name = nameInput.value.trim();
+
+        // Verificar si la fecha ya existe (pueden venir como string o como objeto)
+        const exists = this.config.calendar_config.holidays.some(h => {
+            const hDate = (typeof h === 'string') ? h : h.date;
+            return hDate === date;
+        });
+
+        if (date && !exists) {
+            this.config.calendar_config.holidays.push({ date, name });
+            this.config.calendar_config.holidays.sort((a, b) => {
+                const dateA = (typeof a === 'string') ? a : a.date;
+                const dateB = (typeof b === 'string') ? b : b.date;
+                return dateA.localeCompare(dateB);
+            });
             this.renderHolidaysList();
             dateInput.value = '';
+            nameInput.value = '';
         } else {
             alert('Por favor, selecciona una fecha válida que no esté ya en la lista.');
         }
@@ -803,15 +817,18 @@
         this.isProcessing = true;
         const startInput = document.getElementById('cpp-new-vacation-start');
         const endInput = document.getElementById('cpp-new-vacation-end');
+        const nameInput = document.getElementById('cpp-new-vacation-name');
         const addButton = document.getElementById('cpp-add-vacation-btn');
         const start = startInput.value;
         const end = endInput.value;
+        const name = nameInput.value.trim();
 
         if (start && end && new Date(start) <= new Date(end)) {
-            this.config.calendar_config.vacations.push({ start, end });
+            this.config.calendar_config.vacations.push({ start, end, name });
             this.renderVacationsList();
             startInput.value = '';
             endInput.value = '';
+            nameInput.value = '';
             if (addButton) {
                 addButton.blur();
             }
@@ -846,12 +863,19 @@
     renderHolidaysList() {
         const list = document.getElementById('cpp-holidays-list');
         const holidays = this.config.calendar_config.holidays || [];
-        list.innerHTML = holidays.map((holiday, index) => `
-            <div class="cpp-list-item" data-index="${index}">
-                <span>${holiday}</span>
-                <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn">&times;</button>
-            </div>
-        `).join('');
+        list.innerHTML = holidays.map((holiday, index) => {
+            const date = (typeof holiday === 'string') ? holiday : holiday.date;
+            const name = (typeof holiday === 'string') ? '' : (holiday.name || '');
+            return `
+                <div class="cpp-list-item" data-index="${index}">
+                    <div style="display: flex; flex-direction: column;">
+                        <strong>${this.escapeHtml(date)}</strong>
+                        ${name ? `<small>${this.escapeHtml(name)}</small>` : ''}
+                    </div>
+                    <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn">&times;</button>
+                </div>
+            `;
+        }).join('');
     },
 
     renderVacationsList() {
@@ -859,7 +883,10 @@
         const vacations = this.config.calendar_config.vacations || [];
         list.innerHTML = vacations.map((vac, index) => `
             <div class="cpp-list-item" data-index="${index}">
-                <span>${vac.start} al ${vac.end}</span>
+                <div style="display: flex; flex-direction: column;">
+                    <strong>${this.escapeHtml(vac.start)} al ${this.escapeHtml(vac.end)}</strong>
+                    ${vac.name ? `<small>${this.escapeHtml(vac.name)}</small>` : ''}
+                </div>
                 <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn">&times;</button>
             </div>
         `).join('');
@@ -2258,10 +2285,10 @@
                         const ymd = currentDate.toISOString().slice(0, 10);
 
                         const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-                        const isHoliday = calendarConfig.holidays.includes(ymd);
-                        const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
+                        const holiday = calendarConfig.holidays.find(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
+                        const vacation = calendarConfig.vacations.find(v => ymd >= v.start && ymd <= v.end);
 
-                        if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
+                        if (isWorkingDay && !holiday && !vacation && dayKey && horario[dayKey]) {
                             const sortedSlots = Object.keys(horario[dayKey]).sort();
                             for (const slot of sortedSlots) {
                                 if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(clase.id)) {
@@ -2326,13 +2353,27 @@
         });
         tableHTML += `</tr></thead><tbody>`;
 
-        (this.config.time_slots || []).forEach(slot => {
+        (this.config.time_slots || []).forEach((slot, slotIndex) => {
             tableHTML += `<tr><td class="cpp-semana-td-hora">${slot}</td>`;
             renderedHeaders.forEach(header => {
                 const dayKey = header.dayKey;
                 const todayClass = header.isToday ? 'cpp-semana-today' : '';
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
+
+                const holiday = calendarConfig.holidays.find(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
+                const vacation = calendarConfig.vacations.find(v => ymd >= v.start && ymd <= v.end);
+
+                if (holiday || vacation) {
+                    if (slotIndex === 0) {
+                        const name = holiday ? (typeof holiday === 'string' ? '' : (holiday.name || '')) : (vacation.name || '');
+                        tableHTML += `<td class="${todayClass} cpp-semana-holiday-cell" rowspan="${this.config.time_slots.length}">
+                                        <div class="cpp-vertical-text">${this.escapeHtml(name)}</div>
+                                      </td>`;
+                    }
+                    return;
+                }
+
                 const eventos = schedule.filter(e => e.fecha.toISOString().slice(0,10) === ymd && e.hora === slot);
                 let cellContent = '';
                 if (eventos.length > 0) {
@@ -2439,7 +2480,7 @@
             const ymd = currentDate.toISOString().slice(0, 10);
 
             const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-            const isHoliday = calendarConfig.holidays.includes(ymd);
+            const isHoliday = calendarConfig.holidays.some(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
             const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
 
             if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
