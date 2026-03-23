@@ -2545,14 +2545,19 @@
                 if (holiday || vacation) {
                     if (slotIndex === 0) {
                         const name = holiday ? (typeof holiday === 'string' ? '' : (holiday.name || '')) : (vacation.name || '');
-                        let fontSize = '2rem';
+                        let fontSize = '2.2rem';
                         const nameLen = name.length;
                         if (nameLen > 35) fontSize = '1.1rem';
                         else if (nameLen > 25) fontSize = '1.3rem';
-                        else if (nameLen > 15) fontSize = '1.6rem';
+                        else if (nameLen > 15) fontSize = '1.7rem';
+
+                        // Split name into spans for vertical distribution via flexbox
+                        const splitNameHTML = name.split('').map(char => `<span>${this.escapeHtml(char === ' ' ? '\u00A0' : char)}</span>`).join('');
 
                         tableHTML += `<td class="${todayClass} cpp-semana-holiday-cell" rowspan="${this.config.time_slots.length}">
-                                        <div class="cpp-vertical-text" style="font-size: ${fontSize};">${this.escapeHtml(name)}</div>
+                                        <div class="cpp-vertical-text" style="font-size: ${fontSize};">
+                                            ${splitNameHTML}
+                                        </div>
                                       </td>`;
                     }
                     return;

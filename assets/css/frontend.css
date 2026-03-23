@@ -660,24 +660,27 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 .cpp-vertical-text {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
     text-transform: uppercase;
     font-weight: 700;
     color: #5f6368;
-    letter-spacing: 1.5px;
     height: 100%;
     min-height: 200px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around;
     margin: 0 auto;
-    line-height: 1.1;
-    word-break: break-word;
+    line-height: 1;
     text-align: center;
     padding: 20px 5px;
     max-height: 100%;
     overflow: hidden;
+    box-sizing: border-box;
+}
+
+.cpp-vertical-text span {
+    display: block;
+    flex-shrink: 0;
 }
 
 .cpp-horario-header-row th {
