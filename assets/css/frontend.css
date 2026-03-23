@@ -661,7 +661,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 
 .cpp-vertical-text {
     text-transform: uppercase;
-    font-weight: 700;
+    font-weight: 400;
     color: #5f6368;
     height: 100%;
     min-height: 200px;
