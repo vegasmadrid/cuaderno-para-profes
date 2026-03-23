@@ -10,6 +10,7 @@
     appElement: null, tabs: {}, tabContents: {}, sesionModal: {}, configModal: {}, copySesionModal: {}, pdfDownloadModal: {}, pdfRangeModal: {},
     clases: [], config: { time_slots: [], horario: {}, calendar_config: {} }, sesiones: [], simbolos: {},
     currentClase: null, currentEvaluacionId: null, currentSesion: null, currentSimboloEditingSesionId: null,
+    editingHolidayIndex: null, editingVacationIndex: null,
     selectedSesiones: [],
     lastClickedSesionId: null,
     originalContent: '', semanaDate: new Date(),
@@ -187,9 +188,18 @@
         // --- Eventos de Configuración General (delegados desde body) ---
         const $body = $('body');
         $body.on('click', '#cpp-add-holiday-btn', () => this.addHoliday());
-        $body.on('click', '.cpp-remove-holiday-btn', function() { self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '#cpp-cancel-holiday-edit-btn', () => this.cancelHolidayEdit());
+        $body.on('click', '.cpp-remove-holiday-btn', function(e) { e.stopPropagation(); self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-edit-holiday-btn', function() { self.loadHolidayForEdit(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-save-holiday-inline-btn', function() { self.saveHolidayInline(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-cancel-holiday-inline-btn', () => { this.editingHolidayIndex = null; this.renderHolidaysList(); });
+
         $body.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
-        $body.on('click', '.cpp-remove-vacation-btn', function() { self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '#cpp-cancel-vacation-edit-btn', () => this.cancelVacationEdit());
+        $body.on('click', '.cpp-remove-vacation-btn', function(e) { e.stopPropagation(); self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-edit-vacation-btn', function() { self.loadVacationForEdit(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-save-vacation-inline-btn', function() { self.saveVacationInline(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-cancel-vacation-inline-btn', () => { this.editingVacationIndex = null; this.renderVacationsList(); });
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
@@ -778,52 +788,169 @@
     },
 
     addHoliday() {
-        if (this.isProcessing) return;
-        this.isProcessing = true;
         const dateInput = document.getElementById('cpp-new-holiday-date');
+        const nameInput = document.getElementById('cpp-new-holiday-name');
         const date = dateInput.value;
-        if (date && !this.config.calendar_config.holidays.includes(date)) {
-            this.config.calendar_config.holidays.push(date);
-            this.config.calendar_config.holidays.sort();
-            this.renderHolidaysList();
-            dateInput.value = '';
-        } else {
-            alert('Por favor, selecciona una fecha válida que no esté ya en la lista.');
+        const name = nameInput.value.trim();
+
+        if (!date) {
+            alert('Por favor, selecciona una fecha para el festivo.');
+            return;
         }
-        this.isProcessing = false;
+
+        // Modo Añadir
+        const exists = this.config.calendar_config.holidays.some(h => {
+            const hDate = (typeof h === 'string') ? h : h.date;
+            return hDate === date;
+        });
+
+        if (exists) {
+            alert('Esa fecha ya está en la lista de festivos.');
+            return;
+        }
+        this.config.calendar_config.holidays.push({ date, name });
+
+        this.config.calendar_config.holidays.sort((a, b) => {
+            const dateA = (typeof a === 'string') ? a : a.date;
+            const dateB = (typeof b === 'string') ? b : b.date;
+            return dateA.localeCompare(dateB);
+        });
+
+        this.persistConfig().then(success => {
+            if (success) {
+                this.renderHolidaysList();
+                dateInput.value = '';
+                nameInput.value = '';
+            }
+        });
+    },
+
+    loadHolidayForEdit(index) {
+        this.editingHolidayIndex = index;
+        this.renderHolidaysList();
+
+        // Enfocar el input de nombre al entrar en modo edición
+        const row = document.querySelector(`.cpp-list-item[data-index="${index}"]`);
+        if (row) {
+            const nameInput = row.querySelector('.cpp-inline-edit-name');
+            if (nameInput) nameInput.focus();
+        }
+    },
+
+    saveHolidayInline(index) {
+        const list = document.getElementById('cpp-holidays-list');
+        const row = list ? list.querySelector(`.cpp-list-item[data-index="${index}"]`) : null;
+        if (!row) return;
+
+        const date = row.querySelector('.cpp-inline-edit-date').value;
+        const name = row.querySelector('.cpp-inline-edit-name').value.trim();
+
+        if (!date) {
+            alert('Por favor, selecciona una fecha para el festivo.');
+            return;
+        }
+
+        this.config.calendar_config.holidays[index] = { date, name };
+
+        this.config.calendar_config.holidays.sort((a, b) => {
+            const dateA = (typeof a === 'string') ? a : a.date;
+            const dateB = (typeof b === 'string') ? b : b.date;
+            return dateA.localeCompare(dateB);
+        });
+
+        this.persistConfig().then(success => {
+            if (success) {
+                this.editingHolidayIndex = null;
+                this.renderHolidaysList();
+            }
+        });
+    },
+
+    cancelHolidayEdit() {
+        // Esta función ahora solo limpia el formulario inferior si existiera algún uso residual
+        document.getElementById('cpp-new-holiday-date').value = '';
+        document.getElementById('cpp-new-holiday-name').value = '';
     },
 
     removeHoliday(index) {
+        if (!confirm('¿Seguro que quieres eliminar este festivo?')) return;
+        if (this.editingHolidayIndex == index) {
+            this.editingHolidayIndex = null;
+        }
         this.config.calendar_config.holidays.splice(index, 1);
-        this.renderHolidaysList();
+        this.persistConfig().then(() => this.renderHolidaysList());
     },
 
     addVacation() {
-        if (this.isProcessing) return;
-        this.isProcessing = true;
         const startInput = document.getElementById('cpp-new-vacation-start');
         const endInput = document.getElementById('cpp-new-vacation-end');
-        const addButton = document.getElementById('cpp-add-vacation-btn');
+        const nameInput = document.getElementById('cpp-new-vacation-name');
         const start = startInput.value;
         const end = endInput.value;
+        const name = nameInput.value.trim();
 
         if (start && end && new Date(start) <= new Date(end)) {
-            this.config.calendar_config.vacations.push({ start, end });
-            this.renderVacationsList();
-            startInput.value = '';
-            endInput.value = '';
-            if (addButton) {
-                addButton.blur();
-            }
+            this.config.calendar_config.vacations.push({ start, end, name });
+            this.persistConfig().then(success => {
+                if (success) {
+                    this.renderVacationsList();
+                    startInput.value = '';
+                    endInput.value = '';
+                    nameInput.value = '';
+                }
+            });
         } else {
             alert('Por favor, selecciona un periodo de vacaciones válido.');
         }
-        this.isProcessing = false;
+    },
+
+    loadVacationForEdit(index) {
+        this.editingVacationIndex = index;
+        this.renderVacationsList();
+
+        const row = document.querySelector(`.cpp-list-item[data-index="${index}"]`);
+        if (row) {
+            const nameInput = row.querySelector('.cpp-inline-edit-name');
+            if (nameInput) nameInput.focus();
+        }
+    },
+
+    saveVacationInline(index) {
+        const list = document.getElementById('cpp-vacations-list');
+        const row = list ? list.querySelector(`.cpp-list-item[data-index="${index}"]`) : null;
+        if (!row) return;
+
+        const start = row.querySelector('.cpp-inline-edit-start').value;
+        const end = row.querySelector('.cpp-inline-edit-end').value;
+        const name = row.querySelector('.cpp-inline-edit-name').value.trim();
+
+        if (start && end && new Date(start) <= new Date(end)) {
+            this.config.calendar_config.vacations[index] = { start, end, name };
+
+            this.persistConfig().then(success => {
+                if (success) {
+                    this.editingVacationIndex = null;
+                    this.renderVacationsList();
+                }
+            });
+        } else {
+            alert('Por favor, selecciona un periodo de vacaciones válido.');
+        }
+    },
+
+    cancelVacationEdit() {
+        document.getElementById('cpp-new-vacation-start').value = '';
+        document.getElementById('cpp-new-vacation-end').value = '';
+        document.getElementById('cpp-new-vacation-name').value = '';
     },
 
     removeVacation(index) {
+        if (!confirm('¿Seguro que quieres eliminar este periodo de vacaciones?')) return;
+        if (this.editingVacationIndex == index) {
+            this.editingVacationIndex = null;
+        }
         this.config.calendar_config.vacations.splice(index, 1);
-        this.renderVacationsList();
+        this.persistConfig().then(() => this.renderVacationsList());
     },
 
     // --- Lógica de Datos (AJAX) ---
@@ -846,59 +973,137 @@
     renderHolidaysList() {
         const list = document.getElementById('cpp-holidays-list');
         const holidays = this.config.calendar_config.holidays || [];
-        list.innerHTML = holidays.map((holiday, index) => `
-            <div class="cpp-list-item" data-index="${index}">
-                <span>${holiday}</span>
-                <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn">&times;</button>
-            </div>
-        `).join('');
+        const editSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor" style="pointer-events: none;"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
+        const deleteSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor" style="pointer-events: none;"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>';
+        const saveSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor" style="pointer-events: none;"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>';
+
+        list.innerHTML = holidays.map((holiday, index) => {
+            const isEditing = this.editingHolidayIndex == index;
+            const date = (typeof holiday === 'string') ? holiday : holiday.date;
+            const name = (typeof holiday === 'string') ? '' : (holiday.name || '');
+
+            if (isEditing) {
+                return `
+                    <div class="cpp-list-item editing" data-index="${index}">
+                        <div style="display: flex; gap: 10px; flex-grow: 1; align-items: center;">
+                            <input type="date" class="cpp-inline-edit-date" value="${this.escapeHtml(date)}" style="width: auto;">
+                            <input type="text" class="cpp-inline-edit-name" value="${this.escapeHtml(name)}" placeholder="Nombre..." style="flex-grow: 1;" maxlength="40">
+                        </div>
+                        <div class="cpp-list-item-actions">
+                            <button type="button" class="cpp-btn-icon-minimal cpp-save-holiday-inline-btn" title="Guardar">${saveSVG}</button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-holiday-inline-btn" title="Cancelar">${deleteSVG}</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="cpp-list-item" data-index="${index}">
+                    <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                        <strong>${this.escapeHtml(date)}</strong>
+                        ${name ? `<small>${this.escapeHtml(name)}</small>` : ''}
+                    </div>
+                    <div class="cpp-list-item-actions">
+                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-holiday-btn" title="Editar">${editSVG}</button>
+                        <button type="button" class="cpp-remove-btn cpp-remove-holiday-btn" title="Eliminar">${deleteSVG}</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     },
 
     renderVacationsList() {
         const list = document.getElementById('cpp-vacations-list');
         const vacations = this.config.calendar_config.vacations || [];
-        list.innerHTML = vacations.map((vac, index) => `
-            <div class="cpp-list-item" data-index="${index}">
-                <span>${vac.start} al ${vac.end}</span>
-                <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn">&times;</button>
-            </div>
-        `).join('');
+        const editSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor" style="pointer-events: none;"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
+        const deleteSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor" style="pointer-events: none;"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>';
+        const saveSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor" style="pointer-events: none;"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>';
+
+        list.innerHTML = vacations.map((vac, index) => {
+            const isEditing = this.editingVacationIndex == index;
+
+            if (isEditing) {
+                return `
+                    <div class="cpp-list-item editing" data-index="${index}">
+                        <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span>De</span> <input type="date" class="cpp-inline-edit-start" value="${this.escapeHtml(vac.start)}">
+                                <span>a</span> <input type="date" class="cpp-inline-edit-end" value="${this.escapeHtml(vac.end)}">
+                            </div>
+                            <input type="text" class="cpp-inline-edit-name" value="${this.escapeHtml(vac.name || '')}" placeholder="Nombre del periodo..." maxlength="40">
+                        </div>
+                        <div class="cpp-list-item-actions">
+                            <button type="button" class="cpp-btn-icon-minimal cpp-save-vacation-inline-btn" title="Guardar">${saveSVG}</button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-vacation-inline-btn" title="Cancelar">${deleteSVG}</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="cpp-list-item" data-index="${index}">
+                    <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                        <strong>${this.escapeHtml(vac.start)} al ${this.escapeHtml(vac.end)}</strong>
+                        ${vac.name ? `<small>${this.escapeHtml(vac.name)}</small>` : ''}
+                    </div>
+                    <div class="cpp-list-item-actions">
+                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-vacation-btn" title="Editar">${editSVG}</button>
+                        <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn" title="Eliminar">${deleteSVG}</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     },
 
     saveConfig(e) {
         e.preventDefault();
-        if (this.isProcessing) return;
-        this.isProcessing = true;
-
         const form = e.target;
         const workingDays = Array.from(form.querySelectorAll('input[name="working_days"]:checked')).map(cb => cb.value);
-        const newConfig = {
-            working_days: workingDays,
-            holidays: this.config.calendar_config.holidays,
-            vacations: this.config.calendar_config.vacations
-        };
 
-        this.config.calendar_config = newConfig;
+        this.config.calendar_config.working_days = workingDays;
+
+        this.persistConfig(true).then(success => {
+            if (success) {
+                alert('Configuración guardada.');
+                this.closeConfigModal();
+                this.render();
+            }
+        });
+    },
+
+    persistConfig(showFullOverlay = false) {
+        if (this.isProcessing) return Promise.resolve(false);
+        this.isProcessing = true;
+
+        if (showFullOverlay && cpp.utils && typeof cpp.utils.showSpinner === 'function') {
+            cpp.utils.showSpinner();
+        }
 
         const data = new URLSearchParams({
             action: 'cpp_save_programador_config',
             nonce: cppFrontendData.nonce,
-            calendar_config: JSON.stringify(newConfig)
+            calendar_config: JSON.stringify(this.config.calendar_config)
         });
 
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
+        return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json())
             .then(result => {
                 if (result.success) {
-                    alert('Configuración guardada.');
-                    this.closeConfigModal();
-                    this.render();
+                    return true;
                 } else {
-                    alert('Error al guardar la configuración.');
+                    alert(result.data.message || 'Error al guardar la configuración.');
+                    return false;
                 }
+            })
+            .catch(err => {
+                console.error('Error persisting config:', err);
+                return false;
             })
             .finally(() => {
                 this.isProcessing = false;
+                if (showFullOverlay && cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
+                    cpp.utils.hideSpinner();
+                }
             });
     },
 
@@ -2258,10 +2463,10 @@
                         const ymd = currentDate.toISOString().slice(0, 10);
 
                         const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-                        const isHoliday = calendarConfig.holidays.includes(ymd);
-                        const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
+                        const holiday = calendarConfig.holidays.find(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
+                        const vacation = calendarConfig.vacations.find(v => ymd >= v.start && ymd <= v.end);
 
-                        if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {
+                        if (isWorkingDay && !holiday && !vacation && dayKey && horario[dayKey]) {
                             const sortedSlots = Object.keys(horario[dayKey]).sort();
                             for (const slot of sortedSlots) {
                                 if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(clase.id)) {
@@ -2326,13 +2531,38 @@
         });
         tableHTML += `</tr></thead><tbody>`;
 
-        (this.config.time_slots || []).forEach(slot => {
+        (this.config.time_slots || []).forEach((slot, slotIndex) => {
             tableHTML += `<tr><td class="cpp-semana-td-hora">${slot}</td>`;
             renderedHeaders.forEach(header => {
                 const dayKey = header.dayKey;
                 const todayClass = header.isToday ? 'cpp-semana-today' : '';
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
+
+                const holiday = calendarConfig.holidays.find(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
+                const vacation = calendarConfig.vacations.find(v => ymd >= v.start && ymd <= v.end);
+
+                if (holiday || vacation) {
+                    if (slotIndex === 0) {
+                        const name = holiday ? (typeof holiday === 'string' ? '' : (holiday.name || '')) : (vacation.name || '');
+                        let fontSize = '2.2rem';
+                        const nameLen = name.length;
+                        if (nameLen > 35) fontSize = '1.1rem';
+                        else if (nameLen > 25) fontSize = '1.3rem';
+                        else if (nameLen > 15) fontSize = '1.7rem';
+
+                        // Split name into spans for vertical distribution via flexbox
+                        const splitNameHTML = name.split('').map(char => `<span>${this.escapeHtml(char === ' ' ? '\u00A0' : char)}</span>`).join('');
+
+                        tableHTML += `<td class="${todayClass} cpp-semana-holiday-cell" rowspan="${this.config.time_slots.length}">
+                                        <div class="cpp-vertical-text" style="font-size: ${fontSize};">
+                                            ${splitNameHTML}
+                                        </div>
+                                      </td>`;
+                    }
+                    return;
+                }
+
                 const eventos = schedule.filter(e => e.fecha.toISOString().slice(0,10) === ymd && e.hora === slot);
                 let cellContent = '';
                 if (eventos.length > 0) {
@@ -2439,7 +2669,7 @@
             const ymd = currentDate.toISOString().slice(0, 10);
 
             const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-            const isHoliday = calendarConfig.holidays.includes(ymd);
+            const isHoliday = calendarConfig.holidays.some(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
             const isVacation = calendarConfig.vacations.some(v => ymd >= v.start && ymd <= v.end);
 
             if (isWorkingDay && !isHoliday && !isVacation && dayKey && horario[dayKey]) {

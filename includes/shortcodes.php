@@ -210,18 +210,35 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <div class="cpp-form-section">
                                     <h3>Días festivos</h3>
                                     <div id="cpp-holidays-list" class="cpp-dynamic-list"></div>
-                                    <div class="cpp-form-group">
-                                        <input type="date" id="cpp-new-holiday-date">
-                                        <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir festivo</button>
+                                    <div class="cpp-form-group" style="display: flex; gap: 10px; align-items: flex-end;">
+                                        <div style="flex-grow: 1;">
+                                            <label for="cpp-new-holiday-name">Nombre (opcional):</label>
+                                            <input type="text" id="cpp-new-holiday-name" placeholder="Ej: Navidad, Día del Trabajador..." maxlength="40">
+                                        </div>
+                                        <div>
+                                            <label for="cpp-new-holiday-date">Fecha:</label>
+                                            <input type="date" id="cpp-new-holiday-date">
+                                        </div>
+                                        <button type="button" id="cpp-add-holiday-btn" class="cpp-btn cpp-btn-secondary">Añadir</button>
                                     </div>
                                 </div>
                                 <div class="cpp-form-section">
                                     <h3>Periodos de vacaciones</h3>
                                     <div id="cpp-vacations-list" class="cpp-dynamic-list"></div>
-                                    <div class="cpp-form-group">
-                                        <label>Inicio: <input type="date" id="cpp-new-vacation-start"></label>
-                                        <label>Fin: <input type="date" id="cpp-new-vacation-end"></label>
-                                        <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir vacaciones</button>
+                                    <div class="cpp-form-group" style="display: flex; flex-direction: column; gap: 10px;">
+                                        <div style="width: 100%;">
+                                            <label for="cpp-new-vacation-name">Nombre (opcional):</label>
+                                            <input type="text" id="cpp-new-vacation-name" placeholder="Ej: Semana Santa, Vacaciones de Verano..." style="width: 100%;" maxlength="40">
+                                        </div>
+                                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                            <div style="flex-grow: 1;">
+                                                <label>Inicio: <input type="date" id="cpp-new-vacation-start" style="width: 100%;"></label>
+                                            </div>
+                                            <div style="flex-grow: 1;">
+                                                <label>Fin: <input type="date" id="cpp-new-vacation-end" style="width: 100%;"></label>
+                                            </div>
+                                            <button type="button" id="cpp-add-vacation-btn" class="cpp-btn cpp-btn-secondary">Añadir</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="cpp-config-actions">
