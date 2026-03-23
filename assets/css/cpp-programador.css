@@ -606,11 +606,17 @@ td.cpp-semana-td-hora {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px;
+    padding: 10px;
     background-color: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    min-height: 50px;
+}
+
+.cpp-dynamic-list .cpp-list-item.editing {
+    background-color: #f0f7ff;
+    border-color: #1a73e8;
 }
 
 .cpp-dynamic-list .cpp-list-item span {

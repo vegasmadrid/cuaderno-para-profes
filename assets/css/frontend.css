@@ -1681,8 +1681,9 @@ body.cpp-no-text-select {
 
 .cpp-config-list-actions, .cpp-list-item-actions {
     display: flex;
-    gap: 4px;
+    gap: 8px;
     flex-shrink: 0;
+    align-items: center;
 }
 
 .cpp-config-list-actions .cpp-btn-icon {

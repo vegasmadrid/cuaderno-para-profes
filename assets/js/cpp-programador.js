@@ -191,10 +191,15 @@
         $body.on('click', '#cpp-cancel-holiday-edit-btn', () => this.cancelHolidayEdit());
         $body.on('click', '.cpp-remove-holiday-btn', function(e) { e.stopPropagation(); self.removeHoliday(this.closest('.cpp-list-item').dataset.index); });
         $body.on('click', '.cpp-edit-holiday-btn', function() { self.loadHolidayForEdit(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-save-holiday-inline-btn', function() { self.saveHolidayInline(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-cancel-holiday-inline-btn', () => { this.editingHolidayIndex = null; this.renderHolidaysList(); });
+
         $body.on('click', '#cpp-add-vacation-btn', () => this.addVacation());
         $body.on('click', '#cpp-cancel-vacation-edit-btn', () => this.cancelVacationEdit());
         $body.on('click', '.cpp-remove-vacation-btn', function(e) { e.stopPropagation(); self.removeVacation(this.closest('.cpp-list-item').dataset.index); });
         $body.on('click', '.cpp-edit-vacation-btn', function() { self.loadVacationForEdit(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-save-vacation-inline-btn', function() { self.saveVacationInline(this.closest('.cpp-list-item').dataset.index); });
+        $body.on('click', '.cpp-cancel-vacation-inline-btn', () => { this.editingVacationIndex = null; this.renderVacationsList(); });
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
@@ -831,33 +836,50 @@
     },
 
     loadHolidayForEdit(index) {
-        const holiday = this.config.calendar_config.holidays[index];
-        if (!holiday) return;
-
         this.editingHolidayIndex = index;
-        const date = (typeof holiday === 'string') ? holiday : holiday.date;
-        const name = (typeof holiday === 'string') ? '' : (holiday.name || '');
+        this.renderHolidaysList();
 
-        document.getElementById('cpp-new-holiday-date').value = date;
-        document.getElementById('cpp-new-holiday-name').value = name;
-        document.getElementById('cpp-add-holiday-btn').textContent = 'Actualizar';
-        const cancelBtn = document.getElementById('cpp-cancel-holiday-edit-btn');
-        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
-        document.getElementById('cpp-new-holiday-name').focus();
+        // Enfocar el input de nombre al entrar en modo edición
+        const row = document.querySelector(`.cpp-list-item[data-index="${index}"]`);
+        if (row) {
+            const nameInput = row.querySelector('.cpp-inline-edit-name');
+            if (nameInput) nameInput.focus();
+        }
+    },
+
+    saveHolidayInline(index) {
+        const row = document.querySelector(`.cpp-list-item[data-index="${index}"]`);
+        if (!row) return;
+
+        const date = row.querySelector('.cpp-inline-edit-date').value;
+        const name = row.querySelector('.cpp-inline-edit-name').value.trim();
+
+        if (!date) {
+            alert('Por favor, selecciona una fecha para el festivo.');
+            return;
+        }
+
+        this.config.calendar_config.holidays[index] = { date, name };
+        this.editingHolidayIndex = null;
+
+        this.config.calendar_config.holidays.sort((a, b) => {
+            const dateA = (typeof a === 'string') ? a : a.date;
+            const dateB = (typeof b === 'string') ? b : b.date;
+            return dateA.localeCompare(dateB);
+        });
+
+        this.renderHolidaysList();
     },
 
     cancelHolidayEdit() {
-        this.editingHolidayIndex = null;
+        // Esta función ahora solo limpia el formulario inferior si existiera algún uso residual
         document.getElementById('cpp-new-holiday-date').value = '';
         document.getElementById('cpp-new-holiday-name').value = '';
-        document.getElementById('cpp-add-holiday-btn').textContent = 'Añadir';
-        const cancelBtn = document.getElementById('cpp-cancel-holiday-edit-btn');
-        if (cancelBtn) cancelBtn.style.display = 'none';
     },
 
     removeHoliday(index) {
-        if (this.editingHolidayIndex !== null) {
-            this.cancelHolidayEdit();
+        if (this.editingHolidayIndex == index) {
+            this.editingHolidayIndex = null;
         }
         this.config.calendar_config.holidays.splice(index, 1);
         this.renderHolidaysList();
@@ -898,32 +920,42 @@
     },
 
     loadVacationForEdit(index) {
-        const vacation = this.config.calendar_config.vacations[index];
-        if (!vacation) return;
-
         this.editingVacationIndex = index;
-        document.getElementById('cpp-new-vacation-start').value = vacation.start;
-        document.getElementById('cpp-new-vacation-end').value = vacation.end;
-        document.getElementById('cpp-new-vacation-name').value = vacation.name || '';
-        document.getElementById('cpp-add-vacation-btn').textContent = 'Actualizar';
-        const cancelBtn = document.getElementById('cpp-cancel-vacation-edit-btn');
-        if (cancelBtn) cancelBtn.style.display = 'inline-flex';
-        document.getElementById('cpp-new-vacation-name').focus();
+        this.renderVacationsList();
+
+        const row = document.querySelector(`.cpp-list-item[data-index="${index}"]`);
+        if (row) {
+            const nameInput = row.querySelector('.cpp-inline-edit-name');
+            if (nameInput) nameInput.focus();
+        }
+    },
+
+    saveVacationInline(index) {
+        const row = document.querySelector(`.cpp-list-item[data-index="${index}"]`);
+        if (!row) return;
+
+        const start = row.querySelector('.cpp-inline-edit-start').value;
+        const end = row.querySelector('.cpp-inline-edit-end').value;
+        const name = row.querySelector('.cpp-inline-edit-name').value.trim();
+
+        if (start && end && new Date(start) <= new Date(end)) {
+            this.config.calendar_config.vacations[index] = { start, end, name };
+            this.editingVacationIndex = null;
+            this.renderVacationsList();
+        } else {
+            alert('Por favor, selecciona un periodo de vacaciones válido.');
+        }
     },
 
     cancelVacationEdit() {
-        this.editingVacationIndex = null;
         document.getElementById('cpp-new-vacation-start').value = '';
         document.getElementById('cpp-new-vacation-end').value = '';
         document.getElementById('cpp-new-vacation-name').value = '';
-        document.getElementById('cpp-add-vacation-btn').textContent = 'Añadir';
-        const cancelBtn = document.getElementById('cpp-cancel-vacation-edit-btn');
-        if (cancelBtn) cancelBtn.style.display = 'none';
     },
 
     removeVacation(index) {
-        if (this.editingVacationIndex !== null) {
-            this.cancelVacationEdit();
+        if (this.editingVacationIndex == index) {
+            this.editingVacationIndex = null;
         }
         this.config.calendar_config.vacations.splice(index, 1);
         this.renderVacationsList();
@@ -950,8 +982,25 @@
         const list = document.getElementById('cpp-holidays-list');
         const holidays = this.config.calendar_config.holidays || [];
         list.innerHTML = holidays.map((holiday, index) => {
+            const isEditing = this.editingHolidayIndex == index;
             const date = (typeof holiday === 'string') ? holiday : holiday.date;
             const name = (typeof holiday === 'string') ? '' : (holiday.name || '');
+
+            if (isEditing) {
+                return `
+                    <div class="cpp-list-item editing" data-index="${index}">
+                        <div style="display: flex; gap: 10px; flex-grow: 1; align-items: center;">
+                            <input type="date" class="cpp-inline-edit-date" value="${this.escapeHtml(date)}" style="width: auto;">
+                            <input type="text" class="cpp-inline-edit-name" value="${this.escapeHtml(name)}" placeholder="Nombre..." style="flex-grow: 1;">
+                        </div>
+                        <div class="cpp-list-item-actions">
+                            <button type="button" class="cpp-btn-icon-minimal cpp-save-holiday-inline-btn" title="Guardar"><span class="dashicons dashicons-yes"></span></button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-holiday-inline-btn" title="Cancelar"><span class="dashicons dashicons-no-alt"></span></button>
+                        </div>
+                    </div>
+                `;
+            }
+
             return `
                 <div class="cpp-list-item" data-index="${index}">
                     <div style="display: flex; flex-direction: column; flex-grow: 1;">
@@ -970,18 +1019,40 @@
     renderVacationsList() {
         const list = document.getElementById('cpp-vacations-list');
         const vacations = this.config.calendar_config.vacations || [];
-        list.innerHTML = vacations.map((vac, index) => `
-            <div class="cpp-list-item" data-index="${index}">
-                <div style="display: flex; flex-direction: column; flex-grow: 1;">
-                    <strong>${this.escapeHtml(vac.start)} al ${this.escapeHtml(vac.end)}</strong>
-                    ${vac.name ? `<small>${this.escapeHtml(vac.name)}</small>` : ''}
+        list.innerHTML = vacations.map((vac, index) => {
+            const isEditing = this.editingVacationIndex == index;
+
+            if (isEditing) {
+                return `
+                    <div class="cpp-list-item editing" data-index="${index}">
+                        <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span>De</span> <input type="date" class="cpp-inline-edit-start" value="${this.escapeHtml(vac.start)}">
+                                <span>a</span> <input type="date" class="cpp-inline-edit-end" value="${this.escapeHtml(vac.end)}">
+                            </div>
+                            <input type="text" class="cpp-inline-edit-name" value="${this.escapeHtml(vac.name || '')}" placeholder="Nombre del periodo...">
+                        </div>
+                        <div class="cpp-list-item-actions">
+                            <button type="button" class="cpp-btn-icon-minimal cpp-save-vacation-inline-btn" title="Guardar"><span class="dashicons dashicons-yes"></span></button>
+                            <button type="button" class="cpp-btn-icon-minimal cpp-cancel-vacation-inline-btn" title="Cancelar"><span class="dashicons dashicons-no-alt"></span></button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="cpp-list-item" data-index="${index}">
+                    <div style="display: flex; flex-direction: column; flex-grow: 1;">
+                        <strong>${this.escapeHtml(vac.start)} al ${this.escapeHtml(vac.end)}</strong>
+                        ${vac.name ? `<small>${this.escapeHtml(vac.name)}</small>` : ''}
+                    </div>
+                    <div class="cpp-list-item-actions">
+                        <button type="button" class="cpp-btn-icon-minimal cpp-edit-vacation-btn" title="Editar"><span class="dashicons dashicons-edit"></span></button>
+                        <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn" title="Eliminar">&times;</button>
+                    </div>
                 </div>
-                <div class="cpp-list-item-actions">
-                    <button type="button" class="cpp-btn-icon-minimal cpp-edit-vacation-btn" title="Editar"><span class="dashicons dashicons-edit"></span></button>
-                    <button type="button" class="cpp-remove-btn cpp-remove-vacation-btn" title="Eliminar">&times;</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     saveConfig(e) {
