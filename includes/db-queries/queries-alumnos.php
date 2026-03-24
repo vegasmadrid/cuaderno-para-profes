@@ -6,26 +6,30 @@ defined('ABSPATH') or die('Acceso no permitido');
 // --- FUNCIONES PARA ALUMNOS (Refactorizadas para relación Many-to-Many) ---
 
 /**
- * Obtiene todos los alumnos asociados a una clase específica.
+ * Obtiene todos los alumnos asociados a una clase específica, asegurando que pertenecen al usuario.
  * @param int $clase_id
+ * @param int $user_id
  * @param string $search_term
  * @param string $sort_order 'apellidos' o 'nombre'
  * @param bool|null $only_visible Si es true, solo devuelve visibles. Si es false, solo ocultos. Si es null, todos.
  */
-function cpp_obtener_alumnos_clase($clase_id, $search_term = '', $sort_order = 'apellidos', $only_visible = true) {
+function cpp_obtener_alumnos_clase($clase_id, $user_id, $search_term = '', $sort_order = 'apellidos', $only_visible = true) {
     global $wpdb;
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
 
     $order_by_clause = 'a.apellidos, a.nombre';
     if ($sort_order === 'nombre') {
         $order_by_clause = 'a.nombre, a.apellidos';
     }
 
+    // Join con tabla de clases para validar propiedad por user_id (tanto de la clase como del alumno)
     $sql = "SELECT a.*, ac.visible FROM $tabla_alumnos a
             INNER JOIN $tabla_alumnos_clases ac ON a.id = ac.alumno_id
-            WHERE ac.clase_id = %d";
-    $params = [$clase_id];
+            INNER JOIN $tabla_clases c ON ac.clase_id = c.id
+            WHERE ac.clase_id = %d AND c.user_id = %d AND a.user_id = %d";
+    $params = [$clase_id, $user_id, $user_id];
 
     if ($only_visible !== null) {
         $sql .= " AND ac.visible = %d";
@@ -84,27 +88,39 @@ function cpp_obtener_alumno_por_id($alumno_id, $user_id) {
 }
 
 /**
- * Obtiene los IDs de las clases a las que pertenece un alumno.
+ * Obtiene los IDs de las clases a las que pertenece un alumno, validando propiedad del alumno y de las clases.
  */
-function cpp_get_clases_for_alumno($alumno_id) {
+function cpp_get_clases_for_alumno($alumno_id, $user_id) {
     global $wpdb;
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
     return $wpdb->get_col($wpdb->prepare(
-        "SELECT clase_id FROM $tabla_alumnos_clases WHERE alumno_id = %d",
-        $alumno_id
+        "SELECT ac.clase_id FROM $tabla_alumnos_clases ac
+         INNER JOIN $tabla_alumnos a ON ac.alumno_id = a.id
+         INNER JOIN $tabla_clases c ON ac.clase_id = c.id
+         WHERE ac.alumno_id = %d AND a.user_id = %d AND c.user_id = %d",
+        $alumno_id, $user_id, $user_id
     ));
 }
 
 /**
- * Obtiene la visibilidad de un alumno en sus clases asociadas.
+ * Obtiene la visibilidad de un alumno en sus clases asociadas, validando propiedad.
  * Retorna un array asociativo [clase_id => visible]
  */
-function cpp_get_visibilidad_clases_alumno($alumno_id) {
+function cpp_get_visibilidad_clases_alumno($alumno_id, $user_id) {
     global $wpdb;
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+    $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
     $results = $wpdb->get_results($wpdb->prepare(
-        "SELECT clase_id, visible FROM $tabla_alumnos_clases WHERE alumno_id = %d",
-        $alumno_id
+        "SELECT ac.clase_id, ac.visible FROM $tabla_alumnos_clases ac
+         INNER JOIN $tabla_alumnos a ON ac.alumno_id = a.id
+         INNER JOIN $tabla_clases c ON ac.clase_id = c.id
+         WHERE ac.alumno_id = %d AND a.user_id = %d AND c.user_id = %d",
+        $alumno_id, $user_id, $user_id
     ), ARRAY_A);
 
     $visibilidad = [];
@@ -153,11 +169,14 @@ function cpp_crear_alumno($user_id, $datos, $clases_ids = []) {
 
     if ($alumno_id && !empty($clases_ids)) {
         foreach ($clases_ids as $clase_id) {
-            $wpdb->insert(
-                $tabla_alumnos_clases,
-                ['alumno_id' => $alumno_id, 'clase_id' => intval($clase_id)],
-                ['%d', '%d']
-            );
+            // Verificar que la clase pertenece al usuario antes de vincular
+            if (cpp_es_propietario_clase($clase_id, $user_id)) {
+                $wpdb->insert(
+                    $tabla_alumnos_clases,
+                    ['alumno_id' => $alumno_id, 'clase_id' => intval($clase_id)],
+                    ['%d', '%d']
+                );
+            }
         }
     }
 
@@ -206,19 +225,21 @@ function cpp_actualizar_clases_de_alumno($alumno_id, $user_id, $nuevas_clases_id
     $owner_id = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$wpdb->prefix}cpp_alumnos WHERE id = %d", $alumno_id));
     if ($owner_id != $user_id) { return ['success' => false, 'error' => 'Permission denied']; }
 
-    $clases_actuales = cpp_get_clases_for_alumno($alumno_id);
+    $clases_actuales = cpp_get_clases_for_alumno($alumno_id, $user_id);
     $nuevas_clases_ids = array_map('intval', $nuevas_clases_ids);
 
     $clases_a_anadir = array_diff($nuevas_clases_ids, $clases_actuales);
     $clases_a_quitar = array_diff($clases_actuales, $nuevas_clases_ids);
 
-    // Añadir nuevas asociaciones
+    // Añadir nuevas asociaciones (verificando propiedad de la clase)
     foreach ($clases_a_anadir as $clase_id) {
-        $wpdb->insert(
-            $wpdb->prefix . 'cpp_alumnos_clases',
-            ['alumno_id' => $alumno_id, 'clase_id' => $clase_id],
-            ['%d', '%d']
-        );
+        if (cpp_es_propietario_clase($clase_id, $user_id)) {
+            $wpdb->insert(
+                $wpdb->prefix . 'cpp_alumnos_clases',
+                ['alumno_id' => $alumno_id, 'clase_id' => $clase_id],
+                ['%d', '%d']
+            );
+        }
     }
 
     // Quitar viejas asociaciones y sus datos

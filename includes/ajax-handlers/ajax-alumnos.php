@@ -46,14 +46,14 @@ function cpp_ajax_search_alumnos() {
             return;
         }
         // En la pestaña global de alumnos, permitimos ver ocultos para poder gestionarlos
-        $alumnos = cpp_obtener_alumnos_clase($clase_id, $search_term, 'apellidos', null);
+        $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, $search_term, 'apellidos', null);
     } else {
         $alumnos = cpp_obtener_todos_alumnos_usuario($user_id, 'apellidos', $search_term);
     }
 
     // Para cada alumno, obtenemos sus clases
     foreach ($alumnos as &$alumno) {
-        $clases_ids = cpp_get_clases_for_alumno($alumno['id']);
+        $clases_ids = cpp_get_clases_for_alumno($alumno['id'], $user_id);
         $clases_nombres = [];
         if (!empty($clases_ids)) {
             global $wpdb;
@@ -86,8 +86,8 @@ function cpp_ajax_get_alumno_ficha() {
 
     // Obtener todas las clases del profesor y las del alumno
     $todas_las_clases = cpp_obtener_clases_usuario($user_id);
-    $clases_del_alumno_ids = cpp_get_clases_for_alumno($alumno_id);
-    $visibilidad_clases = cpp_get_visibilidad_clases_alumno($alumno_id);
+    $clases_del_alumno_ids = cpp_get_clases_for_alumno($alumno_id, $user_id);
+    $visibilidad_clases = cpp_get_visibilidad_clases_alumno($alumno_id, $user_id);
 
     // Obtener calificaciones de todas las clases y asistencia global
     $calificaciones_por_clase = [];
@@ -332,7 +332,7 @@ function cpp_ajax_get_alumnos_for_clase_config() {
         wp_send_json_error(['message' => 'Clase no válida o sin permisos.']);
     }
 
-    $alumnos = cpp_obtener_alumnos_clase($clase_id, '', 'apellidos', true);
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', 'apellidos', true);
 
     // Generar HTML
     ob_start();
@@ -460,8 +460,8 @@ function cpp_ajax_copy_alumnos_to_clase() {
     }
 
     // 3. Obtener Alumnos de Origen y Destino
-    $alumnos_origen = cpp_obtener_alumnos_clase($source_clase_id, '', 'apellidos', null);
-    $alumnos_destino_actuales = cpp_obtener_alumnos_clase($target_clase_id, '', 'apellidos', null);
+    $alumnos_origen = cpp_obtener_alumnos_clase($source_clase_id, $user_id, '', 'apellidos', null);
+    $alumnos_destino_actuales = cpp_obtener_alumnos_clase($target_clase_id, $user_id, '', 'apellidos', null);
     $ids_alumnos_destino = wp_list_pluck($alumnos_destino_actuales, 'id');
 
     $alumnos_a_copiar = array_filter($alumnos_origen, function($alumno) use ($ids_alumnos_destino) {
