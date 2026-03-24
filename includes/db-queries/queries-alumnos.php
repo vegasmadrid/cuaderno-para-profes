@@ -216,6 +216,26 @@ function cpp_actualizar_alumno($alumno_id, $user_id, $datos) {
 }
 
 /**
+ * Actualiza las notas de un alumno.
+ */
+function cpp_actualizar_notas_alumno($alumno_id, $user_id, $notas) {
+    global $wpdb;
+
+    // Verificación de propiedad
+    if (!cpp_es_propietario_alumno($user_id, $alumno_id)) {
+        return false;
+    }
+
+    return $wpdb->update(
+        $wpdb->prefix . 'cpp_alumnos',
+        ['notas' => wp_kses_post($notas)],
+        ['id' => $alumno_id],
+        ['%s'],
+        ['%d']
+    );
+}
+
+/**
  * Sincroniza las clases de un alumno con la lista proporcionada.
  */
 function cpp_actualizar_clases_de_alumno($alumno_id, $user_id, $nuevas_clases_ids) {

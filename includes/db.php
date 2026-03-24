@@ -69,6 +69,7 @@ function cpp_crear_tablas() {
         nombre varchar(50) NOT NULL,
         apellidos varchar(100) NOT NULL,
         foto varchar(255),
+        notas longtext,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY user_id (user_id)
