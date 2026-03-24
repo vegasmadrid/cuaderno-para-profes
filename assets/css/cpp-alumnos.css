@@ -674,3 +674,107 @@
 .cpp-asistencia-fila-item:last-child {
     border-bottom: none;
 }
+
+/* --- Editor de Notas del Alumno --- */
+.cpp-notas-section {
+    margin-top: 40px;
+}
+
+.cpp-notas-editor-container {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.cpp-notas-toolbar {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ced4da;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cpp-toolbar-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.cpp-toolbar-btn:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.cpp-toolbar-btn.active {
+    background-color: #dee2e6;
+    color: #212529;
+}
+
+.cpp-toolbar-separator {
+    width: 1px;
+    height: 24px;
+    background-color: #dee2e6;
+    margin: 0 4px;
+}
+
+.cpp-toolbar-color-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+}
+
+.cpp-toolbar-color-group span {
+    font-size: 18px;
+    color: #495057;
+}
+
+.cpp-toolbar-color-picker {
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    background: none;
+}
+
+.cpp-notas-editor {
+    min-height: 200px;
+    max-height: 500px;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.6;
+    outline: none;
+}
+
+.cpp-notas-actions {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cpp-toolbar-select {
+    padding: 2px 4px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: #fff;
+    cursor: pointer;
+    color: #495057;
+}
+
+.cpp-toolbar-select:hover {
+    border-color: #adb5bd;
+}

@@ -52,6 +52,30 @@
             $document.on('change', '#cpp-alumnos-class-filter', this.handleSearch.bind(this));
             $document.on('click', '.cpp-toggle-visibility-btn', this.handleToggleVisibility.bind(this));
 
+            // --- LISTENERS PARA EL EDITOR DE NOTAS ---
+            $document.on('click', '.cpp-toolbar-btn', function(e) {
+                e.preventDefault();
+                const command = $(this).data('command');
+                document.execCommand(command, false, null);
+                $('#cpp-alumno-notas-editor').focus();
+            });
+
+            $document.on('change', '.cpp-toolbar-color-picker', function() {
+                const command = $(this).data('command');
+                const value = $(this).val();
+                document.execCommand(command, false, value);
+                $('#cpp-alumno-notas-editor').focus();
+            });
+
+            $document.on('change', '.cpp-toolbar-select', function() {
+                const command = $(this).data('command');
+                const value = $(this).val();
+                document.execCommand(command, false, value);
+                $('#cpp-alumno-notas-editor').focus();
+            });
+
+            $document.on('click', '#cpp-save-notas-btn', this.handleSaveNotas.bind(this));
+
             // Listeners para edición en el sitio
             $document.on('click', '#cpp-edit-alumno-btn', this.toggleEditMode.bind(this, true));
             $document.on('click', '#cpp-cancel-edit-btn', this.toggleEditMode.bind(this, false));
@@ -432,6 +456,44 @@
                 calificacionesHtml += '</div></div>';
             }
 
+            const notasHtml = `
+                <div class="cpp-ficha-section cpp-notas-section">
+                    <h3>Notas sobre el alumno</h3>
+                    <div class="cpp-notas-editor-container">
+                        <div class="cpp-notas-toolbar">
+                            <button type="button" class="cpp-toolbar-btn" data-command="bold" title="Negrita"><span class="dashicons dashicons-editor-bold"></span></button>
+                            <button type="button" class="cpp-toolbar-btn" data-command="italic" title="Cursiva"><span class="dashicons dashicons-editor-italic"></span></button>
+                            <button type="button" class="cpp-toolbar-btn" data-command="underline" title="Subrayado"><span class="dashicons dashicons-editor-underline"></span></button>
+                            <div class="cpp-toolbar-separator"></div>
+                            <select class="cpp-toolbar-select" data-command="fontSize" title="Tamaño de fuente">
+                                <option value="1">Muy pequeño</option>
+                                <option value="2">Pequeño</option>
+                                <option value="3" selected>Normal</option>
+                                <option value="4">Grande</option>
+                                <option value="5">Muy grande</option>
+                                <option value="6">Extra grande</option>
+                                <option value="7">Gigante</option>
+                            </select>
+                            <div class="cpp-toolbar-separator"></div>
+                            <div class="cpp-toolbar-color-group">
+                                <span class="dashicons dashicons-editor-textcolor"></span>
+                                <input type="color" class="cpp-toolbar-color-picker" data-command="foreColor" title="Color de fuente" value="#000000">
+                            </div>
+                            <div class="cpp-toolbar-color-group">
+                                <span class="dashicons dashicons-admin-appearance"></span>
+                                <input type="color" class="cpp-toolbar-color-picker" data-command="hiliteColor" title="Color de fondo" value="#ffffff">
+                            </div>
+                        </div>
+                        <div id="cpp-alumno-notas-editor" class="cpp-notas-editor" contenteditable="true" data-alumno-id="${alumno.id}">${alumno.notas || ''}</div>
+                    </div>
+                    <div class="cpp-notas-actions">
+                        <button type="button" id="cpp-save-notas-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}">
+                            <span class="dashicons dashicons-saved"></span> Guardar Notas
+                        </button>
+                    </div>
+                </div>
+            `;
+
             const footerHtml = `
                 <div class="cpp-ficha-footer">
                     <button type="button" id="cpp-eliminar-alumno-global-btn" class="cpp-btn cpp-btn-danger" data-alumno-id="${alumno.id}">
@@ -497,6 +559,7 @@
                     ${visualDataHtml}
                     ${calificacionesHtml}
                     ${asistenciaGlobalHtml}
+                    ${notasHtml}
                     ${footerHtml}
                 </div>`;
 
@@ -802,6 +865,38 @@
                         this.handleSearch();
                         this.displayAlumnoFicha(alumnoId);
                         $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        cpp.utils.showToast(response.data.message, 'error');
+                    }
+                },
+                error: () => {
+                    cpp.utils.hideSpinner();
+                    cpp.utils.showToast('Error de conexión.', 'error');
+                }
+            });
+        },
+
+        handleSaveNotas: function(e) {
+            const $btn = $(e.currentTarget);
+            const alumnoId = $btn.data('alumno-id');
+            const $editor = $('#cpp-alumno-notas-editor');
+            const notas = $editor.html();
+
+            cpp.utils.showSpinner();
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_save_alumno_notas',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: alumnoId,
+                    notas: notas
+                },
+                success: (response) => {
+                    cpp.utils.hideSpinner();
+                    if (response.success) {
+                        cpp.utils.showToast(response.data.message);
                     } else {
                         cpp.utils.showToast(response.data.message, 'error');
                     }

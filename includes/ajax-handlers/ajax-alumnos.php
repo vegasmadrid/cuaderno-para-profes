@@ -496,3 +496,24 @@ function cpp_ajax_copy_alumnos_to_clase() {
         wp_send_json_error(['message' => 'Ocurrió un error y no se pudieron copiar los alumnos.']);
     }
 }
+
+add_action('wp_ajax_cpp_save_alumno_notas', 'cpp_ajax_save_alumno_notas');
+function cpp_ajax_save_alumno_notas() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    // WordPress escapes $_POST data, so we must unslash it before processing HTML
+    $notas = isset($_POST['notas']) ? wp_unslash($_POST['notas']) : '';
+
+    if (empty($alumno_id)) {
+        wp_send_json_error(['message' => 'ID de alumno no válido.']);
+    }
+
+    $result = cpp_actualizar_notas_alumno($alumno_id, $user_id, $notas);
+
+    if ($result === false) {
+        wp_send_json_error(['message' => 'No se pudieron guardar las notas o no tienes permisos.']);
+    }
+
+    wp_send_json_success(['message' => 'Notas guardadas correctamente.']);
+}
