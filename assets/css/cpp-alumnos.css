@@ -764,3 +764,17 @@
     display: flex;
     justify-content: flex-end;
 }
+
+.cpp-toolbar-select {
+    padding: 2px 4px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: #fff;
+    cursor: pointer;
+    color: #495057;
+}
+
+.cpp-toolbar-select:hover {
+    border-color: #adb5bd;
+}

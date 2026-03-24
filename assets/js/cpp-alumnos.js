@@ -67,6 +67,13 @@
                 $('#cpp-alumno-notas-editor').focus();
             });
 
+            $document.on('change', '.cpp-toolbar-select', function() {
+                const command = $(this).data('command');
+                const value = $(this).val();
+                document.execCommand(command, false, value);
+                $('#cpp-alumno-notas-editor').focus();
+            });
+
             $document.on('click', '#cpp-save-notas-btn', this.handleSaveNotas.bind(this));
 
             // Listeners para edición en el sitio
@@ -457,6 +464,16 @@
                             <button type="button" class="cpp-toolbar-btn" data-command="bold" title="Negrita"><span class="dashicons dashicons-editor-bold"></span></button>
                             <button type="button" class="cpp-toolbar-btn" data-command="italic" title="Cursiva"><span class="dashicons dashicons-editor-italic"></span></button>
                             <button type="button" class="cpp-toolbar-btn" data-command="underline" title="Subrayado"><span class="dashicons dashicons-editor-underline"></span></button>
+                            <div class="cpp-toolbar-separator"></div>
+                            <select class="cpp-toolbar-select" data-command="fontSize" title="Tamaño de fuente">
+                                <option value="1">Muy pequeño</option>
+                                <option value="2">Pequeño</option>
+                                <option value="3" selected>Normal</option>
+                                <option value="4">Grande</option>
+                                <option value="5">Muy grande</option>
+                                <option value="6">Extra grande</option>
+                                <option value="7">Gigante</option>
+                            </select>
                             <div class="cpp-toolbar-separator"></div>
                             <div class="cpp-toolbar-color-group">
                                 <span class="dashicons dashicons-editor-textcolor"></span>
