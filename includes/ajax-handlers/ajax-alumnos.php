@@ -320,6 +320,37 @@ function cpp_ajax_delete_alumno_globally() {
     wp_send_json_success(['message' => 'Alumno eliminado permanentemente.']);
 }
 
+add_action('wp_ajax_cpp_save_alumno_notas', 'cpp_ajax_save_alumno_notas');
+function cpp_ajax_save_alumno_notas() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    $user_id = get_current_user_id();
+    $alumno_id = isset($_POST['alumno_id']) ? intval($_POST['alumno_id']) : 0;
+    $notas = isset($_POST['notas']) ? wp_kses_post($_POST['notas']) : '';
+
+    if (empty($alumno_id)) {
+        wp_send_json_error(['message' => 'ID de alumno no válido.']);
+    }
+
+    if (!cpp_es_propietario_alumno($user_id, $alumno_id)) {
+        wp_send_json_error(['message' => 'Permiso denegado.']);
+    }
+
+    global $wpdb;
+    $result = $wpdb->update(
+        $wpdb->prefix . 'cpp_alumnos',
+        ['notas' => $notas],
+        ['id' => $alumno_id, 'user_id' => $user_id],
+        ['%s'],
+        ['%d', '%d']
+    );
+
+    if ($result === false) {
+        wp_send_json_error(['message' => 'Error al guardar las notas.']);
+    }
+
+    wp_send_json_success(['message' => 'Notas guardadas correctamente.']);
+}
+
 // --- LÓGICA PARA LA PANTALLA DE CONFIGURACIÓN DE CLASE ---
 
 add_action('wp_ajax_cpp_get_alumnos_for_clase_config', 'cpp_ajax_get_alumnos_for_clase_config');
