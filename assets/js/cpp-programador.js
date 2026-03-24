@@ -584,29 +584,29 @@
                         });
 
                         // --- FIX v2: Reordenar el DOM en lugar de redibujar para evitar el salto de scroll ---
-
                         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
-                            // 1. Añadir el nuevo elemento al DOM (puede estar en la posición incorrecta temporalmente)
-                            const sesionesFiltradasAntes = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                            const newItemHTML = this.renderSingleSesionItemHTML(newSesion, sesionesFiltradasAntes.length); // Renderizar como si fuera el último
-                            list.insertAdjacentHTML('beforeend', newItemHTML);
+                            // 1. Añadir el nuevo elemento al DOM solo si no ha sido añadido por un re-render previo (en fetchAndApplyFechas)
+                            if (!list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`)) {
+                                const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
+                                const newItemHTML = this.renderSingleSesionItemHTML(newSesion, sesionesFiltradas.length - 1);
+                                list.insertAdjacentHTML('beforeend', newItemHTML);
+                            }
 
-                            // 2. Reordenar el array de datos
-                             this.sesiones.sort((a, b) => {
-                                if (!a.fecha_calculada) return 1;
-                                if (!b.fecha_calculada) return -1;
-                                return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
-                            });
-
-                            // 3. Reordenar el DOM basándose en el array de datos
+                            // 2. Reordenar el DOM basándose en el array de datos (ya ordenado arriba)
                             const sesionesFiltradasDespues = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                             sesionesFiltradasDespues.forEach((sesion, index) => {
-                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
-                                if (item) {
-                                    item.style.order = index;
-                                    item.querySelector('.cpp-sesion-number').textContent = `${index + 1}.`;
-                                }
+                                const items = list.querySelectorAll(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                                // Si por algún error previo o concurrencia hubiera duplicados, los limpiamos
+                                Array.from(items).forEach((item, itemIdx) => {
+                                    if (itemIdx === 0) {
+                                        item.style.order = index;
+                                        const numSpan = item.querySelector('.cpp-sesion-number');
+                                        if (numSpan) numSpan.textContent = `${index + 1}.`;
+                                    } else {
+                                        item.remove();
+                                    }
+                                });
                             });
                             list.style.display = 'flex';
                             list.style.flexDirection = 'column';
