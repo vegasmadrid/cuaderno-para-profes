@@ -83,6 +83,14 @@
             $document.on('click', '#cpp-alumno-foto-editable', this.handleChangeFoto.bind(this));
             $document.on('change', '#cpp-alumno-foto-input', this.handleUploadFoto.bind(this));
             $document.on('click', '#cpp-regenerate-avatar-btn', this.handleRegenerateAvatar.bind(this));
+            $document.on('click', '#cpp-save-notas-alumno-btn', this.handleSaveNotas.bind(this));
+            $document.on('click', '.cpp-editor-toolbar button[data-command]', this.handleEditorAction.bind(this));
+            $document.on('input', '.cpp-editor-forecolor', function() {
+                document.execCommand('foreColor', false, $(this).val());
+            });
+            $document.on('input', '.cpp-editor-hilitecolor', function() {
+                document.execCommand('hiliteColor', false, $(this).val());
+            });
 
             // Handlers para el formulario de nuevo alumno
             $document.on('click', '#cpp-new-alumno-foto-preview', function() {
@@ -548,6 +556,36 @@
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>`;
+            }
+
+            let notasHtml = '';
+            if (!isNew) {
+                notasHtml = `
+                    <div class="cpp-ficha-section">
+                        <h3>Notas sobre el alumno</h3>
+                        <div class="cpp-notas-editor-container">
+                            <div class="cpp-editor-toolbar">
+                                <button type="button" data-command="bold" title="Negrita"><span class="dashicons dashicons-editor-bold"></span></button>
+                                <button type="button" data-command="underline" title="Subrayado"><span class="dashicons dashicons-editor-underline"></span></button>
+                                <div class="cpp-editor-color-picker" title="Color de fuente">
+                                    <span class="dashicons dashicons-editor-textcolor"></span>
+                                    <input type="color" class="cpp-editor-forecolor" value="#000000">
+                                </div>
+                                <div class="cpp-editor-color-picker" title="Color de fondo">
+                                    <span class="dashicons dashicons-admin-appearance"></span>
+                                    <input type="color" class="cpp-editor-hilitecolor" value="#ffffff">
+                                </div>
+                            </div>
+                            <div id="cpp-alumno-notas-editor" contenteditable="true" class="cpp-notas-editor-content">
+                                ${alumno.notas || ''}
+                            </div>
+                        </div>
+                        <div class="cpp-form-actions" style="margin-top: 10px;">
+                            <button type="button" id="cpp-save-notas-alumno-btn" class="cpp-btn cpp-btn-primary" data-alumno-id="${alumno.id}">
+                                <span class="dashicons dashicons-saved"></span> Guardar Notas
+                            </button>
                         </div>
                     </div>`;
             }
@@ -1113,6 +1151,45 @@
                         $('#cpp-alumno-foto-url-input').val(newFotoUrl);
 
                         $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        cpp.utils.showToast(response.data.message, 'error');
+                    }
+                },
+                error: () => {
+                    cpp.utils.hideSpinner();
+                    cpp.utils.showToast('Error de conexión.', 'error');
+                }
+            });
+        },
+
+        handleEditorAction: function(e) {
+            const $btn = $(e.currentTarget);
+            const command = $btn.data('command');
+
+            if (command) {
+                document.execCommand(command, false, null);
+            }
+        },
+
+        handleSaveNotas: function(e) {
+            const alumnoId = $(e.currentTarget).data('alumno-id');
+            const notas = $('#cpp-alumno-notas-editor').html();
+
+            cpp.utils.showSpinner();
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_save_alumno_notas',
+                    nonce: cppFrontendData.nonce,
+                    alumno_id: alumnoId,
+                    notas: notas
+                },
+                success: (response) => {
+                    cpp.utils.hideSpinner();
+                    if (response.success) {
+                        cpp.utils.showToast(response.data.message);
                     } else {
                         cpp.utils.showToast(response.data.message, 'error');
                     }

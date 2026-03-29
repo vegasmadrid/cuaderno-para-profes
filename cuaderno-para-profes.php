@@ -409,6 +409,17 @@ function cpp_migrate_alumnos_to_many_to_many_v2_3_0_final() {
 function cpp_run_migrations() {
     $current_version = get_option('cpp_version', '1.0');
 
+    if (version_compare($current_version, '2.8.4', '<')) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cpp_alumnos';
+        $column_name = 'notas';
+
+        $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_name` LIKE %s", $column_name));
+        if (!$column_exists) {
+            $wpdb->query("ALTER TABLE `$table_name` ADD `$column_name` LONGTEXT AFTER `foto` ");
+        }
+    }
+
     if (version_compare($current_version, '1.6', '<')) {
         cpp_migrate_add_passing_grade_v1_6();
     }
