@@ -2790,17 +2790,26 @@
                             return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
                         });
 
-                        // Reordenar el DOM basándose en el array de datos
+                        // Reordenar el DOM basándose en el array de datos y forzar renderizado de la sesión afectada
                         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
                             const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                            sesionesFiltradas.forEach((sesion, index) => {
-                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
+                            sesionesFiltradas.forEach((s, index) => {
+                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${s.id}"]`);
                                 if (item) {
-                                    item.style.order = index;
-                                    const numberElement = item.querySelector('.cpp-sesion-number');
-                                    if (numberElement) {
-                                        numberElement.textContent = `${index + 1}.`;
+                                    // Si es la sesión que acabamos de fijar/desfijar, forzamos su re-renderizado
+                                    // para que aparezca/desaparezca la chincheta, incluso si la fecha no cambió.
+                                    if (sesion && s.id == sesion.id) {
+                                        item.outerHTML = this.renderSingleSesionItemHTML(s, index);
+                                        // Buscamos el nuevo item insertado para aplicar el orden
+                                        const newItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${s.id}"]`);
+                                        if (newItem) newItem.style.order = index;
+                                    } else {
+                                        item.style.order = index;
+                                        const numberElement = item.querySelector('.cpp-sesion-number');
+                                        if (numberElement) {
+                                            numberElement.textContent = `${index + 1}.`;
+                                        }
                                     }
                                 }
                             });
