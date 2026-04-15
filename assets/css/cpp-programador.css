@@ -104,6 +104,14 @@
 .cpp-sesion-list-item:hover { background-color: #f7f7f7; }
 .cpp-sesion-list-item.active { background-color: #e8f0fe; font-weight: 500; color: #1a73e8; }
 
+.cpp-sesion-fijada-item {
+    background-color: #fafafa;
+}
+.cpp-sesion-fijada-item .cpp-sesion-handle {
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
 .cpp-sesion-date .cpp-sesion-fijada-icon {
     font-size: 12px; /* Más pequeño para que encaje con el texto de la fecha */
     cursor: help;

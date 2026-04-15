@@ -575,49 +575,14 @@
 
                     // --- FIX: Reordenar y redibujar para asegurar orden cronológico ---
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
-                        // Reordenar el array de sesiones principal por fecha
-                        this.sesiones.sort((a, b) => {
-                            // Poner sesiones sin fecha al final
-                            if (!a.fecha_calculada) return 1;
-                            if (!b.fecha_calculada) return -1;
-                            return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
-                        });
-
-                        // --- FIX v2: Reordenar el DOM en lugar de redibujar para evitar el salto de scroll ---
                         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
-                            // 1. Añadir el nuevo elemento al DOM solo si no ha sido añadido por un re-render previo (en fetchAndApplyFechas)
-                            if (!list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`)) {
-                                const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                                const newItemHTML = this.renderSingleSesionItemHTML(newSesion, sesionesFiltradas.length - 1);
-                                list.insertAdjacentHTML('beforeend', newItemHTML);
-                            }
-
-                            // 2. Reordenar el DOM basándose en el array de datos (ya ordenado arriba)
-                            const sesionesFiltradasDespues = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                            sesionesFiltradasDespues.forEach((sesion, index) => {
-                                const items = list.querySelectorAll(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
-                                // Si por algún error previo o concurrencia hubiera duplicados, los limpiamos
-                                Array.from(items).forEach((item, itemIdx) => {
-                                    if (itemIdx === 0) {
-                                        item.style.order = index;
-                                        const numSpan = item.querySelector('.cpp-sesion-number');
-                                        if (numSpan) numSpan.textContent = `${index + 1}.`;
-                                    } else {
-                                        item.remove();
-                                    }
-                                });
-                            });
-                            list.style.display = 'flex';
-                            list.style.flexDirection = 'column';
+                            list.innerHTML = this.renderSesionList();
+                            this.makeSesionesSortable();
 
                              // 4. Actualizar estado y hacer scroll
-                            const oldActive = list.querySelector('.cpp-sesion-list-item.active');
-                            if (oldActive) oldActive.classList.remove('active');
-
                             const newActiveElement = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${newSesion.id}"]`);
                              if (newActiveElement) {
-                                newActiveElement.classList.add('active');
                                 newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                             }
 
@@ -1394,30 +1359,11 @@
                     }
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
                         // --- FIX: Reordenar después de guardar para mantener el orden cronológico ---
-                        if (!isNew) { // Solo reordenar si no es una sesión nueva (las nuevas ya lo gestionan)
-                            this.sesiones.sort((a, b) => {
-                                if (!a.fecha_calculada) return 1;
-                                if (!b.fecha_calculada) return -1;
-                                return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
-                            });
-
+                        if (!isNew) {
                             const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                             if (list) {
-                                list.style.display = 'flex';
-                                list.style.flexDirection = 'column';
-
-                                const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-
-                                sesionesFiltradas.forEach((sesion, index) => {
-                                    const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
-                                    if (item) {
-                                        item.style.order = index;
-                                        const numberElement = item.querySelector('.cpp-sesion-number');
-                                        if (numberElement) {
-                                            numberElement.textContent = `${index + 1}.`;
-                                        }
-                                    }
-                                });
+                                list.innerHTML = this.renderSesionList();
+                                this.makeSesionesSortable();
                             }
                         }
                     });
@@ -1707,10 +1653,12 @@
                 if (sesion.evaluacion_id == evaluacionId) {
                     const hasNewData = fetchedFechas.hasOwnProperty(sesion.id);
                     const newFecha = hasNewData ? fetchedFechas[sesion.id].fecha : null;
+                    const newHora = hasNewData ? (fetchedFechas[sesion.id].hora || '') : '';
                     const newNotas = hasNewData ? fetchedFechas[sesion.id].notas : '';
 
-                    if (sesion.fecha_calculada !== newFecha || sesion.notas_horario !== newNotas) {
+                    if (sesion.fecha_calculada !== newFecha || sesion.hora_calculada !== newHora || sesion.notas_horario !== newNotas) {
                         sesion.fecha_calculada = newFecha;
+                        sesion.hora_calculada = newHora;
                         sesion.notas_horario = newNotas;
                         changedSesiones.push(sesion);
                     }
@@ -1751,20 +1699,9 @@
             if (changedSesiones.length > 0) {
                 const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                 if (list) {
-                    const sesionesEnLista = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-
-                    // Si cambian muchas sesiones (más del 50%), es más eficiente re-renderizar la lista entera
-                    if (changedSesiones.length > sesionesEnLista.length / 2) {
-                        list.innerHTML = this.renderSesionList();
-                    } else {
-                        changedSesiones.forEach(sesion => {
-                            const listItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesion.id}"]`);
-                            if (listItem) {
-                                const displayIndex = sesionesEnLista.findIndex(s => s.id == sesion.id);
-                                listItem.outerHTML = this.renderSingleSesionItemHTML(sesion, displayIndex);
-                            }
-                        });
-                    }
+                    // Re-renderizar siempre para asegurar el orden cronológico físico
+                    list.innerHTML = this.renderSesionList();
+                    this.makeSesionesSortable();
                 }
 
                 // Solo actualizamos la columna derecha si la sesión actual ha cambiado de fecha/notas
@@ -1805,14 +1742,35 @@
     makeSesionesSortable() {
         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
         if (list) {
+            if ($(list).data('ui-sortable')) {
+                $(list).sortable('destroy');
+            }
+
             $(list).sortable({
                 handle: '.cpp-sesion-handle',
+                items: 'li:not(.cpp-sesion-fijada-item)',
+                cancel: '.cpp-sesion-fijada-item',
                 placeholder: 'cpp-sesion-placeholder',
+                start: (event, ui) => {
+                    ui.placeholder.height(ui.item.height());
+                },
                 update: (event, ui) => {
-                    const newOrder = $(event.target).sortable('toArray', { attribute: 'data-sesion-id' });
+                    // Obtener el orden real basándose en la posición en el DOM,
+                    // incluyendo las sesiones fijadas que no se han movido.
+                    const newOrder = Array.from(list.querySelectorAll('.cpp-sesion-list-item'))
+                        .map(el => el.dataset.sesionId);
                     this.saveSesionOrder(newOrder);
                 }
             }).disableSelection();
+
+            // Mensaje informativo al intentar mover una sesión fijada
+            $(list).find('.cpp-sesion-fijada-item .cpp-sesion-handle').off('click.fijada').on('click.fijada', (e) => {
+                if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                    cpp.utils.showToast('Esta sesión está fijada. Desfíjala para poder moverla.', 'error');
+                } else {
+                    alert('Esta sesión está fijada. Desfíjala para poder moverla.');
+                }
+            });
         }
     },
     makeActividadesSortable() {
@@ -1961,13 +1919,14 @@
         const todayYMD = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
         const isToday = s.fecha_calculada === todayYMD;
         const todayClass = isToday ? 'cpp-sesion-hoy' : '';
+        const fijadaClass = s.fecha_fijada ? 'cpp-sesion-fijada-item' : '';
 
         const simboloData = (s.simbolo_id && this.simbolos && this.simbolos[s.simbolo_id]) ? this.simbolos[s.simbolo_id] : null;
         const simboloHTML = simboloData ? `<span class="cpp-sesion-simbolo">${simboloData.simbolo}</span>` : '';
         const simboloTitle = simboloData ? simboloData.leyenda : '';
 
         return `
-        <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''} ${todayClass}" data-sesion-id="${s.id}">
+        <li class="cpp-sesion-list-item ${this.currentSesion && s.id == this.currentSesion.id ? 'active' : ''} ${todayClass} ${fijadaClass}" data-sesion-id="${s.id}">
             <input type="checkbox" class="cpp-sesion-checkbox" data-sesion-id="${s.id}" ${isChecked ? 'checked' : ''}>
             <span class="cpp-sesion-handle">⠿</span>
             <span class="cpp-sesion-number">${index + 1}.</span>
@@ -1979,8 +1938,18 @@
     },
 
     renderSesionList() {
-        const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-        if (sesionesFiltradas.length === 0) return ''; // Ya no se maneja aquí
+        const sesionesFiltradas = this.sesiones
+            .filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId)
+            .sort((a, b) => {
+                if (!a.fecha_calculada) return 1;
+                if (!b.fecha_calculada) return -1;
+                const dateA = new Date(a.fecha_calculada);
+                const dateB = new Date(b.fecha_calculada);
+                if (dateA - dateB !== 0) return dateA - dateB;
+                return (a.hora_calculada || '').localeCompare(b.hora_calculada || '');
+            });
+
+        if (sesionesFiltradas.length === 0) return '';
 
         return sesionesFiltradas.map((s, index) => this.renderSingleSesionItemHTML(s, index)).join('');
     },
@@ -2427,64 +2396,26 @@
         }
         const horario = this.config.horario;
         const calendarConfig = this.config.calendar_config;
-        const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
 
         let schedule = [];
-        this.clases.forEach(clase => {
-            clase.evaluaciones.forEach(evaluacion => {
-                if (evaluacion.start_date) {
-                    const sesionesDeLaEvaluacion = this.sesiones.filter(s => s.clase_id == clase.id && s.evaluacion_id == evaluacion.id);
-                    if (sesionesDeLaEvaluacion.length === 0) return;
+        this.sesiones.forEach(sesion => {
+            if (sesion.fecha_calculada) {
+                const date = new Date(sesion.fecha_calculada + 'T12:00:00Z');
+                const dayKey = this.getDayKey(date);
+                const slot = sesion.hora_calculada;
+                let notas = '';
 
-                    let classHasSlots = false;
-                    for (const day in horario) {
-                        if (Object.values(horario[day]).some(slot => slot.claseId === String(clase.id))) {
-                            classHasSlots = true;
-                            break;
-                        }
-                    }
-                    if (!classHasSlots) return;
-
-                    let currentDate = new Date(`${evaluacion.start_date}T12:00:00Z`);
-                    if (isNaN(currentDate.getTime())) return;
-
-                    let sessionIndex = 0;
-                    let safetyCounter = 0;
-                    const MAX_ITERATIONS = 50000;
-
-                    while(sessionIndex < sesionesDeLaEvaluacion.length) {
-                        if (++safetyCounter > MAX_ITERATIONS) {
-                            console.error(`Scheduler safety break for clase ${clase.id}, evaluacion ${evaluacion.id}.`);
-                            break;
-                        }
-
-                        const dayOfWeek = currentDate.getUTCDay();
-                        const dayKey = dayMapping[dayOfWeek];
-                        const ymd = currentDate.toISOString().slice(0, 10);
-
-                        const isWorkingDay = calendarConfig.working_days.includes(dayKey);
-                        const holiday = calendarConfig.holidays.find(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
-                        const vacation = calendarConfig.vacations.find(v => ymd >= v.start && ymd <= v.end);
-
-                        if (isWorkingDay && !holiday && !vacation && dayKey && horario[dayKey]) {
-                            const sortedSlots = Object.keys(horario[dayKey]).sort();
-                            for (const slot of sortedSlots) {
-                                if (sessionIndex < sesionesDeLaEvaluacion.length && String(horario[dayKey][slot].claseId) === String(clase.id)) {
-                                    const slotData = horario[dayKey][slot];
-                                    schedule.push({
-                                        sesion: sesionesDeLaEvaluacion[sessionIndex],
-                                        fecha: new Date(currentDate.getTime()),
-                                        hora: slot,
-                                        notas: slotData.notas || ''
-                                    });
-                                    sessionIndex++;
-                                }
-                            }
-                        }
-                        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-                    }
+                if (dayKey && slot && horario[dayKey] && horario[dayKey][slot]) {
+                    notas = horario[dayKey][slot].notas || '';
                 }
-            });
+
+                schedule.push({
+                    sesion: sesion,
+                    fecha: date,
+                    hora: slot,
+                    notas: notas
+                });
+            }
         });
 
         schedule.sort((a, b) => {
@@ -2783,36 +2714,10 @@
 
                     // --- FIX: Reordenar la lista después de cualquier cambio de fecha para mantener el orden cronológico ---
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
-                        // Reordenar el array de sesiones principal por fecha
-                        this.sesiones.sort((a, b) => {
-                            if (!a.fecha_calculada) return 1;
-                            if (!b.fecha_calculada) return -1;
-                            return new Date(a.fecha_calculada) - new Date(b.fecha_calculada);
-                        });
-
-                        // Reordenar el DOM basándose en el array de datos y forzar renderizado de la sesión afectada
                         const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
-                            const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
-                            sesionesFiltradas.forEach((s, index) => {
-                                const item = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${s.id}"]`);
-                                if (item) {
-                                    // Si es la sesión que acabamos de fijar/desfijar, forzamos su re-renderizado
-                                    // para que aparezca/desaparezca la chincheta, incluso si la fecha no cambió.
-                                    if (sesion && s.id == sesion.id) {
-                                        item.outerHTML = this.renderSingleSesionItemHTML(s, index);
-                                        // Buscamos el nuevo item insertado para aplicar el orden
-                                        const newItem = list.querySelector(`.cpp-sesion-list-item[data-sesion-id="${s.id}"]`);
-                                        if (newItem) newItem.style.order = index;
-                                    } else {
-                                        item.style.order = index;
-                                        const numberElement = item.querySelector('.cpp-sesion-number');
-                                        if (numberElement) {
-                                            numberElement.textContent = `${index + 1}.`;
-                                        }
-                                    }
-                                }
-                            });
+                            list.innerHTML = this.renderSesionList();
+                            this.makeSesionesSortable();
                         }
                     });
 

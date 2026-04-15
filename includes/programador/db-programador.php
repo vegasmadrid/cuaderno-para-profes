@@ -117,6 +117,7 @@ function cpp_programador_get_all_data($user_id) {
                         foreach ($fechas_calculadas as $sesion_id => $data) {
                             if (isset($sesiones[$sesion_id])) {
                                 $sesiones[$sesion_id]->fecha_calculada = $data['fecha'];
+                                $sesiones[$sesion_id]->hora_calculada = isset($data['hora']) ? $data['hora'] : '';
                                 $sesiones[$sesion_id]->notas_horario = $data['notas'];
                             }
                         }
@@ -685,6 +686,7 @@ function cpp_programador_calculate_fechas($sesiones_en_evaluacion, $start_date_s
                         $sesion_actual = $sesiones_no_fijadas[$session_index];
                         $resultados[$sesion_actual->id] = [
                             'fecha' => $ymd,
+                            'hora' => $slot,
                             'notas' => !empty($data['notas']) ? $data['notas'] : ''
                         ];
                         $session_index++;
@@ -701,18 +703,21 @@ function cpp_programador_calculate_fechas($sesiones_en_evaluacion, $start_date_s
     foreach ($sesiones_fijadas as $sesion_fijada) {
         $day_key_fijado = $day_mapping[intval((new DateTime($sesion_fijada->fecha_fijada . 'T12:00:00Z'))->format('w'))];
         $notas = '';
+        $hora_fijada = '';
         if (isset($horario[$day_key_fijado])) {
              $slots_del_dia_fijado = $horario[$day_key_fijado];
              ksort($slots_del_dia_fijado);
              foreach($slots_del_dia_fijado as $slot => $data) {
                  if (isset($data['claseId']) && strval($data['claseId']) === strval($clase_id)) {
                      $notas = !empty($data['notas']) ? $data['notas'] : '';
+                     $hora_fijada = $slot;
                      break;
                  }
              }
         }
         $resultados[$sesion_fijada->id] = [
             'fecha' => $sesion_fijada->fecha_fijada,
+            'hora' => $hora_fijada,
             'notas' => $notas
         ];
     }

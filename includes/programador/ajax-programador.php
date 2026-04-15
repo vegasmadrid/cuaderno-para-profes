@@ -719,7 +719,9 @@ function cpp_programador_get_sesion_by_id($sesion_id, $user_id) {
         // Convertir tipos de datos para consistencia con el resto de la app
         $sesion->id = intval($sesion->id);
         $sesion->actividades_programadas = cpp_programador_get_actividades_by_sesion_id($sesion_id, $user_id) ?: [];
-        $sesion->fecha_calculada = cpp_programador_calculate_activity_date($sesion_id, $user_id);
+        $info_calculada = cpp_programador_calculate_activity_date($sesion_id, $user_id);
+        $sesion->fecha_calculada = $info_calculada['fecha'] ?? null;
+        $sesion->hora_calculada = $info_calculada['hora'] ?? '';
     }
 
     return $sesion;
@@ -735,7 +737,7 @@ function cpp_programador_calculate_activity_date($sesion_id, $user_id) {
 
     $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
 
-    return isset($fechas[$sesion_id]) ? $fechas[$sesion_id]['fecha'] : null;
+    return isset($fechas[$sesion_id]) ? $fechas[$sesion_id] : null;
 }
 
 
