@@ -507,6 +507,13 @@ function cpp_programador_recalculate_and_update_activity_dates($evaluacion_id, $
 
     $wpdb->query('START TRANSACTION');
 
+    // Resetear todas las fechas de actividades de esta evaluación que dependen de sesiones
+    // Esto asegura que si una sesión ya no tiene fecha calculada (ej: se salió del rango), la actividad no mantenga una fecha vieja.
+    $wpdb->query($wpdb->prepare(
+        "UPDATE $tabla_act_evaluables SET fecha_actividad = NULL WHERE evaluacion_id = %d AND user_id = %d AND sesion_id IS NOT NULL",
+        $evaluacion_id, $user_id
+    ));
+
     $errors = false;
     foreach ($fechas_calculadas as $sesion_id => $data) {
         $fecha_calculada_str = $data['fecha'];

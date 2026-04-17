@@ -22,7 +22,7 @@ function cpp_hidratar_fechas_de_actividades($actividades, $clase_id, $evaluacion
 
     $actividades_a_hidratar = [];
     foreach ($actividades as $actividad) {
-        if (empty($actividad['fecha_actividad']) && !empty($actividad['sesion_id'])) {
+        if (!empty($actividad['sesion_id'])) {
             $actividades_a_hidratar[$actividad['id']] = $actividad['sesion_id'];
         }
     }

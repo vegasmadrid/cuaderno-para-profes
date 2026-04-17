@@ -137,6 +137,9 @@ function cpp_ajax_delete_programador_sesion() {
     $sesion_info = $wpdb->get_row($wpdb->prepare("SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d AND user_id = %d", $sesion_id, $user_id));
 
     if (cpp_programador_delete_sesion($sesion_id, $user_id, $delete_activities)) {
+        if ($sesion_info) {
+             cpp_programador_recalculate_and_update_activity_dates($sesion_info->evaluacion_id, $user_id);
+        }
         wp_send_json_success(['message' => 'Sesión eliminada.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al eliminar la sesión.']);
@@ -153,6 +156,8 @@ function cpp_ajax_save_sesiones_order() {
     $orden = isset($_POST['orden']) ? json_decode(stripslashes($_POST['orden'])) : [];
     if (empty($clase_id) || empty($evaluacion_id) || !is_array($orden)) { wp_send_json_error(['message' => 'Faltan datos para reordenar.']); return; }
     if (cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id, $orden)) {
+        // Recalcular fechas de actividades en el cuaderno tras reordenar
+        cpp_programador_recalculate_and_update_activity_dates($evaluacion_id, $user_id);
         wp_send_json_success(['message' => 'Orden guardado.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Error al guardar el orden.']);
@@ -224,6 +229,9 @@ function cpp_ajax_add_inline_sesion() {
     $result = cpp_programador_add_sesion_inline($sesion_data, $after_sesion_id, $user_id);
 
     if ($result) {
+        // Recalcular fechas tras añadir sesión inline
+        cpp_programador_recalculate_and_update_activity_dates($sesion_data['evaluacion_id'], $user_id);
+
         // --- FIX: Devolver la sesión completa en lugar de recargar todo ---
         $sesion_completa = cpp_programador_get_sesion_by_id($result, $user_id);
 
@@ -517,6 +525,11 @@ function cpp_ajax_delete_multiple_sesiones() {
     $result = cpp_programador_delete_multiple_sesiones($session_ids, $user_id, $delete_activities);
 
     if ($result) {
+        if (!empty($affected_evaluations)) {
+            foreach ($affected_evaluations as $eval) {
+                cpp_programador_recalculate_and_update_activity_dates($eval->evaluacion_id, $user_id);
+            }
+        }
         wp_send_json_success(['message' => 'Sesiones eliminadas correctamente.', 'needs_gradebook_reload' => true]);
     } else {
         wp_send_json_error(['message' => 'Ocurrió un error al eliminar una o más de las sesiones seleccionadas.']);
@@ -576,6 +589,9 @@ function cpp_ajax_toggle_sesion_fijada() {
     $result = cpp_programador_toggle_sesion_fijada($session_ids, $fijar, $user_id);
 
     if ($result) {
+        // Recalcular fechas persistidas
+        cpp_programador_recalculate_and_update_activity_dates($sesion_info->evaluacion_id, $user_id);
+
         // Devolver las nuevas fechas para actualizar la UI
         $fechas_actualizadas = cpp_programador_get_fechas_for_evaluacion($user_id, $sesion_info->clase_id, $sesion_info->evaluacion_id);
 
