@@ -1005,3 +1005,82 @@ td.cpp-semana-td-hora {
     color: #1a73e8 !important;
     box-shadow: none !important;
 }
+
+/* Switch Toggle Styles */
+.cpp-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.cpp-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.cpp-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.cpp-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .cpp-slider {
+  background-color: #1a73e8;
+}
+
+input:focus + .cpp-slider {
+  box-shadow: 0 0 1px #1a73e8;
+}
+
+input:checked + .cpp-slider:before {
+  transform: translateX(22px);
+}
+
+.cpp-slider.round {
+  border-radius: 24px;
+}
+
+.cpp-slider.round:before {
+  border-radius: 50%;
+}
+
+/* Public View Styles */
+body.cpp-public-view {
+    background-color: #f8f9fa;
+}
+
+body.cpp-public-view .cpp-cuaderno-viewport-classroom {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+body.cpp-public-view .cpp-fullscreen-settings-header {
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+body.cpp-public-view .cpp-fullscreen-settings-content {
+    background: white;
+    padding: 20px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}

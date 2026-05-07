@@ -10,7 +10,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
     wp_enqueue_style('cpp-resumen-css');
     wp_enqueue_script('cpp-resumen-js');
 
-    if (!is_user_logged_in()) {
+    $shared_token = isset($_GET['shared_token']) ? sanitize_text_field($_GET['shared_token']) : null;
+
+    if (!is_user_logged_in() && !$shared_token) {
         return '<div class="cpp-mensaje">Por favor, inicia sesión para acceder al cuaderno de notas.</div>';
     }
 
@@ -56,7 +58,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <span class="dashicons dashicons-arrow-right-alt2"></span>
                     </button>
                 </div>
-                <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto;">
+                <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto; display: flex; gap: 10px;">
+                    <button id="cpp-share-week-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-share"></span> Compartir
+                    </button>
                     <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
                         <span class="dashicons dashicons-media-document"></span> Descargar PDF
                     </button>
@@ -498,6 +503,42 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             </form>
         </div>
     </div>
+    <div id="cpp-share-week-modal" class="cpp-modal" style="display:none;">
+        <div class="cpp-modal-content">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Compartir Programación Semanal</h2>
+            <p>Genera un enlace público para que otros puedan ver tu programación de la semana sin necesidad de iniciar sesión.</p>
+
+            <div class="cpp-form-group">
+                <label for="cpp-share-scope">¿Qué deseas compartir?</label>
+                <select id="cpp-share-scope">
+                    <option value="all">Todas mis clases</option>
+                    <option value="current">Solo la clase actual</option>
+                </select>
+            </div>
+
+            <div class="cpp-form-group" style="display: flex; align-items: center; gap: 10px; margin: 20px 0;">
+                <label class="cpp-switch">
+                    <input type="checkbox" id="cpp-share-toggle">
+                    <span class="cpp-slider round"></span>
+                </label>
+                <span id="cpp-share-status-text">Enlace público desactivado</span>
+            </div>
+
+            <div id="cpp-share-link-container" style="display: none;">
+                <div class="cpp-form-group">
+                    <label for="cpp-share-link-input">Enlace para compartir:</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="cpp-share-link-input" readonly style="flex-grow: 1;">
+                        <button id="cpp-copy-share-link-btn" class="cpp-btn cpp-btn-primary">
+                            <span class="dashicons dashicons-admin-page"></span> Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="cpp-pdf-download-modal" class="cpp-modal" style="display:none;">
         <div class="cpp-modal-content">
             <span class="cpp-modal-close">&times;</span>

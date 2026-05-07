@@ -233,6 +233,21 @@ function cpp_crear_tablas() {
     ) $charset_collate;";
     dbDelta($sql_evaluacion_criterios);
 
+    $tabla_shared_weeks = $wpdb->prefix . 'cpp_shared_weeks';
+    $sql_shared_weeks = "CREATE TABLE $tabla_shared_weeks (
+        id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        clase_id mediumint(9) UNSIGNED DEFAULT NULL,
+        token varchar(64) NOT NULL,
+        active tinyint(1) NOT NULL DEFAULT 1,
+        fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY token (token),
+        KEY user_id (user_id),
+        UNIQUE KEY user_clase (user_id, clase_id)
+    ) $charset_collate;";
+    dbDelta($sql_shared_weeks);
+
     // Ejecutar migración si es necesario
     cpp_migrar_categorias_a_criterios();
 }

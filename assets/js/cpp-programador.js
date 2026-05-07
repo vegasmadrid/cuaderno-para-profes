@@ -48,6 +48,15 @@
             element: document.querySelector('#cpp-config-modal'),
             form: document.querySelector('#cpp-config-form')
         };
+        this.shareWeekModal = {
+            element: document.querySelector('#cpp-share-week-modal'),
+            scopeSelect: document.querySelector('#cpp-share-scope'),
+            toggle: document.querySelector('#cpp-share-toggle'),
+            statusText: document.querySelector('#cpp-share-status-text'),
+            linkContainer: document.querySelector('#cpp-share-link-container'),
+            linkInput: document.querySelector('#cpp-share-link-input'),
+            copyBtn: document.querySelector('#cpp-copy-share-link-btn')
+        };
         this.pdfDownloadModal = {
             element: document.querySelector('#cpp-pdf-download-modal'),
             weekBtn: document.querySelector('#cpp-pdf-download-week-btn'),
@@ -258,6 +267,17 @@
             self.navigateToSesion(claseId, evaluacionId, sesionId);
         });
 
+        // --- Sharing Modal ---
+        $document.on('click', '#cpp-share-week-btn', () => this.openShareModal());
+        if (this.shareWeekModal.element) {
+            const closeBtn = this.shareWeekModal.element.querySelector('.cpp-modal-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => this.shareWeekModal.element.style.display = 'none');
+
+            this.shareWeekModal.scopeSelect.addEventListener('change', () => this.updateShareStatus());
+            this.shareWeekModal.toggle.addEventListener('change', () => this.handleToggleShare());
+            this.shareWeekModal.copyBtn.addEventListener('click', () => this.handleCopyShareLink());
+        }
+
         // --- PDF Download Modal ---
         $document.on('click', '#cpp-download-pdf-btn', () => this.openPdfDownloadModal());
         if (this.pdfDownloadModal.element && this.pdfDownloadModal.closeBtn) {
@@ -278,6 +298,79 @@
         if (this.pdfRangeModal.element && this.pdfRangeModal.form) {
             this.pdfRangeModal.form.addEventListener('submit', (e) => this.handlePdfDownload('rango', e));
         }
+    },
+
+    openShareModal() {
+        if (this.shareWeekModal.element) {
+            this.shareWeekModal.element.style.display = 'block';
+            this.updateShareStatus();
+        }
+    },
+
+    updateShareStatus() {
+        const scope = this.shareWeekModal.scopeSelect.value;
+        const claseId = scope === 'current' ? this.currentClaseId : 'all';
+
+        $.ajax({
+            url: cpp_data.ajax_url,
+            method: 'POST',
+            data: {
+                action: 'cpp_get_share_status',
+                nonce: cpp_data.nonce,
+                clase_id: claseId
+            },
+            success: (response) => {
+                if (response.success && response.data.status) {
+                    const status = response.data.status;
+                    this.shareWeekModal.toggle.checked = status.active == 1;
+                    this.shareWeekModal.statusText.textContent = status.active == 1 ? 'Enlace público activado' : 'Enlace público desactivado';
+
+                    if (status.active == 1) {
+                        this.shareWeekModal.linkContainer.style.display = 'block';
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('shared_token', status.token);
+                        this.shareWeekModal.linkInput.value = url.href;
+                    } else {
+                        this.shareWeekModal.linkContainer.style.display = 'none';
+                    }
+                } else {
+                    this.shareWeekModal.toggle.checked = false;
+                    this.shareWeekModal.statusText.textContent = 'Enlace público desactivado';
+                    this.shareWeekModal.linkContainer.style.display = 'none';
+                }
+            }
+        });
+    },
+
+    handleToggleShare() {
+        const scope = this.shareWeekModal.scopeSelect.value;
+        const claseId = scope === 'current' ? this.currentClaseId : 'all';
+        const active = this.shareWeekModal.toggle.checked;
+
+        $.ajax({
+            url: cpp_data.ajax_url,
+            method: 'POST',
+            data: {
+                action: 'cpp_toggle_share',
+                nonce: cpp_data.nonce,
+                clase_id: claseId,
+                active: active
+            },
+            success: (response) => {
+                if (response.success) {
+                    this.updateShareStatus();
+                    cpp.utils.showToast(active ? 'Enlace activado' : 'Enlace desactivado', 'success');
+                } else {
+                    cpp.utils.showToast('Error al actualizar el estado de compartición', 'error');
+                }
+            }
+        });
+    },
+
+    handleCopyShareLink() {
+        this.shareWeekModal.linkInput.select();
+        document.execCommand('copy');
+        cpp.utils.showToast('Enlace copiado al portapapeles', 'success');
     },
 
     openPdfDownloadModal() {
@@ -311,6 +404,12 @@
         }
 
         let url = `${cppFrontendData.ajaxUrl}?action=cpp_download_programacion_pdf&type=${type}`;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('shared_token');
+        if (token) {
+            url += `&shared_token=${token}`;
+        }
 
         if (type === 'semana') {
             const weekDates = this.getWeekDates(this.semanaDate);
@@ -1073,6 +1172,14 @@
     },
 
     fetchDataFromServer() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('shared_token');
+
+        if (token) {
+            return fetch(`${cppFrontendData.ajaxUrl}?action=cpp_get_public_programador_data&token=${token}`)
+                .then(res => res.json());
+        }
+
         const data = new URLSearchParams({ action: 'cpp_get_programador_all_data', nonce: cppFrontendData.nonce });
         return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json());
@@ -1083,13 +1190,24 @@
             this.clases = result.data.clases || [];
             this.config = result.data.config || { time_slots: [], horario: {} };
             this.sesiones = result.data.sesiones || [];
-            this.fetchSimbolos(); // Cargar símbolos
+
+            if (result.data.is_public && result.data.simbolos) {
+                this.simbolos = result.data.simbolos;
+            } else {
+                this.fetchSimbolos(); // Cargar símbolos
+            }
 
             if (this.clases.length > 0) {
                 if (initialClaseId) {
                     // La lógica de pendingNavigation ahora está en loadClass.
                     // Simplemente llamamos a loadClass y ella se encargará de todo.
                     this.loadClass(initialClaseId, evaluacionIdToSelect, sesionIdToSelect, true);
+                } else if (result.data.is_public) {
+                    // In public view, we load the first available class and render the week view
+                    this.share_info = result.data.share_info;
+                    const firstClaseId = this.clases[0].id;
+                    this.loadClass(firstClaseId, null, null, true);
+                    this.renderSemanaTab();
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
@@ -2441,7 +2559,15 @@
         const todayYMD = today.toISOString().slice(0, 10);
 
         // Actualizar el título de la semana en la barra superior
-        const weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
+        let weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
+
+        // Si estamos en vista pública y tenemos información del profesor
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPublic = urlParams.has('shared_token');
+        if (isPublic && this.share_info && this.share_info.user_name) {
+            weekTitle = `${weekTitle} - Programación de ${this.share_info.user_name}`;
+        }
+
         const $headerDate = document.getElementById('cpp-semana-header-date');
         if ($headerDate) {
             $headerDate.textContent = weekTitle;
