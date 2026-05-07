@@ -237,7 +237,7 @@ function cpp_crear_tablas() {
     $sql_shared_weeks = "CREATE TABLE $tabla_shared_weeks (
         id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id bigint(20) UNSIGNED NOT NULL,
-        clase_id mediumint(9) UNSIGNED DEFAULT NULL,
+        clase_id mediumint(9) UNSIGNED NOT NULL DEFAULT 0,
         token varchar(64) NOT NULL,
         active tinyint(1) NOT NULL DEFAULT 1,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,

@@ -857,7 +857,13 @@ function cpp_ajax_toggle_share() {
     $active = isset($_POST['active']) && $_POST['active'] === 'true';
 
     $status = cpp_toggle_share($user_id, $clase_id, $active);
-    wp_send_json_success(['status' => $status]);
+
+    if ($active && !$status) {
+        wp_send_json_error(['message' => 'Error al generar el enlace. Por favor, inténtalo de nuevo.']);
+        return;
+    }
+
+    wp_send_json_success(['status' => $status, 'message' => $active ? 'Enlace activado' : 'Enlace desactivado']);
 }
 
 function cpp_ajax_get_public_programador_data() {

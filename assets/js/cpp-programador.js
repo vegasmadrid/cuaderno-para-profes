@@ -307,6 +307,27 @@
         }
     },
 
+    applyShareStatus(status) {
+        if (status) {
+            this.shareWeekModal.toggle.checked = status.active == 1;
+            this.shareWeekModal.statusText.textContent = status.active == 1 ? 'Enlace público activado' : 'Enlace público desactivado';
+
+            if (status.active == 1) {
+                this.shareWeekModal.linkContainer.style.display = 'block';
+                const url = new URL(window.location.origin + window.location.pathname);
+                url.searchParams.set('shared_token', status.token);
+                this.shareWeekModal.linkInput.value = url.href;
+            } else {
+                this.shareWeekModal.linkContainer.style.display = 'none';
+            }
+        } else {
+            this.shareWeekModal.toggle.checked = false;
+            this.shareWeekModal.statusText.textContent = 'Enlace público desactivado';
+            this.shareWeekModal.linkContainer.style.display = 'none';
+            this.shareWeekModal.linkInput.value = '';
+        }
+    },
+
     updateShareStatus() {
         const scope = this.shareWeekModal.scopeSelect.value;
         const claseId = (scope === 'current' && this.currentClase) ? this.currentClase.id : 'all';
@@ -320,25 +341,13 @@
                 clase_id: claseId
             },
             success: (response) => {
-                if (response.success && response.data.status) {
-                    const status = response.data.status;
-                    this.shareWeekModal.toggle.checked = status.active == 1;
-                    this.shareWeekModal.statusText.textContent = status.active == 1 ? 'Enlace público activado' : 'Enlace público desactivado';
-
-                    if (status.active == 1) {
-                        this.shareWeekModal.linkContainer.style.display = 'block';
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('shared_token', status.token);
-                        this.shareWeekModal.linkInput.value = url.href;
-                    } else {
-                        this.shareWeekModal.linkContainer.style.display = 'none';
-                    }
+                if (response.success) {
+                    this.applyShareStatus(response.data.status);
                 } else {
-                    this.shareWeekModal.toggle.checked = false;
-                    this.shareWeekModal.statusText.textContent = 'Enlace público desactivado';
-                    this.shareWeekModal.linkContainer.style.display = 'none';
+                    this.applyShareStatus(null);
                 }
-            }
+            },
+            error: () => this.applyShareStatus(null)
         });
     },
 
@@ -358,11 +367,16 @@
             },
             success: (response) => {
                 if (response.success) {
-                    this.updateShareStatus();
-                    cpp.utils.showToast(active ? 'Enlace activado' : 'Enlace desactivado', 'success');
+                    this.applyShareStatus(response.data.status);
+                    cpp.utils.showToast(response.data.message || (active ? 'Enlace activado' : 'Enlace desactivado'), 'success');
                 } else {
-                    cpp.utils.showToast('Error al actualizar el estado de compartición', 'error');
+                    this.shareWeekModal.toggle.checked = !active; // Revert switch
+                    cpp.utils.showToast(response.data.message || 'Error al actualizar el estado de compartición', 'error');
                 }
+            },
+            error: () => {
+                this.shareWeekModal.toggle.checked = !active; // Revert switch
+                cpp.utils.showToast('Error de conexión al servidor', 'error');
             }
         });
     },

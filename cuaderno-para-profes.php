@@ -504,6 +504,13 @@ function cpp_run_migrations() {
         }
     }
 
+    // --- MIGRACIÓN v2.8.7: Compartir Vista Semana ---
+    if (version_compare($current_version, '2.8.7', '<')) {
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+    }
+
     // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
     if (version_compare($current_version, CPP_VERSION, '<')) {
         delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);

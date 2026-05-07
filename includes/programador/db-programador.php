@@ -959,7 +959,7 @@ function cpp_get_share_status($user_id, $clase_id = null) {
     if ($clase_id === 'all') $clase_id = null;
 
     if ($clase_id === null) {
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla WHERE user_id = %d AND clase_id IS NULL", $user_id));
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla WHERE user_id = %d AND (clase_id IS NULL OR clase_id = 0)", $user_id));
     } else {
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla WHERE user_id = %d AND clase_id = %d", $user_id, $clase_id));
     }
@@ -971,6 +971,14 @@ function cpp_get_share_status($user_id, $clase_id = null) {
 function cpp_toggle_share($user_id, $clase_id, $active) {
     global $wpdb;
     $tabla = $wpdb->prefix . 'cpp_shared_weeks';
+
+    // Safety check: ensure table exists
+    if ($wpdb->get_var("SHOW TABLES LIKE '$tabla'") !== $tabla) {
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+    }
+
     if ($clase_id === 'all') $clase_id = null;
 
     $status = cpp_get_share_status($user_id, $clase_id);
@@ -980,12 +988,16 @@ function cpp_toggle_share($user_id, $clase_id, $active) {
         return cpp_get_share_status($user_id, $clase_id);
     } else if ($active) {
         $token = bin2hex(random_bytes(32));
-        $wpdb->insert($tabla, [
+        $inserted = $wpdb->insert($tabla, [
             'user_id' => $user_id,
-            'clase_id' => $clase_id,
+            'clase_id' => $clase_id ? $clase_id : 0,
             'token' => $token,
             'active' => 1
         ]);
+        if ($inserted === false) {
+            error_log("CPP ERROR: Failed to insert shared week. " . $wpdb->last_error);
+            return null;
+        }
         return cpp_get_share_status($user_id, $clase_id);
     }
     return null;
