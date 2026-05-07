@@ -309,14 +309,14 @@
 
     updateShareStatus() {
         const scope = this.shareWeekModal.scopeSelect.value;
-        const claseId = scope === 'current' ? this.currentClaseId : 'all';
+        const claseId = (scope === 'current' && this.currentClase) ? this.currentClase.id : 'all';
 
         $.ajax({
-            url: cpp_data.ajax_url,
+            url: cppFrontendData.ajaxUrl,
             method: 'POST',
             data: {
                 action: 'cpp_get_share_status',
-                nonce: cpp_data.nonce,
+                nonce: cppFrontendData.nonce,
                 clase_id: claseId
             },
             success: (response) => {
@@ -344,15 +344,15 @@
 
     handleToggleShare() {
         const scope = this.shareWeekModal.scopeSelect.value;
-        const claseId = scope === 'current' ? this.currentClaseId : 'all';
+        const claseId = (scope === 'current' && this.currentClase) ? this.currentClase.id : 'all';
         const active = this.shareWeekModal.toggle.checked;
 
         $.ajax({
-            url: cpp_data.ajax_url,
+            url: cppFrontendData.ajaxUrl,
             method: 'POST',
             data: {
                 action: 'cpp_toggle_share',
-                nonce: cpp_data.nonce,
+                nonce: cppFrontendData.nonce,
                 clase_id: claseId,
                 active: active
             },
