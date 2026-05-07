@@ -23,6 +23,7 @@ require_once CPP_PLUGIN_DIR . 'includes/shortcodes.php';
 require_once CPP_PLUGIN_DIR . 'includes/ajax.php';
 require_once CPP_PLUGIN_DIR . 'includes/excel-export.php'; 
 require_once CPP_PLUGIN_DIR . 'includes/excel-import.php';
+require_once CPP_PLUGIN_DIR . 'includes/admin-settings.php';
 
 // Incluir archivos del programador
 require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
@@ -80,7 +81,8 @@ function cpp_cargar_assets() {
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('cpp_frontend_nonce'),
-        'userId' => get_current_user_id()
+        'userId' => get_current_user_id(),
+        'sharePageUrl' => get_option('cpp_share_page_url', '')
     ]);
 }
 

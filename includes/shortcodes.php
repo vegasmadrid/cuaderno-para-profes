@@ -3,20 +3,6 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
-// --- PROTECCIÓN DE ACCESO Y REDIRECCIÓN (Para compatibilidad con Ultimate Member) ---
-add_action('template_redirect', 'cpp_proteger_acceso_cuaderno');
-function cpp_proteger_acceso_cuaderno() {
-    global $post;
-    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'cuaderno')) {
-        $shared_token = isset($_GET['shared_token']) ? sanitize_text_field($_GET['shared_token']) : null;
-        if (!is_user_logged_in() && !$shared_token) {
-            // Redirigir al login si no hay sesión ni token compartido
-            // Ultimate Member suele usar /login/, pero usamos wp_login_url() por seguridad
-            wp_safe_redirect(wp_login_url(get_permalink()));
-            exit;
-        }
-    }
-}
 
 // --- SHORTCODE [cuaderno] (ÚNICO PUNTO DE ENTRADA DEL FRONTEND) ---
 add_shortcode('cuaderno', 'cpp_shortcode_cuaderno_notas_classroom');
@@ -898,6 +884,64 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         ?>
 
     </div> 
+    <?php
+    return ob_get_clean();
+}
+
+// --- SHORTCODE [semana_compartida] ---
+add_shortcode('semana_compartida', 'cpp_shortcode_semana_compartida');
+function cpp_shortcode_semana_compartida() {
+    $token = isset($_GET['shared_token']) ? sanitize_text_field($_GET['shared_token']) : '';
+    if (empty($token)) {
+        return '<div class="cpp-mensaje">Enlace compartido no válido.</div>';
+    }
+
+    // Enqueue assets
+    wp_enqueue_style('cpp-frontend-css');
+    wp_enqueue_style('cpp-programador-css');
+    wp_enqueue_script('cpp-core-js');
+    wp_enqueue_script('cpp-utils-js');
+    wp_enqueue_script('cpp-programador-js');
+
+    ob_start();
+    ?>
+    <div class="cpp-cuaderno-viewport-classroom cpp-shared-view-container">
+        <!-- Reutilizar el contenedor de pantalla completa para la vista de la semana -->
+        <div id="cpp-fullscreen-tab-container" class="cpp-fullscreen-settings-page" style="display: block !important;">
+            <div class="cpp-fullscreen-settings-header">
+                <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%);">
+                    <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
+                        <span class="dashicons dashicons-arrow-left-alt2"></span>
+                    </button>
+                    <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
+                    <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
+                        <span class="dashicons dashicons-arrow-right-alt2"></span>
+                    </button>
+                </div>
+                <div id="cpp-semana-top-bar-actions" style="display: block; margin-left: auto;">
+                    <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
+                        <span class="dashicons dashicons-media-document"></span> Descargar PDF
+                    </button>
+                </div>
+            </div>
+            <div id="cpp-fullscreen-tab-content" class="cpp-fullscreen-settings-content">
+                <div id="cpp-main-tab-semana" class="cpp-main-tab-content active">
+                    <p class="cpp-cuaderno-cargando">Cargando programación...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="cpp-programador-app" style="display:none;"></div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof CppProgramadorApp !== 'undefined') {
+                    // Marcar como vista compartida para que el JS sepa qué hacer
+                    window.isCppSharedView = true;
+                }
+            });
+        </script>
+    </div>
     <?php
     return ob_get_clean();
 }

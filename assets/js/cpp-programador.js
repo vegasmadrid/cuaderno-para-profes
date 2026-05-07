@@ -20,6 +20,13 @@
     // --- Inicialización ---
     init(initialClaseId) {
         this.appElement = document.getElementById('cpp-programador-app');
+
+        // Detect dedicated shared view
+        const isSharedPage = !!document.querySelector('.cpp-shared-view-container');
+        if (isSharedPage) {
+            window.isCppSharedView = true;
+        }
+
         // Los selectores de pestañas y contenidos ahora son manejados por el cuaderno principal.
         // Solo necesitamos los contenedores de contenido para renderizar.
         this.tabContents = {
@@ -314,7 +321,9 @@
 
             if (status.active == 1) {
                 this.shareWeekModal.linkContainer.style.display = 'block';
-                const url = new URL(window.location.origin + window.location.pathname);
+                // Use configured share page URL if available, otherwise fallback to current page
+                const baseUrl = cppFrontendData.sharePageUrl || (window.location.origin + window.location.pathname);
+                const url = new URL(baseUrl);
                 url.searchParams.set('shared_token', status.token);
                 this.shareWeekModal.linkInput.value = url.href;
             } else {
@@ -1216,12 +1225,14 @@
                     // La lógica de pendingNavigation ahora está en loadClass.
                     // Simplemente llamamos a loadClass y ella se encargará de todo.
                     this.loadClass(initialClaseId, evaluacionIdToSelect, sesionIdToSelect, true);
-                } else if (result.data.is_public) {
+                } else if (result.data.is_public || window.isCppSharedView) {
                     // In public view, we load the first available class and render the week view
                     this.share_info = result.data.share_info;
-                    const firstClaseId = this.clases[0].id;
-                    this.loadClass(firstClaseId, null, null, true);
-                    this.renderSemanaTab();
+                    const firstClaseId = (this.clases && this.clases.length > 0) ? this.clases[0].id : null;
+                    if (firstClaseId) {
+                        this.loadClass(firstClaseId, null, null, true);
+                        this.renderSemanaTab();
+                    }
                 } else {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
