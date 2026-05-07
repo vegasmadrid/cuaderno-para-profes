@@ -3,6 +3,21 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+// --- PROTECCIÓN DE ACCESO Y REDIRECCIÓN (Para compatibilidad con Ultimate Member) ---
+add_action('template_redirect', 'cpp_proteger_acceso_cuaderno');
+function cpp_proteger_acceso_cuaderno() {
+    global $post;
+    if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'cuaderno')) {
+        $shared_token = isset($_GET['shared_token']) ? sanitize_text_field($_GET['shared_token']) : null;
+        if (!is_user_logged_in() && !$shared_token) {
+            // Redirigir al login si no hay sesión ni token compartido
+            // Ultimate Member suele usar /login/, pero usamos wp_login_url() por seguridad
+            wp_safe_redirect(wp_login_url(get_permalink()));
+            exit;
+        }
+    }
+}
+
 // --- SHORTCODE [cuaderno] (ÚNICO PUNTO DE ENTRADA DEL FRONTEND) ---
 add_shortcode('cuaderno', 'cpp_shortcode_cuaderno_notas_classroom');
 function cpp_shortcode_cuaderno_notas_classroom() {

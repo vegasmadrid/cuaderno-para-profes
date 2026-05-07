@@ -1229,7 +1229,9 @@
                 this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
             }
         } else {
-            this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
+            const errorMsg = `<p style="color:red; text-align:center; padding: 20px;">${result.data?.message || 'Error al cargar los datos del programador.'}</p>`;
+            this.tabContents.programacion.innerHTML = errorMsg;
+            this.tabContents.semana.innerHTML = errorMsg;
         }
     },
 
