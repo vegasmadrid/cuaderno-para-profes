@@ -1108,7 +1108,9 @@ body.cpp-public-view .cpp-fullscreen-settings-content {
 .cpp-semana-slot-non-clickable {
     background-color: #fff !important;
     border: 1px solid #e8eaed !important;
-    border-left: 5px solid !important;
+    border-left-width: 5px !important;
+    border-left-style: solid !important;
+    border-left-color: #e0e0e0 !important;
     padding: 12px !important;
     height: 100% !important;
     box-sizing: border-box !important;

@@ -1241,7 +1241,7 @@
                         this.loadClass(firstClaseId, null, null, true);
                         this.renderSemanaTab();
                     }
-                } else {
+                } else if (this.tabContents.programacion) {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
             } else {
@@ -2679,7 +2679,7 @@
                                                  data-sesion-id="${evento.sesion.id}"
                                                  data-clase-id="${evento.sesion.clase_id}"
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
-                                                 style="border-left-color: ${clase.color};">
+                                                 style="border-left-color: ${clase.color} !important;">
                                 <strong>${clase.nombre}</strong>
                                 <p>${simboloHTML} ${fijadaIconHTML} ${evento.sesion.titulo}</p>
                                 ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
