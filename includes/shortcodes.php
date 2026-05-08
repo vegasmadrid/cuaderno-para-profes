@@ -910,6 +910,11 @@ function cpp_shortcode_semana_compartida() {
         <!-- Reutilizar el contenedor de pantalla completa para la vista de la semana -->
         <div id="cpp-fullscreen-tab-container" class="cpp-fullscreen-settings-page" style="display: block !important;">
             <div class="cpp-fullscreen-settings-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="<?php echo esc_url(home_url()); ?>" class="cpp-btn-icon" title="Volver al inicio">
+                        <span class="dashicons dashicons-admin-home"></span>
+                    </a>
+                </div>
                 <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%);">
                     <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
                         <span class="dashicons dashicons-arrow-left-alt2"></span>
@@ -933,6 +938,52 @@ function cpp_shortcode_semana_compartida() {
         </div>
 
         <div id="cpp-programador-app" style="display:none;"></div>
+
+        <!-- Modales necesarios para la vista pública -->
+        <div id="cpp-pdf-download-modal" class="cpp-modal" style="display:none;">
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2>Descargar Programación</h2>
+                <p>Elige el rango de la programación que deseas descargar en formato PDF.</p>
+                <div class="cpp-modal-actions-grid">
+                    <button id="cpp-pdf-download-week-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-calendar-alt"></span>
+                        <span>Semana Actual</span>
+                    </button>
+                    <button id="cpp-pdf-download-all-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-book"></span>
+                        <span>Toda la Programación</span>
+                    </button>
+                    <button id="cpp-pdf-download-range-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-leftright"></span>
+                        <span>Rango de Fechas</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cpp-pdf-range-modal" class="cpp-modal" style="display:none;">
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2>Seleccionar Rango de Fechas</h2>
+                <p>Elige las fechas de inicio y fin para la descarga del PDF.</p>
+                <form id="cpp-pdf-range-form">
+                    <div class="cpp-form-group-grid-2">
+                        <div class="cpp-form-group">
+                            <label for="cpp-pdf-start-date">Fecha de Inicio:</label>
+                            <input type="date" id="cpp-pdf-start-date" required>
+                        </div>
+                        <div class="cpp-form-group">
+                            <label for="cpp-pdf-end-date">Fecha de Fin:</label>
+                            <input type="date" id="cpp-pdf-end-date" required>
+                        </div>
+                    </div>
+                    <div class="cpp-modal-actions">
+                        <button type="submit" class="cpp-btn cpp-btn-primary">Descargar PDF</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {

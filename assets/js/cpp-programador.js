@@ -34,49 +34,52 @@
             semana: document.getElementById('cpp-main-tab-semana'),
             horario: document.getElementById('cpp-main-tab-horario')
         };
+
+        const $qs = (sel) => document.querySelector(sel);
+
         this.sesionModal = {
-            element: document.querySelector('#cpp-sesion-modal'),
-            form: document.querySelector('#cpp-sesion-form'),
-            title: document.querySelector('#cpp-sesion-modal-title'),
-            idInput: document.querySelector('#cpp-sesion-id'),
-            claseIdInput: document.querySelector('#cpp-sesion-clase-id'),
-            evaluacionIdInput: document.querySelector('#cpp-sesion-evaluacion-id'),
-            tituloInput: document.querySelector('#cpp-sesion-titulo'),
-            descripcionInput: document.querySelector('#cpp-sesion-descripcion')
+            element: $qs('#cpp-sesion-modal'),
+            form: $qs('#cpp-sesion-form'),
+            title: $qs('#cpp-sesion-modal-title'),
+            idInput: $qs('#cpp-sesion-id'),
+            claseIdInput: $qs('#cpp-sesion-clase-id'),
+            evaluacionIdInput: $qs('#cpp-sesion-evaluacion-id'),
+            tituloInput: $qs('#cpp-sesion-titulo'),
+            descripcionInput: $qs('#cpp-sesion-descripcion')
         };
         this.copySesionModal = {
-            element: document.querySelector('#cpp-copy-sesion-modal'),
-            form: document.querySelector('#cpp-copy-sesion-form'),
-            title: document.querySelector('#cpp-copy-sesion-modal-title'),
-            claseSelect: document.querySelector('#cpp-copy-dest-clase'),
-            evaluacionSelect: document.querySelector('#cpp-copy-dest-evaluacion')
+            element: $qs('#cpp-copy-sesion-modal'),
+            form: $qs('#cpp-copy-sesion-form'),
+            title: $qs('#cpp-copy-sesion-modal-title'),
+            claseSelect: $qs('#cpp-copy-dest-clase'),
+            evaluacionSelect: $qs('#cpp-copy-dest-evaluacion')
         };
         this.configModal = {
-            element: document.querySelector('#cpp-config-modal'),
-            form: document.querySelector('#cpp-config-form')
+            element: $qs('#cpp-config-modal'),
+            form: $qs('#cpp-config-form')
         };
         this.shareWeekModal = {
-            element: document.querySelector('#cpp-share-week-modal'),
-            scopeSelect: document.querySelector('#cpp-share-scope'),
-            toggle: document.querySelector('#cpp-share-toggle'),
-            statusText: document.querySelector('#cpp-share-status-text'),
-            linkContainer: document.querySelector('#cpp-share-link-container'),
-            linkInput: document.querySelector('#cpp-share-link-input'),
-            copyBtn: document.querySelector('#cpp-copy-share-link-btn')
+            element: $qs('#cpp-share-week-modal'),
+            scopeSelect: $qs('#cpp-share-scope'),
+            toggle: $qs('#cpp-share-toggle'),
+            statusText: $qs('#cpp-share-status-text'),
+            linkContainer: $qs('#cpp-share-link-container'),
+            linkInput: $qs('#cpp-share-link-input'),
+            copyBtn: $qs('#cpp-copy-share-link-btn')
         };
         this.pdfDownloadModal = {
-            element: document.querySelector('#cpp-pdf-download-modal'),
-            weekBtn: document.querySelector('#cpp-pdf-download-week-btn'),
-            allBtn: document.querySelector('#cpp-pdf-download-all-btn'),
-            rangeBtn: document.querySelector('#cpp-pdf-download-range-btn'),
-            closeBtn: document.querySelector('#cpp-pdf-download-modal .cpp-modal-close')
+            element: $qs('#cpp-pdf-download-modal'),
+            weekBtn: $qs('#cpp-pdf-download-week-btn'),
+            allBtn: $qs('#cpp-pdf-download-all-btn'),
+            rangeBtn: $qs('#cpp-pdf-download-range-btn'),
+            closeBtn: $qs('#cpp-pdf-download-modal .cpp-modal-close')
         };
         this.pdfRangeModal = {
-            element: document.querySelector('#cpp-pdf-range-modal'),
-            form: document.querySelector('#cpp-pdf-range-form'),
-            startDateInput: document.querySelector('#cpp-pdf-start-date'),
-            endDateInput: document.querySelector('#cpp-pdf-end-date'),
-            closeBtn: document.querySelector('#cpp-pdf-range-modal .cpp-modal-close')
+            element: $qs('#cpp-pdf-range-modal'),
+            form: $qs('#cpp-pdf-range-form'),
+            startDateInput: $qs('#cpp-pdf-start-date'),
+            endDateInput: $qs('#cpp-pdf-end-date'),
+            closeBtn: $qs('#cpp-pdf-range-modal .cpp-modal-close')
         };
         this.attachEventListeners();
         this.fetchData(initialClaseId);
@@ -198,8 +201,11 @@
         });
 
         // Modales
-        this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
-        this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
+        if (this.sesionModal.element) {
+            const closeBtn = this.sesionModal.element.querySelector('.cpp-modal-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => this.closeSesionModal());
+            this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
+        }
 
         // --- Eventos de Configuración General (delegados desde body) ---
         const $body = $('body');
@@ -240,9 +246,11 @@
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
         $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
         $document.on('click', '#cpp-deselect-all-btn', () => self.cancelSelection());
-        this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
-        this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
-        this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
+        if (this.copySesionModal.element) {
+            this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
+            this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
+            this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
+        }
 
         // --- Simbolos (Palette) ---
         $document.on('click', '#cpp-simbolo-sesion-toolbar-btn', function() {
