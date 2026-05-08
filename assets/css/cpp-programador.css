@@ -1068,21 +1068,23 @@ body.cpp-public-view {
 }
 
 body.cpp-public-view .cpp-cuaderno-viewport-classroom {
-    padding: 20px;
-    max-width: 100%;
-    margin: 0;
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
 }
 
 body.cpp-public-view .cpp-fullscreen-settings-header {
-    border-radius: 8px 8px 0 0;
+    border-radius: 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 body.cpp-public-view .cpp-fullscreen-settings-content {
     background: white;
-    padding: 20px;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    padding: 0 !important;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 /* Shared Page Layout Fixes */
@@ -1104,10 +1106,46 @@ body.cpp-public-view .cpp-fullscreen-settings-content {
 }
 
 .cpp-semana-slot-non-clickable {
-    padding: 10px;
-    border-left: 4px solid;
-    margin-bottom: 5px;
+    background-color: #fff !important;
+    border: 1px solid #e8eaed !important;
+    border-left: 5px solid !important;
+    padding: 12px !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+    cursor: default !important;
+    box-shadow: none !important;
+    display: block !important;
+}
+
+.cpp-semana-slot-non-clickable strong {
+    display: block !important;
+    margin-bottom: 6px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #202124 !important;
+}
+
+.cpp-semana-slot-non-clickable p {
+    margin: 0 0 8px 0 !important;
+    font-size: 13px !important;
+    color: #5f6368 !important;
+    line-height: 1.4 !important;
+}
+
+/* Ensure activities list inside non-clickable slots looks correct */
+.cpp-semana-slot-non-clickable .cpp-semana-actividades-list {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 10px 0 0 0 !important;
+    font-size: 12px !important;
+}
+
+.cpp-semana-slot-non-clickable .cpp-semana-actividades-list li {
     background-color: #f1f3f4;
+    padding: 5px 8px;
     border-radius: 4px;
-    cursor: default;
+    margin-bottom: 5px;
+    color: #3c4043;
 }
