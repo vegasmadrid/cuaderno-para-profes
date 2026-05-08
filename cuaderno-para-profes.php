@@ -37,8 +37,8 @@ register_activation_hook(__FILE__, 'cpp_crear_tablas');
 add_action('wp_enqueue_scripts', 'cpp_cargar_assets');
 function cpp_cargar_assets() {
     global $post;
-    // Solo cargar los assets si el shortcode [cuaderno] está presente
-    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+    // Solo cargar los assets si el shortcode [cuaderno] o [semana_compartida] está presente
+    if (!is_a($post, 'WP_Post') || (!has_shortcode($post->post_content, 'cuaderno') && !has_shortcode($post->post_content, 'semana_compartida'))) {
         return;
     }
 
@@ -633,7 +633,7 @@ add_action('plugins_loaded', 'cpp_run_migrations');
 add_action('wp_footer', 'cpp_add_modals_to_footer');
 function cpp_add_modals_to_footer() {
     global $post;
-    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+    if (!is_a($post, 'WP_Post') || (!has_shortcode($post->post_content, 'cuaderno') && !has_shortcode($post->post_content, 'semana_compartida'))) {
         return;
     }
     ?>

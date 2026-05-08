@@ -897,6 +897,7 @@ function cpp_shortcode_semana_compartida() {
     }
 
     // Enqueue assets
+    wp_enqueue_style('dashicons');
     wp_enqueue_style('cpp-frontend-css');
     wp_enqueue_style('cpp-programador-css');
     wp_enqueue_script('cpp-core-js');
