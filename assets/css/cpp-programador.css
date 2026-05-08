@@ -1069,8 +1069,8 @@ body.cpp-public-view {
 
 body.cpp-public-view .cpp-cuaderno-viewport-classroom {
     padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
 }
 
 body.cpp-public-view .cpp-fullscreen-settings-header {
@@ -1101,4 +1101,13 @@ body.cpp-public-view .cpp-fullscreen-settings-content {
     position: relative !important;
     height: auto !important;
     min-height: 100vh;
+}
+
+.cpp-semana-slot-non-clickable {
+    padding: 10px;
+    border-left: 4px solid;
+    margin-bottom: 5px;
+    background-color: #f1f3f4;
+    border-radius: 4px;
+    cursor: default;
 }

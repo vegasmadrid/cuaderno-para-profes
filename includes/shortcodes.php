@@ -909,13 +909,21 @@ function cpp_shortcode_semana_compartida() {
     <div class="cpp-cuaderno-viewport-classroom cpp-shared-view-container">
         <!-- Reutilizar el contenedor de pantalla completa para la vista de la semana -->
         <div id="cpp-fullscreen-tab-container" class="cpp-fullscreen-settings-page" style="display: block !important;">
-            <div class="cpp-fullscreen-settings-header">
+            <?php
+            $logo_url = get_option('cpp_share_logo_url', '');
+            $logo_width = get_option('cpp_share_logo_width', '150');
+            ?>
+            <div class="cpp-fullscreen-settings-header" style="padding-top: 15px; padding-bottom: 15px; height: auto; min-height: 80px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <a href="<?php echo esc_url(home_url()); ?>" class="cpp-btn-icon" title="Volver al inicio">
-                        <span class="dashicons dashicons-admin-home"></span>
+                    <a href="<?php echo esc_url(home_url()); ?>" title="Volver al inicio">
+                        <?php if ($logo_url): ?>
+                            <img src="<?php echo esc_url($logo_url); ?>" style="width: <?php echo esc_attr($logo_width); ?>px; height: auto;">
+                        <?php else: ?>
+                            <span class="dashicons dashicons-admin-home" style="font-size: 30px; width: 30px; height: 30px;"></span>
+                        <?php endif; ?>
                     </a>
                 </div>
-                <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%);">
+                <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
                     <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
                         <span class="dashicons dashicons-arrow-left-alt2"></span>
                     </button>

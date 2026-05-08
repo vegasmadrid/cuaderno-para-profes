@@ -2594,18 +2594,16 @@
         const todayYMD = today.toISOString().slice(0, 10);
 
         // Actualizar el título de la semana en la barra superior
-        let weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
-
-        // Si estamos en vista pública y tenemos información del profesor
-        const urlParams = new URLSearchParams(window.location.search);
-        const isPublic = urlParams.has('shared_token');
-        if (isPublic && this.share_info && this.share_info.user_name) {
-            weekTitle = `${weekTitle} - Programación de ${this.share_info.user_name}`;
-        }
-
         const $headerDate = document.getElementById('cpp-semana-header-date');
         if ($headerDate) {
-            $headerDate.textContent = weekTitle;
+            const weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
+
+            // Si estamos en vista pública y tenemos información del profesor
+            if (window.isCppSharedView && this.share_info && this.share_info.user_name) {
+                $headerDate.innerHTML = `${weekTitle}<br><small style="font-size: 14px; font-weight: normal; color: #5f6368;">Programación de ${this.share_info.user_name}</small>`;
+            } else {
+                $headerDate.textContent = weekTitle;
+            }
         }
 
         const animationClass = direction ? (direction === 'next' ? 'slide-in-right' : 'slide-in-left') : '';
@@ -2676,7 +2674,8 @@
                                     ${evento.sesion.actividades_programadas.map(act => `<li>${act.titulo}</li>`).join('')}
                                 </ul>`;
                             }
-                            cellContent += `<div class="cpp-semana-slot"
+                            const clickableClass = window.isCppSharedView ? 'cpp-semana-slot-non-clickable' : 'cpp-semana-slot';
+                            cellContent += `<div class="${clickableClass}"
                                                  data-sesion-id="${evento.sesion.id}"
                                                  data-clase-id="${evento.sesion.clase_id}"
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
