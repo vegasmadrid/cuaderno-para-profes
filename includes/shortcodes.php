@@ -60,7 +60,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     </button>
                 </div>
                 <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto; display: flex; gap: 10px;">
-                    <button id="cpp-share-week-btn" class="cpp-btn cpp-btn-secondary">
+                    <button id="cpp-share-week-btn" class="cpp-btn cpp-btn-pdf">
                         <span class="dashicons dashicons-share"></span> Compartir
                     </button>
                     <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
@@ -511,11 +511,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             <p>Genera un enlace público para que otros puedan ver tu programación de la semana sin necesidad de iniciar sesión.</p>
 
             <div class="cpp-form-group">
-                <label for="cpp-share-scope">¿Qué deseas compartir?</label>
-                <select id="cpp-share-scope">
-                    <option value="all">Todas mis clases</option>
-                    <option value="current">Solo la clase actual</option>
-                </select>
+                <label for="cpp-share-token">Nombre personalizado para el enlace:</label>
+                <input type="text" id="cpp-share-token" placeholder="Ej: nombreapellido" style="width: 100%;">
+                <p class="description">Este será el identificador en la URL (ej: .../?shared_token=nombreprofe)</p>
             </div>
 
             <div class="cpp-form-group" style="display: flex; align-items: center; gap: 10px; margin: 20px 0;">

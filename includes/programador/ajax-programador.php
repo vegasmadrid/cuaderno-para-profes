@@ -853,13 +853,23 @@ function cpp_ajax_toggle_share() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'No autorizado.']); return; }
     $user_id = get_current_user_id();
-    $clase_id = isset($_POST['clase_id']) ? sanitize_text_field($_POST['clase_id']) : 'all';
+    $clase_id = 'all'; // Always sharing all now
     $active = isset($_POST['active']) && $_POST['active'] === 'true';
+    $custom_token = isset($_POST['token']) ? sanitize_title($_POST['token']) : null;
 
-    $status = cpp_toggle_share($user_id, $clase_id, $active);
+    if ($active && $custom_token) {
+        // Validate uniqueness if it's a new name
+        require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+        if (!cpp_is_token_available($custom_token, $user_id)) {
+            wp_send_json_error(['message' => 'Este nombre de enlace ya está siendo utilizado por otro profesor. Por favor, elige uno diferente.']);
+            return;
+        }
+    }
+
+    $status = cpp_toggle_share($user_id, $clase_id, $active, $custom_token);
 
     if ($active && !$status) {
-        wp_send_json_error(['message' => 'Error al generar el enlace. Por favor, inténtalo de nuevo.']);
+        wp_send_json_error(['message' => 'No se pudo activar el enlace. Es posible que el nombre ya esté en uso.']);
         return;
     }
 

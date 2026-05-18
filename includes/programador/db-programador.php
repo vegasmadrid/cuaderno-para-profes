@@ -966,9 +966,21 @@ function cpp_get_share_status($user_id, $clase_id = null) {
 }
 
 /**
+ * Check if a share token is available.
+ */
+function cpp_is_token_available($token, $user_id) {
+    global $wpdb;
+    $tabla = $wpdb->prefix . 'cpp_shared_weeks';
+    $existing = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla WHERE token = %s", $token));
+
+    if (!$existing) return true;
+    return (int)$existing === (int)$user_id;
+}
+
+/**
  * Toggle sharing status.
  */
-function cpp_toggle_share($user_id, $clase_id, $active) {
+function cpp_toggle_share($user_id, $clase_id, $active, $custom_token = null) {
     global $wpdb;
     $tabla = $wpdb->prefix . 'cpp_shared_weeks';
 
@@ -979,18 +991,30 @@ function cpp_toggle_share($user_id, $clase_id, $active) {
         }
     }
 
-    if ($clase_id === 'all') $clase_id = null;
+    // Now we always share all classes
+    $clase_id = 0;
 
     $status = cpp_get_share_status($user_id, $clase_id);
 
     if ($status) {
-        $wpdb->update($tabla, ['active' => $active ? 1 : 0], ['id' => $status->id]);
+        $data = ['active' => $active ? 1 : 0];
+        if ($active && $custom_token) {
+            if (!cpp_is_token_available($custom_token, $user_id)) {
+                return false; // Token taken by another user
+            }
+            $data['token'] = $custom_token;
+        }
+        $wpdb->update($tabla, $data, ['id' => $status->id]);
         return cpp_get_share_status($user_id, $clase_id);
     } else if ($active) {
-        $token = bin2hex(random_bytes(32));
+        $token = $custom_token ? $custom_token : bin2hex(random_bytes(16));
+        if (!cpp_is_token_available($token, $user_id)) {
+            return false;
+        }
+
         $inserted = $wpdb->insert($tabla, [
             'user_id' => $user_id,
-            'clase_id' => $clase_id ? $clase_id : 0,
+            'clase_id' => 0,
             'token' => $token,
             'active' => 1
         ]);
@@ -999,8 +1023,10 @@ function cpp_toggle_share($user_id, $clase_id, $active) {
             return null;
         }
         return cpp_get_share_status($user_id, $clase_id);
+    } else {
+        // If it didn't exist and we are deactivating, do nothing
+        return null;
     }
-    return null;
 }
 
 /**
@@ -1019,8 +1045,8 @@ function cpp_get_public_programador_data($token) {
     // Get all data for the user
     $all_data = cpp_programador_get_all_data($user_id);
 
-    // If sharing a specific class, filter the data
-    if ($clase_id_filter) {
+    // If sharing a specific class, filter the data (Legacy support, now we share all if 0)
+    if ($clase_id_filter && $clase_id_filter != 0) {
         $all_data['clases'] = array_filter($all_data['clases'], function($c) use ($clase_id_filter) {
             return $c['id'] == $clase_id_filter;
         });

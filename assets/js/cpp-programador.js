@@ -60,7 +60,7 @@
         };
         this.shareWeekModal = {
             element: $qs('#cpp-share-week-modal'),
-            scopeSelect: $qs('#cpp-share-scope'),
+            tokenInput: $qs('#cpp-share-token'),
             toggle: $qs('#cpp-share-toggle'),
             statusText: $qs('#cpp-share-status-text'),
             linkContainer: $qs('#cpp-share-link-container'),
@@ -288,7 +288,6 @@
             const closeBtn = this.shareWeekModal.element.querySelector('.cpp-modal-close');
             if (closeBtn) closeBtn.addEventListener('click', () => this.shareWeekModal.element.style.display = 'none');
 
-            this.shareWeekModal.scopeSelect.addEventListener('change', () => this.updateShareStatus());
             this.shareWeekModal.toggle.addEventListener('change', () => this.handleToggleShare());
             this.shareWeekModal.copyBtn.addEventListener('click', () => this.handleCopyShareLink());
         }
@@ -327,6 +326,15 @@
             this.shareWeekModal.toggle.checked = status.active == 1;
             this.shareWeekModal.statusText.textContent = status.active == 1 ? 'Enlace público activado' : 'Enlace público desactivado';
 
+            if (status.token) {
+                this.shareWeekModal.tokenInput.value = status.token;
+            } else {
+                // If no token yet, pre-fill with something reasonable
+                const userName = this.config.user_display_name || '';
+                const cleanName = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '');
+                this.shareWeekModal.tokenInput.value = cleanName;
+            }
+
             if (status.active == 1) {
                 this.shareWeekModal.linkContainer.style.display = 'block';
                 // Use configured share page URL if available, otherwise fallback to current page
@@ -342,20 +350,21 @@
             this.shareWeekModal.statusText.textContent = 'Enlace público desactivado';
             this.shareWeekModal.linkContainer.style.display = 'none';
             this.shareWeekModal.linkInput.value = '';
+
+            const userName = this.config.user_display_name || '';
+            const cleanName = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '');
+            this.shareWeekModal.tokenInput.value = cleanName;
         }
     },
 
     updateShareStatus() {
-        const scope = this.shareWeekModal.scopeSelect.value;
-        const claseId = (scope === 'current' && this.currentClase) ? this.currentClase.id : 'all';
-
         $.ajax({
             url: cppFrontendData.ajaxUrl,
             method: 'POST',
             data: {
                 action: 'cpp_get_share_status',
                 nonce: cppFrontendData.nonce,
-                clase_id: claseId
+                clase_id: 'all'
             },
             success: (response) => {
                 if (response.success) {
@@ -369,9 +378,28 @@
     },
 
     handleToggleShare() {
-        const scope = this.shareWeekModal.scopeSelect.value;
-        const claseId = (scope === 'current' && this.currentClase) ? this.currentClase.id : 'all';
         const active = this.shareWeekModal.toggle.checked;
+        const customToken = this.shareWeekModal.tokenInput.value.trim();
+
+        if (active && !customToken) {
+            cpp.utils.showToast('Por favor, elige un nombre para el enlace.', 'error');
+            this.shareWeekModal.toggle.checked = false;
+            return;
+        }
+
+        // If the link was already active and the token changed, warn the user
+        const oldLink = this.shareWeekModal.linkInput.value;
+        if (active && oldLink) {
+            const url = new URL(oldLink);
+            const oldToken = url.searchParams.get('shared_token');
+            if (oldToken && oldToken !== customToken) {
+                if (!confirm('Si cambias el nombre del enlace, el enlace anterior dejará de funcionar. ¿Estás seguro?')) {
+                    this.shareWeekModal.toggle.checked = true; // Stay active but don't change
+                    this.shareWeekModal.tokenInput.value = oldToken; // Revert input
+                    return;
+                }
+            }
+        }
 
         $.ajax({
             url: cppFrontendData.ajaxUrl,
@@ -379,8 +407,9 @@
             data: {
                 action: 'cpp_toggle_share',
                 nonce: cppFrontendData.nonce,
-                clase_id: claseId,
-                active: active
+                clase_id: 'all',
+                active: active,
+                token: customToken
             },
             success: (response) => {
                 if (response.success) {
