@@ -13,6 +13,7 @@ function cpp_ajax_get_actividades_tab_content() {
     $user_id = get_current_user_id();
     $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
+    $criterio_id = isset($_POST['criterio_id']) ? intval($_POST['criterio_id']) : 0;
     $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 50;
 
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
@@ -26,6 +27,9 @@ function cpp_ajax_get_actividades_tab_content() {
     }
     if ($evaluacion_id > 0) {
         $where_clauses[] = $wpdb->prepare("a.evaluacion_id = %d", $evaluacion_id);
+    }
+    if ($criterio_id > 0) {
+        $where_clauses[] = $wpdb->prepare("a.criterio_id = %d", $criterio_id);
     }
 
     $where_sql = implode(' AND ', $where_clauses);
@@ -97,27 +101,7 @@ function cpp_ajax_get_actividades_tab_content() {
         $mapa_promedios[$act_id] = round($data['suma'] / $data['count'], 2);
     }
 
-    // Hidratar fechas para actividades programadas
-    $actividades_por_contexto = [];
-    foreach ($actividades as $act) {
-        $ctx = $act['clase_id'] . '-' . $act['evaluacion_id'];
-        $actividades_por_contexto[$ctx][] = $act;
-    }
-
-    $actividades_hidratadas = [];
-    foreach ($actividades_por_contexto as $ctx => $acts) {
-        list($c_id, $e_id) = explode('-', $ctx);
-        $actividades_hidratadas = array_merge($actividades_hidratadas, cpp_hidratar_fechas_de_actividades($acts, $c_id, $e_id, $user_id));
-    }
-    $actividades = $actividades_hidratadas;
-
-    // Re-ordenar por fecha
-    usort($actividades, function($a, $b) {
-        $f_a = !empty($a['fecha_actividad']) ? strtotime($a['fecha_actividad']) : 0;
-        $f_b = !empty($b['fecha_actividad']) ? strtotime($b['fecha_actividad']) : 0;
-        if ($f_a == $f_b) return $b['id'] - $a['id'];
-        return $f_b - $f_a;
-    });
+    // ELIMINADA HIDRATACIÓN COSTOSA: Trust the stored fecha_actividad which is already updated by the Programmer sync.
 
     $criterios_globales = cpp_obtener_criterios_globales($user_id);
 

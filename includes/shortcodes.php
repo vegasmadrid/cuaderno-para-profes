@@ -87,12 +87,25 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         </select>
                     </div>
                     <div class="cpp-filter-group">
+                        <label for="cpp-actividades-filter-criterio" class="cpp-filter-label">Criterio:</label>
+                        <select id="cpp-actividades-filter-criterio" class="cpp-select-sm">
+                            <option value="0">Todos los criterios</option>
+                            <?php
+                            $criterios_globales = cpp_obtener_criterios_globales($user_id);
+                            if (!empty($criterios_globales)):
+                                foreach ($criterios_globales as $crit): ?>
+                                    <option value="<?php echo esc_attr($crit['id']); ?>"><?php echo esc_html($crit['nombre']); ?></option>
+                                <?php endforeach;
+                            endif; ?>
+                        </select>
+                    </div>
+                    <div class="cpp-filter-group">
                         <label for="cpp-actividades-filter-limit" class="cpp-filter-label">Mostrar:</label>
                         <select id="cpp-actividades-filter-limit" class="cpp-select-sm">
-                            <option value="0" selected>Todas</option>
-                            <option value="50">Últimas 50</option>
+                            <option value="50" selected>Últimas 50</option>
                             <option value="100">Últimas 100</option>
                             <option value="200">Últimas 200</option>
+                            <option value="0">Todas</option>
                         </select>
                     </div>
                 </div>

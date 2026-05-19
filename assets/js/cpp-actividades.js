@@ -20,6 +20,7 @@
 
             const claseId = $('#cpp-actividades-filter-clase').val() || 0;
             const evaluacionId = $('#cpp-actividades-filter-evaluacion').val() || 0;
+            const criterioId = $('#cpp-actividades-filter-criterio').val() || 0;
             const limit = $('#cpp-actividades-filter-limit').val();
 
             // Limpiamos el contenedor para evitar ver datos de la clase anterior durante la carga
@@ -40,6 +41,7 @@
                     nonce: cppFrontendData.nonce,
                     clase_id: claseId,
                     evaluacion_id: evaluacionId,
+                    criterio_id: criterioId,
                     limit: limit
                 },
                 success: function(response) {
@@ -198,7 +200,7 @@
                 }
             });
 
-            $document.on('change', '#cpp-actividades-filter-evaluacion, #cpp-actividades-filter-limit', function() {
+            $document.on('change', '#cpp-actividades-filter-evaluacion, #cpp-actividades-filter-limit, #cpp-actividades-filter-criterio', function() {
                 self.render();
             });
 
