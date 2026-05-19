@@ -67,6 +67,35 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <span class="dashicons dashicons-media-document"></span> Descargar PDF
                     </button>
                 </div>
+                <!-- Filtros para la pestaña de Actividades Globales -->
+                <div id="cpp-actividades-top-bar-actions" style="display: none; align-items: center; gap: 10px; margin-left: auto;">
+                    <div class="cpp-filter-group">
+                        <label for="cpp-actividades-filter-clase" class="cpp-filter-label">Clase:</label>
+                        <select id="cpp-actividades-filter-clase" class="cpp-select-sm">
+                            <option value="0">Todas las clases</option>
+                            <?php if (!empty($clases)): ?>
+                                <?php foreach ($clases as $clase): ?>
+                                    <option value="<?php echo esc_attr($clase['id']); ?>"><?php echo esc_html($clase['nombre']); ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="cpp-filter-group">
+                        <label for="cpp-actividades-filter-evaluacion" class="cpp-filter-label">Evaluación:</label>
+                        <select id="cpp-actividades-filter-evaluacion" class="cpp-select-sm" disabled>
+                            <option value="0">Todas</option>
+                        </select>
+                    </div>
+                    <div class="cpp-filter-group">
+                        <label for="cpp-actividades-filter-limit" class="cpp-filter-label">Mostrar:</label>
+                        <select id="cpp-actividades-filter-limit" class="cpp-select-sm">
+                            <option value="50">Últimas 50</option>
+                            <option value="100">Últimas 100</option>
+                            <option value="200">Últimas 200</option>
+                            <option value="0">Todas</option>
+                        </select>
+                    </div>
+                </div>
                 <!-- Contenedor para los botones de la pestaña de alumnos (se mostrará/ocultará con JS) -->
                 <div id="cpp-alumnos-top-bar-actions" style="display: none; align-items: center; gap: 10px; margin-left: auto;">
                     <button id="cpp-importar-alumnos-global-btn-top" class="cpp-btn cpp-btn-secondary">
@@ -354,10 +383,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <div class="cpp-top-bar-center cpp-tabs-clase-specific">
                     <button class="cpp-main-tab-link active" data-tab="cuaderno">Cuaderno</button>
                     <button class="cpp-main-tab-link" data-tab="programacion">Programación</button>
-                    <button class="cpp-main-tab-link" data-tab="actividades">Actividades</button>
                 </div>
                 <div class="cpp-top-bar-right">
                     <div class="cpp-tabs-general">
+                        <button class="cpp-main-tab-link" data-tab="actividades">Actividades</button>
                         <button class="cpp-main-tab-link" data-tab="semana">Semana</button>
                         <button class="cpp-main-tab-link" data-tab="horario">Horario</button>
                         <button class="cpp-main-tab-link" data-tab="alumnos">Alumnos</button>

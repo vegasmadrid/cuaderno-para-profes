@@ -1188,15 +1188,18 @@
                 return;
             }
 
-            const isRightTab = ['semana', 'horario', 'alumnos', 'resumen'].includes(tabName);
+            const isRightTab = ['actividades', 'semana', 'horario', 'alumnos', 'resumen'].includes(tabName);
 
             $('#cpp-alumnos-top-bar-actions').hide();
             $('#cpp-semana-top-bar-actions').hide();
+            $('#cpp-actividades-top-bar-actions').hide();
             $('#cpp-semana-header-nav').hide();
             $('#cpp-fullscreen-tab-title').show();
 
             if (tabName === 'alumnos') {
                 $('#cpp-alumnos-top-bar-actions').css('display', 'flex');
+            } else if (tabName === 'actividades') {
+                $('#cpp-actividades-top-bar-actions').css('display', 'flex');
             } else if (tabName === 'semana') {
                 $('#cpp-semana-top-bar-actions').css('display', 'block');
                 $('#cpp-semana-header-nav').css('display', 'flex');

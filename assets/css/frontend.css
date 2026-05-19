@@ -2569,6 +2569,66 @@ body.admin-bar #cpp-main-loader {
 }
 
 /* --- Pestaña de Actividades --- */
+#cpp-actividades-top-bar-actions {
+    align-items: center;
+    gap: 15px;
+}
+
+.cpp-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cpp-filter-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #5f6368;
+    white-space: nowrap;
+}
+
+.cpp-select-sm {
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #3c4043;
+    outline: none;
+    min-width: 120px;
+}
+
+.cpp-select-sm:focus {
+    border-color: #1a73e8;
+}
+
+.cpp-select-sm:disabled {
+    background-color: #f1f3f4;
+    cursor: not-allowed;
+}
+
+.cpp-actividad-clase-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.cpp-clase-color-strip {
+    width: 4px;
+    height: 24px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.cpp-clase-nombre-text {
+    font-weight: 500;
+    color: #3c4043;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .cpp-actividades-table-wrapper {
     padding: 20px;
     background-color: #fff;

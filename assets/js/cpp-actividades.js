@@ -18,10 +18,9 @@
             const self = this;
             const $container = $('#cpp-main-tab-actividades');
 
-            if (!cpp.currentClaseIdCuaderno || !cpp.currentEvaluacionId) {
-                $container.html('<div class="cpp-empty-panel"><p>Selecciona una clase y una evaluación para ver las actividades.</p></div>');
-                return;
-            }
+            const claseId = $('#cpp-actividades-filter-clase').val() || 0;
+            const evaluacionId = $('#cpp-actividades-filter-evaluacion').val() || 0;
+            const limit = $('#cpp-actividades-filter-limit').val() || 50;
 
             // Limpiamos el contenedor para evitar ver datos de la clase anterior durante la carga
             $container.empty();
@@ -39,8 +38,9 @@
                 data: {
                     action: 'cpp_get_actividades_tab_content',
                     nonce: cppFrontendData.nonce,
-                    clase_id: cpp.currentClaseIdCuaderno,
-                    evaluacion_id: cpp.currentEvaluacionId
+                    clase_id: claseId,
+                    evaluacion_id: evaluacionId,
+                    limit: limit
                 },
                 success: function(response) {
                     if (response.success) {
@@ -69,6 +69,7 @@
             const $input = $(inputElement);
             const $row = $input.closest('tr');
             const actividadId = $row.data('actividad-id');
+            const evaluacionId = $row.data('evaluacion-id');
             const field = $input.data('field');
             const value = $input.val();
             const originalValue = $input.data('original-value');
@@ -85,7 +86,7 @@
                     action: 'cpp_actualizar_actividad_inline',
                     nonce: cppFrontendData.nonce,
                     actividad_id: actividadId,
-                    evaluacion_id: cpp.currentEvaluacionId,
+                    evaluacion_id: evaluacionId,
                     field: field,
                     value: value
                 },
@@ -161,6 +162,45 @@
         bindEvents: function() {
             const self = this;
             const $document = $(document);
+
+            // Filtros de la vista global
+            $document.on('change', '#cpp-actividades-filter-clase', function() {
+                const claseId = $(this).val();
+                const $evalSelect = $('#cpp-actividades-filter-evaluacion');
+
+                if (claseId == 0) {
+                    $evalSelect.val(0).prop('disabled', true);
+                    self.render();
+                } else {
+                    $evalSelect.prop('disabled', true).html('<option value="0">Cargando...</option>');
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_obtener_evaluaciones',
+                            nonce: cppFrontendData.nonce,
+                            clase_id: claseId
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                let html = '<option value="0">Todas</option>';
+                                response.data.evaluaciones.forEach(ev => {
+                                    html += `<option value="${ev.id}">${ev.nombre_evaluacion}</option>`;
+                                });
+                                $evalSelect.html(html).prop('disabled', false);
+                            } else {
+                                $evalSelect.html('<option value="0">Error</option>');
+                            }
+                            self.render();
+                        }
+                    });
+                }
+            });
+
+            $document.on('change', '#cpp-actividades-filter-evaluacion, #cpp-actividades-filter-limit', function() {
+                self.render();
+            });
 
             $document.on('focus', '.cpp-inline-edit', function() {
                 $(this).data('original-value', $(this).val());
