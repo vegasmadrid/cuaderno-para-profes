@@ -106,13 +106,31 @@
                         if (['nombre_actividad', 'categoria_id', 'criterio_id', 'nota_maxima'].includes(field)) {
                             $(document).trigger('cpp:forceGradebookReload');
                         }
+
+                        // Si hay un filtro de criterio activo y hemos cambiado el criterio, la fila debe desaparecer
+                        if (field === 'criterio_id') {
+                            const filterCriterioId = $('#cpp-actividades-filter-criterio').val();
+                            if (filterCriterioId != 0 && value != filterCriterioId) {
+                                $row.fadeOut(600, function() {
+                                    $(this).remove();
+                                });
+                            }
+                        }
                     } else {
-                        alert('Error: ' + response.data.message);
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast('Error: ' + response.data.message, 'error');
+                        } else {
+                            alert('Error: ' + response.data.message);
+                        }
                         $input.val(originalValue);
                     }
                 },
                 error: function() {
-                    alert('Error de conexión al actualizar.');
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Error de conexión al actualizar.', 'error');
+                    } else {
+                        alert('Error de conexión al actualizar.');
+                    }
                     $input.val(originalValue);
                 },
                 complete: function() {
@@ -152,11 +170,19 @@
                             CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
                         }
                     } else {
-                        alert('Error al eliminar: ' + response.data.message);
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast('Error al eliminar: ' + response.data.message, 'error');
+                        } else {
+                            alert('Error al eliminar: ' + response.data.message);
+                        }
                     }
                 },
                 error: function() {
-                    alert('Error de conexión al eliminar.');
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Error de conexión al eliminar.', 'error');
+                    } else {
+                        alert('Error de conexión al eliminar.');
+                    }
                 }
             });
         },
@@ -209,6 +235,8 @@
             });
 
             $document.on('blur', '.cpp-inline-edit', function() {
+                if ($(this).is('select')) return; // handled by change event
+
                 self.handleInLineUpdate(this);
                 // Also update data-sort-value of the parent cell
                 const $input = $(this);
@@ -238,8 +266,12 @@
                 const color = $selectedOption.data('color');
                 const catName = $selectedOption.text().trim();
                 $select.closest('.cpp-actividad-categoria-cell').find('.cpp-category-dot').css('background-color', color);
+
                 // Update sort value for category
                 $select.closest('td').attr('data-sort-value', catName);
+
+                // Trigger update immediately
+                self.handleInLineUpdate(this);
             });
 
             $document.on('click', '.cpp-sortable-header', function() {
