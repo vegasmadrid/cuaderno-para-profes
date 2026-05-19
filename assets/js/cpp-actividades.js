@@ -9,6 +9,7 @@
 
     cpp.actividades = {
         currentSort: { key: null, direction: 'asc' },
+        isUpdatingFilters: false,
 
         init: function() {
             this.bindEvents();
@@ -49,21 +50,7 @@
                         $container.html(response.data.html);
 
                         // Sincronizar el dropdown de criterios con los contadores actualizados
-                        if (response.data.criterios) {
-                            const $filterCriterio = $('#cpp-actividades-filter-criterio');
-                            const currentValue = $filterCriterio.val();
-
-                            let html = '<option value="0">Todos los criterios</option>';
-
-                            // Opción Sin criterio
-                            const numSinCriterio = response.data.num_sin_criterio || 0;
-                            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin criterio (${numSinCriterio})</option>`;
-
-                            response.data.criterios.forEach(crit => {
-                                html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
-                            });
-                            $filterCriterio.html(html);
-                        }
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
 
                         // Auto-resize textareas
                         $container.find('textarea.cpp-inline-edit').each(function() {
@@ -85,7 +72,30 @@
             });
         },
 
+        updateCriterionDropdownLabels: function(criterios, numSinCriterio) {
+            if (!criterios) return;
+
+            const $filterCriterio = $('#cpp-actividades-filter-criterio');
+            const currentValue = $filterCriterio.val();
+
+            this.isUpdatingFilters = true; // Guard to prevent recursive render()
+
+            let html = '<option value="0">Todos los criterios</option>';
+
+            // Opción Sin criterio
+            const sinCritCount = numSinCriterio || 0;
+            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin criterio (${sinCritCount})</option>`;
+
+            criterios.forEach(crit => {
+                html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
+            });
+            $filterCriterio.html(html);
+
+            this.isUpdatingFilters = false;
+        },
+
         handleInLineUpdate: function(inputElement) {
+            const self = this;
             const $input = $(inputElement);
             const $row = $input.closest('tr');
             const actividadId = $row.data('actividad-id');
@@ -120,6 +130,9 @@
                             cpp.utils.showToast('Cambio guardado ✨', 'success');
                         }
 
+                        // Actualizar contadores del dropdown con la info que viene en la respuesta
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
+
                         // Si cambiamos el nombre, categoría o nota máxima, el cuaderno debe saberlo
                         if (['nombre_actividad', 'categoria_id', 'criterio_id', 'nota_maxima'].includes(field)) {
                             $(document).trigger('cpp:forceGradebookReload');
@@ -137,9 +150,6 @@
                                     $(this).remove();
                                 });
                             }
-
-                            // Siempre refrescamos el listado para actualizar los contadores del dropdown arriba
-                            self.render();
                         }
                     } else {
                         if (cpp.utils && typeof cpp.utils.showToast === 'function') {
@@ -165,6 +175,7 @@
         },
 
         handleDelete: function(buttonElement) {
+            const self = this;
             const $row = $(buttonElement).closest('tr');
             const actividadId = $row.data('actividad-id');
             const nombre = $row.find('[data-field="nombre_actividad"]').val();
@@ -189,6 +200,9 @@
                         if (cpp.utils && typeof cpp.utils.showToast === 'function') {
                             cpp.utils.showToast('Actividad eliminada', 'success');
                         }
+
+                        // Actualizar contadores del dropdown
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
 
                         $(document).trigger('cpp:forceGradebookReload');
                         if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
@@ -252,6 +266,7 @@
             });
 
             $document.on('change', '#cpp-actividades-filter-evaluacion, #cpp-actividades-filter-limit, #cpp-actividades-filter-criterio', function() {
+                if (self.isUpdatingFilters) return;
                 self.render();
             });
 

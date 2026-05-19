@@ -7,17 +7,45 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 function cpp_obtener_criterios_globales($user_id) {
     global $wpdb;
-    $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
+    $tabla = $wpdb->prefix . 'cpp_criterios_globales';
+    return $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $tabla WHERE user_id = %d ORDER BY nombre ASC",
+        $user_id
+    ), ARRAY_A);
+}
+
+/**
+ * Obtiene los conteos de actividades por criterio de forma eficiente.
+ */
+function cpp_get_global_criterion_counts($user_id) {
+    global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
 
-    return $wpdb->get_results($wpdb->prepare(
-        "SELECT cg.*,
-                (SELECT COUNT(*) FROM $tabla_actividades a WHERE a.criterio_id = cg.id AND a.user_id = %d) as num_actividades
-         FROM $tabla_criterios cg
-         WHERE cg.user_id = %d
-         ORDER BY cg.nombre ASC",
-        $user_id, $user_id
-    ), ARRAY_A);
+    $counts_raw = $wpdb->get_results($wpdb->prepare("
+        SELECT criterio_id, COUNT(*) as total
+        FROM $tabla_actividades
+        WHERE user_id = %d
+        GROUP BY criterio_id
+    ", $user_id), OBJECT_K);
+
+    $criterios_globales = cpp_obtener_criterios_globales($user_id);
+    foreach ($criterios_globales as &$crit) {
+        $crit_id = $crit['id'];
+        $crit['num_actividades'] = isset($counts_raw[$crit_id]) ? intval($counts_raw[$crit_id]->total) : 0;
+    }
+    unset($crit);
+
+    $num_sin_criterio = 0;
+    foreach ($counts_raw as $id => $data) {
+        if ($id === "" || $id === null || $id == 0) {
+            $num_sin_criterio += intval($data->total);
+        }
+    }
+
+    return [
+        'criterios' => $criterios_globales,
+        'num_sin_criterio' => $num_sin_criterio
+    ];
 }
 
 function cpp_guardar_criterio_global($user_id, $nombre, $color = '#FFFFFF') {

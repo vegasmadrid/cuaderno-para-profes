@@ -3,6 +3,7 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+
 add_action('wp_ajax_cpp_get_actividades_tab_content', 'cpp_ajax_get_actividades_tab_content');
 function cpp_ajax_get_actividades_tab_content() {
     nocache_headers();
@@ -105,22 +106,9 @@ function cpp_ajax_get_actividades_tab_content() {
 
     // ELIMINADA HIDRATACIÓN COSTOSA: Trust the stored fecha_actividad which is already updated by the Programmer sync.
 
-    // --- OPTIMIZACIÓN: Obtener conteos de criterios de forma ultra eficiente ---
-    $counts_raw = $wpdb->get_results($wpdb->prepare("
-        SELECT criterio_id, COUNT(*) as total
-        FROM $tabla_actividades
-        WHERE user_id = %d
-        GROUP BY criterio_id
-    ", $user_id), OBJECT_K);
+    // ELIMINADA HIDRATACIÓN COSTOSA: Trust the stored fecha_actividad which is already updated by the Programmer sync.
 
-    $criterios_globales = cpp_obtener_criterios_globales($user_id);
-    foreach ($criterios_globales as &$crit) {
-        $crit_id = $crit['id'];
-        $crit['num_actividades'] = isset($counts_raw[$crit_id]) ? intval($counts_raw[$crit_id]->total) : 0;
-    }
-    unset($crit);
-
-    $num_sin_criterio = isset($counts_raw['']) ? intval($counts_raw['']->total) : 0;
+    $counts = cpp_get_global_criterion_counts($user_id);
 
     ob_start();
     ?>
@@ -196,8 +184,8 @@ function cpp_ajax_get_actividades_tab_content() {
     $html = ob_get_clean();
     wp_send_json_success([
         'html' => $html,
-        'criterios' => $criterios_globales,
-        'num_sin_criterio' => $num_sin_criterio
+        'criterios' => $counts['criterios'],
+        'num_sin_criterio' => $counts['num_sin_criterio']
     ]);
 }
 
@@ -252,7 +240,12 @@ function cpp_ajax_actualizar_actividad_inline() {
     $resultado = cpp_actualizar_actividad_evaluable($actividad_id, $datos);
 
     if ($resultado !== false) {
-        wp_send_json_success(['message' => 'Actividad actualizada.']);
+        $counts = cpp_get_global_criterion_counts($user_id);
+        wp_send_json_success([
+            'message' => 'Actividad actualizada.',
+            'criterios' => $counts['criterios'],
+            'num_sin_criterio' => $counts['num_sin_criterio']
+        ]);
     } else {
         wp_send_json_error(['message' => 'Error al actualizar la actividad.']);
     }
@@ -274,7 +267,12 @@ function cpp_ajax_eliminar_actividad() {
     $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
 
     if ($resultado) {
-        wp_send_json_success(['message' => 'Actividad eliminada correctamente.']);
+        $counts = cpp_get_global_criterion_counts($user_id);
+        wp_send_json_success([
+            'message' => 'Actividad eliminada correctamente.',
+            'criterios' => $counts['criterios'],
+            'num_sin_criterio' => $counts['num_sin_criterio']
+        ]);
     } else {
         wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);
     }
