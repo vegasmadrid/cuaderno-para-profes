@@ -89,10 +89,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <div class="cpp-filter-group">
                         <label for="cpp-actividades-filter-limit" class="cpp-filter-label">Mostrar:</label>
                         <select id="cpp-actividades-filter-limit" class="cpp-select-sm">
+                            <option value="0" selected>Todas</option>
                             <option value="50">Últimas 50</option>
                             <option value="100">Últimas 100</option>
                             <option value="200">Últimas 200</option>
-                            <option value="0">Todas</option>
                         </select>
                     </div>
                 </div>

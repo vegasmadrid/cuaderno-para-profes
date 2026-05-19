@@ -191,7 +191,7 @@ function cpp_ajax_get_actividades_tab_content() {
                 </tbody>
             </table>
         </div>
-    <?php endif;
+    <?php
     $html = ob_get_clean();
     wp_send_json_success(['html' => $html]);
 }

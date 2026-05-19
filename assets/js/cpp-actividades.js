@@ -20,7 +20,7 @@
 
             const claseId = $('#cpp-actividades-filter-clase').val() || 0;
             const evaluacionId = $('#cpp-actividades-filter-evaluacion').val() || 0;
-            const limit = $('#cpp-actividades-filter-limit').val() || 50;
+            const limit = $('#cpp-actividades-filter-limit').val();
 
             // Limpiamos el contenedor para evitar ver datos de la clase anterior durante la carga
             $container.empty();
