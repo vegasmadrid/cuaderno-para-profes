@@ -47,6 +47,24 @@
                 success: function(response) {
                     if (response.success) {
                         $container.html(response.data.html);
+
+                        // Sincronizar el dropdown de criterios con los contadores actualizados
+                        if (response.data.criterios) {
+                            const $filterCriterio = $('#cpp-actividades-filter-criterio');
+                            const currentValue = $filterCriterio.val();
+
+                            let html = '<option value="0">Todos los criterios</option>';
+
+                            // Opción Sin criterio
+                            const numSinCriterio = response.data.num_sin_criterio || 0;
+                            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin criterio (${numSinCriterio})</option>`;
+
+                            response.data.criterios.forEach(crit => {
+                                html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
+                            });
+                            $filterCriterio.html(html);
+                        }
+
                         // Auto-resize textareas
                         $container.find('textarea.cpp-inline-edit').each(function() {
                             this.style.height = 'auto';
@@ -110,11 +128,18 @@
                         // Si hay un filtro de criterio activo y hemos cambiado el criterio, la fila debe desaparecer
                         if (field === 'criterio_id') {
                             const filterCriterioId = $('#cpp-actividades-filter-criterio').val();
-                            if (filterCriterioId != 0 && value != filterCriterioId) {
+
+                            // Normalizar value para comparación (criterio_id puede ser "" para sin criterio)
+                            const normalizedValue = (value === "" || value === 0) ? -1 : value;
+
+                            if (filterCriterioId != 0 && normalizedValue != filterCriterioId) {
                                 $row.fadeOut(600, function() {
                                     $(this).remove();
                                 });
                             }
+
+                            // Siempre refrescamos el listado para actualizar los contadores del dropdown arriba
+                            self.render();
                         }
                     } else {
                         if (cpp.utils && typeof cpp.utils.showToast === 'function') {

@@ -7,10 +7,16 @@ defined('ABSPATH') or die('Acceso no permitido');
 
 function cpp_obtener_criterios_globales($user_id) {
     global $wpdb;
-    $tabla = $wpdb->prefix . 'cpp_criterios_globales';
+    $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+
     return $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM $tabla WHERE user_id = %d ORDER BY nombre ASC",
-        $user_id
+        "SELECT cg.*,
+                (SELECT COUNT(*) FROM $tabla_actividades a WHERE a.criterio_id = cg.id AND a.user_id = %d) as num_actividades
+         FROM $tabla_criterios cg
+         WHERE cg.user_id = %d
+         ORDER BY cg.nombre ASC",
+        $user_id, $user_id
     ), ARRAY_A);
 }
 

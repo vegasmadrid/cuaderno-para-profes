@@ -92,11 +92,23 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <option value="0">Todos los criterios</option>
                             <?php
                             $criterios_globales = cpp_obtener_criterios_globales($user_id);
-                            if (!empty($criterios_globales)):
-                                foreach ($criterios_globales as $crit): ?>
-                                    <option value="<?php echo esc_attr($crit['id']); ?>"><?php echo esc_html($crit['nombre']); ?></option>
-                                <?php endforeach;
-                            endif; ?>
+                            $total_con_criterio = 0;
+                            $options_html = '';
+                            if (!empty($criterios_globales)) {
+                                foreach ($criterios_globales as $crit) {
+                                    $num = intval($crit['num_actividades']);
+                                    $total_con_criterio += $num;
+                                    $options_html .= '<option value="' . esc_attr($crit['id']) . '">' . esc_html($crit['nombre']) . ' (' . $num . ')</option>';
+                                }
+                            }
+
+                            // Calcular Sin Criterio
+                            global $wpdb;
+                            $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+                            $num_sin_criterio = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $tabla_actividades WHERE user_id = %d AND criterio_id IS NULL", $user_id));
+                            ?>
+                            <option value="-1">Sin criterio (<?php echo intval($num_sin_criterio); ?>)</option>
+                            <?php echo $options_html; ?>
                         </select>
                     </div>
                     <div class="cpp-filter-group">

@@ -30,6 +30,8 @@ function cpp_ajax_get_actividades_tab_content() {
     }
     if ($criterio_id > 0) {
         $where_clauses[] = $wpdb->prepare("a.criterio_id = %d", $criterio_id);
+    } elseif ($criterio_id == -1) {
+        $where_clauses[] = "a.criterio_id IS NULL";
     }
 
     $where_sql = implode(' AND ', $where_clauses);
@@ -79,7 +81,7 @@ function cpp_ajax_get_actividades_tab_content() {
         INNER JOIN $tabla_actividades act ON ca.actividad_id = act.id
         INNER JOIN $tabla_alumnos_clases ac ON ca.alumno_id = ac.alumno_id AND act.clase_id = ac.clase_id
         WHERE ca.actividad_id IN ($placeholders) AND ac.visible = 1
-    ", $actividad_ids);
+    ", ...$actividad_ids);
 
     $todas_las_notas = $wpdb->get_results($sql_notas, ARRAY_A);
     $mapa_promedios = [];
@@ -103,7 +105,22 @@ function cpp_ajax_get_actividades_tab_content() {
 
     // ELIMINADA HIDRATACIÓN COSTOSA: Trust the stored fecha_actividad which is already updated by the Programmer sync.
 
+    // --- OPTIMIZACIÓN: Obtener conteos de criterios de forma ultra eficiente ---
+    $counts_raw = $wpdb->get_results($wpdb->prepare("
+        SELECT criterio_id, COUNT(*) as total
+        FROM $tabla_actividades
+        WHERE user_id = %d
+        GROUP BY criterio_id
+    ", $user_id), OBJECT_K);
+
     $criterios_globales = cpp_obtener_criterios_globales($user_id);
+    foreach ($criterios_globales as &$crit) {
+        $crit_id = $crit['id'];
+        $crit['num_actividades'] = isset($counts_raw[$crit_id]) ? intval($counts_raw[$crit_id]->total) : 0;
+    }
+    unset($crit);
+
+    $num_sin_criterio = isset($counts_raw['']) ? intval($counts_raw['']->total) : 0;
 
     ob_start();
     ?>
@@ -177,7 +194,11 @@ function cpp_ajax_get_actividades_tab_content() {
         </div>
     <?php
     $html = ob_get_clean();
-    wp_send_json_success(['html' => $html]);
+    wp_send_json_success([
+        'html' => $html,
+        'criterios' => $criterios_globales,
+        'num_sin_criterio' => $num_sin_criterio
+    ]);
 }
 
 add_action('wp_ajax_cpp_actualizar_actividad_inline', 'cpp_ajax_actualizar_actividad_inline');
