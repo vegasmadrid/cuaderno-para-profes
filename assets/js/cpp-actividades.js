@@ -148,6 +148,10 @@
                             if (filterCriterioId != 0 && normalizedValue != filterCriterioId) {
                                 $row.fadeOut(600, function() {
                                     $(this).remove();
+                                    // Si después de borrar la fila la tabla está vacía, podríamos mostrar el panel de vacío
+                                    if ($('#cpp-actividades-main-table tbody tr').length === 0) {
+                                        self.render();
+                                    }
                                 });
                             }
                         }

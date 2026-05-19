@@ -110,6 +110,9 @@ function cpp_ajax_get_actividades_tab_content() {
 
     $counts = cpp_get_global_criterion_counts($user_id);
 
+    // Agrupar criterios por evaluación para los selectores de la tabla
+    $criterios_por_evaluacion = [];
+
     ob_start();
     ?>
     <div class="cpp-actividades-table-wrapper">
@@ -132,6 +135,9 @@ function cpp_ajax_get_actividades_tab_content() {
                     $criterio_color = !empty($act['criterio_color']) ? $act['criterio_color'] : '#FFFFFF';
                     $is_programada = !empty($act['sesion_id']);
                     $clase_color = !empty($act['clase_color']) ? $act['clase_color'] : '#CCCCCC';
+
+                    // Usar criterios globales para el selector de la fila para asegurar consistencia
+                    $criterios_fila = $criterios_globales;
                 ?>
                         <tr data-actividad-id="<?php echo esc_attr($act['id']); ?>" data-evaluacion-id="<?php echo esc_attr($act['evaluacion_id']); ?>">
                             <td data-sort-value="<?php echo esc_attr($act['clase_nombre']); ?>">
@@ -148,9 +154,9 @@ function cpp_ajax_get_actividades_tab_content() {
                                     <span class="cpp-category-dot" style="background-color: <?php echo esc_attr($criterio_color); ?>;"></span>
                                     <select class="cpp-inline-edit" data-field="criterio_id">
                                         <option value="">-- Sin criterio --</option>
-                                        <?php foreach ($criterios_globales as $cg) : ?>
-                                            <option value="<?php echo esc_attr($cg['id']); ?>" <?php selected($act['criterio_id'], $cg['id']); ?> data-color="<?php echo esc_attr($cg['color']); ?>">
-                                                <?php echo esc_html($cg['nombre']); ?>
+                                        <?php foreach ($criterios_fila as $crit) : ?>
+                                            <option value="<?php echo esc_attr($crit['id']); ?>" <?php selected($act['criterio_id'], $crit['id']); ?> data-color="<?php echo esc_attr($crit['color']); ?>">
+                                                <?php echo esc_html($crit['nombre']); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
