@@ -3,6 +3,7 @@
 
 defined('ABSPATH') or die('Acceso no permitido');
 
+
 // --- SHORTCODE [cuaderno] (ÚNICO PUNTO DE ENTRADA DEL FRONTEND) ---
 add_shortcode('cuaderno', 'cpp_shortcode_cuaderno_notas_classroom');
 function cpp_shortcode_cuaderno_notas_classroom() {
@@ -10,7 +11,9 @@ function cpp_shortcode_cuaderno_notas_classroom() {
     wp_enqueue_style('cpp-resumen-css');
     wp_enqueue_script('cpp-resumen-js');
 
-    if (!is_user_logged_in()) {
+    $shared_token = isset($_GET['shared_token']) ? sanitize_text_field($_GET['shared_token']) : null;
+
+    if (!is_user_logged_in() && !$shared_token) {
         return '<div class="cpp-mensaje">Por favor, inicia sesión para acceder al cuaderno de notas.</div>';
     }
 
@@ -56,7 +59,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <span class="dashicons dashicons-arrow-right-alt2"></span>
                     </button>
                 </div>
-                <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto;">
+                <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto; display: flex; gap: 10px;">
+                    <button id="cpp-share-week-btn" class="cpp-btn cpp-btn-pdf">
+                        <span class="dashicons dashicons-share"></span> Compartir
+                    </button>
                     <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
                         <span class="dashicons dashicons-media-document"></span> Descargar PDF
                     </button>
@@ -498,6 +504,40 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             </form>
         </div>
     </div>
+    <div id="cpp-share-week-modal" class="cpp-modal" style="display:none;">
+        <div class="cpp-modal-content">
+            <span class="cpp-modal-close">&times;</span>
+            <h2>Compartir Programación Semanal</h2>
+            <p>Genera un enlace público para que otros puedan ver tu programación de la semana sin necesidad de iniciar sesión.</p>
+
+            <div class="cpp-form-group">
+                <label for="cpp-share-token">Nombre personalizado para el enlace:</label>
+                <input type="text" id="cpp-share-token" placeholder="Ej: nombreapellido" style="width: 100%;">
+                <p class="description">Este será el identificador en la URL (ej: .../?shared_token=nombreprofe)</p>
+            </div>
+
+            <div class="cpp-form-group" style="display: flex; align-items: center; gap: 10px; margin: 20px 0;">
+                <label class="cpp-switch">
+                    <input type="checkbox" id="cpp-share-toggle">
+                    <span class="cpp-slider round"></span>
+                </label>
+                <span id="cpp-share-status-text">Enlace público desactivado</span>
+            </div>
+
+            <div id="cpp-share-link-container" style="display: none;">
+                <div class="cpp-form-group">
+                    <label for="cpp-share-link-input">Enlace para compartir:</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="cpp-share-link-input" readonly style="flex-grow: 1;">
+                        <button id="cpp-copy-share-link-btn" class="cpp-btn cpp-btn-primary">
+                            <span class="dashicons dashicons-admin-page"></span> Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="cpp-pdf-download-modal" class="cpp-modal" style="display:none;">
         <div class="cpp-modal-content">
             <span class="cpp-modal-close">&times;</span>
@@ -842,6 +882,124 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         ?>
 
     </div> 
+    <?php
+    return ob_get_clean();
+}
+
+// --- SHORTCODE [semana_compartida] ---
+add_shortcode('semana_compartida', 'cpp_shortcode_semana_compartida');
+function cpp_shortcode_semana_compartida() {
+    $token = isset($_GET['shared_token']) ? sanitize_text_field($_GET['shared_token']) : '';
+    if (empty($token)) {
+        return '<div class="cpp-mensaje">Enlace compartido no válido.</div>';
+    }
+
+    // Enqueue assets
+    wp_enqueue_style('dashicons');
+    wp_enqueue_style('cpp-frontend-css');
+    wp_enqueue_style('cpp-programador-css');
+    wp_enqueue_script('cpp-core-js');
+    wp_enqueue_script('cpp-utils-js');
+    wp_enqueue_script('cpp-programador-js');
+
+    ob_start();
+    ?>
+    <div class="cpp-cuaderno-viewport-classroom cpp-shared-view-container">
+        <!-- Reutilizar el contenedor de pantalla completa para la vista de la semana -->
+        <div id="cpp-fullscreen-tab-container" class="cpp-fullscreen-settings-page" style="display: block !important;">
+            <?php
+            $logo_url = get_option('cpp_share_logo_url', '');
+            $logo_width = get_option('cpp_share_logo_width', '150');
+            ?>
+            <div class="cpp-fullscreen-settings-header" style="padding-top: 15px; padding-bottom: 15px; height: auto; min-height: 80px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="<?php echo esc_url(home_url()); ?>" title="Volver al inicio">
+                        <?php if ($logo_url): ?>
+                            <img src="<?php echo esc_url($logo_url); ?>" style="width: <?php echo esc_attr($logo_width); ?>px; height: auto;">
+                        <?php else: ?>
+                            <span class="dashicons dashicons-admin-home" style="font-size: 30px; width: 30px; height: 30px;"></span>
+                        <?php endif; ?>
+                    </a>
+                </div>
+                <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
+                    <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
+                        <span class="dashicons dashicons-arrow-left-alt2"></span>
+                    </button>
+                    <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
+                    <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
+                        <span class="dashicons dashicons-arrow-right-alt2"></span>
+                    </button>
+                </div>
+                <div id="cpp-semana-top-bar-actions" style="display: block; margin-left: auto;">
+                    <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
+                        <span class="dashicons dashicons-media-document"></span> Descargar PDF
+                    </button>
+                </div>
+            </div>
+            <div id="cpp-fullscreen-tab-content" class="cpp-fullscreen-settings-content">
+                <div id="cpp-main-tab-semana" class="cpp-main-tab-content active">
+                    <p class="cpp-cuaderno-cargando">Cargando programación...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="cpp-programador-app" style="display:none;"></div>
+
+        <!-- Modales necesarios para la vista pública -->
+        <div id="cpp-pdf-download-modal" class="cpp-modal" style="display:none;">
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2>Descargar Programación</h2>
+                <p>Elige el rango de la programación que deseas descargar en formato PDF.</p>
+                <div class="cpp-modal-actions-grid">
+                    <button id="cpp-pdf-download-week-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-calendar-alt"></span>
+                        <span>Semana Actual</span>
+                    </button>
+                    <button id="cpp-pdf-download-all-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-book"></span>
+                        <span>Toda la Programación</span>
+                    </button>
+                    <button id="cpp-pdf-download-range-btn" class="cpp-btn cpp-btn-secondary">
+                        <span class="dashicons dashicons-leftright"></span>
+                        <span>Rango de Fechas</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cpp-pdf-range-modal" class="cpp-modal" style="display:none;">
+            <div class="cpp-modal-content">
+                <span class="cpp-modal-close">&times;</span>
+                <h2>Seleccionar Rango de Fechas</h2>
+                <p>Elige las fechas de inicio y fin para la descarga del PDF.</p>
+                <form id="cpp-pdf-range-form">
+                    <div class="cpp-form-group-grid-2">
+                        <div class="cpp-form-group">
+                            <label for="cpp-pdf-start-date">Fecha de Inicio:</label>
+                            <input type="date" id="cpp-pdf-start-date" required>
+                        </div>
+                        <div class="cpp-form-group">
+                            <label for="cpp-pdf-end-date">Fecha de Fin:</label>
+                            <input type="date" id="cpp-pdf-end-date" required>
+                        </div>
+                    </div>
+                    <div class="cpp-modal-actions">
+                        <button type="submit" class="cpp-btn cpp-btn-primary">Descargar PDF</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof CppProgramadorApp !== 'undefined') {
+                    // Marcar como vista compartida para que el JS sepa qué hacer
+                    window.isCppSharedView = true;
+                }
+            });
+        </script>
+    </div>
     <?php
     return ob_get_clean();
 }

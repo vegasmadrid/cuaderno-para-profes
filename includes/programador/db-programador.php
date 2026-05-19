@@ -949,3 +949,132 @@ function cpp_programador_save_actividades_order($sesion_id, $orden_actividades, 
     $wpdb->query('COMMIT');
     return true;
 }
+
+/**
+ * Get sharing status for a user and class.
+ */
+function cpp_get_share_status($user_id, $clase_id = null) {
+    global $wpdb;
+    $tabla = $wpdb->prefix . 'cpp_shared_weeks';
+    if ($clase_id === 'all') $clase_id = null;
+
+    if ($clase_id === null) {
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla WHERE user_id = %d AND (clase_id IS NULL OR clase_id = 0)", $user_id));
+    } else {
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla WHERE user_id = %d AND clase_id = %d", $user_id, $clase_id));
+    }
+}
+
+/**
+ * Check if a share token is available.
+ */
+function cpp_is_token_available($token, $user_id) {
+    global $wpdb;
+    $tabla = $wpdb->prefix . 'cpp_shared_weeks';
+    $existing = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla WHERE token = %s", $token));
+
+    if (!$existing) return true;
+    return (int)$existing === (int)$user_id;
+}
+
+/**
+ * Toggle sharing status.
+ */
+function cpp_toggle_share($user_id, $clase_id, $active, $custom_token = null) {
+    global $wpdb;
+    $tabla = $wpdb->prefix . 'cpp_shared_weeks';
+
+    // Safety check: ensure table exists
+    if ($wpdb->get_var("SHOW TABLES LIKE '$tabla'") !== $tabla) {
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+    }
+
+    // Now we always share all classes
+    $clase_id = 0;
+
+    $status = cpp_get_share_status($user_id, $clase_id);
+
+    if ($status) {
+        $data = ['active' => $active ? 1 : 0];
+        if ($active && $custom_token) {
+            if (!cpp_is_token_available($custom_token, $user_id)) {
+                return false; // Token taken by another user
+            }
+            $data['token'] = $custom_token;
+        }
+        $wpdb->update($tabla, $data, ['id' => $status->id]);
+        return cpp_get_share_status($user_id, $clase_id);
+    } else if ($active) {
+        $token = $custom_token ? $custom_token : bin2hex(random_bytes(16));
+        if (!cpp_is_token_available($token, $user_id)) {
+            return false;
+        }
+
+        $inserted = $wpdb->insert($tabla, [
+            'user_id' => $user_id,
+            'clase_id' => 0,
+            'token' => $token,
+            'active' => 1
+        ]);
+        if ($inserted === false) {
+            error_log("CPP ERROR: Failed to insert shared week. " . $wpdb->last_error);
+            return null;
+        }
+        return cpp_get_share_status($user_id, $clase_id);
+    } else {
+        // If it didn't exist and we are deactivating, do nothing
+        return null;
+    }
+}
+
+/**
+ * Get public programador data by token.
+ */
+function cpp_get_public_programador_data($token) {
+    global $wpdb;
+    $tabla_shared = $wpdb->prefix . 'cpp_shared_weeks';
+    $share_info = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_shared WHERE token = %s AND active = 1", $token));
+
+    if (!$share_info) return null;
+
+    $user_id = $share_info->user_id;
+    $clase_id_filter = $share_info->clase_id;
+
+    // Get all data for the user
+    $all_data = cpp_programador_get_all_data($user_id);
+
+    // If sharing a specific class, filter the data (Legacy support, now we share all if 0)
+    if ($clase_id_filter && $clase_id_filter != 0) {
+        $all_data['clases'] = array_filter($all_data['clases'], function($c) use ($clase_id_filter) {
+            return $c['id'] == $clase_id_filter;
+        });
+        $all_data['clases'] = array_values($all_data['clases']); // Reset keys
+
+        $all_data['sesiones'] = array_filter($all_data['sesiones'], function($s) use ($clase_id_filter) {
+            return $s->clase_id == $clase_id_filter;
+        });
+        $all_data['sesiones'] = array_values($all_data['sesiones']);
+    }
+
+    // Add symbol legends
+    $leyendas_guardadas = get_user_meta($user_id, 'cpp_programador_simbolos_leyendas', true);
+    if (!is_array($leyendas_guardadas)) $leyendas_guardadas = [];
+    $simbolos_default = cpp_get_default_programador_simbolos();
+    $simbolos = [];
+    foreach ($simbolos_default as $id => $data) {
+        $simbolos[$id] = [
+            'simbolo' => $data['simbolo'],
+            'leyenda' => isset($leyendas_guardadas[$id]) ? esc_html($leyendas_guardadas[$id]) : $data['leyenda'],
+        ];
+    }
+    $all_data['simbolos'] = $simbolos;
+    $all_data['is_public'] = true;
+    $all_data['share_info'] = [
+        'clase_id' => $clase_id_filter,
+        'user_name' => get_the_author_meta('display_name', $user_id)
+    ];
+
+    return $all_data;
+}

@@ -20,6 +20,13 @@
     // --- Inicialización ---
     init(initialClaseId) {
         this.appElement = document.getElementById('cpp-programador-app');
+
+        // Detect dedicated shared view
+        const isSharedPage = !!document.querySelector('.cpp-shared-view-container');
+        if (isSharedPage) {
+            window.isCppSharedView = true;
+        }
+
         // Los selectores de pestañas y contenidos ahora son manejados por el cuaderno principal.
         // Solo necesitamos los contenedores de contenido para renderizar.
         this.tabContents = {
@@ -27,40 +34,52 @@
             semana: document.getElementById('cpp-main-tab-semana'),
             horario: document.getElementById('cpp-main-tab-horario')
         };
+
+        const $qs = (sel) => document.querySelector(sel);
+
         this.sesionModal = {
-            element: document.querySelector('#cpp-sesion-modal'),
-            form: document.querySelector('#cpp-sesion-form'),
-            title: document.querySelector('#cpp-sesion-modal-title'),
-            idInput: document.querySelector('#cpp-sesion-id'),
-            claseIdInput: document.querySelector('#cpp-sesion-clase-id'),
-            evaluacionIdInput: document.querySelector('#cpp-sesion-evaluacion-id'),
-            tituloInput: document.querySelector('#cpp-sesion-titulo'),
-            descripcionInput: document.querySelector('#cpp-sesion-descripcion')
+            element: $qs('#cpp-sesion-modal'),
+            form: $qs('#cpp-sesion-form'),
+            title: $qs('#cpp-sesion-modal-title'),
+            idInput: $qs('#cpp-sesion-id'),
+            claseIdInput: $qs('#cpp-sesion-clase-id'),
+            evaluacionIdInput: $qs('#cpp-sesion-evaluacion-id'),
+            tituloInput: $qs('#cpp-sesion-titulo'),
+            descripcionInput: $qs('#cpp-sesion-descripcion')
         };
         this.copySesionModal = {
-            element: document.querySelector('#cpp-copy-sesion-modal'),
-            form: document.querySelector('#cpp-copy-sesion-form'),
-            title: document.querySelector('#cpp-copy-sesion-modal-title'),
-            claseSelect: document.querySelector('#cpp-copy-dest-clase'),
-            evaluacionSelect: document.querySelector('#cpp-copy-dest-evaluacion')
+            element: $qs('#cpp-copy-sesion-modal'),
+            form: $qs('#cpp-copy-sesion-form'),
+            title: $qs('#cpp-copy-sesion-modal-title'),
+            claseSelect: $qs('#cpp-copy-dest-clase'),
+            evaluacionSelect: $qs('#cpp-copy-dest-evaluacion')
         };
         this.configModal = {
-            element: document.querySelector('#cpp-config-modal'),
-            form: document.querySelector('#cpp-config-form')
+            element: $qs('#cpp-config-modal'),
+            form: $qs('#cpp-config-form')
+        };
+        this.shareWeekModal = {
+            element: $qs('#cpp-share-week-modal'),
+            tokenInput: $qs('#cpp-share-token'),
+            toggle: $qs('#cpp-share-toggle'),
+            statusText: $qs('#cpp-share-status-text'),
+            linkContainer: $qs('#cpp-share-link-container'),
+            linkInput: $qs('#cpp-share-link-input'),
+            copyBtn: $qs('#cpp-copy-share-link-btn')
         };
         this.pdfDownloadModal = {
-            element: document.querySelector('#cpp-pdf-download-modal'),
-            weekBtn: document.querySelector('#cpp-pdf-download-week-btn'),
-            allBtn: document.querySelector('#cpp-pdf-download-all-btn'),
-            rangeBtn: document.querySelector('#cpp-pdf-download-range-btn'),
-            closeBtn: document.querySelector('#cpp-pdf-download-modal .cpp-modal-close')
+            element: $qs('#cpp-pdf-download-modal'),
+            weekBtn: $qs('#cpp-pdf-download-week-btn'),
+            allBtn: $qs('#cpp-pdf-download-all-btn'),
+            rangeBtn: $qs('#cpp-pdf-download-range-btn'),
+            closeBtn: $qs('#cpp-pdf-download-modal .cpp-modal-close')
         };
         this.pdfRangeModal = {
-            element: document.querySelector('#cpp-pdf-range-modal'),
-            form: document.querySelector('#cpp-pdf-range-form'),
-            startDateInput: document.querySelector('#cpp-pdf-start-date'),
-            endDateInput: document.querySelector('#cpp-pdf-end-date'),
-            closeBtn: document.querySelector('#cpp-pdf-range-modal .cpp-modal-close')
+            element: $qs('#cpp-pdf-range-modal'),
+            form: $qs('#cpp-pdf-range-form'),
+            startDateInput: $qs('#cpp-pdf-start-date'),
+            endDateInput: $qs('#cpp-pdf-end-date'),
+            closeBtn: $qs('#cpp-pdf-range-modal .cpp-modal-close')
         };
         this.attachEventListeners();
         this.fetchData(initialClaseId);
@@ -182,8 +201,11 @@
         });
 
         // Modales
-        this.sesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeSesionModal());
-        this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
+        if (this.sesionModal.element) {
+            const closeBtn = this.sesionModal.element.querySelector('.cpp-modal-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => this.closeSesionModal());
+            this.sesionModal.form.addEventListener('submit', e => this.saveSesion(e, true));
+        }
 
         // --- Eventos de Configuración General (delegados desde body) ---
         const $body = $('body');
@@ -224,9 +246,11 @@
         $document.on('click', '#cpp-delete-selected-btn', () => self.handleDeleteSelectedSesions());
         $document.on('click', '#cpp-fijar-sesion-toolbar-btn', () => self.handleFijarSesionClick());
         $document.on('click', '#cpp-deselect-all-btn', () => self.cancelSelection());
-        this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
-        this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
-        this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
+        if (this.copySesionModal.element) {
+            this.copySesionModal.element.querySelector('.cpp-modal-close').addEventListener('click', () => this.closeCopySesionModal());
+            this.copySesionModal.claseSelect.addEventListener('change', () => this.updateCopyModalEvaluations());
+            this.copySesionModal.form.addEventListener('submit', e => this.handleCopySesions(e));
+        }
 
         // --- Simbolos (Palette) ---
         $document.on('click', '#cpp-simbolo-sesion-toolbar-btn', function() {
@@ -258,6 +282,16 @@
             self.navigateToSesion(claseId, evaluacionId, sesionId);
         });
 
+        // --- Sharing Modal ---
+        $document.on('click', '#cpp-share-week-btn', () => this.openShareModal());
+        if (this.shareWeekModal.element) {
+            const closeBtn = this.shareWeekModal.element.querySelector('.cpp-modal-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => this.shareWeekModal.element.style.display = 'none');
+
+            this.shareWeekModal.toggle.addEventListener('change', () => this.handleToggleShare());
+            this.shareWeekModal.copyBtn.addEventListener('click', () => this.handleCopyShareLink());
+        }
+
         // --- PDF Download Modal ---
         $document.on('click', '#cpp-download-pdf-btn', () => this.openPdfDownloadModal());
         if (this.pdfDownloadModal.element && this.pdfDownloadModal.closeBtn) {
@@ -278,6 +312,125 @@
         if (this.pdfRangeModal.element && this.pdfRangeModal.form) {
             this.pdfRangeModal.form.addEventListener('submit', (e) => this.handlePdfDownload('rango', e));
         }
+    },
+
+    openShareModal() {
+        if (this.shareWeekModal.element) {
+            this.shareWeekModal.element.style.display = 'block';
+            this.updateShareStatus();
+        }
+    },
+
+    applyShareStatus(status) {
+        if (status) {
+            this.shareWeekModal.toggle.checked = status.active == 1;
+            this.shareWeekModal.statusText.textContent = status.active == 1 ? 'Enlace público activado' : 'Enlace público desactivado';
+
+            if (status.token) {
+                this.shareWeekModal.tokenInput.value = status.token;
+            } else {
+                // If no token yet, pre-fill with something reasonable
+                const userName = this.config.user_display_name || '';
+                const cleanName = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '');
+                this.shareWeekModal.tokenInput.value = cleanName;
+            }
+
+            if (status.active == 1) {
+                this.shareWeekModal.linkContainer.style.display = 'block';
+                // Use configured share page URL if available, otherwise fallback to current page
+                const baseUrl = cppFrontendData.sharePageUrl || (window.location.origin + window.location.pathname);
+                const url = new URL(baseUrl);
+                url.searchParams.set('shared_token', status.token);
+                this.shareWeekModal.linkInput.value = url.href;
+            } else {
+                this.shareWeekModal.linkContainer.style.display = 'none';
+            }
+        } else {
+            this.shareWeekModal.toggle.checked = false;
+            this.shareWeekModal.statusText.textContent = 'Enlace público desactivado';
+            this.shareWeekModal.linkContainer.style.display = 'none';
+            this.shareWeekModal.linkInput.value = '';
+
+            const userName = this.config.user_display_name || '';
+            const cleanName = userName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '');
+            this.shareWeekModal.tokenInput.value = cleanName;
+        }
+    },
+
+    updateShareStatus() {
+        $.ajax({
+            url: cppFrontendData.ajaxUrl,
+            method: 'POST',
+            data: {
+                action: 'cpp_get_share_status',
+                nonce: cppFrontendData.nonce,
+                clase_id: 'all'
+            },
+            success: (response) => {
+                if (response.success) {
+                    this.applyShareStatus(response.data.status);
+                } else {
+                    this.applyShareStatus(null);
+                }
+            },
+            error: () => this.applyShareStatus(null)
+        });
+    },
+
+    handleToggleShare() {
+        const active = this.shareWeekModal.toggle.checked;
+        const customToken = this.shareWeekModal.tokenInput.value.trim();
+
+        if (active && !customToken) {
+            cpp.utils.showToast('Por favor, elige un nombre para el enlace.', 'error');
+            this.shareWeekModal.toggle.checked = false;
+            return;
+        }
+
+        // If the link was already active and the token changed, warn the user
+        const oldLink = this.shareWeekModal.linkInput.value;
+        if (active && oldLink) {
+            const url = new URL(oldLink);
+            const oldToken = url.searchParams.get('shared_token');
+            if (oldToken && oldToken !== customToken) {
+                if (!confirm('Si cambias el nombre del enlace, el enlace anterior dejará de funcionar. ¿Estás seguro?')) {
+                    this.shareWeekModal.toggle.checked = true; // Stay active but don't change
+                    this.shareWeekModal.tokenInput.value = oldToken; // Revert input
+                    return;
+                }
+            }
+        }
+
+        $.ajax({
+            url: cppFrontendData.ajaxUrl,
+            method: 'POST',
+            data: {
+                action: 'cpp_toggle_share',
+                nonce: cppFrontendData.nonce,
+                clase_id: 'all',
+                active: active,
+                token: customToken
+            },
+            success: (response) => {
+                if (response.success) {
+                    this.applyShareStatus(response.data.status);
+                    cpp.utils.showToast(response.data.message || (active ? 'Enlace activado' : 'Enlace desactivado'), 'success');
+                } else {
+                    this.shareWeekModal.toggle.checked = !active; // Revert switch
+                    cpp.utils.showToast(response.data.message || 'Error al actualizar el estado de compartición', 'error');
+                }
+            },
+            error: () => {
+                this.shareWeekModal.toggle.checked = !active; // Revert switch
+                cpp.utils.showToast('Error de conexión al servidor', 'error');
+            }
+        });
+    },
+
+    handleCopyShareLink() {
+        this.shareWeekModal.linkInput.select();
+        document.execCommand('copy');
+        cpp.utils.showToast('Enlace copiado al portapapeles', 'success');
     },
 
     openPdfDownloadModal() {
@@ -311,6 +464,12 @@
         }
 
         let url = `${cppFrontendData.ajaxUrl}?action=cpp_download_programacion_pdf&type=${type}`;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('shared_token');
+        if (token) {
+            url += `&shared_token=${token}`;
+        }
 
         if (type === 'semana') {
             const weekDates = this.getWeekDates(this.semanaDate);
@@ -1073,6 +1232,14 @@
     },
 
     fetchDataFromServer() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('shared_token');
+
+        if (token) {
+            return fetch(`${cppFrontendData.ajaxUrl}?action=cpp_get_public_programador_data&token=${token}`)
+                .then(res => res.json());
+        }
+
         const data = new URLSearchParams({ action: 'cpp_get_programador_all_data', nonce: cppFrontendData.nonce });
         return fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
             .then(res => res.json());
@@ -1083,21 +1250,36 @@
             this.clases = result.data.clases || [];
             this.config = result.data.config || { time_slots: [], horario: {} };
             this.sesiones = result.data.sesiones || [];
-            this.fetchSimbolos(); // Cargar símbolos
+
+            if (result.data.is_public && result.data.simbolos) {
+                this.simbolos = result.data.simbolos;
+            } else {
+                this.fetchSimbolos(); // Cargar símbolos
+            }
 
             if (this.clases.length > 0) {
                 if (initialClaseId) {
                     // La lógica de pendingNavigation ahora está en loadClass.
                     // Simplemente llamamos a loadClass y ella se encargará de todo.
                     this.loadClass(initialClaseId, evaluacionIdToSelect, sesionIdToSelect, true);
-                } else {
+                } else if (result.data.is_public || window.isCppSharedView) {
+                    // In public view, we load the first available class and render the week view
+                    this.share_info = result.data.share_info;
+                    const firstClaseId = (this.clases && this.clases.length > 0) ? this.clases[0].id : null;
+                    if (firstClaseId) {
+                        this.loadClass(firstClaseId, null, null, true);
+                        this.renderSemanaTab();
+                    }
+                } else if (this.tabContents.programacion) {
                     this.tabContents.programacion.innerHTML = '<p>No se ha seleccionado ninguna clase.</p>';
                 }
             } else {
                 this.tabContents.programacion.innerHTML = '<p>No tienes clases creadas. Por favor, ve al Cuaderno y crea al menos una clase.</p>';
             }
         } else {
-            this.tabContents.programacion.innerHTML = '<p style="color:red;">Error al cargar los datos del programador.</p>';
+            const errorMsg = `<p style="color:red; text-align:center; padding: 20px;">${result.data?.message || 'Error al cargar los datos del programador.'}</p>`;
+            this.tabContents.programacion.innerHTML = errorMsg;
+            this.tabContents.semana.innerHTML = errorMsg;
         }
     },
 
@@ -2441,10 +2623,16 @@
         const todayYMD = today.toISOString().slice(0, 10);
 
         // Actualizar el título de la semana en la barra superior
-        const weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
         const $headerDate = document.getElementById('cpp-semana-header-date');
         if ($headerDate) {
-            $headerDate.textContent = weekTitle;
+            const weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
+
+            // Si estamos en vista pública y tenemos información del profesor
+            if (window.isCppSharedView && this.share_info && this.share_info.user_name) {
+                $headerDate.innerHTML = `${weekTitle}<br><small style="font-size: 14px; font-weight: normal; color: #5f6368;">Programación de ${this.share_info.user_name}</small>`;
+            } else {
+                $headerDate.textContent = weekTitle;
+            }
         }
 
         const animationClass = direction ? (direction === 'next' ? 'slide-in-right' : 'slide-in-left') : '';
@@ -2515,11 +2703,12 @@
                                     ${evento.sesion.actividades_programadas.map(act => `<li>${act.titulo}</li>`).join('')}
                                 </ul>`;
                             }
-                            cellContent += `<div class="cpp-semana-slot"
+                            const clickableClass = window.isCppSharedView ? 'cpp-semana-slot-non-clickable' : 'cpp-semana-slot';
+                            cellContent += `<div class="${clickableClass}"
                                                  data-sesion-id="${evento.sesion.id}"
                                                  data-clase-id="${evento.sesion.clase_id}"
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
-                                                 style="border-left-color: ${clase.color};">
+                                                 style="border-left-color: ${clase.color} !important;">
                                 <strong>${clase.nombre}</strong>
                                 <p>${simboloHTML} ${fijadaIconHTML} ${evento.sesion.titulo}</p>
                                 ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}

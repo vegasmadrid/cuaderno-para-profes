@@ -832,3 +832,56 @@ function cpp_ajax_save_programador_simbolos_leyendas() {
 
     wp_send_json_success(['message' => 'Leyendas guardadas con éxito.']);
 }
+
+// --- Handlers para Compartir ---
+add_action('wp_ajax_cpp_get_share_status', 'cpp_ajax_get_share_status');
+add_action('wp_ajax_cpp_toggle_share', 'cpp_ajax_toggle_share');
+add_action('wp_ajax_nopriv_cpp_get_public_programador_data', 'cpp_ajax_get_public_programador_data');
+add_action('wp_ajax_cpp_get_public_programador_data', 'cpp_ajax_get_public_programador_data');
+
+function cpp_ajax_get_share_status() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'No autorizado.']); return; }
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? sanitize_text_field($_POST['clase_id']) : 'all';
+
+    $status = cpp_get_share_status($user_id, $clase_id);
+    wp_send_json_success(['status' => $status]);
+}
+
+function cpp_ajax_toggle_share() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'No autorizado.']); return; }
+    $user_id = get_current_user_id();
+    $clase_id = 'all'; // Always sharing all now
+    $active = isset($_POST['active']) && $_POST['active'] === 'true';
+    $custom_token = isset($_POST['token']) ? sanitize_title($_POST['token']) : null;
+
+    if ($active && $custom_token) {
+        // Validate uniqueness if it's a new name
+        require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+        if (!cpp_is_token_available($custom_token, $user_id)) {
+            wp_send_json_error(['message' => 'Este nombre de enlace ya está siendo utilizado por otro profesor. Por favor, elige uno diferente.']);
+            return;
+        }
+    }
+
+    $status = cpp_toggle_share($user_id, $clase_id, $active, $custom_token);
+
+    if ($active && !$status) {
+        wp_send_json_error(['message' => 'No se pudo activar el enlace. Es posible que el nombre ya esté en uso.']);
+        return;
+    }
+
+    wp_send_json_success(['status' => $status, 'message' => $active ? 'Enlace activado' : 'Enlace desactivado']);
+}
+
+function cpp_ajax_get_public_programador_data() {
+    $token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
+    if (empty($token)) { wp_send_json_error(['message' => 'Token no proporcionado.']); return; }
+
+    $data = cpp_get_public_programador_data($token);
+    if (!$data) { wp_send_json_error(['message' => 'Enlace no válido o desactivado.']); return; }
+
+    wp_send_json_success($data);
+}

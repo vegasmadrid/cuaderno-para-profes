@@ -58,6 +58,26 @@ const cpp = {
         this.initializeCuadernoView();
         this.handleConnectionStatus();
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const isPublic = urlParams.has('shared_token');
+
+        if (isPublic) {
+            $('body').addClass('cpp-public-view');
+            $('.cpp-fixed-top-bar, .cpp-cuaderno-sidebar-classroom').hide();
+            if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
+                CppProgramadorApp.init(null);
+                setTimeout(() => {
+                    const $semanaTab = $('.cpp-main-tab-link[data-tab="semana"]');
+                    if ($semanaTab.length) {
+                        $semanaTab.trigger('click');
+                        $('#cpp-close-fullscreen-tab-btn').hide();
+                        $('#cpp-share-week-btn').hide(); // Hide sharing button in public view
+                    }
+                }, 100);
+            }
+            return;
+        }
+
         // El módulo programador se inicializa de forma independiente si existe
         if (typeof CppProgramadorApp !== 'undefined' && typeof CppProgramadorApp.init === 'function') {
             const initialClaseId = this.getInitialClaseId();

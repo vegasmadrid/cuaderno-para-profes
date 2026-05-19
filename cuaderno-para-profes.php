@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.8.6');
+define('CPP_VERSION', '2.8.8');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -23,6 +23,7 @@ require_once CPP_PLUGIN_DIR . 'includes/shortcodes.php';
 require_once CPP_PLUGIN_DIR . 'includes/ajax.php';
 require_once CPP_PLUGIN_DIR . 'includes/excel-export.php'; 
 require_once CPP_PLUGIN_DIR . 'includes/excel-import.php';
+require_once CPP_PLUGIN_DIR . 'includes/admin-settings.php';
 
 // Incluir archivos del programador
 require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
@@ -36,8 +37,8 @@ register_activation_hook(__FILE__, 'cpp_crear_tablas');
 add_action('wp_enqueue_scripts', 'cpp_cargar_assets');
 function cpp_cargar_assets() {
     global $post;
-    // Solo cargar los assets si el shortcode [cuaderno] está presente
-    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+    // Solo cargar los assets si el shortcode [cuaderno] o [semana_compartida] está presente
+    if (!is_a($post, 'WP_Post') || (!has_shortcode($post->post_content, 'cuaderno') && !has_shortcode($post->post_content, 'semana_compartida'))) {
         return;
     }
 
@@ -80,7 +81,8 @@ function cpp_cargar_assets() {
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('cpp_frontend_nonce'),
-        'userId' => get_current_user_id()
+        'userId' => get_current_user_id(),
+        'sharePageUrl' => get_option('cpp_share_page_url', '')
     ]);
 }
 
@@ -504,6 +506,13 @@ function cpp_run_migrations() {
         }
     }
 
+    // --- MIGRACIÓN v2.8.7: Compartir Vista Semana ---
+    if (version_compare($current_version, '2.8.7', '<')) {
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+    }
+
     // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
     if (version_compare($current_version, CPP_VERSION, '<')) {
         delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
@@ -624,7 +633,7 @@ add_action('plugins_loaded', 'cpp_run_migrations');
 add_action('wp_footer', 'cpp_add_modals_to_footer');
 function cpp_add_modals_to_footer() {
     global $post;
-    if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'cuaderno')) {
+    if (!is_a($post, 'WP_Post') || (!has_shortcode($post->post_content, 'cuaderno') && !has_shortcode($post->post_content, 'semana_compartida'))) {
         return;
     }
     ?>
