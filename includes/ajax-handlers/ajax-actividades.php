@@ -41,7 +41,7 @@ function cpp_ajax_get_actividades_tab_content() {
     $sql = "SELECT a.*,
                    c.nombre as clase_nombre, c.color as clase_color,
                    cg.nombre as nombre_criterio, cg.color as criterio_color,
-                   ev.nombre_evaluacion
+                   ev.nombre_evaluacion, ev.calculo_nota
             FROM $tabla_actividades a
             INNER JOIN $tabla_clases c ON a.clase_id = c.id
             LEFT JOIN $tabla_evaluaciones ev ON a.evaluacion_id = ev.id
@@ -147,17 +147,21 @@ function cpp_ajax_get_actividades_tab_content() {
                             <td data-sort-value="<?php echo esc_attr($act['nombre_actividad']); ?>">
                                 <input type="text" class="cpp-inline-edit" data-field="nombre_actividad" value="<?php echo esc_attr($act['nombre_actividad']); ?>" placeholder="Nombre de la actividad">
                             </td>
-                            <td data-sort-value="<?php echo esc_attr($act['nombre_criterio'] ?: 'Sin criterio'); ?>">
+                            <td data-sort-value="<?php echo esc_attr($act['nombre_criterio'] ?: ($act['calculo_nota'] === 'total' ? 'No aplica' : 'Sin categoría')); ?>">
                                 <div class="cpp-actividad-categoria-cell">
-                                    <span class="cpp-category-dot" style="background-color: <?php echo esc_attr($criterio_color); ?>;"></span>
-                                    <select class="cpp-inline-edit" data-field="criterio_id">
-                                        <option value="">-- Sin criterio --</option>
-                                        <?php foreach ($criterios_fila as $crit) : ?>
-                                            <option value="<?php echo esc_attr($crit['id']); ?>" <?php selected($act['criterio_id'], $crit['id']); ?> data-color="<?php echo esc_attr($crit['color']); ?>">
-                                                <?php echo esc_html($crit['nombre']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <?php if ($act['calculo_nota'] === 'total') : ?>
+                                        <span class="cpp-no-aplica-badge">No aplica</span>
+                                    <?php else : ?>
+                                        <span class="cpp-category-dot" style="background-color: <?php echo esc_attr($criterio_color); ?>;"></span>
+                                        <select class="cpp-inline-edit" data-field="criterio_id">
+                                            <option value="">-- Sin categoría --</option>
+                                            <?php foreach ($criterios_fila as $crit) : ?>
+                                                <option value="<?php echo esc_attr($crit['id']); ?>" <?php selected($act['criterio_id'], $crit['id']); ?> data-color="<?php echo esc_attr($crit['color']); ?>">
+                                                    <?php echo esc_html($crit['nombre']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                             <td data-sort-value="<?php echo esc_attr($act['fecha_actividad'] ?: '0000-00-00'); ?>">

@@ -52,6 +52,8 @@
                         // Sincronizar el dropdown de criterios con los contadores actualizados
                         self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
 
+                        // Aplicar tooltips o lógica adicional si fuera necesario para los badges de "No aplica"
+
                         // Auto-resize textareas
                         $container.find('textarea.cpp-inline-edit').each(function() {
                             this.style.height = 'auto';
@@ -81,6 +83,10 @@
             this.isUpdatingFilters = true; // Guard to prevent recursive render()
 
             let html = '<option value="0">Todos los criterios</option>';
+
+            // Opción Sin categoría (activities in weighted evals without criterion)
+            const sinCritCount = numSinCriterio || 0;
+            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin categoría (${sinCritCount})</option>`;
 
             criterios.forEach(crit => {
                 html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
@@ -138,7 +144,7 @@
                         if (field === 'criterio_id') {
                             const filterCriterioId = $('#cpp-actividades-filter-criterio').val();
 
-                            // Normalizar value para comparación (criterio_id puede ser "" para sin criterio)
+                            // Normalizar value para comparación (criterio_id puede ser "" para sin categoría)
                             const normalizedValue = (value === "" || value === 0) ? -1 : value;
 
                             if (filterCriterioId != 0 && normalizedValue != filterCriterioId) {

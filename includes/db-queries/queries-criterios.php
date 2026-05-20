@@ -20,6 +20,7 @@ function cpp_obtener_criterios_globales($user_id) {
 function cpp_get_global_criterion_counts($user_id) {
     global $wpdb;
     $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
 
     $counts_raw = $wpdb->get_results($wpdb->prepare("
         SELECT criterio_id, COUNT(*) as total
@@ -35,12 +36,15 @@ function cpp_get_global_criterion_counts($user_id) {
     }
     unset($crit);
 
-    $num_sin_criterio = 0;
-    foreach ($counts_raw as $id => $data) {
-        if ($id === "" || $id === null || $id == 0) {
-            $num_sin_criterio += intval($data->total);
-        }
-    }
+    // Contar solo actividades de evaluaciones PONDERADAS que no tienen criterio
+    $num_sin_criterio = $wpdb->get_var($wpdb->prepare("
+        SELECT COUNT(*)
+        FROM $tabla_actividades a
+        INNER JOIN $tabla_evaluaciones e ON a.evaluacion_id = e.id
+        WHERE a.user_id = %d
+          AND (a.criterio_id IS NULL OR a.criterio_id = 0)
+          AND e.calculo_nota = 'ponderada'
+    ", $user_id));
 
     return [
         'criterios' => $criterios_globales,
