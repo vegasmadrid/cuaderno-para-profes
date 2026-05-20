@@ -2634,6 +2634,47 @@ body.admin-bar #cpp-main-loader {
     background-color: #fff;
     flex-grow: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.cpp-actividades-table-wrapper .cpp-empty-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 20px;
+    background-color: #fcfdfe;
+    border: 2px dashed #e0e0e0;
+    border-radius: 12px;
+    margin: 20px;
+    flex-grow: 1;
+}
+
+.cpp-actividades-table-wrapper .cpp-empty-panel .dashicons {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #dadce0;
+    margin-bottom: 24px;
+}
+
+.cpp-actividades-table-wrapper .cpp-empty-panel h2 {
+    font-size: 22px;
+    font-weight: 500;
+    color: #3c4043;
+    margin: 0 0 12px 0;
+    border: none;
+    padding: 0;
+}
+
+.cpp-actividades-table-wrapper .cpp-empty-panel p {
+    font-size: 16px;
+    color: #5f6368;
+    max-width: 450px;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .cpp-actividades-table {
@@ -2734,6 +2775,14 @@ body.admin-bar #cpp-main-loader {
 
 .cpp-actividades-table select.cpp-inline-edit {
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+    padding-right: 28px !important;
+    text-overflow: ellipsis;
 }
 
 .cpp-actividad-categoria-cell {
