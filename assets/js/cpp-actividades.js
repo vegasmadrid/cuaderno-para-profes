@@ -82,10 +82,6 @@
 
             let html = '<option value="0">Todos los criterios</option>';
 
-            // Opción Sin criterio
-            const sinCritCount = numSinCriterio || 0;
-            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin criterio (${sinCritCount})</option>`;
-
             criterios.forEach(crit => {
                 html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
             });
