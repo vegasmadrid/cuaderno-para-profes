@@ -54,6 +54,7 @@ function cpp_ajax_get_actividades_tab_content() {
     }
 
     $actividades = $wpdb->get_results($sql, ARRAY_A);
+    $counts = cpp_get_global_criterion_counts($user_id);
 
     if (empty($actividades)) {
         ob_start();
@@ -65,7 +66,11 @@ function cpp_ajax_get_actividades_tab_content() {
         </div>
         <?php
         $html = ob_get_clean();
-        wp_send_json_success(['html' => $html]);
+        wp_send_json_success([
+            'html' => $html,
+            'criterios' => $counts['criterios'],
+            'num_sin_criterio' => $counts['num_sin_criterio']
+        ]);
         return;
     }
 
@@ -106,12 +111,8 @@ function cpp_ajax_get_actividades_tab_content() {
 
     // ELIMINADA HIDRATACIÓN COSTOSA: Trust the stored fecha_actividad which is already updated by the Programmer sync.
 
-    // ELIMINADA HIDRATACIÓN COSTOSA: Trust the stored fecha_actividad which is already updated by the Programmer sync.
-
-    $counts = cpp_get_global_criterion_counts($user_id);
-
-    // Agrupar criterios por evaluación para los selectores de la tabla
-    $criterios_por_evaluacion = [];
+    // Usar criterios globales para el selector de la fila para asegurar consistencia
+    $criterios_fila = $counts['criterios'];
 
     ob_start();
     ?>
@@ -135,9 +136,6 @@ function cpp_ajax_get_actividades_tab_content() {
                     $criterio_color = !empty($act['criterio_color']) ? $act['criterio_color'] : '#FFFFFF';
                     $is_programada = !empty($act['sesion_id']);
                     $clase_color = !empty($act['clase_color']) ? $act['clase_color'] : '#CCCCCC';
-
-                    // Usar criterios globales para el selector de la fila para asegurar consistencia
-                    $criterios_fila = $criterios_globales;
                 ?>
                         <tr data-actividad-id="<?php echo esc_attr($act['id']); ?>" data-evaluacion-id="<?php echo esc_attr($act['evaluacion_id']); ?>">
                             <td data-sort-value="<?php echo esc_attr($act['clase_nombre']); ?>">
