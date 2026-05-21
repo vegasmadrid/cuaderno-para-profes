@@ -50,7 +50,7 @@
                         $container.html(response.data.html);
 
                         // Sincronizar el dropdown de criterios con los contadores actualizados
-                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica);
 
                         // Aplicar tooltips o lógica adicional si fuera necesario para los badges de "No aplica"
 
@@ -74,7 +74,7 @@
             });
         },
 
-        updateCriterionDropdownLabels: function(criterios, numSinCriterio) {
+        updateCriterionDropdownLabels: function(criterios, numSinCriterio, numNoAplica) {
             if (!criterios) return;
 
             const $filterCriterio = $('#cpp-actividades-filter-criterio');
@@ -87,6 +87,10 @@
             // Opción Sin categoría (activities in weighted evals without criterion)
             const sinCritCount = numSinCriterio || 0;
             html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin categoría (${sinCritCount})</option>`;
+
+            // Opción No aplica (activities in non-weighted evals)
+            const noAplicaCount = numNoAplica || 0;
+            html += `<option value="-2" ${currentValue == -2 ? 'selected' : ''}>No aplica (${noAplicaCount})</option>`;
 
             criterios.forEach(crit => {
                 html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
@@ -133,7 +137,7 @@
                         }
 
                         // Actualizar contadores del dropdown con la info que viene en la respuesta
-                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica);
 
                         // Si cambiamos el nombre, categoría o nota máxima, el cuaderno debe saberlo
                         if (['nombre_actividad', 'categoria_id', 'criterio_id', 'nota_maxima'].includes(field)) {
@@ -208,7 +212,7 @@
                         }
 
                         // Actualizar contadores del dropdown
-                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio);
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica);
 
                         $(document).trigger('cpp:forceGradebookReload');
                         if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {

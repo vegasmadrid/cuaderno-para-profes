@@ -32,7 +32,11 @@ function cpp_ajax_get_actividades_tab_content() {
     if ($criterio_id > 0) {
         $where_clauses[] = $wpdb->prepare("a.criterio_id = %d", $criterio_id);
     } elseif ($criterio_id == -1) {
-        $where_clauses[] = "a.criterio_id IS NULL";
+        // Sin categoría: Ponderada + Sin Criterio
+        $where_clauses[] = "(a.criterio_id IS NULL OR a.criterio_id = 0) AND ev.calculo_nota = 'ponderada'";
+    } elseif ($criterio_id == -2) {
+        // No aplica: Evaluación de tipo 'total'
+        $where_clauses[] = "ev.calculo_nota = 'total'";
     }
 
     $where_sql = implode(' AND ', $where_clauses);
@@ -69,7 +73,8 @@ function cpp_ajax_get_actividades_tab_content() {
         wp_send_json_success([
             'html' => $html,
             'criterios' => $counts['criterios'],
-            'num_sin_criterio' => $counts['num_sin_criterio']
+            'num_sin_criterio' => $counts['num_sin_criterio'],
+            'num_no_aplica' => $counts['num_no_aplica']
         ]);
         return;
     }
@@ -193,7 +198,8 @@ function cpp_ajax_get_actividades_tab_content() {
     wp_send_json_success([
         'html' => $html,
         'criterios' => $counts['criterios'],
-        'num_sin_criterio' => $counts['num_sin_criterio']
+        'num_sin_criterio' => $counts['num_sin_criterio'],
+        'num_no_aplica' => $counts['num_no_aplica']
     ]);
 }
 
@@ -252,7 +258,8 @@ function cpp_ajax_actualizar_actividad_inline() {
         wp_send_json_success([
             'message' => 'Actividad actualizada.',
             'criterios' => $counts['criterios'],
-            'num_sin_criterio' => $counts['num_sin_criterio']
+            'num_sin_criterio' => $counts['num_sin_criterio'],
+            'num_no_aplica' => $counts['num_no_aplica']
         ]);
     } else {
         wp_send_json_error(['message' => 'Error al actualizar la actividad.']);
@@ -279,7 +286,8 @@ function cpp_ajax_eliminar_actividad() {
         wp_send_json_success([
             'message' => 'Actividad eliminada correctamente.',
             'criterios' => $counts['criterios'],
-            'num_sin_criterio' => $counts['num_sin_criterio']
+            'num_sin_criterio' => $counts['num_sin_criterio'],
+            'num_no_aplica' => $counts['num_no_aplica']
         ]);
     } else {
         wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);

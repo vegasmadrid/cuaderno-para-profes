@@ -46,9 +46,19 @@ function cpp_get_global_criterion_counts($user_id) {
           AND e.calculo_nota = 'ponderada'
     ", $user_id));
 
+    // Contar actividades de evaluaciones de MEDIA TOTAL (donde no aplica criterio)
+    $num_no_aplica = $wpdb->get_var($wpdb->prepare("
+        SELECT COUNT(*)
+        FROM $tabla_actividades a
+        INNER JOIN $tabla_evaluaciones e ON a.evaluacion_id = e.id
+        WHERE a.user_id = %d
+          AND e.calculo_nota = 'total'
+    ", $user_id));
+
     return [
         'criterios' => $criterios_globales,
-        'num_sin_criterio' => $num_sin_criterio
+        'num_sin_criterio' => $num_sin_criterio,
+        'num_no_aplica' => $num_no_aplica
     ];
 }
 
