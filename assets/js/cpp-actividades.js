@@ -84,9 +84,9 @@
 
             let html = '<option value="0">Todos los criterios</option>';
 
-            // Opción Sin categoría (activities in weighted evals without criterion)
+            // Opción Sin asignar criterio (activities in weighted evals without criterion)
             const sinCritCount = numSinCriterio || 0;
-            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin categoría (${sinCritCount})</option>`;
+            html += `<option value="-1" ${currentValue == -1 ? 'selected' : ''}>Sin asignar criterio (${sinCritCount})</option>`;
 
             // Opción No aplica (activities in non-weighted evals)
             const noAplicaCount = numNoAplica || 0;

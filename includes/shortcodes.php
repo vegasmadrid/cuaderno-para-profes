@@ -93,7 +93,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <?php
                             $counts = cpp_get_global_criterion_counts($user_id);
                             ?>
-                            <option value="-1">Sin categoría (<?php echo intval($counts['num_sin_criterio']); ?>)</option>
+                            <option value="-1">Sin asignar criterio (<?php echo intval($counts['num_sin_criterio']); ?>)</option>
                             <option value="-2">No aplica (<?php echo intval($counts['num_no_aplica']); ?>)</option>
                             <?php if (!empty($counts['criterios'])): ?>
                                 <?php foreach ($counts['criterios'] as $crit): ?>

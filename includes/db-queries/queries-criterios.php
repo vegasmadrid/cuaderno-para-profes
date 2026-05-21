@@ -30,11 +30,19 @@ function cpp_get_global_criterion_counts($user_id) {
     ", $user_id), OBJECT_K);
 
     $criterios_globales = cpp_obtener_criterios_globales($user_id);
+
+    // Filtrar criterios redundantes (Sin categoría, Sin criterio)
+    $criterios_globales = array_filter($criterios_globales, function($crit) {
+        $nombre = trim(mb_strtolower($crit['nombre']));
+        return !in_array($nombre, ['sin categoría', 'sin categoria', 'sin criterio', 'no aplica']);
+    });
+
     foreach ($criterios_globales as &$crit) {
         $crit_id = $crit['id'];
         $crit['num_actividades'] = isset($counts_raw[$crit_id]) ? intval($counts_raw[$crit_id]->total) : 0;
     }
     unset($crit);
+    $criterios_globales = array_values($criterios_globales); // Reindexar
 
     // Contar solo actividades de evaluaciones PONDERADAS que no tienen criterio
     $num_sin_criterio = $wpdb->get_var($wpdb->prepare("
