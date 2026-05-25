@@ -14,6 +14,62 @@ function cpp_obtener_criterios_globales($user_id) {
     ), ARRAY_A);
 }
 
+/**
+ * Obtiene los conteos de actividades por criterio de forma eficiente.
+ */
+function cpp_get_global_criterion_counts($user_id) {
+    global $wpdb;
+    $tabla_actividades = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+
+    $counts_raw = $wpdb->get_results($wpdb->prepare("
+        SELECT criterio_id, COUNT(*) as total
+        FROM $tabla_actividades
+        WHERE user_id = %d
+        GROUP BY criterio_id
+    ", $user_id), OBJECT_K);
+
+    $criterios_globales = cpp_obtener_criterios_globales($user_id);
+
+    // Filtrar criterios redundantes (Sin categoría, Sin criterio)
+    $criterios_globales = array_filter($criterios_globales, function($crit) {
+        $nombre = trim(mb_strtolower($crit['nombre']));
+        return !in_array($nombre, ['sin categoría', 'sin categoria', 'sin criterio', 'no aplica']);
+    });
+
+    foreach ($criterios_globales as &$crit) {
+        $crit_id = $crit['id'];
+        $crit['num_actividades'] = isset($counts_raw[$crit_id]) ? intval($counts_raw[$crit_id]->total) : 0;
+    }
+    unset($crit);
+    $criterios_globales = array_values($criterios_globales); // Reindexar
+
+    // Contar solo actividades de evaluaciones PONDERADAS que no tienen criterio
+    $num_sin_criterio = $wpdb->get_var($wpdb->prepare("
+        SELECT COUNT(*)
+        FROM $tabla_actividades a
+        INNER JOIN $tabla_evaluaciones e ON a.evaluacion_id = e.id
+        WHERE a.user_id = %d
+          AND (a.criterio_id IS NULL OR a.criterio_id = 0)
+          AND e.calculo_nota = 'ponderada'
+    ", $user_id));
+
+    // Contar actividades de evaluaciones de MEDIA TOTAL (donde no aplica criterio)
+    $num_no_aplica = $wpdb->get_var($wpdb->prepare("
+        SELECT COUNT(*)
+        FROM $tabla_actividades a
+        INNER JOIN $tabla_evaluaciones e ON a.evaluacion_id = e.id
+        WHERE a.user_id = %d
+          AND e.calculo_nota = 'total'
+    ", $user_id));
+
+    return [
+        'criterios' => $criterios_globales,
+        'num_sin_criterio' => $num_sin_criterio,
+        'num_no_aplica' => $num_no_aplica
+    ];
+}
+
 function cpp_guardar_criterio_global($user_id, $nombre, $color = '#FFFFFF') {
     global $wpdb;
     $tabla = $wpdb->prefix . 'cpp_criterios_globales';

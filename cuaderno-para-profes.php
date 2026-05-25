@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.8.8');
+define('CPP_VERSION', '2.8.9');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -665,7 +665,7 @@ function cpp_add_modals_to_footer() {
                     <div class="cpp-radio-group">
                         <label>
                             <input type="radio" name="cpp_delete_crit_action" value="none" checked>
-                            Dejarlas "Sin criterio" (no sumarán en la nota media)
+                            Dejarlas "Sin categoría" (no sumarán en la nota media)
                         </label>
                         <label>
                             <input type="radio" name="cpp_delete_crit_action" value="reassign">
@@ -705,7 +705,7 @@ function cpp_add_modals_to_footer() {
                     <div class="cpp-radio-group">
                         <label>
                             <input type="radio" name="cpp_delete_global_crit_action" value="none" checked>
-                            Dejarlas "Sin criterio"
+                            Dejarlas "Sin categoría"
                         </label>
                         <label>
                             <input type="radio" name="cpp_delete_global_crit_action" value="reassign">
