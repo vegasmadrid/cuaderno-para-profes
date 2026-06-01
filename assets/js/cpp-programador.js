@@ -391,31 +391,32 @@
                 return;
             }
 
-            const data = new URLSearchParams({
-                action: 'cpp_toggle_actividad_evaluable',
-                nonce: cppFrontendData.nonce,
-                actividad_id: actividadId,
-                es_evaluable: 0,
-                tipo: tipo
-            });
-
             if (cpp.utils && typeof cpp.utils.showSpinner === 'function') cpp.utils.showSpinner();
 
-            fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
-                .then(res => res.json())
-                .then(result => {
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'cpp_toggle_actividad_evaluable',
+                    nonce: cppFrontendData.nonce,
+                    actividad_id: actividadId,
+                    es_evaluable: 0,
+                    tipo: tipo
+                },
+                success: (result) => {
                     if (result.success) {
                         this.showNotification('Actividad convertida en tarea.');
-                        // Actualizar localmente y refrescar
                         this.refreshCurrentView();
                         document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                     } else {
                         this.showNotification(result.data.message || 'Error al convertir.', 'error');
                     }
-                })
-                .finally(() => {
+                },
+                error: () => this.showNotification('Error de conexión.', 'error'),
+                complete: () => {
                     if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') cpp.utils.hideSpinner();
-                });
+                }
+            });
         } else {
             // Convertir a EVALUABLE
             // Necesitamos pedir el criterio. Reutilizamos el modal de añadir actividad pero quizás es mejor un prompt simple o un modal pequeño si tenemos.
@@ -456,20 +457,20 @@
     },
 
     executeToggleEvaluable(actividadId, esEvaluable, criterioId, tipo = 'no_evaluable') {
-        const data = new URLSearchParams({
-            action: 'cpp_toggle_actividad_evaluable',
-            nonce: cppFrontendData.nonce,
-            actividad_id: actividadId,
-            es_evaluable: esEvaluable,
-            criterio_id: criterioId || '',
-            tipo: tipo
-        });
-
         if (cpp.utils && typeof cpp.utils.showSpinner === 'function') cpp.utils.showSpinner();
 
-        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data })
-            .then(res => res.json())
-            .then(result => {
+        $.ajax({
+            url: cppFrontendData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'cpp_toggle_actividad_evaluable',
+                nonce: cppFrontendData.nonce,
+                actividad_id: actividadId,
+                es_evaluable: esEvaluable,
+                criterio_id: criterioId || '',
+                tipo: tipo
+            },
+            success: (result) => {
                 if (result.success) {
                     this.showNotification(esEvaluable ? 'Tarea convertida en actividad evaluable.' : 'Actividad convertida en tarea.');
                     this.refreshCurrentView();
@@ -477,10 +478,12 @@
                 } else {
                     this.showNotification(result.data.message || 'Error al actualizar.', 'error');
                 }
-            })
-            .finally(() => {
+            },
+            error: () => this.showNotification('Error de conexión.', 'error'),
+            complete: () => {
                 if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') cpp.utils.hideSpinner();
-            });
+            }
+        });
     },
 
     handleToggleShare() {

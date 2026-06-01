@@ -357,33 +357,63 @@ function cpp_ajax_toggle_actividad_evaluable() {
     if ($tipo_actual === 'evaluable') {
         // El ID proporcionado es el del cuaderno
         $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $actividad_id, $user_id));
-        if (!$actividad_cuaderno) {
-            wp_send_json_error(['message' => 'Actividad evaluable no encontrada.']);
-            return;
-        }
-        // Intentar encontrar la entrada correspondiente en el programador
-        $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE actividad_calificable_id = %d", $actividad_id));
+        if ($actividad_cuaderno) {
+            // Intentar encontrar la entrada correspondiente en el programador
+            $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE actividad_calificable_id = %d", $actividad_id));
 
-        if (!$actividad_prog && $actividad_cuaderno->sesion_id) {
-            // Si no existe pero tiene sesion_id, es una actividad creada directamente en el cuaderno vinculada a una sesión.
-            // Para poder convertirla en no evaluable (tarea), necesitamos crear la entrada en el programador.
-            $wpdb->insert($tabla_programador_actividades, [
-                'sesion_id' => $actividad_cuaderno->sesion_id,
-                'titulo' => $actividad_cuaderno->nombre_actividad,
-                'es_evaluable' => 1,
-                'actividad_calificable_id' => $actividad_cuaderno->id,
-                'orden' => $actividad_cuaderno->orden
-            ]);
-            $new_prog_id = $wpdb->insert_id;
-            $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $new_prog_id));
+            if (!$actividad_prog && $actividad_cuaderno->sesion_id) {
+                // Si no existe pero tiene sesion_id, es una actividad creada directamente en el cuaderno vinculada a una sesión.
+                // Para poder convertirla en no evaluable (tarea), necesitamos crear la entrada en el programador.
+                $wpdb->insert($tabla_programador_actividades, [
+                    'sesion_id' => $actividad_cuaderno->sesion_id,
+                    'titulo' => $actividad_cuaderno->nombre_actividad,
+                    'es_evaluable' => 1,
+                    'actividad_calificable_id' => $actividad_cuaderno->id,
+                    'orden' => $actividad_cuaderno->orden
+                ]);
+                $new_prog_id = $wpdb->insert_id;
+                $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $new_prog_id));
+            }
         }
-    } else {
-        // El ID proporcionado es el del programador
+    }
+
+    // Si no se ha encontrado todavía (o tipo no era evaluable), buscar por ID en la tabla del programador
+    if (!$actividad_prog) {
         $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id));
+
+        // Fallback final: si todavía no lo encontramos y el ID podría ser del cuaderno, intentarlo de nuevo por si acaso falló la detección del tipo
+        if (!$actividad_prog && $tipo_actual !== 'evaluable') {
+            $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $actividad_id, $user_id));
+            if ($actividad_cuaderno && $actividad_cuaderno->sesion_id) {
+                // Intentar buscar de nuevo en el programador por actividad_calificable_id
+                $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE actividad_calificable_id = %d", $actividad_id));
+                if (!$actividad_prog) {
+                    $wpdb->insert($tabla_programador_actividades, [
+                        'sesion_id' => $actividad_cuaderno->sesion_id,
+                        'titulo' => $actividad_cuaderno->nombre_actividad,
+                        'es_evaluable' => 1,
+                        'actividad_calificable_id' => $actividad_cuaderno->id,
+                        'orden' => $actividad_cuaderno->orden
+                    ]);
+                    $new_prog_id = $wpdb->insert_id;
+                    $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $new_prog_id));
+                }
+            }
+        }
     }
 
     if (!$actividad_prog) {
-        wp_send_json_error(['message' => 'No se pudo encontrar la referencia en la programación para esta actividad.']);
+        // Log para depuración silenciosa si el profesor tiene problemas
+        error_log("CPP ERROR: Conversion failed. Actividad ID $actividad_id not found in Programmer table. User $user_id. Type $tipo_actual.");
+
+        wp_send_json_error([
+            'message' => 'No se pudo encontrar la referencia en la programación para esta actividad.',
+            'debug_info' => [
+                'id' => $actividad_id,
+                'type' => $tipo_actual,
+                'user' => $user_id
+            ]
+        ]);
         return;
     }
 
