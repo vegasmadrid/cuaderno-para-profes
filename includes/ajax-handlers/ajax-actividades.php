@@ -247,7 +247,11 @@ function cpp_ajax_get_actividades_tab_content() {
                             <td>
                                 <div class="cpp-actividades-actions">
                                     <button class="cpp-btn-icon cpp-btn-toggle-actividad" title="<?php echo $is_evaluable ? 'Convertir en Tarea (No Evaluable)' : 'Convertir en Actividad Evaluable'; ?>">
-                                        <span class="dashicons dashicons-star-<?php echo $is_evaluable ? 'filled' : 'empty'; ?>" style="<?php echo $is_evaluable ? 'color: #FFD700;' : ''; ?>"></span>
+                                        <?php if ($is_evaluable): ?>
+                                            <span class="dashicons dashicons-clipboard" style="color: #666;"></span>
+                                        <?php else: ?>
+                                            <span class="dashicons dashicons-calculator" style="color: #28a745;"></span>
+                                        <?php endif; ?>
                                     </button>
                                     <button class="cpp-btn-icon cpp-btn-delete-actividad" title="Eliminar Actividad">
                                         <span class="dashicons dashicons-trash"></span>

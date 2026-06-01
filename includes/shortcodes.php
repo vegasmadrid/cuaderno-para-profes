@@ -818,12 +818,15 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <div class="cpp-form-group"><label for="fecha_actividad_cuaderno_input">Fecha:</label><input type="date" id="fecha_actividad_cuaderno_input" name="fecha_actividad"><div id="cpp-fecha-actividad-display" style="display: none; padding: 8px 0; font-size: 14px; color: #555;"></div></div>
                         <div class="cpp-form-group"><label for="descripcion_actividad_cuaderno_textarea">Descripción (opcional):</label><textarea id="descripcion_actividad_cuaderno_textarea" name="descripcion_actividad" rows="3"></textarea></div>
                         
-                        <div class="cpp-modal-actions" style="border-top: 1px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
-                            <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-actividad-btn-modal" style="display: none; margin-right: 10px;">
-                                <span class="dashicons dashicons-trash"></span> Eliminar Actividad
+                        <div id="cpp-modal-actividad-conversion-area" style="border-top: 1px solid #e0e0e0; padding-top: 15px; margin-top: 20px; display: none;">
+                            <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-convertir-tarea-btn-modal" style="width: 100%; justify-content: center;" title="Convertir esta actividad en una tarea no evaluable">
+                                <span class="dashicons dashicons-clipboard"></span> Convertir en Tarea (No Evaluable)
                             </button>
-                            <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-convertir-tarea-btn-modal" style="display: none; margin-right: auto;" title="Convertir esta actividad en una tarea no evaluable">
-                                <span class="dashicons dashicons-star-empty"></span> Convertir en Tarea
+                        </div>
+
+                        <div class="cpp-modal-actions" style="padding-top: 15px; margin-top: 0;">
+                            <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-actividad-btn-modal" style="display: none; margin-right: auto;">
+                                <span class="dashicons dashicons-trash"></span> Eliminar Actividad
                             </button>
                             <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-submit-actividad-btn-cuaderno-form">
                                 <span class="dashicons dashicons-saved"></span> Guardar Actividad

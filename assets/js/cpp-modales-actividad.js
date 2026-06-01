@@ -23,7 +23,7 @@
                 // Mostramos todos los campos por defecto al resetear
                 $form.find('.cpp-form-group').show();
                 $form.find('#cpp-eliminar-actividad-btn-modal').hide();
-                $form.find('#cpp-convertir-tarea-btn-modal').hide();
+                $form.find('#cpp-modal-actividad-conversion-area').hide();
                 // Ocultar el display de fecha y mostrar el input por defecto
                 $form.find('#cpp-fecha-actividad-display').hide();
                 $form.find('#fecha_actividad_cuaderno_input').show();
@@ -162,9 +162,9 @@
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad');
             $form.find('#cpp-eliminar-actividad-btn-modal').show();
             if (sesionId && sesionId !== 'null' && sesionId !== '0' && sesionId !== 0) {
-                $form.find('#cpp-convertir-tarea-btn-modal').show();
+                $form.find('#cpp-modal-actividad-conversion-area').show();
             } else {
-                $form.find('#cpp-convertir-tarea-btn-modal').hide();
+                $form.find('#cpp-modal-actividad-conversion-area').hide();
             }
             $modal.fadeIn();
             $form.find('#nombre_actividad_cuaderno_input').focus();
@@ -322,9 +322,9 @@
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad');
             $form.find('#cpp-eliminar-actividad-btn-modal').show();
             if (actividad.sesion_id && actividad.sesion_id !== '0' && actividad.sesion_id !== 'null' && actividad.sesion_id !== 0) {
-                $form.find('#cpp-convertir-tarea-btn-modal').show();
+                $form.find('#cpp-modal-actividad-conversion-area').show();
             } else {
-                $form.find('#cpp-convertir-tarea-btn-modal').hide();
+                $form.find('#cpp-modal-actividad-conversion-area').hide();
             }
             $modal.fadeIn();
             $form.find('#nombre_actividad_cuaderno_input').focus();
@@ -421,6 +421,7 @@
             $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Configurar Actividad Evaluable');
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-saved"></span> Guardar y Hacer Evaluable');
             $modal.find('#cpp-eliminar-actividad-btn-modal').hide(); // Ocultar botón de eliminar en este contexto
+            $modal.find('#cpp-modal-actividad-conversion-area').hide();
 
             // Lógica de categorías
             if (evaluacion && evaluacion.calculo_nota === 'ponderada' && evaluacion.criterios && evaluacion.criterios.length > 0) {
