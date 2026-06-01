@@ -202,7 +202,7 @@
                 if (!confirm(`¿Estás seguro de que quieres convertir la actividad "${nombre}" en una tarea no evaluable?\n\n¡Se borrarán todas las notas registradas en el cuaderno para esta actividad y no se puede deshacer!`)) {
                     return;
                 }
-                this.executeToggleEvaluable(actividadId, 0, null, $row);
+                this.executeToggleEvaluable(actividadId, 0, null, $row, tipo);
             } else {
                 // Convertir a evaluable. Necesitamos el criterio si la evaluación es ponderada.
                 const evaluacionId = $row.data('evaluacion-id');
@@ -229,7 +229,7 @@
                 if (criterios.length === 0) {
                      // Si no hay criterios globales, puede que no se hayan cargado.
                      // En este caso el backend usará el primero que encuentre.
-                     this.executeToggleEvaluable(actividadId, 1, null, $row);
+                     this.executeToggleEvaluable(actividadId, 1, null, $row, tipo);
                      return;
                 }
 
@@ -249,11 +249,11 @@
                     return;
                 }
 
-                this.executeToggleEvaluable(actividadId, 1, criterios[index].id, $row);
+                this.executeToggleEvaluable(actividadId, 1, criterios[index].id, $row, tipo);
             }
         },
 
-        executeToggleEvaluable: function(actividadId, esEvaluable, criterioId, $row) {
+        executeToggleEvaluable: function(actividadId, esEvaluable, criterioId, $row, tipo) {
             const self = this;
             if (cpp.utils && typeof cpp.utils.showSpinner === 'function') cpp.utils.showSpinner();
 
@@ -266,7 +266,8 @@
                     nonce: cppFrontendData.nonce,
                     actividad_id: actividadId,
                     es_evaluable: esEvaluable,
-                    criterio_id: criterioId || ''
+                    criterio_id: criterioId || '',
+                    tipo: tipo || ''
                 },
                 success: function(response) {
                     if (response.success) {
