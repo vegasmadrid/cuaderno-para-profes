@@ -50,7 +50,7 @@
                         $container.html(response.data.html);
 
                         // Sincronizar el dropdown de criterios con los contadores actualizados
-                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica);
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica, response.data.num_no_evaluables);
 
                         // Aplicar tooltips o lógica adicional si fuera necesario para los badges de "No aplica"
 
@@ -74,7 +74,7 @@
             });
         },
 
-        updateCriterionDropdownLabels: function(criterios, numSinCriterio, numNoAplica) {
+        updateCriterionDropdownLabels: function(criterios, numSinCriterio, numNoAplica, numNoEvaluables) {
             if (!criterios) return;
 
             const $filterCriterio = $('#cpp-actividades-filter-criterio');
@@ -92,6 +92,10 @@
             const noAplicaCount = numNoAplica || 0;
             html += `<option value="-2" ${currentValue == -2 ? 'selected' : ''}>No aplica (${noAplicaCount})</option>`;
 
+            // Opción Tareas no evaluables
+            const noEvalCount = numNoEvaluables || 0;
+            html += `<option value="-3" ${currentValue == -3 ? 'selected' : ''}>Tareas no evaluables (${noEvalCount})</option>`;
+
             criterios.forEach(crit => {
                 html += `<option value="${crit.id}" ${crit.id == currentValue ? 'selected' : ''}>${crit.nombre} (${crit.num_actividades})</option>`;
             });
@@ -106,6 +110,7 @@
             const $row = $input.closest('tr');
             const actividadId = $row.data('actividad-id');
             const evaluacionId = $row.data('evaluacion-id');
+            const tipo = $row.data('tipo');
             const field = $input.data('field');
             const value = $input.val();
             const originalValue = $input.data('original-value');
@@ -123,6 +128,7 @@
                     nonce: cppFrontendData.nonce,
                     actividad_id: actividadId,
                     evaluacion_id: evaluacionId,
+                    tipo: tipo,
                     field: field,
                     value: value
                 },
@@ -137,7 +143,7 @@
                         }
 
                         // Actualizar contadores del dropdown con la info que viene en la respuesta
-                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica);
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica, response.data.num_no_evaluables);
 
                         // Si cambiamos el nombre, categoría o nota máxima, el cuaderno debe saberlo
                         if (['nombre_actividad', 'categoria_id', 'criterio_id', 'nota_maxima'].includes(field)) {
@@ -184,13 +190,122 @@
             });
         },
 
+        handleToggleEvaluable: function(buttonElement) {
+            const self = this;
+            const $row = $(buttonElement).closest('tr');
+            const actividadId = $row.data('actividad-id');
+            const tipo = $row.data('tipo');
+            const nombre = $row.find('[data-field="nombre_actividad"]').val() || 'Actividad';
+            const isEvaluable = tipo === 'evaluable';
+
+            if (isEvaluable) {
+                if (!confirm(`¿Estás seguro de que quieres convertir la actividad "${nombre}" en una tarea no evaluable?\n\n¡Se borrarán todas las notas registradas en el cuaderno para esta actividad y no se puede deshacer!`)) {
+                    return;
+                }
+                this.executeToggleEvaluable(actividadId, 0, null, $row);
+            } else {
+                // Convertir a evaluable. Necesitamos el criterio si la evaluación es ponderada.
+                const evaluacionId = $row.data('evaluacion-id');
+                const $claseSelect = $('#cpp-actividades-filter-clase');
+                const claseId = $row.data('clase-id') || $claseSelect.val();
+
+                // Intentamos obtener info de la evaluación desde el objeto CppProgramadorApp si está disponible,
+                // o hacemos una pequeña petición para saber si es ponderada y qué criterios tiene.
+                // Para simplificar y mantener consistencia con el programador, usaremos un prompt si detectamos que es necesario.
+
+                // NOTA: En la vista de Actividades, el objeto 'actividades' devuelto por el servidor ya tiene 'calculo_nota'.
+                // Pero no tenemos la lista de criterios de esa evaluación específica fácilmente a mano sin otra petición.
+                // Vamos a usar la lista global de criterios que ya tenemos en el dropdown de filtros.
+
+                const $filterCriterio = $('#cpp-actividades-filter-criterio');
+                const criterios = [];
+                $filterCriterio.find('option').each(function() {
+                    const val = parseInt($(this).val());
+                    if (val > 0) {
+                        criterios.push({ id: val, nombre: $(this).text().split(' (')[0] });
+                    }
+                });
+
+                if (criterios.length === 0) {
+                     // Si no hay criterios globales, puede que no se hayan cargado.
+                     // En este caso el backend usará el primero que encuentre.
+                     this.executeToggleEvaluable(actividadId, 1, null, $row);
+                     return;
+                }
+
+                let message = `Convirtiendo "${nombre}" a evaluable.\nSelecciona un criterio:\n\n`;
+                criterios.forEach((crit, index) => {
+                    message += `${index + 1}. ${crit.nombre}\n`;
+                });
+
+                const choice = prompt(message, "1");
+                if (choice === null) return;
+
+                const index = parseInt(choice) - 1;
+                if (isNaN(index) || !criterios[index]) {
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Opción no válida.', 'error');
+                    }
+                    return;
+                }
+
+                this.executeToggleEvaluable(actividadId, 1, criterios[index].id, $row);
+            }
+        },
+
+        executeToggleEvaluable: function(actividadId, esEvaluable, criterioId, $row) {
+            const self = this;
+            if (cpp.utils && typeof cpp.utils.showSpinner === 'function') cpp.utils.showSpinner();
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_toggle_actividad_evaluable',
+                    nonce: cppFrontendData.nonce,
+                    actividad_id: actividadId,
+                    es_evaluable: esEvaluable,
+                    criterio_id: criterioId || ''
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast(esEvaluable ? 'Convertido a Actividad Evaluable' : 'Convertido a Tarea', 'success');
+                        }
+                        // Recargar la vista para reflejar los cambios
+                        self.render();
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast('Error: ' + response.data.message, 'error');
+                        }
+                    }
+                },
+                error: function() {
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast('Error de conexión.', 'error');
+                    }
+                },
+                complete: function() {
+                    if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') cpp.utils.hideSpinner();
+                }
+            });
+        },
+
         handleDelete: function(buttonElement) {
             const self = this;
             const $row = $(buttonElement).closest('tr');
             const actividadId = $row.data('actividad-id');
+            const tipo = $row.data('tipo');
             const nombre = $row.find('[data-field="nombre_actividad"]').val();
 
-            if (!confirm(`¿Estás seguro de que quieres eliminar la actividad "${nombre}"?\n\n¡Esta acción borrará todas las notas de los alumnos para esta actividad y no se puede deshacer!`)) {
+            const isEvaluable = tipo === 'evaluable';
+            const confirmMsg = isEvaluable
+                ? `¿Estás seguro de que quieres eliminar la actividad "${nombre}"?\n\n¡Esta acción borrará todas las notas de los alumnos para esta actividad y no se puede deshacer!`
+                : `¿Estás seguro de que quieres eliminar la tarea "${nombre}"?`;
+
+            if (!confirm(confirmMsg)) {
                 return;
             }
 
@@ -201,7 +316,8 @@
                 data: {
                     action: 'cpp_eliminar_actividad',
                     nonce: cppFrontendData.nonce,
-                    actividad_id: actividadId
+                    actividad_id: actividadId,
+                    tipo: tipo
                 },
                 success: function(response) {
                     if (response.success) {
@@ -212,7 +328,7 @@
                         }
 
                         // Actualizar contadores del dropdown
-                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica);
+                        self.updateCriterionDropdownLabels(response.data.criterios, response.data.num_sin_criterio, response.data.num_no_aplica, response.data.num_no_evaluables);
 
                         $(document).trigger('cpp:forceGradebookReload');
                         if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
@@ -308,6 +424,10 @@
 
             $document.on('click', '.cpp-btn-delete-actividad', function() {
                 self.handleDelete(this);
+            });
+
+            $document.on('click', '.cpp-btn-toggle-actividad', function() {
+                self.handleToggleEvaluable(this);
             });
 
             $document.on('change', 'select[data-field="categoria_id"], select[data-field="criterio_id"]', function() {

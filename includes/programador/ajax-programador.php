@@ -292,7 +292,7 @@ function cpp_ajax_save_programador_actividad() {
         $actividad_guardada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_actividades WHERE id = %d", $result_id), ARRAY_A);
 
         if ($actividad_guardada) {
-            $actividad_guardada['tipo'] = 'no_evaluable';
+            $actividad_guardada['tipo'] = $actividad_guardada['es_evaluable'] ? 'evaluable' : 'no_evaluable';
         }
 
         wp_send_json_success(['message' => 'Actividad guardada.', 'actividad' => $actividad_guardada, 'needs_gradebook_reload' => true]);
@@ -341,6 +341,7 @@ function cpp_ajax_toggle_actividad_evaluable() {
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
     $es_evaluable = isset($_POST['es_evaluable']) ? intval($_POST['es_evaluable']) : 0;
     $categoria_id = isset($_POST['categoria_id']) ? intval($_POST['categoria_id']) : null;
+    $tipo_actual = isset($_POST['tipo']) ? sanitize_text_field($_POST['tipo']) : '';
 
     if (empty($actividad_id)) {
         wp_send_json_error(['message' => 'ID de actividad no válido.']);
@@ -349,12 +350,44 @@ function cpp_ajax_toggle_actividad_evaluable() {
 
     global $wpdb;
     $tabla_programador_actividades = $wpdb->prefix . 'cpp_programador_actividades';
-    $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id));
+    $tabla_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
+    $actividad_prog = null;
+    $actividad_cuaderno = null;
+
+    if ($tipo_actual === 'evaluable') {
+        // El ID proporcionado es el del cuaderno
+        $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $actividad_id, $user_id));
+        if (!$actividad_cuaderno) {
+            wp_send_json_error(['message' => 'Actividad evaluable no encontrada.']);
+            return;
+        }
+        // Intentar encontrar la entrada correspondiente en el programador
+        $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE actividad_calificable_id = %d", $actividad_id));
+
+        if (!$actividad_prog && $actividad_cuaderno->sesion_id) {
+            // Si no existe pero tiene sesion_id, es una actividad creada directamente en el cuaderno vinculada a una sesión.
+            // Para poder convertirla en no evaluable (tarea), necesitamos crear la entrada en el programador.
+            $wpdb->insert($tabla_programador_actividades, [
+                'sesion_id' => $actividad_cuaderno->sesion_id,
+                'titulo' => $actividad_cuaderno->nombre_actividad,
+                'es_evaluable' => 1,
+                'actividad_calificable_id' => $actividad_cuaderno->id,
+                'orden' => $actividad_cuaderno->orden
+            ]);
+            $new_prog_id = $wpdb->insert_id;
+            $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $new_prog_id));
+        }
+    } else {
+        // El ID proporcionado es el del programador
+        $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id));
+    }
 
     if (!$actividad_prog) {
-        wp_send_json_error(['message' => 'Actividad no encontrada.']);
+        wp_send_json_error(['message' => 'No se pudo encontrar la referencia en la programación para esta actividad.']);
         return;
     }
+
+    $actividad_id = $actividad_prog->id; // Usamos siempre el ID del programador a partir de aquí
 
     // Security Check
     $sesion_owner_id = cpp_programador_get_sesion_owner($actividad_prog->sesion_id);
@@ -429,9 +462,21 @@ function cpp_ajax_toggle_actividad_evaluable() {
         // FIX: Devolver los IDs para que el frontend pueda renderizar el selector correctamente.
         $actividad_actualizada['categoria_id'] = $categoria_id;
         $actividad_actualizada['criterio_id'] = $criterio_id;
+        $actividad_actualizada['tipo'] = $actividad_actualizada['es_evaluable'] ? 'evaluable' : 'no_evaluable';
     }
 
-    wp_send_json_success(['message' => 'Estado actualizado.', 'actividad' => $actividad_actualizada]);
+    // Recalcular contadores globales para la vista de actividades
+    require_once CPP_PLUGIN_DIR . 'includes/db-queries/queries-criterios.php';
+    $counts = cpp_get_global_criterion_counts($user_id);
+
+    wp_send_json_success([
+        'message' => 'Estado actualizado.',
+        'actividad' => $actividad_actualizada,
+        'criterios' => $counts['criterios'],
+        'num_sin_criterio' => $counts['num_sin_criterio'],
+        'num_no_aplica' => $counts['num_no_aplica'],
+        'num_no_evaluables' => $counts['num_no_evaluables']
+    ]);
 }
 
 function cpp_ajax_check_schedule_conflict_handler() {

@@ -81,7 +81,7 @@ function cpp_programador_get_all_data($user_id) {
         $placeholders = implode(',', array_fill(0, count($sesiones_ids), '%d'));
 
         // Cargar actividades NO evaluables
-        $actividades_no_evaluables = $wpdb->get_results($wpdb->prepare("SELECT *, 'no_evaluable' as tipo FROM $tabla_actividades WHERE sesion_id IN ($placeholders)", $sesiones_ids));
+        $actividades_no_evaluables = $wpdb->get_results($wpdb->prepare("SELECT *, 'no_evaluable' as tipo FROM $tabla_actividades WHERE sesion_id IN ($placeholders) AND (es_evaluable = 0 OR es_evaluable IS NULL)", $sesiones_ids));
 
         // Cargar actividades EVALUABLES
         $tabla_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
