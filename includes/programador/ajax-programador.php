@@ -350,13 +350,13 @@ function cpp_ajax_toggle_actividad_evaluable() {
     if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
     cpp_clear_programador_cache(get_current_user_id());
     $user_id = get_current_user_id();
-    $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
-    $es_evaluable = isset($_POST['es_evaluable']) ? intval($_POST['es_evaluable']) : 0;
+    $id_recibido = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+    $es_evaluable_nuevo_estado = isset($_POST['es_evaluable']) ? intval($_POST['es_evaluable']) : 0;
     $criterio_id = isset($_POST['criterio_id']) ? intval($_POST['criterio_id']) : null;
     $categoria_id = isset($_POST['categoria_id']) ? intval($_POST['categoria_id']) : null;
     $tipo_actual = isset($_POST['tipo']) ? sanitize_text_field($_POST['tipo']) : '';
 
-    if (empty($actividad_id)) {
+    if (empty($id_recibido)) {
         wp_send_json_error(['message' => 'ID de actividad no válido.']);
         return;
     }
@@ -367,18 +367,17 @@ function cpp_ajax_toggle_actividad_evaluable() {
     $actividad_prog = null;
     $actividad_cuaderno = null;
 
-    // 1. Intentar buscar por el ID proporcionado en la tabla del programador
-    $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE id = %d", $actividad_id));
+    // --- PASO 1: LOCALIZAR LA ACTIVIDAD DE FORMA DETERMINISTA ---
 
-    // 2. Si no se encuentra, pero el tipo_actual era 'evaluable' (o no venía), buscar en el cuaderno
-    if (!$actividad_prog && ($tipo_actual === 'evaluable' || empty($tipo_actual))) {
-        $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $actividad_id, $user_id));
+    if ($tipo_actual === 'evaluable') {
+        // El ID es del cuaderno. Buscamos el registro del cuaderno.
+        $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $id_recibido, $user_id));
         if ($actividad_cuaderno) {
-            // Buscamos si ya tiene entrada en el programador
+            // Buscamos su shadow record en el programador
             $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE actividad_calificable_id = %d", $actividad_cuaderno->id));
 
-            // Si no tiene, pero está vinculada a una sesión, la creamos al vuelo
-            if (!$actividad_prog && $actividad_cuaderno->sesion_id) {
+            // Si no existe pero tiene sesion_id, lo creamos ahora
+            if (!$actividad_prog && !empty($actividad_cuaderno->sesion_id)) {
                 $wpdb->insert($tabla_prog_act, [
                     'sesion_id' => $actividad_cuaderno->sesion_id,
                     'titulo' => $actividad_cuaderno->nombre_actividad,
@@ -389,102 +388,92 @@ function cpp_ajax_toggle_actividad_evaluable() {
                 $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE id = %d", $wpdb->insert_id));
             }
         }
-    }
-
-    // 3. Fallback: Si todavía no hay suerte, buscar por el ID en la tabla contraria
-    if (!$actividad_prog) {
-        if ($tipo_actual === 'no_evaluable') {
-            $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $actividad_id, $user_id));
-            if ($actividad_cuaderno) {
-                $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE actividad_calificable_id = %d", $actividad_cuaderno->id));
+    } else {
+        // El ID es del programador. Buscamos el registro del programador.
+        $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE id = %d", $id_recibido));
+        if ($actividad_prog) {
+            // Verificamos propiedad de la sesión
+            $owner_id = cpp_programador_get_sesion_owner($actividad_prog->sesion_id);
+            if ($owner_id != $user_id) {
+                wp_send_json_error(['message' => 'No tienes permiso sobre esta sesión.']);
+                return;
             }
-        } else {
-             $actividad_prog = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE id = %d", $actividad_id));
+            if ($actividad_prog->actividad_calificable_id) {
+                $actividad_cuaderno = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_evaluables WHERE id = %d AND user_id = %d", $actividad_prog->actividad_calificable_id, $user_id));
+            }
         }
     }
 
+    // --- PASO 2: VALIDAR QUE HEMOS ENCONTRADO ALGO ---
     if (!$actividad_prog) {
-        error_log("CPP ERROR: Conversion failed completely. Actividad ID $actividad_id. User $user_id. Type $tipo_actual.");
+        error_log("CPP ERROR: Conversion failed. Could not locate Programmer record. ID: $id_recibido, Type: $tipo_actual, User: $user_id");
         wp_send_json_error([
             'message' => 'No se pudo encontrar la referencia en la programación para esta actividad.',
-            'debug_info' => ['id' => $actividad_id, 'type' => $tipo_actual, 'u' => $user_id]
+            'debug' => "ID: $id_recibido, T: $tipo_actual"
         ]);
         return;
     }
 
-    $actividad_id = $actividad_prog->id; // Usamos siempre el ID del programador a partir de aquí
+    $actividad_id_prog = $actividad_prog->id;
 
-    // Security Check
-    $sesion_owner_id = cpp_programador_get_sesion_owner($actividad_prog->sesion_id);
-    if ($sesion_owner_id != $user_id) {
-        wp_send_json_error(['message' => 'Permiso denegado.']);
-        return;
-    }
+    // --- PASO 3: REALIZAR LA CONVERSIÓN ---
 
-    if ($es_evaluable) {
-        // --- Marcar como EVALUABLE ---
-        // La fecha ya no se calcula aquí. Se guardará como NULL y se hidratará al leer.
+    if ($es_evaluable_nuevo_estado) {
+        // --- CONVERTIR A EVALUABLE ---
         $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
         $sesion_info = $wpdb->get_row($wpdb->prepare("SELECT clase_id, evaluacion_id FROM $tabla_sesiones WHERE id = %d", $actividad_prog->sesion_id));
 
-        $criterio_id = isset($_POST['criterio_id']) ? intval($_POST['criterio_id']) : null;
-
         if (!$criterio_id && !$categoria_id) {
-            // Fallback para legacy o si no se envía criterio
             $tabla_eval_crit = $wpdb->prefix . 'cpp_evaluacion_criterios';
             $criterio_id = $wpdb->get_var($wpdb->prepare("SELECT criterio_id FROM $tabla_eval_crit WHERE evaluacion_id = %d ORDER BY id ASC LIMIT 1", $sesion_info->evaluacion_id));
-
-            if (!$criterio_id) {
-                wp_send_json_error(['message' => 'No se encontró un criterio asignado para esta evaluación. Por favor, asigna uno en Ponderaciones.']);
-                return;
-            }
         }
 
-        $datos_actividad_calificable = [
-            'id' => $actividad_prog->actividad_calificable_id, // Puede ser null si es nueva
+        $datos_cuaderno = [
             'clase_id' => $sesion_info->clase_id,
             'evaluacion_id' => $sesion_info->evaluacion_id,
-            'categoria_id' => $categoria_id ? $categoria_id : 0,
+            'categoria_id' => $categoria_id ?: 0,
             'criterio_id' => $criterio_id,
             'nombre_actividad' => $actividad_prog->titulo,
-            // 'fecha_actividad' ya no se pasa, se guardará como NULL por defecto
             'user_id' => $user_id,
-            'sesion_id' => $actividad_prog->sesion_id, // Pasar el ID de la sesión
+            'sesion_id' => $actividad_prog->sesion_id,
+            'orden' => $actividad_prog->orden
         ];
 
-        $actividad_calificable_id = cpp_guardar_actividad_evaluable($datos_actividad_calificable);
+        if ($actividad_cuaderno) {
+            $actividad_calificable_id = $actividad_cuaderno->id;
+            cpp_actualizar_actividad_evaluable($actividad_calificable_id, $datos_cuaderno);
+        } else {
+            $actividad_calificable_id = cpp_guardar_actividad_evaluable($datos_cuaderno);
+        }
 
         if (!$actividad_calificable_id) {
-            wp_send_json_error(['message' => 'Error al crear la actividad en el cuaderno.']);
+            wp_send_json_error(['message' => 'Error al crear o actualizar la actividad en el cuaderno.']);
             return;
         }
 
-        // Actualizar la actividad del programador con el ID de la actividad calificable
-        $update_data = [
+        // Sincronizar record del programador
+        $wpdb->update($tabla_prog_act, [
             'es_evaluable' => 1,
-            'actividad_calificable_id' => $actividad_calificable_id,
-        ];
-        $wpdb->update($tabla_programador_actividades, $update_data, ['id' => $actividad_id]);
+            'actividad_calificable_id' => $actividad_calificable_id
+        ], ['id' => $actividad_id_prog]);
 
     } else {
-        // --- Marcar como NO EVALUABLE ---
-        $actividad_calificable_id = $actividad_prog->actividad_calificable_id;
-        if ($actividad_calificable_id) {
-            cpp_eliminar_actividad_y_calificaciones($actividad_calificable_id, $user_id);
+        // --- CONVERTIR A TAREA (NO EVALUABLE) ---
+        if ($actividad_cuaderno) {
+            cpp_eliminar_actividad_y_calificaciones($actividad_cuaderno->id, $user_id);
         }
 
-        // Actualizar la actividad del programador
-        $update_data = [
+        // Marcar en programador como no evaluable
+        $wpdb->update($tabla_prog_act, [
             'es_evaluable' => 0,
-            'actividad_calificable_id' => null,
-        ];
-        $wpdb->update($tabla_programador_actividades, $update_data, ['id' => $actividad_id]);
+            'actividad_calificable_id' => null
+        ], ['id' => $actividad_id_prog]);
     }
 
-    $actividad_actualizada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_programador_actividades WHERE id = %d", $actividad_id), ARRAY_A);
+    $actividad_actualizada = $wpdb->get_row($wpdb->prepare("SELECT * FROM $tabla_prog_act WHERE id = %d", $actividad_id_prog), ARRAY_A);
 
     if ($actividad_actualizada) {
-        // FIX: Devolver los IDs para que el frontend pueda renderizar el selector correctamente.
+        // Devolver los IDs para que el frontend pueda renderizar el selector correctamente.
         $actividad_actualizada['categoria_id'] = $categoria_id;
         $actividad_actualizada['criterio_id'] = $criterio_id;
         $actividad_actualizada['tipo'] = $actividad_actualizada['es_evaluable'] ? 'evaluable' : 'no_evaluable';

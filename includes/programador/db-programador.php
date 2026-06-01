@@ -85,7 +85,7 @@ function cpp_programador_get_all_data($user_id) {
 
         // Cargar actividades EVALUABLES
         $tabla_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
-        $actividades_evaluables = $wpdb->get_results($wpdb->prepare("SELECT id, sesion_id, nombre_actividad as titulo, orden, 'evaluable' as tipo FROM $tabla_evaluables WHERE sesion_id IN ($placeholders)", $sesiones_ids));
+        $actividades_evaluables = $wpdb->get_results($wpdb->prepare("SELECT id, sesion_id, nombre_actividad as titulo, criterio_id, orden, 'evaluable' as tipo FROM $tabla_evaluables WHERE sesion_id IN ($placeholders)", $sesiones_ids));
 
         // Unir y ordenar
         $todas_las_actividades = array_merge($actividades_no_evaluables, $actividades_evaluables);
