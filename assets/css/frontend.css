@@ -3010,3 +3010,22 @@ body.admin-bar #cpp-main-loader {
     color: #1a73e8;
     font-weight: 700;
 }
+
+.cpp-pending-student-header-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#cpp-pending-direct-absence-btn {
+    padding: 6px;
+    background: #fff;
+    border: 1px solid #fce8e6;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+#cpp-pending-direct-absence-btn:hover {
+    background: #fce8e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}

@@ -170,7 +170,12 @@
             let html = '<div class="cpp-pending-activities-wrapper">';
             html += `
                 <div class="cpp-pending-student-header">
-                    <p class="cpp-pending-subtitle">Rellena las notas que faltan:</p>
+                    <div class="cpp-pending-student-header-left">
+                        <p class="cpp-pending-subtitle">Rellena las notas que faltan:</p>
+                        <button class="cpp-btn-icon" id="cpp-pending-direct-absence-btn" title="Ausencia Directa (Poner X y falta en asistencia)" style="color: #d32f2f; margin-top: 5px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                        </button>
+                    </div>
                     <div class="cpp-pending-final-grade-badge">
                         <span class="label">Nota Final:</span>
                         <span class="value" id="cpp-pending-current-final-grade">${student.current_final_grade || '0'}</span>
@@ -202,9 +207,78 @@
             $container.html(html);
 
             // Focus the first input
-            $container.find('.cpp-pending-input').first().focus();
+            const $firstInput = $container.find('.cpp-pending-input').first();
+            $firstInput.focus();
+            self.lastFocusedCell = $firstInput[0];
 
             // Bind events for the new inputs
+            $container.find('.cpp-pending-input').on('focus', function() {
+                self.lastFocusedCell = this;
+            });
+
+            $('#cpp-pending-direct-absence-btn').on('click', function(e) {
+                e.preventDefault();
+                if (!self.lastFocusedCell || !$(self.lastFocusedCell).hasClass('cpp-pending-input')) {
+                    cpp.utils.showToast('Selecciona una actividad primero.', 'error');
+                    return;
+                }
+
+                const $input = $(self.lastFocusedCell);
+                const $row = $input.closest('.cpp-pending-activity-row');
+                const activityId = $input.data('actividad-id');
+                const $headerDiv = $(`.cpp-editable-activity-name[data-actividad-id="${activityId}"]`);
+                const fechaRaw = $headerDiv.data('fecha-actividad');
+
+                if (!fechaRaw) {
+                    cpp.utils.showToast('Configura la fecha de la tarea para poner falta.', 'error');
+                    return;
+                }
+
+                // Put X and save
+                $input.val('❌');
+                self.guardarNotaDesdeInput.call($input[0], { type: 'manual' }, function(isValid, wasSaved, responseData) {
+                    if (isValid && wasSaved) {
+                        // Register absence in database (AJAX handled inside handleDirectAbsence but we'll do a focused call here)
+                        const fecha = fechaRaw.split(' ')[0];
+                        $.ajax({
+                            url: cppFrontendData.ajaxUrl,
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {
+                                action: 'cpp_guardar_asistencia_clase',
+                                nonce: cppFrontendData.nonce,
+                                clase_id: cpp.currentClaseIdCuaderno,
+                                fecha_asistencia: fecha,
+                                asistencias: [{
+                                    alumno_id: student.id,
+                                    estado: 'ausente'
+                                }]
+                            }
+                        });
+
+                        // Update final grade in modal
+                        if (responseData && responseData.nota_final_alumno_display) {
+                            $('#cpp-pending-current-final-grade').text(responseData.nota_final_alumno_display);
+                        }
+
+                        // Immediate removal
+                        $row.fadeOut(300, function() {
+                            $(this).remove();
+                            const $nextInput = $container.find('.cpp-pending-input').first();
+                            if ($nextInput.length) {
+                                $nextInput.focus();
+                                self.lastFocusedCell = $nextInput[0];
+                            } else {
+                                $container.html('<div class="cpp-pending-success-msg"><span class="dashicons dashicons-yes-alt" style="color:#34a853; font-size:32px; width:32px; height:32px;"></span><p>¡Listo! Has completado todas las notas de este alumno.</p><button class="cpp-btn cpp-btn-primary" id="cpp-pending-return-list">Volver a la lista</button></div>');
+                                $('#cpp-pending-return-list').on('click', function() {
+                                    self.openPendingGradesModal();
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
             $container.find('.cpp-pending-input').on('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
