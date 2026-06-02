@@ -909,6 +909,23 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         
         if (empty(did_action('cpp_modal_asistencia_outputted'))) {
             ?>
+            <div class="cpp-modal" id="cpp-modal-pending-grades">
+                <div class="cpp-modal-content" style="max-width: 600px;">
+                    <span class="cpp-modal-close">&times;</span>
+                    <div class="cpp-pending-modal-header-nav" style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                        <button id="cpp-pending-back-btn" class="cpp-btn-icon" style="display:none;" title="Volver a la lista">
+                            <span class="dashicons dashicons-arrow-left-alt"></span>
+                        </button>
+                        <h2 id="cpp-modal-pending-grades-titulo" style="margin:0;">Notas Pendientes</h2>
+                    </div>
+
+                    <div id="cpp-pending-grades-container">
+                        <!-- Content will be injected by JS -->
+                        <p class="cpp-cuaderno-cargando">Buscando huecos vacíos...</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="cpp-modal" id="cpp-modal-asistencia">
                 <div class="cpp-modal-content">
                     <span class="cpp-modal-close">&times;</span>
