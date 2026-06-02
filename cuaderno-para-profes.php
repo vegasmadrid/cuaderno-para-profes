@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.8.9');
+define('CPP_VERSION', '2.9.2');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -513,6 +513,11 @@ function cpp_run_migrations() {
         }
     }
 
+    // --- MIGRACIÓN v2.9.1: Asegurar columnas en programador ---
+    if (version_compare($current_version, '2.9.1', '<')) {
+        cpp_migrate_add_programmer_columns_v2_9_1();
+    }
+
     // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
     if (version_compare($current_version, CPP_VERSION, '<')) {
         delete_metadata('user', 0, 'cpp_programador_all_data_cache', '', true);
@@ -571,6 +576,18 @@ function cpp_migrate_horario_data_v1_8() {
                 ['%d']
             );
         }
+    }
+}
+
+function cpp_migrate_add_programmer_columns_v2_9_1() {
+    global $wpdb;
+    $tabla_prog_act = $wpdb->prefix . 'cpp_programador_actividades';
+
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_prog_act` LIKE 'es_evaluable'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_prog_act` ADD `es_evaluable` TINYINT(1) NOT NULL DEFAULT 0 AFTER `titulo`;");
+    }
+    if (!$wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_prog_act` LIKE 'actividad_calificable_id'"))) {
+        $wpdb->query("ALTER TABLE `$tabla_prog_act` ADD `actividad_calificable_id` MEDIUMINT(9) UNSIGNED DEFAULT NULL AFTER `es_evaluable`, ADD KEY `actividad_calificable_id` (`actividad_calificable_id`);");
     }
 }
 

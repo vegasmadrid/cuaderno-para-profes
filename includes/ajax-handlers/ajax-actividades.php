@@ -21,43 +21,90 @@ function cpp_ajax_get_actividades_tab_content() {
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $tabla_criterios = $wpdb->prefix . 'cpp_criterios_globales';
+    $tabla_prog_act = $wpdb->prefix . 'cpp_programador_actividades';
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
 
-    $where_clauses = ["a.user_id = $user_id"];
-    if ($clase_id > 0) {
-        $where_clauses[] = $wpdb->prepare("a.clase_id = %d", $clase_id);
+    $actividades_eval = [];
+    $actividades_no_eval = [];
+
+    // --- CARGAR EVALUABLES ---
+    if ($criterio_id >= 0 || $criterio_id == -1 || $criterio_id == -2) {
+        $where_clauses = ["a.user_id = $user_id"];
+        if ($clase_id > 0) $where_clauses[] = $wpdb->prepare("a.clase_id = %d", $clase_id);
+        if ($evaluacion_id > 0) $where_clauses[] = $wpdb->prepare("a.evaluacion_id = %d", $evaluacion_id);
+
+        if ($criterio_id > 0) {
+            $where_clauses[] = $wpdb->prepare("a.criterio_id = %d", $criterio_id);
+        } elseif ($criterio_id == -1) {
+            $where_clauses[] = "(a.criterio_id IS NULL OR a.criterio_id = 0) AND ev.calculo_nota = 'ponderada'";
+        } elseif ($criterio_id == -2) {
+            $where_clauses[] = "ev.calculo_nota = 'total'";
+        }
+
+        $where_sql = implode(' AND ', $where_clauses);
+        $sql = "SELECT a.*, 'evaluable' as tipo_actividad,
+                       c.nombre as clase_nombre, c.color as clase_color,
+                       cg.nombre as nombre_criterio, cg.color as criterio_color,
+                       ev.nombre_evaluacion, ev.calculo_nota
+                FROM $tabla_actividades a
+                INNER JOIN $tabla_clases c ON a.clase_id = c.id
+                LEFT JOIN $tabla_evaluaciones ev ON a.evaluacion_id = ev.id
+                LEFT JOIN $tabla_criterios cg ON a.criterio_id = cg.id
+                WHERE $where_sql
+                ORDER BY a.fecha_actividad DESC, a.id DESC";
+
+        if ($limit > 0) $sql = $wpdb->prepare($sql . " LIMIT %d", $limit);
+        $actividades_eval = $wpdb->get_results($sql, ARRAY_A);
     }
-    if ($evaluacion_id > 0) {
-        $where_clauses[] = $wpdb->prepare("a.evaluacion_id = %d", $evaluacion_id);
+
+    // --- CARGAR NO EVALUABLES ---
+    if ($criterio_id == 0 || $criterio_id == -3) {
+        $where_clauses = ["s.user_id = $user_id", "(pa.es_evaluable = 0 OR pa.es_evaluable IS NULL)"];
+        if ($clase_id > 0) $where_clauses[] = $wpdb->prepare("s.clase_id = %d", $clase_id);
+        if ($evaluacion_id > 0) $where_clauses[] = $wpdb->prepare("s.evaluacion_id = %d", $evaluacion_id);
+
+        $where_sql = implode(' AND ', $where_clauses);
+        $sql = "SELECT pa.id, pa.sesion_id, pa.titulo as nombre_actividad, pa.orden,
+                       'no_evaluable' as tipo_actividad,
+                       s.clase_id, s.evaluacion_id,
+                       c.nombre as clase_nombre, c.color as clase_color,
+                       ev.nombre_evaluacion, ev.calculo_nota,
+                       NULL as fecha_actividad, NULL as nota_maxima, NULL as descripcion_actividad
+                FROM $tabla_prog_act pa
+                INNER JOIN $tabla_sesiones s ON pa.sesion_id = s.id
+                INNER JOIN $tabla_clases c ON s.clase_id = c.id
+                LEFT JOIN $tabla_evaluaciones ev ON s.evaluacion_id = ev.id
+                WHERE $where_sql
+                ORDER BY pa.id DESC";
+
+        if ($limit > 0) $sql = $wpdb->prepare($sql . " LIMIT %d", $limit);
+        $actividades_no_eval = $wpdb->get_results($sql, ARRAY_A);
+
+        // Hidratar fechas para no evaluables
+        if (!empty($actividades_no_eval)) {
+            require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+            foreach ($actividades_no_eval as &$act) {
+                $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $act['clase_id'], $act['evaluacion_id']);
+                if (isset($fechas[$act['sesion_id']])) {
+                    $act['fecha_actividad'] = $fechas[$act['sesion_id']]['fecha'];
+                }
+            }
+        }
     }
-    if ($criterio_id > 0) {
-        $where_clauses[] = $wpdb->prepare("a.criterio_id = %d", $criterio_id);
-    } elseif ($criterio_id == -1) {
-        // Sin asignar criterio: Ponderada + Sin Criterio
-        $where_clauses[] = "(a.criterio_id IS NULL OR a.criterio_id = 0) AND ev.calculo_nota = 'ponderada'";
-    } elseif ($criterio_id == -2) {
-        // No aplica: Evaluación de tipo 'total'
-        $where_clauses[] = "ev.calculo_nota = 'total'";
+
+    // Mezclar y ordenar
+    $actividades = array_merge($actividades_eval, $actividades_no_eval);
+    usort($actividades, function($a, $b) {
+        $fechaA = $a['fecha_actividad'] ?: '0000-00-00';
+        $fechaB = $b['fecha_actividad'] ?: '0000-00-00';
+        if ($fechaA == $fechaB) return $b['id'] - $a['id'];
+        return strcmp($fechaB, $fechaA);
+    });
+
+    if ($limit > 0 && count($actividades) > $limit) {
+        $actividades = array_slice($actividades, 0, $limit);
     }
 
-    $where_sql = implode(' AND ', $where_clauses);
-
-    // Obtenemos actividades con info de clase y criterio
-    $sql = "SELECT a.*,
-                   c.nombre as clase_nombre, c.color as clase_color,
-                   cg.nombre as nombre_criterio, cg.color as criterio_color,
-                   ev.nombre_evaluacion, ev.calculo_nota
-            FROM $tabla_actividades a
-            INNER JOIN $tabla_clases c ON a.clase_id = c.id
-            LEFT JOIN $tabla_evaluaciones ev ON a.evaluacion_id = ev.id
-            LEFT JOIN $tabla_criterios cg ON a.criterio_id = cg.id
-            WHERE $where_sql
-            ORDER BY a.fecha_actividad DESC, a.id DESC";
-
-    if ($limit > 0) {
-        $sql = $wpdb->prepare($sql . " LIMIT %d", $limit);
-    }
-
-    $actividades = $wpdb->get_results($sql, ARRAY_A);
     $counts = cpp_get_global_criterion_counts($user_id);
 
     if (empty($actividades)) {
@@ -137,12 +184,16 @@ function cpp_ajax_get_actividades_tab_content() {
             </thead>
             <tbody>
                 <?php foreach ($actividades as $act) :
+                    $tipo = $act['tipo_actividad'];
+                    $is_evaluable = ($tipo === 'evaluable');
                     $promedio = isset($mapa_promedios[$act['id']]) ? $mapa_promedios[$act['id']] : null;
                     $criterio_color = !empty($act['criterio_color']) ? $act['criterio_color'] : '#FFFFFF';
                     $is_programada = !empty($act['sesion_id']);
                     $clase_color = !empty($act['clase_color']) ? $act['clase_color'] : '#CCCCCC';
                 ?>
-                        <tr data-actividad-id="<?php echo esc_attr($act['id']); ?>" data-evaluacion-id="<?php echo esc_attr($act['evaluacion_id']); ?>">
+                        <tr data-actividad-id="<?php echo esc_attr($act['id']); ?>"
+                            data-evaluacion-id="<?php echo esc_attr($act['evaluacion_id']); ?>"
+                            data-tipo="<?php echo esc_attr($tipo); ?>">
                             <td data-sort-value="<?php echo esc_attr($act['clase_nombre']); ?>">
                                 <div class="cpp-actividad-clase-cell">
                                     <span class="cpp-clase-color-strip" style="background-color: <?php echo esc_attr($clase_color); ?>;"></span>
@@ -152,9 +203,11 @@ function cpp_ajax_get_actividades_tab_content() {
                             <td data-sort-value="<?php echo esc_attr($act['nombre_actividad']); ?>">
                                 <input type="text" class="cpp-inline-edit" data-field="nombre_actividad" value="<?php echo esc_attr($act['nombre_actividad']); ?>" placeholder="Nombre de la actividad">
                             </td>
-                            <td data-sort-value="<?php echo esc_attr($act['nombre_criterio'] ?: ($act['calculo_nota'] === 'total' ? 'No aplica' : 'Sin asignar criterio')); ?>">
+                            <td data-sort-value="<?php echo esc_attr($act['nombre_criterio'] ?: ($act['calculo_nota'] === 'total' ? 'No aplica' : ($is_evaluable ? 'Sin asignar criterio' : 'Tarea (No evaluable)'))); ?>">
                                 <div class="cpp-actividad-categoria-cell">
-                                    <?php if ($act['calculo_nota'] === 'total') : ?>
+                                    <?php if (!$is_evaluable) : ?>
+                                        <span class="cpp-no-evaluable-badge">Tarea</span>
+                                    <?php elseif ($act['calculo_nota'] === 'total') : ?>
                                         <span class="cpp-no-aplica-badge">No aplica</span>
                                     <?php else : ?>
                                         <span class="cpp-category-dot" style="background-color: <?php echo esc_attr($criterio_color); ?>;"></span>
@@ -175,18 +228,35 @@ function cpp_ajax_get_actividades_tab_content() {
                                 </div>
                             </td>
                             <td data-sort-value="<?php echo esc_attr($act['nota_maxima']); ?>">
-                                <input type="number" class="cpp-inline-edit" data-field="nota_maxima" value="<?php echo esc_attr($act['nota_maxima']); ?>" step="0.01" min="0.01">
+                                <?php if ($is_evaluable) : ?>
+                                    <input type="number" class="cpp-inline-edit" data-field="nota_maxima" value="<?php echo esc_attr($act['nota_maxima']); ?>" step="0.01" min="0.01">
+                                <?php else : ?>
+                                    <span class="cpp-na-text">-</span>
+                                <?php endif; ?>
                             </td>
                             <td data-sort-value="<?php echo esc_attr($act['descripcion_actividad']); ?>">
-                                <textarea class="cpp-inline-edit" data-field="descripcion_actividad" rows="1" placeholder="Añade una descripción..."><?php echo esc_textarea($act['descripcion_actividad']); ?></textarea>
+                                <?php if ($is_evaluable) : ?>
+                                    <textarea class="cpp-inline-edit" data-field="descripcion_actividad" rows="1" placeholder="Añade una descripción..."><?php echo esc_textarea($act['descripcion_actividad']); ?></textarea>
+                                <?php else : ?>
+                                    <span class="cpp-na-text">-</span>
+                                <?php endif; ?>
                             </td>
                             <td class="cpp-actividad-promedio" data-sort-value="<?php echo esc_attr($promedio !== null ? $promedio : -1); ?>">
                                 <strong><?php echo $promedio !== null ? cpp_formatear_nota_display($promedio) : '-'; ?></strong>
                             </td>
                             <td>
-                                <button class="cpp-btn-icon cpp-btn-delete-actividad" title="Eliminar Actividad">
-                                    <span class="dashicons dashicons-trash"></span>
-                                </button>
+                                <div class="cpp-actividades-actions">
+                                    <button class="cpp-btn-icon cpp-btn-toggle-actividad" title="<?php echo $is_evaluable ? 'Convertir en Tarea (No Evaluable)' : 'Convertir en Actividad Evaluable'; ?>">
+                                        <?php if ($is_evaluable): ?>
+                                            <span class="dashicons dashicons-clipboard" style="color: #666;"></span>
+                                        <?php else: ?>
+                                            <span class="dashicons dashicons-calculator" style="color: #28a745;"></span>
+                                        <?php endif; ?>
+                                    </button>
+                                    <button class="cpp-btn-icon cpp-btn-delete-actividad" title="Eliminar Actividad">
+                                        <span class="dashicons dashicons-trash"></span>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -199,7 +269,8 @@ function cpp_ajax_get_actividades_tab_content() {
         'html' => $html,
         'criterios' => $counts['criterios'],
         'num_sin_criterio' => $counts['num_sin_criterio'],
-        'num_no_aplica' => $counts['num_no_aplica']
+        'num_no_aplica' => $counts['num_no_aplica'],
+        'num_no_evaluables' => $counts['num_no_evaluables']
     ]);
 }
 
@@ -213,6 +284,7 @@ function cpp_ajax_actualizar_actividad_inline() {
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
     $field = isset($_POST['field']) ? sanitize_text_field($_POST['field']) : '';
     $value = isset($_POST['value']) ? $_POST['value'] : '';
+    $tipo = isset($_POST['tipo']) ? sanitize_text_field($_POST['tipo']) : 'evaluable';
 
     if (empty($actividad_id) || empty($field)) {
         wp_send_json_error(['message' => 'Datos incompletos.']);
@@ -251,7 +323,25 @@ function cpp_ajax_actualizar_actividad_inline() {
     // Si actualizamos categoría o nota máxima, necesitamos forzar el recalculo de notas finales en el frontend
     // pero eso lo manejaremos con una señal de recarga.
 
-    $resultado = cpp_actualizar_actividad_evaluable($actividad_id, $datos);
+    $resultado = false;
+    if ($tipo === 'no_evaluable') {
+        global $wpdb;
+        $tabla_prog_act = $wpdb->prefix . 'cpp_programador_actividades';
+        // Verificar propiedad de la sesión
+        $sesion_id = $wpdb->get_var($wpdb->prepare("SELECT sesion_id FROM $tabla_prog_act WHERE id = %d", $actividad_id));
+        if ($sesion_id) {
+            require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+            $owner_id = cpp_programador_get_sesion_owner($sesion_id);
+            if ($owner_id == $user_id) {
+                if ($field === 'nombre_actividad') {
+                    $resultado = $wpdb->update($tabla_prog_act, ['titulo' => $datos['nombre_actividad']], ['id' => $actividad_id]);
+                    $resultado = ($resultado !== false);
+                }
+            }
+        }
+    } else {
+        $resultado = cpp_actualizar_actividad_evaluable($actividad_id, $datos);
+    }
 
     if ($resultado !== false) {
         $counts = cpp_get_global_criterion_counts($user_id);
@@ -259,7 +349,8 @@ function cpp_ajax_actualizar_actividad_inline() {
             'message' => 'Actividad actualizada.',
             'criterios' => $counts['criterios'],
             'num_sin_criterio' => $counts['num_sin_criterio'],
-            'num_no_aplica' => $counts['num_no_aplica']
+            'num_no_aplica' => $counts['num_no_aplica'],
+            'num_no_evaluables' => $counts['num_no_evaluables']
         ]);
     } else {
         wp_send_json_error(['message' => 'Error al actualizar la actividad.']);
@@ -273,13 +364,20 @@ function cpp_ajax_eliminar_actividad() {
 
     $user_id = get_current_user_id();
     $actividad_id = isset($_POST['actividad_id']) ? intval($_POST['actividad_id']) : 0;
+    $tipo = isset($_POST['tipo']) ? sanitize_text_field($_POST['tipo']) : 'evaluable';
 
     if (empty($actividad_id)) {
         wp_send_json_error(['message' => 'ID de actividad no proporcionado.']);
         return;
     }
 
-    $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
+    $resultado = false;
+    if ($tipo === 'no_evaluable') {
+        require_once CPP_PLUGIN_DIR . 'includes/programador/db-programador.php';
+        $resultado = cpp_programador_delete_actividad($actividad_id, $user_id);
+    } else {
+        $resultado = cpp_eliminar_actividad_y_calificaciones($actividad_id, $user_id);
+    }
 
     if ($resultado) {
         $counts = cpp_get_global_criterion_counts($user_id);
@@ -287,7 +385,8 @@ function cpp_ajax_eliminar_actividad() {
             'message' => 'Actividad eliminada correctamente.',
             'criterios' => $counts['criterios'],
             'num_sin_criterio' => $counts['num_sin_criterio'],
-            'num_no_aplica' => $counts['num_no_aplica']
+            'num_no_aplica' => $counts['num_no_aplica'],
+            'num_no_evaluables' => $counts['num_no_evaluables']
         ]);
     } else {
         wp_send_json_error(['message' => 'Error al eliminar la actividad o no tienes permiso.']);

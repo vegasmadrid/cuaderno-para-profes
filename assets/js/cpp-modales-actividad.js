@@ -23,6 +23,7 @@
                 // Mostramos todos los campos por defecto al resetear
                 $form.find('.cpp-form-group').show();
                 $form.find('#cpp-eliminar-actividad-btn-modal').hide();
+                $form.find('#cpp-modal-actividad-conversion-area').hide();
                 // Ocultar el display de fecha y mostrar el input por defecto
                 $form.find('#cpp-fecha-actividad-display').hide();
                 $form.find('#fecha_actividad_cuaderno_input').show();
@@ -160,6 +161,11 @@
             $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Editar Actividad Evaluable');
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad');
             $form.find('#cpp-eliminar-actividad-btn-modal').show();
+            if (sesionId && sesionId !== 'null' && sesionId !== '0' && sesionId !== 0) {
+                $form.find('#cpp-modal-actividad-conversion-area').show();
+            } else {
+                $form.find('#cpp-modal-actividad-conversion-area').hide();
+            }
             $modal.fadeIn();
             $form.find('#nombre_actividad_cuaderno_input').focus();
         },
@@ -315,6 +321,11 @@
             $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Editar Actividad Evaluable');
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-edit"></span> Actualizar Actividad');
             $form.find('#cpp-eliminar-actividad-btn-modal').show();
+            if (actividad.sesion_id && actividad.sesion_id !== '0' && actividad.sesion_id !== 'null' && actividad.sesion_id !== 0) {
+                $form.find('#cpp-modal-actividad-conversion-area').show();
+            } else {
+                $form.find('#cpp-modal-actividad-conversion-area').hide();
+            }
             $modal.fadeIn();
             $form.find('#nombre_actividad_cuaderno_input').focus();
         },
@@ -410,6 +421,7 @@
             $modal.find('#cpp-modal-actividad-titulo-cuaderno').text('Configurar Actividad Evaluable');
             $modal.find('#cpp-submit-actividad-btn-cuaderno-form').html('<span class="dashicons dashicons-saved"></span> Guardar y Hacer Evaluable');
             $modal.find('#cpp-eliminar-actividad-btn-modal').hide(); // Ocultar botón de eliminar en este contexto
+            $modal.find('#cpp-modal-actividad-conversion-area').hide();
 
             // Lógica de categorías
             if (evaluacion && evaluacion.calculo_nota === 'ponderada' && evaluacion.criterios && evaluacion.criterios.length > 0) {
@@ -442,6 +454,68 @@
             $modal.on('click', '#cpp-eliminar-actividad-btn-modal', (e) => {
                 e.preventDefault();
                 this.eliminar();
+            });
+
+            $modal.on('click', '#cpp-convertir-tarea-btn-modal', (e) => {
+                e.preventDefault();
+                this.convertirATarea();
+            });
+        },
+
+        convertirATarea: function() {
+            const $form = $('#cpp-form-actividad-evaluable-cuaderno');
+            const actividadId = $form.find('#actividad_id_editar_cuaderno').val();
+            const nombre = $form.find('#nombre_actividad_cuaderno_input').val();
+
+            if (!confirm(`¿Estás seguro de que quieres convertir "${nombre}" en una tarea no evaluable?\n\n¡Se borrarán todas las notas registradas en el cuaderno para esta actividad y no se puede deshacer!`)) {
+                return;
+            }
+
+            const $btn = $('#cpp-convertir-tarea-btn-modal');
+            const originalHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span>');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_toggle_actividad_evaluable',
+                    nonce: cppFrontendData.nonce,
+                    actividad_id: actividadId,
+                    es_evaluable: 0,
+                    tipo: 'evaluable'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#cpp-modal-actividad-evaluable-cuaderno').fadeOut();
+
+                        // Recargar cuaderno
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+
+                        // Recargar Programador si existe
+                        if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase) {
+                            CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
+                        }
+
+                        // Recargar vista global de actividades si existe
+                        if (cpp.actividades && typeof cpp.actividades.render === 'function') {
+                            cpp.actividades.render();
+                        }
+
+                        if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                            cpp.utils.showToast('Actividad convertida en tarea.', 'success');
+                        }
+                    } else {
+                        alert('Error al convertir: ' + (response.data && response.data.message ? response.data.message : 'Error desconocido.'));
+                    }
+                },
+                error: function() {
+                    alert('Error de conexión al intentar convertir la actividad.');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }
             });
         }
     };

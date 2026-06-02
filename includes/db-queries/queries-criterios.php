@@ -63,10 +63,21 @@ function cpp_get_global_criterion_counts($user_id) {
           AND e.calculo_nota = 'total'
     ", $user_id));
 
+    // Contar tareas NO evaluables (del programador)
+    $tabla_prog_act = $wpdb->prefix . 'cpp_programador_actividades';
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $num_no_evaluables = $wpdb->get_var($wpdb->prepare("
+        SELECT COUNT(*)
+        FROM $tabla_prog_act pa
+        INNER JOIN $tabla_sesiones s ON pa.sesion_id = s.id
+        WHERE s.user_id = %d AND (pa.es_evaluable = 0 OR pa.es_evaluable IS NULL)
+    ", $user_id));
+
     return [
         'criterios' => $criterios_globales,
         'num_sin_criterio' => $num_sin_criterio,
-        'num_no_aplica' => $num_no_aplica
+        'num_no_aplica' => intval($num_no_aplica),
+        'num_no_evaluables' => intval($num_no_evaluables)
     ];
 }
 

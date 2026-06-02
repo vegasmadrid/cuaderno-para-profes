@@ -166,6 +166,7 @@
         // Actividades
         $document.on('click', '#cpp-add-actividad-no-evaluable-btn', function() { self.addNonEvaluableActividad(this.dataset.sesionId); });
         $document.on('click', '#cpp-add-actividad-evaluable-btn', function() { self.addEvaluableActividad(this.dataset.sesionId); });
+        $document.on('click', '.cpp-toggle-evaluable-btn', function() { self.handleToggleEvaluable(this.dataset.actividadId, this.dataset.tipo); });
         $document.on('click', '.cpp-edit-evaluable-btn', function() { self.editEvaluableActividad(this.dataset.actividadId); });
         $document.on('click', '.cpp-edit-no-evaluable-btn', function() { self.editNonEvaluableActividad(this.dataset.actividadId); });
         $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
@@ -374,6 +375,114 @@
                 }
             },
             error: () => this.applyShareStatus(null)
+        });
+    },
+
+    handleToggleEvaluable(actividadId, tipo) {
+        const self = this;
+        const isEvaluable = tipo === 'evaluable';
+        const actividad = this.currentSesion.actividades_programadas.find(a => a.id == actividadId && a.tipo === tipo);
+
+        if (!actividad) return;
+
+        if (isEvaluable) {
+            // Convertir a NO EVALUABLE
+            if (!confirm('¿Estás seguro de que quieres convertir esta actividad en una tarea no evaluable?\n\n¡Se borrarán todas las notas registradas en el cuaderno para esta actividad y no se puede deshacer!')) {
+                return;
+            }
+
+            if (cpp.utils && typeof cpp.utils.showSpinner === 'function') cpp.utils.showSpinner();
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'cpp_toggle_actividad_evaluable',
+                    nonce: cppFrontendData.nonce,
+                    actividad_id: actividadId,
+                    es_evaluable: 0,
+                    tipo: tipo
+                },
+                success: (result) => {
+                    if (result.success) {
+                        this.showNotification('Actividad convertida en tarea.');
+                        this.refreshCurrentView();
+                        document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                    } else {
+                        this.showNotification(result.data.message || 'Error al convertir.', 'error');
+                    }
+                },
+                error: () => this.showNotification('Error de conexión.', 'error'),
+                complete: () => {
+                    if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') cpp.utils.hideSpinner();
+                }
+            });
+        } else {
+            // Convertir a EVALUABLE
+            // Necesitamos pedir el criterio. Reutilizamos el modal de añadir actividad pero quizás es mejor un prompt simple o un modal pequeño si tenemos.
+            // Dado que el sistema usa Criterios Globales, vamos a buscar los criterios de la evaluación actual.
+            const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
+            if (!currentEval) return;
+
+            // Si la evaluación no es ponderada, no hace falta elegir criterio (aunque el backend asignará uno por defecto o 'No aplica')
+            if (currentEval.calculo_nota === 'total') {
+                this.executeToggleEvaluable(actividadId, 1, null);
+                return;
+            }
+
+            // Si es ponderada, mostramos un selector simple (usando prompt para agilizar o un modal si prefieres)
+            // Vamos a ver qué criterios tiene esta evaluación
+            const categorias = currentEval.categorias || [];
+            if (categorias.length === 0) {
+                this.showNotification('Esta evaluación no tiene criterios asignados en Ponderaciones. Por favor, asigna uno primero.', 'error');
+                return;
+            }
+
+            let message = 'Selecciona un criterio para esta actividad:\n\n';
+            categorias.forEach((cat, index) => {
+                message += `${index + 1}. ${cat.nombre_categoria}\n`;
+            });
+
+            const choice = prompt(message, "1");
+            if (choice === null) return;
+
+            const index = parseInt(choice) - 1;
+            if (isNaN(index) || !categorias[index]) {
+                this.showNotification('Opción no válida.', 'error');
+                return;
+            }
+
+            this.executeToggleEvaluable(actividadId, 1, categorias[index].criterio_id);
+        }
+    },
+
+    executeToggleEvaluable(actividadId, esEvaluable, criterioId, tipo = 'no_evaluable') {
+        if (cpp.utils && typeof cpp.utils.showSpinner === 'function') cpp.utils.showSpinner();
+
+        $.ajax({
+            url: cppFrontendData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'cpp_toggle_actividad_evaluable',
+                nonce: cppFrontendData.nonce,
+                actividad_id: actividadId,
+                es_evaluable: esEvaluable,
+                criterio_id: criterioId || '',
+                tipo: tipo
+            },
+            success: (result) => {
+                if (result.success) {
+                    this.showNotification(esEvaluable ? 'Tarea convertida en actividad evaluable.' : 'Actividad convertida en tarea.');
+                    this.refreshCurrentView();
+                    document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
+                } else {
+                    this.showNotification(result.data.message || 'Error al actualizar.', 'error');
+                }
+            },
+            error: () => this.showNotification('Error de conexión.', 'error'),
+            complete: () => {
+                if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') cpp.utils.hideSpinner();
+            }
         });
     },
 
@@ -2183,12 +2292,16 @@
         const deleteIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/></svg>';
         const editIconSVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>';
 
-        let actionsHTML = '';
+        const toggleEvaluableIconHTML = isEvaluable
+            ? '<span class="dashicons dashicons-clipboard" style="color: #666; font-size: 20px; width: 20px; height: 20px;"></span>'
+            : '<span class="dashicons dashicons-calculator" style="color: #28a745; font-size: 20px; width: 20px; height: 20px;"></span>';
+
+        let actionsHTML = `<button class="cpp-toggle-evaluable-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="${isEvaluable ? 'Convertir en Tarea (No Evaluable)' : 'Convertir en Actividad Evaluable'}">${toggleEvaluableIconHTML}</button>`;
+
         if (isEvaluable) {
-            actionsHTML = `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
+            actionsHTML += `<button class="cpp-edit-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar en Cuaderno">${editIconSVG}</button>`;
         } else {
-            // --- AÑADIDO: Botón de editar para actividades no evaluables ---
-            actionsHTML = `<button class="cpp-edit-no-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar">${editIconSVG}</button>`;
+            actionsHTML += `<button class="cpp-edit-no-evaluable-btn" data-actividad-id="${actividad.id}" title="Editar">${editIconSVG}</button>`;
         }
 
         actionsHTML += `<button class="cpp-delete-actividad-btn" data-actividad-id="${actividad.id}" data-tipo="${actividad.tipo}" title="Eliminar">

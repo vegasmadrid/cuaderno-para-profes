@@ -200,9 +200,12 @@ function cpp_crear_tablas() {
         id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         sesion_id bigint(20) UNSIGNED NOT NULL,
         titulo varchar(255) NOT NULL,
+        es_evaluable tinyint(1) NOT NULL DEFAULT 0,
+        actividad_calificable_id mediumint(9) UNSIGNED DEFAULT NULL,
         orden int NOT NULL DEFAULT 0,
         PRIMARY KEY (id),
-        KEY sesion_id (sesion_id)
+        KEY sesion_id (sesion_id),
+        KEY actividad_calificable_id (actividad_calificable_id)
     ) $charset_collate;";
     dbDelta($sql_programador_actividades);
 
