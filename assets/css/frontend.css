@@ -2976,3 +2976,37 @@ body.admin-bar #cpp-main-loader {
 #cpp-pending-back-btn:hover {
     background-color: #f1f3f4;
 }
+
+.cpp-pending-student-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.cpp-pending-student-header .cpp-pending-subtitle {
+    margin-bottom: 0;
+}
+
+.cpp-pending-final-grade-badge {
+    background: #e8f0fe;
+    padding: 8px 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #d2e3fc;
+}
+
+.cpp-pending-final-grade-badge .label {
+    font-size: 12px;
+    color: #1967d2;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.cpp-pending-final-grade-badge .value {
+    font-size: 18px;
+    color: #1a73e8;
+    font-weight: 700;
+}

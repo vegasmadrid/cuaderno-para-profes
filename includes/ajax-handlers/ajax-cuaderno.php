@@ -552,13 +552,21 @@ function cpp_ajax_get_pending_grades() {
         }
 
         if (!empty($alumno_pending_activities)) {
+            // Calcular nota final actual para mostrarla en el modal
+            $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+            $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
+            $calculo_result = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
+            $nota_reescalada = ($calculo_result['nota'] / 100) * $base_nota_final_clase;
+            $decimales = ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_reescalada == floor($nota_reescalada)) ? 0 : 2;
+
             $pending_data[] = [
                 'id' => $alumno_id,
                 'nombre' => $alumno['nombre'],
                 'apellidos' => $alumno['apellidos'],
                 'avatar' => cpp_get_avatar_url($alumno),
                 'pending_count' => count($alumno_pending_activities),
-                'activities' => $alumno_pending_activities
+                'activities' => $alumno_pending_activities,
+                'current_final_grade' => cpp_formatear_nota_display($nota_reescalada, $decimales)
             ];
         }
     }

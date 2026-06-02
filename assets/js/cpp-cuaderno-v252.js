@@ -168,7 +168,15 @@
             $title.text(`${student.nombre} ${student.apellidos}`);
 
             let html = '<div class="cpp-pending-activities-wrapper">';
-            html += '<p class="cpp-pending-subtitle">Rellena las notas que faltan:</p>';
+            html += `
+                <div class="cpp-pending-student-header">
+                    <p class="cpp-pending-subtitle">Rellena las notas que faltan:</p>
+                    <div class="cpp-pending-final-grade-badge">
+                        <span class="label">Nota Final:</span>
+                        <span class="value" id="cpp-pending-current-final-grade">${student.current_final_grade || '0'}</span>
+                    </div>
+                </div>
+            `;
             html += '<ul class="cpp-pending-activities-list">';
 
             student.activities.forEach(activity => {
@@ -203,8 +211,13 @@
                     const $input = $(this);
                     const $row = $input.closest('.cpp-pending-activity-row');
 
-                    self.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved) {
+                    self.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved, responseData) {
                         if (isValid && wasSaved) {
+                            // Update final grade in modal
+                            if (responseData && responseData.nota_final_alumno_display) {
+                                $('#cpp-pending-current-final-grade').text(responseData.nota_final_alumno_display);
+                            }
+
                             // Immediately remove the row
                             $row.fadeOut(300, function() {
                                 $(this).remove();
@@ -1250,7 +1263,7 @@
                         setTimeout(function() {
                             $input.removeClass('cpp-nota-guardada');
                         }, 1500);
-                        if (typeof callbackFn === 'function') callbackFn(true, true);
+                        if (typeof callbackFn === 'function') callbackFn(true, true, response.data);
                     } else {
                         const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error al guardar.';
                         $validationMessage.text(errorMsg).show();
