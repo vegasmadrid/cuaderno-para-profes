@@ -2855,3 +2855,177 @@ body.admin-bar #cpp-main-loader {
     background-color: #e6f4ea !important;
     border-color: #1e8e3e !important;
 }
+
+/* Estilos para el Buscador de Notas Pendientes */
+.cpp-pending-students-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cpp-pending-student-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cpp-pending-student-item:hover {
+    background-color: #f8f9fa;
+}
+
+.cpp-pending-student-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cpp-pending-student-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.cpp-pending-student-name {
+    font-weight: 500;
+    color: #3c4043;
+}
+
+.cpp-pending-count-badge {
+    background-color: #d93025;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.cpp-pending-subtitle {
+    font-size: 14px;
+    color: #5f6368;
+    margin-bottom: 15px;
+}
+
+.cpp-pending-activities-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cpp-pending-activity-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(60,64,67,0.1);
+}
+
+.cpp-pending-activity-info {
+    flex-grow: 1;
+    margin-right: 15px;
+}
+
+.cpp-pending-activity-name {
+    display: block;
+    font-weight: 600;
+    color: #202124;
+    margin-bottom: 4px;
+}
+
+.cpp-pending-activity-meta {
+    font-size: 12px;
+    color: #70757a;
+}
+
+.cpp-pending-activity-input-wrapper {
+    width: 100px;
+    position: relative;
+}
+
+.cpp-pending-input {
+    width: 100%;
+    text-align: center;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    border-color: #1a73e8 !important;
+}
+
+.cpp-pending-empty, .cpp-pending-success-msg {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.cpp-pending-empty p, .cpp-pending-success-msg p {
+    font-size: 16px;
+    color: #5f6368;
+    margin: 15px 0;
+}
+
+#cpp-pending-back-btn {
+    color: #5f6368;
+}
+
+#cpp-pending-back-btn:hover {
+    background-color: #f1f3f4;
+}
+
+.cpp-pending-student-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.cpp-pending-student-header .cpp-pending-subtitle {
+    margin-bottom: 0;
+}
+
+.cpp-pending-final-grade-badge {
+    background: #e8f0fe;
+    padding: 8px 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #d2e3fc;
+}
+
+.cpp-pending-final-grade-badge .label {
+    font-size: 12px;
+    color: #1967d2;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.cpp-pending-final-grade-badge .value {
+    font-size: 18px;
+    color: #1a73e8;
+    font-weight: 700;
+}
+
+.cpp-pending-student-header-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#cpp-pending-direct-absence-btn {
+    padding: 6px;
+    background: #fff;
+    border: 1px solid #fce8e6;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+#cpp-pending-direct-absence-btn:hover {
+    background: #fce8e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}

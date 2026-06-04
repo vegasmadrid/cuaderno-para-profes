@@ -82,6 +82,249 @@
             });
         },
 
+        openPendingGradesModal: function() {
+            const self = this;
+            const $modal = $('#cpp-modal-pending-grades');
+            const $container = $('#cpp-pending-grades-container');
+            const $backBtn = $('#cpp-pending-back-btn');
+            const $title = $('#cpp-modal-pending-grades-titulo');
+
+            $container.html('<p class="cpp-cuaderno-cargando">Buscando huecos vacíos...</p>');
+            $backBtn.hide();
+            $title.text('Notas Pendientes');
+            $modal.css('display', 'flex');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_get_pending_grades',
+                    nonce: cppFrontendData.nonce,
+                    clase_id: cpp.currentClaseIdCuaderno,
+                    evaluacion_id: cpp.currentEvaluacionId
+                },
+                success: function(response) {
+                    if (response.success && response.data.students) {
+                        self.renderPendingStudentsList(response.data.students);
+                    } else {
+                        $container.html('<p class="cpp-error-message">Error al cargar datos.</p>');
+                    }
+                },
+                error: function() {
+                    $container.html('<p class="cpp-error-message">Error de conexión.</p>');
+                }
+            });
+        },
+
+        renderPendingStudentsList: function(students) {
+            const self = this;
+            const $container = $('#cpp-pending-grades-container');
+            const $backBtn = $('#cpp-pending-back-btn');
+            const $title = $('#cpp-modal-pending-grades-titulo');
+
+            $backBtn.hide();
+            $title.text('Notas Pendientes');
+
+            if (students.length === 0) {
+                $container.html('<div class="cpp-pending-empty"><span class="dashicons dashicons-smiley" style="font-size:48px; width:48px; height:48px; color:#34a853;"></span><p>¡Buen trabajo! No hay notas pendientes en esta evaluación.</p></div>');
+                return;
+            }
+
+            let html = '<ul class="cpp-pending-students-list">';
+            students.forEach(student => {
+                html += `
+                    <li class="cpp-pending-student-item" data-student-id="${student.id}">
+                        <div class="cpp-pending-student-info">
+                            <img src="${student.avatar}" class="cpp-pending-student-avatar">
+                            <span class="cpp-pending-student-name">${student.apellidos}, ${student.nombre}</span>
+                        </div>
+                        <span class="cpp-pending-count-badge">${student.pending_count}</span>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+
+            $container.html(html);
+
+            $container.find('.cpp-pending-student-item').on('click', function() {
+                const studentId = $(this).data('student-id');
+                const student = students.find(s => s.id == studentId);
+                self.renderStudentPendingActivities(student);
+            });
+        },
+
+        renderStudentPendingActivities: function(student) {
+            const self = this;
+            const $container = $('#cpp-pending-grades-container');
+            const $backBtn = $('#cpp-pending-back-btn');
+            const $title = $('#cpp-modal-pending-grades-titulo');
+
+            $backBtn.show().off('click').on('click', function() {
+                // We could re-fetch or just go back. Let's re-fetch to have fresh counts.
+                self.openPendingGradesModal();
+            });
+
+            $title.text(`${student.nombre} ${student.apellidos}`);
+
+            let html = '<div class="cpp-pending-activities-wrapper">';
+            html += `
+                <div class="cpp-pending-student-header">
+                    <div class="cpp-pending-student-header-left">
+                        <p class="cpp-pending-subtitle">Rellena las notas que faltan:</p>
+                        <button class="cpp-btn-icon" id="cpp-pending-direct-absence-btn" title="Ausencia Directa (Poner X y falta en asistencia)" style="color: #d32f2f; margin-top: 5px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                        </button>
+                    </div>
+                    <div class="cpp-pending-final-grade-badge">
+                        <span class="label">Nota Final:</span>
+                        <span class="value" id="cpp-pending-current-final-grade">${student.current_final_grade || '0'}</span>
+                    </div>
+                </div>
+            `;
+            html += '<ul class="cpp-pending-activities-list">';
+
+            student.activities.forEach(activity => {
+                html += `
+                    <li class="cpp-pending-activity-row" data-activity-id="${activity.id}">
+                        <div class="cpp-pending-activity-info">
+                            <span class="cpp-pending-activity-name">${activity.nombre}</span>
+                            <span class="cpp-pending-activity-meta">${activity.fecha ? activity.fecha : 'Sin fecha'} - Sobre ${activity.nota_maxima}</span>
+                        </div>
+                        <div class="cpp-pending-activity-input-wrapper">
+                            <input type="text" class="cpp-input-nota cpp-pending-input"
+                                placeholder="-"
+                                data-alumno-id="${student.id}"
+                                data-actividad-id="${activity.id}"
+                                data-nota-maxima="${activity.nota_maxima}">
+                            <span class="cpp-nota-validation-message cpp-error-message" style="display:none;"></span>
+                        </div>
+                    </li>
+                `;
+            });
+            html += '</ul></div>';
+
+            $container.html(html);
+
+            // Focus the first input
+            const $firstInput = $container.find('.cpp-pending-input').first();
+            $firstInput.focus();
+            self.lastFocusedCell = $firstInput[0];
+
+            // Bind events for the new inputs
+            $container.find('.cpp-pending-input').on('focus', function() {
+                self.lastFocusedCell = this;
+            });
+
+            $('#cpp-pending-direct-absence-btn').on('click', function(e) {
+                e.preventDefault();
+                if (!self.lastFocusedCell || !$(self.lastFocusedCell).hasClass('cpp-pending-input')) {
+                    cpp.utils.showToast('Selecciona una actividad primero.', 'error');
+                    return;
+                }
+
+                const $input = $(self.lastFocusedCell);
+                const $row = $input.closest('.cpp-pending-activity-row');
+                const activityId = $input.data('actividad-id');
+                const $headerDiv = $(`.cpp-editable-activity-name[data-actividad-id="${activityId}"]`);
+                const fechaRaw = $headerDiv.data('fecha-actividad');
+
+                if (!fechaRaw) {
+                    cpp.utils.showToast('Configura la fecha de la tarea para poner falta.', 'error');
+                    return;
+                }
+
+                // Put X and save
+                $input.val('❌');
+                self.guardarNotaDesdeInput.call($input[0], { type: 'manual' }, function(isValid, wasSaved, responseData) {
+                    if (isValid && wasSaved) {
+                        // Register absence in database (AJAX handled inside handleDirectAbsence but we'll do a focused call here)
+                        const fecha = fechaRaw.split(' ')[0];
+                        $.ajax({
+                            url: cppFrontendData.ajaxUrl,
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {
+                                action: 'cpp_guardar_asistencia_clase',
+                                nonce: cppFrontendData.nonce,
+                                clase_id: cpp.currentClaseIdCuaderno,
+                                fecha_asistencia: fecha,
+                                asistencias: [{
+                                    alumno_id: student.id,
+                                    estado: 'ausente'
+                                }]
+                            }
+                        });
+
+                        // Update final grade in modal
+                        if (responseData && responseData.nota_final_alumno_display) {
+                            $('#cpp-pending-current-final-grade').text(responseData.nota_final_alumno_display);
+                        }
+
+                        // Immediate removal
+                        $row.fadeOut(300, function() {
+                            $(this).remove();
+                            const $nextInput = $container.find('.cpp-pending-input').first();
+                            if ($nextInput.length) {
+                                $nextInput.focus();
+                                self.lastFocusedCell = $nextInput[0];
+                            } else {
+                                $container.html('<div class="cpp-pending-success-msg"><span class="dashicons dashicons-yes-alt" style="color:#34a853; font-size:32px; width:32px; height:32px;"></span><p>¡Listo! Has completado todas las notas de este alumno.</p><button class="cpp-btn cpp-btn-primary" id="cpp-pending-return-list">Volver a la lista</button></div>');
+                                $('#cpp-pending-return-list').on('click', function() {
+                                    self.openPendingGradesModal();
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            $container.find('.cpp-pending-input').on('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const $input = $(this);
+                    const $row = $input.closest('.cpp-pending-activity-row');
+
+                    self.guardarNotaDesdeInput.call(this, e, function(isValid, wasSaved, responseData) {
+                        if (isValid && wasSaved) {
+                            // Update final grade in modal
+                            if (responseData && responseData.nota_final_alumno_display) {
+                                $('#cpp-pending-current-final-grade').text(responseData.nota_final_alumno_display);
+                            }
+
+                            // Immediately remove the row
+                            $row.fadeOut(300, function() {
+                                $(this).remove();
+                                // Focus next input if any
+                                $container.find('.cpp-pending-input').first().focus();
+
+                                // Check if all activities for this student are done
+                                if ($container.find('.cpp-pending-activity-row').length === 0) {
+                                    $container.html('<div class="cpp-pending-success-msg"><span class="dashicons dashicons-yes-alt" style="color:#34a853; font-size:32px; width:32px; height:32px;"></span><p>¡Listo! Has completado todas las notas de este alumno.</p><button class="cpp-btn cpp-btn-primary" id="cpp-pending-return-list">Volver a la lista</button></div>');
+                                    $('#cpp-pending-return-list').on('click', function() {
+                                        self.openPendingGradesModal();
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Sync with main gradebook if it's open
+            $container.find('.cpp-pending-input').on('blur', function() {
+                // If they blur without pressing Enter, we still want to save but maybe not remove?
+                // User said "Que desaparezca inmediatamente", but usually that implies completing the action (Enter).
+                // Let's just save on blur but NOT remove, so they can still see it unless they confirm with Enter.
+                const $input = $(this);
+                if ($input.val().trim() !== '') {
+                    self.guardarNotaDesdeInput.call(this, {type: 'blur'}, function(isValid, wasSaved){
+                         // We could also remove on blur if valid, but Enter is safer for "immediate" removal intent.
+                    });
+                }
+            });
+        },
+
         handleDirectAbsence: function() {
             const self = this;
             let inputsToProcess = [];
@@ -645,6 +888,19 @@
                 e.stopPropagation();
                 self.handleDirectAbsence();
             });
+            $document.on('click', '#cpp-a1-pending-grades-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                self.openPendingGradesModal();
+            });
+            $document.on('click', '#cpp-modal-pending-grades .cpp-modal-close', function() {
+                $('#cpp-modal-pending-grades').hide();
+                // Refresh gradebook to reflect changes
+                if (cpp.currentClaseIdCuaderno) {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    self.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
+                }
+            });
             $document.on('mousedown', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handleCellMouseDown.call(this, e); });
             $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } });
             $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); });
@@ -1081,7 +1337,7 @@
                         setTimeout(function() {
                             $input.removeClass('cpp-nota-guardada');
                         }, 1500);
-                        if (typeof callbackFn === 'function') callbackFn(true, true);
+                        if (typeof callbackFn === 'function') callbackFn(true, true, response.data);
                     } else {
                         const errorMsg = (response && response.data && response.data.message) ? response.data.message : 'Error al guardar.';
                         $validationMessage.text(errorMsg).show();

@@ -146,6 +146,11 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                                 </button>
                                 <?php if ($evaluacion_activa_id !== 'final'): ?>
+                                <button class="cpp-btn-icon" id="cpp-a1-pending-grades-btn" title="Buscador de Notas Pendientes">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 7h5v2H7V7zm0 3h5v2H7v-2z"/></svg>
+                                </button>
+                                <?php endif; ?>
+                                <?php if ($evaluacion_activa_id !== 'final'): ?>
                                 <button class="cpp-btn-icon" id="cpp-a1-add-activity-btn" title="Añadir Actividad">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>
                                 </button>
@@ -495,6 +500,78 @@ function cpp_ajax_guardar_calificacion_alumno() {
     ];
 
     wp_send_json_success($response_data);
+}
+
+add_action('wp_ajax_cpp_get_pending_grades', 'cpp_ajax_get_pending_grades');
+function cpp_ajax_get_pending_grades() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $evaluacion_id = isset($_POST['evaluacion_id']) ? sanitize_text_field($_POST['evaluacion_id']) : '';
+
+    if (empty($clase_id) || empty($evaluacion_id)) {
+        wp_send_json_error(['message' => 'Faltan datos de clase o evaluación.']);
+        return;
+    }
+
+    if ($evaluacion_id === 'final') {
+        wp_send_json_error(['message' => 'El buscador de notas pendientes no está disponible en la Evaluación Final.']);
+        return;
+    }
+
+    // 1. Obtener alumnos y actividades
+    $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', 'apellidos', true);
+    $actividades = cpp_obtener_actividades_por_clase($clase_id, $user_id, $evaluacion_id);
+    $calificaciones = cpp_obtener_calificaciones_cuaderno($clase_id, $user_id, $evaluacion_id);
+
+    if (empty($alumnos) || empty($actividades)) {
+        wp_send_json_success(['students' => []]);
+        return;
+    }
+
+    $pending_data = [];
+
+    foreach ($alumnos as $alumno) {
+        $alumno_id = $alumno['id'];
+        $alumno_pending_activities = [];
+
+        foreach ($actividades as $actividad) {
+            $actividad_id = $actividad['id'];
+            $nota = isset($calificaciones[$alumno_id][$actividad_id]) ? $calificaciones[$alumno_id][$actividad_id] : '';
+
+            if ($nota === '' || $nota === null) {
+                $alumno_pending_activities[] = [
+                    'id' => $actividad['id'],
+                    'nombre' => $actividad['nombre_actividad'],
+                    'nota_maxima' => $actividad['nota_maxima'],
+                    'fecha' => $actividad['fecha_actividad'] ? date('d/m/Y', strtotime($actividad['fecha_actividad'])) : ''
+                ];
+            }
+        }
+
+        if (!empty($alumno_pending_activities)) {
+            // Calcular nota final actual para mostrarla en el modal
+            $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+            $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
+            $calculo_result = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
+            $nota_reescalada = ($calculo_result['nota'] / 100) * $base_nota_final_clase;
+            $decimales = ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_reescalada == floor($nota_reescalada)) ? 0 : 2;
+
+            $pending_data[] = [
+                'id' => $alumno_id,
+                'nombre' => $alumno['nombre'],
+                'apellidos' => $alumno['apellidos'],
+                'avatar' => cpp_get_avatar_url($alumno),
+                'pending_count' => count($alumno_pending_activities),
+                'activities' => $alumno_pending_activities,
+                'current_final_grade' => cpp_formatear_nota_display($nota_reescalada, $decimales)
+            ];
+        }
+    }
+
+    wp_send_json_success(['students' => $pending_data]);
 }
 
 add_action('wp_ajax_cpp_get_symbol_legends', 'cpp_ajax_get_symbol_legends');
