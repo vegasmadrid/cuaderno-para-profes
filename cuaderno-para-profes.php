@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 2.9.3
+Version: 2.9.5
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.9.3');
+define('CPP_VERSION', '2.9.5');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -745,6 +745,28 @@ function cpp_add_modals_to_footer() {
                 <button id="cpp-confirm-delete-global-crit-btn" class="cpp-btn cpp-btn-danger">Eliminar para Siempre</button>
                 <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-close">Cancelar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Acerca de -->
+    <div id="cpp-modal-about" class="cpp-modal">
+        <div class="cpp-modal-content" style="max-width: 400px; text-align: center; position: relative;">
+            <span class="cpp-modal-close" id="cpp-modal-about-close">&times;</span>
+            <div style="margin-top: 20px; margin-bottom: 20px;">
+                <span class="dashicons dashicons-welcome-learn-more" style="font-size: 60px; width: 60px; height: 60px; color: #2962FF;"></span>
+            </div>
+            <h2 style="margin-bottom: 10px;">Cuaderno de profe</h2>
+            <p style="font-weight: 500; color: #666; margin-bottom: 20px;">Versión <?php echo esc_html(CPP_VERSION); ?></p>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <p style="margin: 0 0 5px 0; font-size: 14px; color: #5f6368;">Autor:</p>
+                <p style="margin: 0 0 15px 0; font-weight: bold; font-size: 18px;">Javier Vegas Serrano</p>
+
+                <p style="margin: 0 0 5px 0; font-size: 14px; color: #5f6368;">Contacto:</p>
+                <a href="mailto:vegasmadrid@gmail.com" style="color: #2962FF; text-decoration: none; font-weight: 500;">vegasmadrid@gmail.com</a>
+            </div>
+
+            <p style="font-size: 13px; color: #999;">© <?php echo date('Y'); ?> Todos los derechos reservados.</p>
         </div>
     </div>
 

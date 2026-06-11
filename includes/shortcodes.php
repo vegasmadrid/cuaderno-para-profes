@@ -427,6 +427,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                 <li><a href="#">Mi Cuenta</a></li>
                                 <li><a href="#">Ayuda</a></li>
                                 <li><a href="#">Contacto</a></li>
+                                <li><a href="#" id="cpp-user-menu-about-btn">Acerca de</a></li>
                                 <li><a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>">Cerrar Sesión</a></li>
                             </ul>
                         </div>

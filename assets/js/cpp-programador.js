@@ -96,9 +96,9 @@
         // Sesiones
         $document.on('click', '#cpp-add-sesion-toolbar-btn', () => { if (self.currentSesion) { self.addInlineSesion(self.currentSesion.id); } });
         $document.on('click', '#cpp-delete-sesion-toolbar-btn', () => { if (self.currentSesion) { self.deleteSesion(self.currentSesion.id); } });
-        $document.on('click', '#cpp-programador-app .cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
+        $document.on('click', '.cpp-add-sesion-btn', () => self.openSesionModal()); // Botón en vista vacía
 
-        $document.on('click', '#cpp-programador-app .cpp-sesion-list-item', function(e) {
+        $document.on('click', '.cpp-sesion-list-item', function(e) {
             const sesionId = this.dataset.sesionId;
             const isCheckboxClick = e.target.closest('.cpp-sesion-checkbox');
 
@@ -125,7 +125,7 @@
             if (self.selectedSesiones.length > 0) {
                 self.selectedSesiones = [];
                 self.updateBulkActionsUI();
-                self.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
             }
 
             self.currentSesion = self.sesiones.find(s => s.id == sesionId);
@@ -137,14 +137,14 @@
             }
             this.classList.add('active');
 
-            const rightCol = self.appElement.querySelector('#cpp-programacion-right-col');
+    const rightCol = document.getElementById('cpp-programacion-right-col');
             if (rightCol) {
                 rightCol.innerHTML = self.renderProgramacionTabRightColumn();
                 self.makeActividadesSortable();
             }
 
             const isSesionSelected = self.currentSesion !== null;
-            const toolbar = self.appElement.querySelector('.cpp-programacion-action-controls');
+    const toolbar = document.querySelector('.cpp-programacion-action-controls');
             if (toolbar) {
                 toolbar.querySelector('#cpp-add-sesion-toolbar-btn').disabled = !isSesionSelected;
                 toolbar.querySelector('#cpp-delete-sesion-toolbar-btn').disabled = !isSesionSelected;
@@ -169,16 +169,16 @@
         $document.on('click', '.cpp-toggle-evaluable-btn', function() { self.handleToggleEvaluable(this.dataset.actividadId, this.dataset.tipo); });
         $document.on('click', '.cpp-edit-evaluable-btn', function() { self.editEvaluableActividad(this.dataset.actividadId); });
         $document.on('click', '.cpp-edit-no-evaluable-btn', function() { self.editNonEvaluableActividad(this.dataset.actividadId); });
-        $document.on('click', '#cpp-programador-app .cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
-        $document.on('focusout', '#cpp-programador-app .cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
+        $document.on('click', '.cpp-delete-actividad-btn', function() { self.deleteActividad(this.dataset.actividadId, this.dataset.tipo); });
+        $document.on('focusout', '.cpp-actividad-titulo', function() { self.updateActividadTitle(this, this.dataset.actividadId); });
 
 
         // Horario
-        $document.on('click', '#cpp-programador-app .cpp-delete-slot-btn', function() { self.deleteTimeSlot(this.dataset.slot); });
-        $document.on('click', '#cpp-programador-app #cpp-horario-add-slot-btn', () => self.addTimeSlot());
-        $document.on('change', '#cpp-programador-app #cpp-horario-table select', function() { self.updateHorarioCellColor(this); self.saveHorario(true); });
-        $document.on('focusout', '#cpp-programador-app .cpp-horario-notas-input', function() { self.saveHorario(true); });
-        $document.on('focusout', '#cpp-programador-app .cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
+        $document.on('click', '.cpp-delete-slot-btn', function() { self.deleteTimeSlot(this.dataset.slot); });
+        $document.on('click', '#cpp-horario-add-slot-btn', () => self.addTimeSlot());
+        $document.on('change', '#cpp-horario-table select', function() { self.updateHorarioCellColor(this); self.saveHorario(true); });
+        $document.on('focusout', '.cpp-horario-notas-input', function() { self.saveHorario(true); });
+        $document.on('focusout', '.cpp-horario-time-slot', function() { self.handleTimeSlotEdit(this); });
 
         // Navegación y Controles Generales
         // Se ha movido el manejo del click a cpp-core.js de forma centralizada.
@@ -194,9 +194,9 @@
         $document.on('change', 'body #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
 
         // Edición Inline
-        $document.on('focusin', '#cpp-programador-app [contenteditable]', function() { self.originalContent = this.innerHTML; });
-        $document.on('focusout', '#cpp-programador-app [data-field]', function() { self.handleInlineEdit(this); });
-        $document.on('keydown', '#cpp-programador-app [contenteditable]', function(e) {
+        $document.on('focusin', '[contenteditable]', function() { self.originalContent = this.innerHTML; });
+        $document.on('focusout', '[data-field]', function() { self.handleInlineEdit(this); });
+        $document.on('keydown', '[contenteditable]', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.blur(); }
             else if (e.key === 'Escape') { this.innerHTML = self.originalContent; this.blur(); }
         });
@@ -226,7 +226,7 @@
         $body.on('submit', '#cpp-config-form', e => this.saveConfig(e));
 
         // --- Copy Sessions ---
-        $document.on('click', '#cpp-programador-app .cpp-sesion-checkbox', function(e) {
+        $document.on('click', '.cpp-sesion-checkbox', function(e) {
             if (e.shiftKey && self.lastClickedSesionId) {
                 e.preventDefault();
                 self.isShiftSelecting = true;
@@ -239,7 +239,7 @@
             }
         });
 
-        $document.on('change', '#cpp-programador-app .cpp-sesion-checkbox', function() {
+        $document.on('change', '.cpp-sesion-checkbox', function() {
             if (self.isShiftSelecting) return;
             self.handleSesionSelection(this.dataset.sesionId, this.checked);
         });
@@ -623,7 +623,7 @@
             // A small delay might be needed for the tab switch to complete.
             setTimeout(() => {
                 this.render();
-            const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionId}"]`);
+            const sesionElement = document.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionId}"]`);
             if (sesionElement) {
                 sesionElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
@@ -715,12 +715,12 @@
 
                     // Actualización selectiva del DOM
                     idsToDelete.forEach(id => {
-                        const item = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${id}"]`);
+                        const item = document.querySelector(`.cpp-sesion-list-item[data-sesion-id="${id}"]`);
                         if (item) item.remove();
                     });
 
                     // Re-enumerar y re-renderizar si es necesario
-                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    const list = document.querySelector('.cpp-sesiones-list-detailed');
                     const remainingSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
                     if (remainingSessions.length === 0) {
@@ -733,7 +733,7 @@
                             }
                         });
 
-                        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                        const rightCol = document.getElementById('cpp-programacion-right-col');
                         if (rightCol) rightCol.innerHTML = this.renderProgramacionTabRightColumn();
                     }
 
@@ -758,11 +758,11 @@
 
     cancelSelection() {
         this.selectedSesiones = [];
-        this.appElement.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.cpp-sesion-checkbox:checked').forEach(cb => cb.checked = false);
         this.updateBulkActionsUI();
     },
     handleShiftSelection(endSesionId) {
-        const sesionElements = Array.from(this.appElement.querySelectorAll('.cpp-sesion-list-item'));
+        const sesionElements = Array.from(document.querySelectorAll('.cpp-sesion-list-item'));
         const allSesionIds = sesionElements.map(el => el.dataset.sesionId);
 
         const startIndex = allSesionIds.indexOf(this.lastClickedSesionId);
@@ -843,7 +843,7 @@
 
                     // --- FIX: Reordenar y redibujar para asegurar orden cronológico ---
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
-                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        const list = document.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
                             list.innerHTML = this.renderSesionList();
                             this.makeSesionesSortable();
@@ -854,11 +854,12 @@
                                 newActiveElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                             }
 
-                            this.appElement.querySelector('#cpp-programacion-right-col').innerHTML = this.renderProgramacionTabRightColumn();
+                            const rightCol = document.getElementById('cpp-programacion-right-col');
+                            if (rightCol) rightCol.innerHTML = this.renderProgramacionTabRightColumn();
                             this.makeActividadesSortable();
 
                             // --- AUTO-FOCUS Y SELECCIÓN DEL TÍTULO ---
-                            const titleElement = this.appElement.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
+                            const titleElement = document.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
                             if (titleElement) {
                                 setTimeout(() => {
                                     titleElement.focus();
@@ -962,7 +963,7 @@
             if (sesionIdToSelect) {
                 // Use a small delay to ensure the DOM is fully updated before scrolling
                 setTimeout(() => {
-                    const sesionElement = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionIdToSelect}"]`);
+                    const sesionElement = document.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionIdToSelect}"]`);
                     if (sesionElement) {
                         sesionElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
@@ -1481,7 +1482,8 @@
     },
     saveHorario(showNotification = false) {
         const newHorario = {};
-        this.appElement.querySelectorAll('#cpp-horario-table tbody tr').forEach(tr => {
+        const container = this.tabContents.horario || document;
+        container.querySelectorAll('#cpp-horario-table tbody tr').forEach(tr => {
             tr.querySelectorAll('td[data-day]').forEach(td => {
                 const day = td.dataset.day;
                 const slot = td.dataset.slot;
@@ -1572,12 +1574,12 @@
 
                     // Lógica de renderizado selectivo para evitar recargas completas
                     if (isNew) {
-                        const noSesionesContainer = this.appElement.querySelector('.cpp-no-sesiones-container');
+                        const noSesionesContainer = document.querySelector('.cpp-no-sesiones-container');
                         if (noSesionesContainer) {
                             // Si no había sesiones, es necesario un render completo para construir la nueva estructura
                             this.render();
                         } else {
-                            const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                            const list = document.querySelector('.cpp-sesiones-list-detailed');
                             const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                             const newDisplayIndex = sesionesFiltradas.length - 1;
                             const newItemHTML = this.renderSingleSesionItemHTML(updatedSesion, newDisplayIndex);
@@ -1594,7 +1596,7 @@
                             }
                         }
                     } else {
-                        const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
+                        const listItem = document.querySelector(`.cpp-sesion-list-item[data-sesion-id="${updatedSesion.id}"]`);
                         if (listItem) {
                             // --- Update DOM without replacing the element to preserve scroll ---
                             const s = updatedSesion; // The updated session
@@ -1642,7 +1644,7 @@
                     // o si es una sesión nueva. Para ediciones inline del título/descripción,
                     // no redibujamos la derecha para evitar perder el foco de otras acciones concurrentes.
                     if (fromModal || isNew) {
-                        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                        const rightCol = document.getElementById('cpp-programacion-right-col');
                         if (rightCol) {
                             rightCol.innerHTML = this.renderProgramacionTabRightColumn();
                             this.makeActividadesSortable();
@@ -1651,7 +1653,7 @@
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
                         // --- FIX: Reordenar después de guardar para mantener el orden cronológico ---
                         if (!isNew) {
-                            const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                            const list = document.querySelector('.cpp-sesiones-list-detailed');
                             if (list) {
                                 list.innerHTML = this.renderSesionList();
                                 this.makeSesionesSortable();
@@ -1693,7 +1695,8 @@
                 if (result.success && result.data.conflict) {
                     alert('La fecha de inicio seleccionada crea un conflicto de horario con otra evaluación. Por favor, elige una fecha diferente.');
                     const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-                    this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+                    const dateSelector = document.getElementById('cpp-start-date-selector');
+                    if (dateSelector) dateSelector.value = currentEval ? currentEval.start_date || '' : '';
                     return;
                 }
                 if (!result.success) {
@@ -1718,7 +1721,8 @@
         if (startDate && (!isWorkingDay || !classIdInHorario)) {
             alert('La fecha de inicio debe ser un día lectivo en el que esta clase tenga horas asignadas en el horario.');
             const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-            this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+            const dateSelector = document.getElementById('cpp-start-date-selector');
+            if (dateSelector) dateSelector.value = currentEval ? currentEval.start_date || '' : '';
             return;
         }
 
@@ -1747,7 +1751,8 @@
             } else {
                 alert(result.data.message || 'Error al guardar la fecha.');
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-                this.appElement.querySelector('#cpp-start-date-selector').value = currentEval ? currentEval.start_date || '' : '';
+                const dateSelector = document.getElementById('cpp-start-date-selector');
+                if (dateSelector) dateSelector.value = currentEval ? currentEval.start_date || '' : '';
             }
         }).finally(() => {
             if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
@@ -1810,13 +1815,13 @@
                     this.sesiones = this.sesiones.filter(s => s.id != sesionId);
 
                     // --- OPTIMIZACIÓN: Actualización selectiva del DOM ---
-                    const listItem = this.appElement.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionId}"]`);
+                    const listItem = document.querySelector(`.cpp-sesion-list-item[data-sesion-id="${sesionId}"]`);
                     if (listItem) {
                         listItem.remove();
                     }
 
                     // Re-enumerar las sesiones restantes en el DOM
-                    const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                    const list = document.querySelector('.cpp-sesiones-list-detailed');
                     if (list) {
                         const remainingSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
@@ -1840,7 +1845,7 @@
                                 }
                             } else {
                                 this.currentSesion = null;
-                                const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                                const rightCol = document.getElementById('cpp-programacion-right-col');
                                 if (rightCol) rightCol.innerHTML = this.renderProgramacionTabRightColumn();
                             }
                         }
@@ -1902,7 +1907,7 @@
                     // Recalcular y aplicar fechas basándose en el nuevo orden
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
                         // Actualizar los números de sesión en el DOM sin redibujar todo
-                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        const list = document.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
                             const currentEvalSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
                             currentEvalSessions.forEach((sesion, index) => {
@@ -1963,7 +1968,7 @@
                         Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
                     );
 
-                    const alertSticky = this.appElement.querySelector('.cpp-programacion-alert-sticky');
+                    const alertSticky = document.querySelector('.cpp-programacion-alert-sticky');
                     if (alertSticky) {
                         if (hasStartDate && hasSchedule) {
                             alertSticky.remove();
@@ -1980,7 +1985,7 @@
                         }
                     } else if (!hasStartDate || !hasSchedule) {
                         // Si no existe el aviso y debería, forzamos un re-render parcial de la estructura o simplemente insertamos el aviso
-                        const controls = this.appElement.querySelector('.cpp-programacion-controls');
+                        const controls = document.querySelector('.cpp-programacion-controls');
                         if (controls) {
                             let alertMsg = (!hasStartDate && !hasSchedule) ? 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.' : (!hasStartDate ? 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.' : 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.');
                             controls.insertAdjacentHTML('afterend', `<div class="cpp-programacion-alert-sticky">${alertMsg}</div>`);
@@ -1988,7 +1993,7 @@
                     }
 
             if (changedSesiones.length > 0) {
-                const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                const list = document.querySelector('.cpp-sesiones-list-detailed');
                 if (list) {
                     // Re-renderizar siempre para asegurar el orden cronológico físico
                     list.innerHTML = this.renderSesionList();
@@ -2000,7 +2005,7 @@
                 const isEditing = document.activeElement && document.activeElement.closest('.cpp-sesion-detail-container');
 
                 if (this.currentSesion && changedSesiones.some(s => s.id == this.currentSesion.id) && !isEditing) {
-                    const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+                    const rightCol = document.getElementById('cpp-programacion-right-col');
                     if (rightCol) {
                         rightCol.innerHTML = this.renderProgramacionTabRightColumn();
                         this.makeActividadesSortable();
@@ -2031,7 +2036,7 @@
     },
 
     makeSesionesSortable() {
-        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+        const list = document.querySelector('.cpp-sesiones-list-detailed');
         if (list) {
             if ($(list).data('ui-sortable')) {
                 $(list).sortable('destroy');
@@ -2065,7 +2070,7 @@
         }
     },
     makeActividadesSortable() {
-        const list = this.appElement.querySelector('.cpp-actividades-list');
+        const list = document.querySelector('.cpp-actividades-list');
         if (list) {
             $(list).sortable({
                 placeholder: 'cpp-actividad-placeholder',
@@ -2177,7 +2182,7 @@
         // Si se acaba de añadir una sesión (por ejemplo, desde el mensaje de "no hay sesiones")
         // el render se llama de nuevo. Verificamos si hay que enfocar el título.
         if (this.currentSesion && this.currentSesion.titulo === 'Nueva Sesión') {
-            const titleElement = this.appElement.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
+            const titleElement = document.querySelector(`.cpp-sesion-detail-title[data-field="titulo"]`);
             if (titleElement) {
                 setTimeout(() => {
                     titleElement.focus();
@@ -2343,7 +2348,7 @@
                         this.currentSesion.actividades_programadas = [];
                     }
                     this.currentSesion.actividades_programadas.push(newActividad);
-                    const list = this.appElement.querySelector('.cpp-actividades-list');
+                    const list = document.querySelector('.cpp-actividades-list');
                     if (list) {
                         list.insertAdjacentHTML('beforeend', this.renderActividadItem(newActividad));
                     }
@@ -2355,7 +2360,7 @@
                     // Usar un timeout algo mayor para asegurar que el blur/save del título de sesión (si venía de ahí)
                     // termine de procesarse y no robe el foco después.
                     setTimeout(() => {
-                        const newElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
+                        const newElement = document.querySelector(`.cpp-actividad-titulo[data-actividad-id="${newActividad.id}"]`);
                         if (newElement) {
                             newElement.focus();
                             // Selección forzada del texto
@@ -2418,7 +2423,7 @@
     },
 
     editNonEvaluableActividad(actividadId) {
-        const titleElement = this.appElement.querySelector(`.cpp-actividad-titulo[data-actividad-id="${actividadId}"]`);
+        const titleElement = document.querySelector(`.cpp-actividad-titulo[data-actividad-id="${actividadId}"]`);
         if (titleElement) {
             titleElement.focus();
             const range = document.createRange();
@@ -2467,7 +2472,7 @@
                             this.currentSesion.actividades_programadas.splice(index, 1);
                         }
                     }
-                    const item = this.appElement.querySelector(`.cpp-actividad-item[data-actividad-id="${actividadId}"]`);
+                    const item = document.querySelector(`.cpp-actividad-item[data-actividad-id="${actividadId}"]`);
                     if (item) {
                         item.remove();
                     }
@@ -2542,7 +2547,7 @@
             this.currentSesion.actividades_programadas.push(actividad);
         }
 
-        const rightCol = this.appElement.querySelector('#cpp-programacion-right-col');
+        const rightCol = document.getElementById('cpp-programacion-right-col');
         if (rightCol) {
             rightCol.innerHTML = this.renderProgramacionTabRightColumn();
             this.makeActividadesSortable();
@@ -2644,7 +2649,7 @@
         });
         tableHTML += `</tbody></table>`;
         content.innerHTML = tableHTML;
-        this.appElement.querySelectorAll('#cpp-horario-table select').forEach(s => {
+        content.querySelectorAll('#cpp-horario-table select').forEach(s => {
             s.value = s.dataset.claseId;
             this.updateHorarioCellColor(s);
         });
@@ -2674,7 +2679,7 @@
         const notification = document.createElement('div');
         notification.className = `cpp-notification ${type}`;
         notification.textContent = message;
-        this.appElement.appendChild(notification);
+        (this.appElement || document.body).appendChild(notification);
         setTimeout(() => {
             notification.classList.add('fade-out');
             setTimeout(() => {
@@ -3003,7 +3008,7 @@
 
                     // --- FIX: Actualización selectiva para evitar salto de scroll ---
                     // 1. Actualizar el botón de la barra de herramientas
-                    const fijarBtn = this.appElement.querySelector('#cpp-fijar-sesion-toolbar-btn');
+                    const fijarBtn = document.getElementById('cpp-fijar-sesion-toolbar-btn');
                     if (fijarBtn) {
                         if (sesion.fecha_fijada) {
                             fijarBtn.innerHTML = '<span class="dashicons dashicons-unlock"></span>';
@@ -3016,7 +3021,7 @@
 
                     // --- FIX: Reordenar la lista después de cualquier cambio de fecha para mantener el orden cronológico ---
                     this.fetchAndApplyFechas(this.currentEvaluacionId).then(() => {
-                        const list = this.appElement.querySelector('.cpp-sesiones-list-detailed');
+                        const list = document.querySelector('.cpp-sesiones-list-detailed');
                         if (list) {
                             list.innerHTML = this.renderSesionList();
                             this.makeSesionesSortable();

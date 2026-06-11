@@ -920,6 +920,19 @@
                 $('#cpp-modal-symbol-palette').hide();
             });
 
+            // --- Listener para el Modal Acerca de ---
+            $document.on('click', '#cpp-user-menu-about-btn', function(e) {
+                e.preventDefault();
+                $('.cpp-user-menu-dropdown').removeClass('show-dropdown');
+                $('#cpp-modal-about').css('display', 'flex');
+            });
+
+            $document.on('click', '#cpp-modal-about-close, #cpp-modal-about', function(e) {
+                if (e.target === this || e.target.id === 'cpp-modal-about-close') {
+                    $('#cpp-modal-about').hide();
+                }
+            });
+
             $document.on('click', '#cpp-save-symbol-legend-btn', function() {
                 const userId = (cppFrontendData && cppFrontendData.userId) ? cppFrontendData.userId : '0';
                 const storageKey = self.localStorageKey_symbolLegends + userId;
