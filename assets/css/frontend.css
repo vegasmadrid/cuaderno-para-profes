@@ -163,6 +163,34 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     color: inherit !important; font-size: 18px; font-weight: 500;
     margin-left: 0; line-height: normal; white-space: nowrap;
     overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.cpp-fixed-top-bar:not([style*="color: rgb(255, 255, 255)"]):not([style*="color: #FFF"]):not([style*="color: #FFFFFF"]) #cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.cpp-top-bar-class-name-input {
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    color: #333 !important;
+    background-color: #fff !important;
+    border: 1px solid #1a73e8 !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    margin: 0 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3) !important;
+    max-width: 180px;
+    height: auto !important;
+    line-height: normal !important;
 }
 
 /* Área y Contenido del Cuaderno */

@@ -35,33 +35,49 @@ function cpp_ajax_crear_clase() {
     $clase_id_editar = isset($_POST['clase_id_editar']) ? intval($_POST['clase_id_editar']) : 0;
     $nombre_clase = isset($_POST['nombre_clase']) ? sanitize_text_field(trim($_POST['nombre_clase'])) : '';
     $nombre_clase_limitado = substr($nombre_clase, 0, 100);
-    $datos = [
-        'nombre'              => $nombre_clase_limitado,
-        'color'               => isset($_POST['color_clase']) ? sanitize_hex_color($_POST['color_clase']) : '#2962FF',
-        'base_nota_final'     => isset($_POST['base_nota_final_clase']) ? $_POST['base_nota_final_clase'] : '100',
-        'nota_aprobado'       => isset($_POST['nota_aprobado_clase']) ? $_POST['nota_aprobado_clase'] : '50'
-    ];
-    if (empty($datos['nombre'])) {
+
+    if (empty($nombre_clase_limitado)) {
         wp_send_json_error(['message' => 'El nombre de la clase es obligatorio.']);
         return;
     }
-    $base_nota_sanitizada = str_replace(',', '.', $datos['base_nota_final']);
-    if (!is_numeric($base_nota_sanitizada) || floatval($base_nota_sanitizada) <= 0) {
-        wp_send_json_error(['message' => 'La base de la nota debe ser un número positivo.']);
-        return;
-    }
-    $datos['base_nota_final'] = floatval($base_nota_sanitizada);
 
-    $nota_aprobado_sanitizada = str_replace(',', '.', $datos['nota_aprobado']);
-    if (!is_numeric($nota_aprobado_sanitizada) || floatval($nota_aprobado_sanitizada) < 0) {
-        wp_send_json_error(['message' => 'La nota para aprobar debe ser un número positivo.']);
-        return;
-    }
-    $datos['nota_aprobado'] = floatval($nota_aprobado_sanitizada);
+    $datos = [
+        'nombre' => $nombre_clase_limitado
+    ];
 
-    if ($datos['nota_aprobado'] >= $datos['base_nota_final']) {
-        wp_send_json_error(['message' => 'La nota para aprobar debe ser menor que la base de la nota final.']);
-        return;
+    if (isset($_POST['color_clase']) && !empty($_POST['color_clase'])) {
+        $datos['color'] = sanitize_hex_color($_POST['color_clase']);
+    } elseif ($clase_id_editar === 0) {
+        $datos['color'] = '#2962FF';
+    }
+
+    if (isset($_POST['base_nota_final_clase'])) {
+        $base_nota_sanitizada = str_replace(',', '.', $_POST['base_nota_final_clase']);
+        if (!is_numeric($base_nota_sanitizada) || floatval($base_nota_sanitizada) <= 0) {
+            wp_send_json_error(['message' => 'La base de la nota debe ser un número positivo.']);
+            return;
+        }
+        $datos['base_nota_final'] = floatval($base_nota_sanitizada);
+    } elseif ($clase_id_editar === 0) {
+        $datos['base_nota_final'] = 100.00;
+    }
+
+    if (isset($_POST['nota_aprobado_clase'])) {
+        $nota_aprobado_sanitizada = str_replace(',', '.', $_POST['nota_aprobado_clase']);
+        if (!is_numeric($nota_aprobado_sanitizada) || floatval($nota_aprobado_sanitizada) < 0) {
+            wp_send_json_error(['message' => 'La nota para aprobar debe ser menor que la base de la nota final.']);
+            return;
+        }
+        $datos['nota_aprobado'] = floatval($nota_aprobado_sanitizada);
+    } elseif ($clase_id_editar === 0) {
+        $datos['nota_aprobado'] = 50.00;
+    }
+
+    if (isset($datos['base_nota_final']) && isset($datos['nota_aprobado'])) {
+        if ($datos['nota_aprobado'] >= $datos['base_nota_final']) {
+            wp_send_json_error(['message' => 'La nota para aprobar debe ser menor que la base de la nota final.']);
+            return;
+        }
     }
 
     if ($clase_id_editar > 0) {

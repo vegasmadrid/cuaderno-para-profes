@@ -42,6 +42,16 @@
                         const $form = $settingsPage.find('#cpp-form-clase');
                         $form.find('#clase_id_editar').val(clase.id);
                         $form.find('#nombre_clase_config').val(clase.nombre);
+
+                        const $classSwatchesContainer = $settingsPage.find('.cpp-color-swatches-container');
+                        let colorParaSeleccionar = clase.color || $classSwatchesContainer.find('.cpp-color-swatch:first').data('color') || '#2962FF';
+                        $settingsPage.find('#color_clase_hidden_config').val(colorParaSeleccionar);
+                        $classSwatchesContainer.find('.cpp-color-swatch').removeClass('selected');
+                        $classSwatchesContainer.find(`.cpp-color-swatch[data-color="${colorParaSeleccionar.toUpperCase()}"]`).addClass('selected');
+
+                        $form.find('#base_nota_final_clase_config').val(clase.base_nota_final ? parseFloat(clase.base_nota_final).toFixed(2) : '100.00');
+                        $form.find('#nota_aprobado_clase_config').val(clase.nota_aprobado ? parseFloat(clase.nota_aprobado).toFixed(2) : '50.00');
+
                         $settingsPage.find('#cpp-class-settings-page-title').text(`Ajustes: ${clase.nombre}`);
                         $('#cpp-eliminar-clase-config-btn').show();
                         $('#cpp-archivar-clase-config-btn').show();
@@ -358,6 +368,90 @@
             }
         },
 
+        guardarClaseDesdeConfig: function(e) {
+            e.preventDefault();
+            const $form = $(e.currentTarget);
+            const $btn = $form.find('#cpp-submit-clase-btn-config');
+            const claseIdEditar = $form.find('#clase_id_editar').val();
+            const nombreClase = $form.find('#nombre_clase_config').val().trim();
+            const baseNotaFinalClase = $form.find('#base_nota_final_clase_config').val().trim();
+            const notaAprobadoClase = $form.find('#nota_aprobado_clase_config').val().trim();
+            const colorClase = $form.find('#color_clase_hidden_config').val() || '#2962FF';
+
+            if (nombreClase === '') { alert('El nombre de la clase es obligatorio.'); return; }
+            if (nombreClase.length > 16) { alert('El nombre de la clase no puede exceder los 16 caracteres.'); return; }
+
+            const baseNotaNumerica = parseFloat(baseNotaFinalClase.replace(',', '.'));
+            if (baseNotaFinalClase === '' || isNaN(baseNotaNumerica) || baseNotaNumerica <= 0) {
+                alert('Por favor, introduce un valor numérico positivo para la Base de Nota Final.'); return;
+            }
+
+            const notaAprobadoNumerica = parseFloat(notaAprobadoClase.replace(',', '.'));
+            if (notaAprobadoClase === '' || isNaN(notaAprobadoNumerica) || notaAprobadoNumerica < 0) {
+                alert('Por favor, introduce un valor numérico positivo para la Nota Mínima para Aprobar.'); return;
+            }
+
+            if (notaAprobadoNumerica >= baseNotaNumerica) {
+                alert('La nota mínima para aprobar debe ser menor que la base de la nota final.');
+                return;
+            }
+
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
+
+            const ajaxData = {
+                action: 'cpp_crear_clase',
+                nonce: cppFrontendData.nonce,
+                clase_id_editar: claseIdEditar,
+                nombre_clase: nombreClase,
+                color_clase: colorClase,
+                base_nota_final_clase: baseNotaNumerica.toFixed(2),
+                nota_aprobado_clase: notaAprobadoNumerica.toFixed(2)
+            };
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: ajaxData,
+                success: (response) => {
+                    if (response.success) {
+                        cpp.utils.showToast('Clase actualizada correctamente.');
+
+                        // 1. Título de la página de ajustes
+                        $('#cpp-class-settings-page-title').text(`Ajustes: ${nombreClase}`);
+
+                        // 2. Si es la clase activa en el cuaderno, actualizar top bar
+                        if (parseInt(claseIdEditar) === parseInt(cpp.currentClaseIdCuaderno)) {
+                            cpp.utils.updateTopBar({ nombre: nombreClase, color: colorClase });
+                            cpp.currentClaseNombreCuaderno = nombreClase;
+                        }
+
+                        // 3. Actualizar elemento en sidebar
+                        const $sidebarItem = $(`#cpp-cuaderno-sidebar .cpp-sidebar-clase-item[data-clase-id="${claseIdEditar}"]`);
+                        if ($sidebarItem.length) {
+                            $sidebarItem.attr('data-clase-nombre', nombreClase);
+                            $sidebarItem.attr('data-base-nota-final', baseNotaNumerica.toFixed(2));
+                            $sidebarItem.find('.cpp-sidebar-clase-nombre-texto').text(nombreClase);
+                            $sidebarItem.find('.cpp-sidebar-clase-icon').css('color', colorClase);
+                            $sidebarItem.find('.cpp-sidebar-clase-alumnos-btn, .cpp-sidebar-clase-settings-btn').attr('data-clase-nombre', nombreClase);
+                        }
+
+                        // 4. Actualizar opciones en selectores de clase
+                        $(`select option[value="${claseIdEditar}"]`).text(nombreClase);
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo guardar la clase.'));
+                    }
+                },
+                error: () => {
+                    alert('Error de conexión al guardar la clase.');
+                },
+                complete: () => {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
+        },
+
         bindEvents: function() {
             const $body = $('body');
             const $classSettingsPage = $('#cpp-class-settings-page-container');
@@ -368,6 +462,7 @@
             $body.on('click', '#cpp-close-general-settings-btn', () => this.hideGeneralSettings());
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
+            $classSettingsPage.on('submit', '#cpp-form-clase', this.guardarClaseDesdeConfig.bind(this));
             $classSettingsPage.on('click', '#cpp-eliminar-clase-config-btn', this.eliminarDesdeConfig.bind(this));
             $classSettingsPage.on('click', '#cpp-archivar-clase-config-btn', this.archivarDesdeConfig.bind(this));
 
