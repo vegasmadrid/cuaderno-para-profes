@@ -47,6 +47,7 @@
                 $modal.find('#cpp-modal-clase-titulo').text('Crear Nueva Clase');
                 $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
                 $modal.find('#cpp-eliminar-clase-modal-btn').hide();
+                $modal.find('#cpp-archivar-clase-modal-btn').hide();
                 
                 $modal.find('.cpp-tab-nav').show(); 
                 $modal.find('.cpp-tab-link').removeClass('active').show();
@@ -69,6 +70,7 @@
             $('#cpp-modal-clase-titulo').text('Crear Nueva Clase');
             $('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
             $('#cpp-eliminar-clase-modal-btn').hide();
+            $('#cpp-archivar-clase-modal-btn').hide();
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
@@ -127,6 +129,7 @@
                         $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-edit"></span> Actualizar Clase');
                         
                         $('#cpp-eliminar-clase-modal-btn').show();
+                        $('#cpp-archivar-clase-modal-btn').show();
                         
                         this.handleTabClick(null, 'cpp-tab-general', $modal);
                         
@@ -276,6 +279,40 @@
             }
         },
 
+        archivarDesdeModal: function(eventButton) {
+            eventButton.preventDefault();
+            const $btnArchivar = $(eventButton.currentTarget);
+            const claseId = $('#cpp-form-clase #clase_id_editar').val();
+            const claseNombre = $('#cpp-form-clase #nombre_clase_modal').val().trim() || 'esta clase';
+            if (!claseId) { alert('Error: No se pudo identificar la clase para archivar.'); return; }
+            if (confirm(`¿Estás seguro de que quieres archivar la clase "${claseNombre}"?\n\nLa clase se ocultará del cuaderno y de la programación, pero todos sus datos se mantendrán a salvo y podrás restaurarla cuando quieras.`)) {
+                const originalBtnHtml = $btnArchivar.html();
+                $btnArchivar.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Archivando...');
+                $('#cpp-submit-clase-btn-modal').prop('disabled', true);
+                $('#cpp-eliminar-clase-modal-btn').prop('disabled', true);
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
+                    data: { action: 'cpp_archivar_clase', nonce: cppFrontendData.nonce, clase_id: claseId },
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo archivar la clase.'));
+                            $btnArchivar.prop('disabled', false).html(originalBtnHtml);
+                            $('#cpp-submit-clase-btn-modal').prop('disabled', false);
+                            $('#cpp-eliminar-clase-modal-btn').prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión al archivar la clase.');
+                        $btnArchivar.prop('disabled', false).html(originalBtnHtml);
+                        $('#cpp-submit-clase-btn-modal').prop('disabled', false);
+                        $('#cpp-eliminar-clase-modal-btn').prop('disabled', false);
+                    }
+                });
+            }
+        },
+
         crearClaseEjemplo: function(event, nombreClase, colorClase) {
             event.preventDefault();
             const self = this;
@@ -320,6 +357,7 @@
 
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
+            $modalClase.on('click', '#cpp-archivar-clase-modal-btn', (e) => { this.archivarDesdeModal(e); });
 
             $('body').on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
         }

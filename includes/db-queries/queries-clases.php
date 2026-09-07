@@ -93,22 +93,95 @@ function cpp_guardar_base_nota_final_clase($clase_id, $user_id, $base_nota) {
     return $resultado;
 }
 
-function cpp_obtener_clases_usuario($user_id) {
+function cpp_obtener_clases_usuario($user_id, $incluir_archivadas = false) {
     global $wpdb;
     $tabla_clases = $wpdb->prefix . 'cpp_clases';
     $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
 
+    // Comprobación defensiva por si la columna aún no se ha creado vía migración
+    $has_archivada = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE %s", 'archivada'));
+    if (!$has_archivada) {
+        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `archivada` TINYINT(1) NOT NULL DEFAULT 0 AFTER `orden`, ADD KEY `archivada` (`archivada`)");
+        $wpdb->query("UPDATE `$tabla_clases` SET `archivada` = 0 WHERE `archivada` IS NULL");
+        $has_archivada = true;
+    }
+
+    $where_archivada = $incluir_archivadas ? "" : "AND c.archivada = 0";
+
     $query = $wpdb->prepare(
-        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.fecha_creacion, COUNT(ac.alumno_id) as num_alumnos
+        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.archivada, c.fecha_creacion, COUNT(ac.alumno_id) as num_alumnos
          FROM $tabla_clases c
          LEFT JOIN $tabla_alumnos_clases ac ON c.id = ac.clase_id
-         WHERE c.user_id = %d
+         WHERE c.user_id = %d $where_archivada
          GROUP BY c.id
          ORDER BY c.orden ASC, c.fecha_creacion DESC",
         $user_id
     );
 
     return $wpdb->get_results($query, ARRAY_A);
+}
+
+function cpp_obtener_clases_archivadas_usuario($user_id) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+    $tabla_alumnos_clases = $wpdb->prefix . 'cpp_alumnos_clases';
+
+    $has_archivada = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE %s", 'archivada'));
+    if (!$has_archivada) {
+        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `archivada` TINYINT(1) NOT NULL DEFAULT 0 AFTER `orden`, ADD KEY `archivada` (`archivada`)");
+        $wpdb->query("UPDATE `$tabla_clases` SET `archivada` = 0 WHERE `archivada` IS NULL");
+        return [];
+    }
+
+    $query = $wpdb->prepare(
+        "SELECT c.id, c.user_id, c.nombre, COALESCE(c.color, '#FFFFFF') as color, c.base_nota_final, c.nota_aprobado, c.orden, c.archivada, c.fecha_creacion, COUNT(ac.alumno_id) as num_alumnos
+         FROM $tabla_clases c
+         LEFT JOIN $tabla_alumnos_clases ac ON c.id = ac.clase_id
+         WHERE c.user_id = %d AND c.archivada = 1
+         GROUP BY c.id
+         ORDER BY c.orden ASC, c.fecha_creacion DESC",
+        $user_id
+    );
+
+    return $wpdb->get_results($query, ARRAY_A);
+}
+
+function cpp_archivar_clase($clase_id, $user_id) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    $resultado = $wpdb->update(
+        $tabla_clases,
+        ['archivada' => 1],
+        ['id' => $clase_id, 'user_id' => $user_id],
+        ['%d'],
+        ['%d', '%d']
+    );
+
+    if ($resultado !== false) {
+        wp_cache_delete('clase_' . $clase_id, 'cpp_clases');
+    }
+
+    return $resultado;
+}
+
+function cpp_desarchivar_clase($clase_id, $user_id) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    $resultado = $wpdb->update(
+        $tabla_clases,
+        ['archivada' => 0],
+        ['id' => $clase_id, 'user_id' => $user_id],
+        ['%d'],
+        ['%d', '%d']
+    );
+
+    if ($resultado !== false) {
+        wp_cache_delete('clase_' . $clase_id, 'cpp_clases');
+    }
+
+    return $resultado;
 }
 
 function cpp_guardar_clase($user_id, $datos) {

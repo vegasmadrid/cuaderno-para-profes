@@ -194,9 +194,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <small>Los alumnos con una nota final inferior a esta se considerarán suspensos.</small>
                                 </div>
 
-                                <div class="cpp-config-actions">
+                                <div class="cpp-config-actions" style="display: flex; gap: 10px; align-items: center;">
                                     <button type="submit" class="cpp-btn cpp-btn-primary cpp-config-submit-btn" id="cpp-submit-clase-btn-config"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
-                                    <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-config-btn" style="display: none; margin-left: auto;"><span class="dashicons dashicons-trash"></span> Eliminar Clase</button>
+                                    <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-archivar-clase-config-btn" style="display: none; margin-left: auto;"><span class="dashicons dashicons-archive"></span> Archivar Clase</button>
+                                    <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-config-btn" style="display: none;"><span class="dashicons dashicons-trash"></span> Eliminar Clase</button>
                                 </div>
                             </form>
                         </div>
@@ -378,9 +379,12 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <?php endif; ?>
                 </ul>
             </nav>
-            <div class="cpp-sidebar-footer">
+            <div class="cpp-sidebar-footer" style="display: flex; flex-direction: column; gap: 8px;">
                 <button class="cpp-btn cpp-btn-primary cpp-sidebar-add-clase-btn" id="cpp-btn-nueva-clase-sidebar">
                     <span class="dashicons dashicons-plus"></span> Nueva Clase
+                </button>
+                <button class="cpp-btn cpp-btn-secondary" id="cpp-btn-ver-clases-archivadas-sidebar" style="width: 100%; justify-content: center;">
+                    <span class="dashicons dashicons-archive"></span> Clases archivadas
                 </button>
             </div>
         </div>
@@ -685,6 +689,25 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             do_action('cpp_modal_symbol_palette_outputted');
         }
 
+        // Modal para Clases Archivadas
+        if (empty(did_action('cpp_modal_clases_archivadas_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-clases-archivadas" style="display:none;">
+                <div class="cpp-modal-content" style="max-width: 600px;">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2>Clases Archivadas</h2>
+                    <p style="margin-bottom: 15px; color: #666;">
+                        Las clases archivadas no aparecen en el cuaderno ni en la programación. Puedes desarchivarlas en cualquier momento para restaurar todos sus datos.
+                    </p>
+                    <div id="cpp-clases-archivadas-lista-container">
+                        <p class="cpp-cuaderno-cargando">Cargando clases archivadas...</p>
+                    </div>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_clases_archivadas_outputted');
+        }
+
         // --- Modal para Crear/Editar Clase (Consolidado) ---
         if (empty(did_action('cpp_modal_clase_outputted'))) {
         ?>
@@ -746,11 +769,14 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         </div>
                     </div>
 
-                    <div class="cpp-modal-actions">
-                        <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-modal-btn" style="display: none; margin-right: auto;">
+                    <div class="cpp-modal-actions" style="display: flex; gap: 10px; align-items: center;">
+                        <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-archivar-clase-modal-btn" style="display: none; margin-right: auto;">
+                            <span class="dashicons dashicons-archive"></span> Archivar Clase
+                        </button>
+                        <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-modal-btn" style="display: none;">
                             <span class="dashicons dashicons-trash"></span> Eliminar Clase
                         </button>
-                        <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-submit-clase-btn-modal">
+                        <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-submit-clase-btn-modal" style="margin-left: auto;">
                             <span class="dashicons dashicons-saved"></span> Guardar Clase
                         </button>
                     </div>

@@ -97,6 +97,61 @@ function cpp_ajax_eliminar_clase() {
     else { wp_send_json_success(['message' => 'Clase eliminada. La página se recargará.']); }
 }
 
+add_action('wp_ajax_cpp_archivar_clase', 'cpp_ajax_archivar_clase');
+function cpp_ajax_archivar_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $user_id = get_current_user_id();
+    if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
+    if (!cpp_es_propietario_clase($clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'No tienes permiso para archivar esta clase.']);
+        return;
+    }
+    $resultado = cpp_archivar_clase($clase_id, $user_id);
+    if ($resultado !== false) {
+        $clases_restantes = cpp_obtener_clases_usuario($user_id);
+        wp_send_json_success([
+            'message' => 'Clase archivada correctamente.',
+            'clases_restantes' => $clases_restantes
+        ]);
+    } else {
+        wp_send_json_error(['message' => 'Error al archivar la clase.']);
+    }
+}
+
+add_action('wp_ajax_cpp_desarchivar_clase', 'cpp_ajax_desarchivar_clase');
+function cpp_ajax_desarchivar_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    $user_id = get_current_user_id();
+    if (empty($clase_id)) { wp_send_json_error(['message' => 'ID de clase no proporcionado.']); return; }
+    if (!cpp_es_propietario_clase($clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'No tienes permiso para restaurar esta clase.']);
+        return;
+    }
+    $resultado = cpp_desarchivar_clase($clase_id, $user_id);
+    if ($resultado !== false) {
+        $clases_activas = cpp_obtener_clases_usuario($user_id);
+        wp_send_json_success([
+            'message' => 'Clase restaurada correctamente.',
+            'clases_activas' => $clases_activas
+        ]);
+    } else {
+        wp_send_json_error(['message' => 'Error al restaurar la clase.']);
+    }
+}
+
+add_action('wp_ajax_cpp_obtener_clases_archivadas', 'cpp_ajax_obtener_clases_archivadas');
+function cpp_ajax_obtener_clases_archivadas() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+    $clases_archivadas = cpp_obtener_clases_archivadas_usuario($user_id);
+    wp_send_json_success(['clases' => $clases_archivadas]);
+}
+
 add_action('wp_ajax_cpp_guardar_orden_clases', 'cpp_ajax_guardar_orden_clases');
 function cpp_ajax_guardar_orden_clases() {
     check_ajax_referer('cpp_frontend_nonce', 'nonce');

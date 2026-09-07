@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 2.9.5
+Version: 2.9.6
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.9.5');
+define('CPP_VERSION', '2.9.6');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -516,6 +516,17 @@ function cpp_run_migrations() {
     // --- MIGRACIÓN v2.9.1: Asegurar columnas en programador ---
     if (version_compare($current_version, '2.9.1', '<')) {
         cpp_migrate_add_programmer_columns_v2_9_1();
+    }
+
+    // --- MIGRACIÓN v2.9.6: Asegurar columna archivada en cpp_clases ---
+    if (version_compare($current_version, '2.9.6', '<')) {
+        global $wpdb;
+        $table_clases = $wpdb->prefix . 'cpp_clases';
+        $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_clases` LIKE %s", 'archivada'));
+        if (!$column_exists) {
+            $wpdb->query("ALTER TABLE `$table_clases` ADD `archivada` TINYINT(1) NOT NULL DEFAULT 0 AFTER `orden`, ADD KEY `archivada` (`archivada`)");
+        }
+        $wpdb->query("UPDATE `$table_clases` SET `archivada` = 0 WHERE `archivada` IS NULL");
     }
 
     // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
