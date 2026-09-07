@@ -56,10 +56,12 @@ function cpp_crear_tablas() {
         nota_aprobado decimal(10,2) NOT NULL DEFAULT 5.00,
         orden_alumnos_predeterminado varchar(20) DEFAULT 'apellidos',
         orden INT NOT NULL DEFAULT 0,
+        archivada tinyint(1) NOT NULL DEFAULT 0,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
         KEY user_id (user_id),
-        KEY orden (orden)
+        KEY orden (orden),
+        KEY archivada (archivada)
     ) $charset_collate;";
     
     $tabla_alumnos = $wpdb->prefix . 'cpp_alumnos';
@@ -250,6 +252,11 @@ function cpp_crear_tablas() {
         UNIQUE KEY user_clase (user_id, clase_id)
     ) $charset_collate;";
     dbDelta($sql_shared_weeks);
+
+    // Asegurar columna `archivada` en la tabla cpp_clases si no existe aún
+    if (!$wpdb->get_var("SHOW COLUMNS FROM $tabla_clases_nombre LIKE 'archivada'")) {
+        $wpdb->query("ALTER TABLE $tabla_clases_nombre ADD archivada TINYINT(1) NOT NULL DEFAULT 0 AFTER orden, ADD KEY archivada (archivada)");
+    }
 
     // Ejecutar migración si es necesario
     cpp_migrar_categorias_a_criterios();

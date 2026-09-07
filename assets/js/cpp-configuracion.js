@@ -44,6 +44,7 @@
                         $form.find('#nombre_clase_config').val(clase.nombre);
                         $settingsPage.find('#cpp-class-settings-page-title').text(`Ajustes: ${clase.nombre}`);
                         $('#cpp-eliminar-clase-config-btn').show();
+                        $('#cpp-archivar-clase-config-btn').show();
                         this.handleConfigTabClick(null, targetTab);
                         this.loadEvaluacionesData(claseId);
                     } else {
@@ -220,6 +221,143 @@
             }
         },
 
+        archivarDesdeConfig: function(e) {
+            e.preventDefault();
+            const $btn = $(e.currentTarget);
+            const claseId = $('#cpp-form-clase #clase_id_editar').val();
+            const claseNombre = $('#cpp-form-clase #nombre_clase_config').val().trim() || 'esta clase';
+
+            if (!claseId) {
+                alert('Error: No se pudo identificar la clase para archivar.');
+                return;
+            }
+
+            if (confirm(`¿Estás seguro de que quieres archivar la clase "${claseNombre}"?\n\nLa clase se ocultará del cuaderno y de la programación, pero todos sus datos se mantendrán a salvo y podrás restaurarla cuando quieras.`)) {
+                const originalBtnHtml = $btn.html();
+                $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Archivando...');
+                $('#cpp-submit-clase-btn-config').prop('disabled', true);
+                $('#cpp-eliminar-clase-config-btn').prop('disabled', true);
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_archivar_clase',
+                        nonce: cppFrontendData.nonce,
+                        clase_id: claseId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo archivar la clase.'));
+                            $btn.prop('disabled', false).html(originalBtnHtml);
+                            $('#cpp-submit-clase-btn-config').prop('disabled', false);
+                            $('#cpp-eliminar-clase-config-btn').prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión al intentar archivar la clase.');
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                        $('#cpp-submit-clase-btn-config').prop('disabled', false);
+                        $('#cpp-eliminar-clase-config-btn').prop('disabled', false);
+                    }
+                });
+            }
+        },
+
+        mostrarClasesArchivadasModal: function() {
+            const $modal = $('#cpp-modal-clases-archivadas');
+            const $container = $('#cpp-clases-archivadas-lista-container');
+            $container.html('<p class="cpp-cuaderno-cargando">Cargando clases archivadas...</p>');
+            $modal.fadeIn();
+
+            if (cpp.sidebar && cpp.sidebar.isSidebarVisible) {
+                cpp.sidebar.toggle();
+            }
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'cpp_obtener_clases_archivadas', nonce: cppFrontendData.nonce },
+                success: (response) => {
+                    if (response.success && response.data.clases) {
+                        this.renderListaClasesArchivadas(response.data.clases);
+                    } else {
+                        $container.html('<p class="cpp-error-message">Error al cargar clases archivadas.</p>');
+                    }
+                },
+                error: () => {
+                    $container.html('<p class="cpp-error-message">Error de conexión.</p>');
+                }
+            });
+        },
+
+        renderListaClasesArchivadas: function(clases) {
+            const $container = $('#cpp-clases-archivadas-lista-container');
+            if (!clases || clases.length === 0) {
+                $container.html('<p style="padding: 20px 0; text-align: center; color: #666;">No tienes ninguna clase archivada actualmente.</p>');
+                return;
+            }
+
+            let html = '<ul class="cpp-config-list" style="list-style:none; padding:0; margin:0;">';
+            clases.forEach(clase => {
+                const color = clase.color || '#2962FF';
+                const nombre = $('<div>').text(clase.nombre).html();
+                const numAlumnos = clase.num_alumnos || 0;
+                html += `
+                    <li data-clase-id="${clase.id}" style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; gap: 12px;">
+                        <span style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; display: inline-block; flex-shrink: 0;"></span>
+                        <div style="flex-grow: 1;">
+                            <strong style="font-size: 15px; color: #333;">${nombre}</strong>
+                            <div style="font-size: 12px; color: #777;">${numAlumnos} alumno${numAlumnos == 1 ? '' : 's'}</div>
+                        </div>
+                        <button type="button" class="cpp-btn cpp-btn-primary cpp-btn-desarchivar-clase" data-clase-id="${clase.id}" data-clase-nombre="${nombre}">
+                            <span class="dashicons dashicons-undo"></span> Restaurar
+                        </button>
+                    </li>`;
+            });
+            html += '</ul>';
+            $container.html(html);
+        },
+
+        desarchivarClase: function(e) {
+            e.preventDefault();
+            const $btn = $(e.currentTarget);
+            const claseId = $btn.data('clase-id');
+            const claseNombre = $btn.data('clase-nombre');
+
+            if (confirm(`¿Quieres restaurar la clase "${claseNombre}"?\n\nVolverá a estar disponible en el cuaderno y la programación.`)) {
+                const originalHtml = $btn.html();
+                $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Restaurando...');
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_desarchivar_clase',
+                        nonce: cppFrontendData.nonce,
+                        clase_id: claseId
+                    },
+                    success: (response) => {
+                        if (response.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo restaurar la clase.'));
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }
+                    },
+                    error: () => {
+                        alert('Error de conexión al restaurar la clase.');
+                        $btn.prop('disabled', false).html(originalHtml);
+                    }
+                });
+            }
+        },
+
         bindEvents: function() {
             const $body = $('body');
             const $classSettingsPage = $('#cpp-class-settings-page-container');
@@ -231,6 +369,10 @@
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
             $classSettingsPage.on('click', '#cpp-eliminar-clase-config-btn', this.eliminarDesdeConfig.bind(this));
+            $classSettingsPage.on('click', '#cpp-archivar-clase-config-btn', this.archivarDesdeConfig.bind(this));
+
+            $body.on('click', '#cpp-btn-ver-clases-archivadas-sidebar', () => this.mostrarClasesArchivadasModal());
+            $body.on('click', '.cpp-btn-desarchivar-clase', this.desarchivarClase.bind(this));
 
             // --- EVENTOS DE AJUSTES GENERALES (CRITERIOS GLOBALES) ---
             const $generalSettingsPage = $('#cpp-general-settings-page-container');
