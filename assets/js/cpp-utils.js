@@ -39,7 +39,10 @@ cpp.utils = {
                     $hiddenInput = $('#color_nueva_categoria_hidden_modal');
                 }
             } else { 
-                $hiddenInput = $('#color_clase_hidden_modal');
+                $hiddenInput = $container.siblings('input[type="hidden"]');
+                if (!$hiddenInput || !$hiddenInput.length) {
+                    $hiddenInput = $container.closest('.cpp-form-group').find('input[type="hidden"]');
+                }
             }
 
             if ($hiddenInput && $hiddenInput.length) {
@@ -81,7 +84,7 @@ cpp.utils = {
             'color': textColor
         });
 
-        $classNameSpan.text(nombre);
+        $classNameSpan.text(nombre).attr('title', 'Haz clic para cambiar el nombre');
     },
 
     // --- Spinner y Notificaciones Toast ---

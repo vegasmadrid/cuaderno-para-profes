@@ -827,6 +827,94 @@
             $cuadernoContenido.on('focusin', '.cpp-input-nota', function(e){ self.lastFocusedCell = this; self.limpiarErrorNotaInput(this); this.select(); if (typeof $(this).data('original-nota-set') === 'undefined' || !$(this).data('original-nota-set')) { $(this).data('original-nota', $(this).val().trim()); $(this).data('original-nota-set', true); } });
             $cuadernoContenido.on('focusout', '.cpp-input-nota', function(e){ $(this).removeData('original-nota-set'); });
             $cuadernoContenido.on('dragstart', '.cpp-input-nota', function(e) { e.preventDefault(); });
+            // Listener para editar el nombre de la clase al hacer clic en el título de la barra superior
+            $document.on('click', '#cpp-cuaderno-nombre-clase-activa-a1', function(e) {
+                if ($(e.target).is('input')) return;
+                const $span = $(this);
+                const claseId = cpp.currentClaseIdCuaderno;
+                if (!claseId) return;
+
+                const currentName = $span.text().trim();
+                if ($span.find('input').length > 0) return;
+
+                const $input = $(`<input type="text" class="cpp-top-bar-class-name-input" maxlength="16" value="${$('<div>').text(currentName).html()}">`);
+                $span.html($input);
+                $input.focus().select();
+
+                let isSaved = false;
+
+                function doSave() {
+                    if (isSaved) return;
+                    isSaved = true;
+                    const newName = $input.val().trim();
+
+                    if (!newName || newName === currentName) {
+                        $span.text(currentName).attr('title', 'Haz clic para cambiar el nombre');
+                        return;
+                    }
+
+                    if (newName.length > 16) {
+                        alert('El nombre de la clase no puede exceder los 16 caracteres.');
+                        $span.text(currentName).attr('title', 'Haz clic para cambiar el nombre');
+                        return;
+                    }
+
+                    $.ajax({
+                        url: cppFrontendData.ajaxUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'cpp_crear_clase',
+                            nonce: cppFrontendData.nonce,
+                            clase_id_editar: claseId,
+                            nombre_clase: newName
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                cpp.utils.showToast('Nombre de la clase actualizado.');
+                                $span.text(newName).attr('title', 'Haz clic para cambiar el nombre');
+                                cpp.currentClaseNombreCuaderno = newName;
+
+                                const $sidebarItem = $(`#cpp-cuaderno-sidebar .cpp-sidebar-clase-item[data-clase-id="${claseId}"]`);
+                                if ($sidebarItem.length) {
+                                    $sidebarItem.attr('data-clase-nombre', newName);
+                                    $sidebarItem.find('.cpp-sidebar-clase-nombre-texto').text(newName);
+                                    $sidebarItem.find('.cpp-sidebar-clase-alumnos-btn, .cpp-sidebar-clase-settings-btn').attr('data-clase-nombre', newName);
+                                }
+
+                                $(`select option[value="${claseId}"]`).text(newName);
+                                $('#nombre_clase_config').val(newName);
+                                $('#cpp-class-settings-page-title').text(`Ajustes: ${newName}`);
+                            } else {
+                                alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo actualizar.'));
+                                $span.text(currentName).attr('title', 'Haz clic para cambiar el nombre');
+                            }
+                        },
+                        error: function() {
+                            alert('Error de conexión.');
+                            $span.text(currentName).attr('title', 'Haz clic para cambiar el nombre');
+                        }
+                    });
+                }
+
+                $input.on('keydown', function(evt) {
+                    if (evt.key === 'Enter') {
+                        evt.preventDefault();
+                        $input.off('blur');
+                        doSave();
+                    } else if (evt.key === 'Escape') {
+                        evt.preventDefault();
+                        isSaved = true;
+                        $input.off('blur');
+                        $span.text(currentName).attr('title', 'Haz clic para cambiar el nombre');
+                    }
+                });
+
+                $input.on('blur', function() {
+                    doSave();
+                });
+            });
+
             $cuadernoContenido.on('click', 'td.cpp-cuaderno-td-alumno', function(e){ self.handleClickAlumnoCell.call(this, e); });
             $cuadernoContenido.on('click', 'th.cpp-cuaderno-th-final', function(e){ self.handleClickNotaFinalHeader.call(this, e); });
 
