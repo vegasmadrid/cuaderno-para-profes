@@ -48,6 +48,7 @@
                 $modal.find('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
                 $modal.find('#cpp-eliminar-clase-modal-btn').hide();
                 $modal.find('#cpp-archivar-clase-modal-btn').hide();
+                $modal.find('#cpp-duplicar-clase-modal-btn').hide();
                 
                 $modal.find('.cpp-tab-nav').show(); 
                 $modal.find('.cpp-tab-link').removeClass('active').show();
@@ -71,6 +72,7 @@
             $('#cpp-submit-clase-btn-modal').html('<span class="dashicons dashicons-saved"></span> Guardar Clase');
             $('#cpp-eliminar-clase-modal-btn').hide();
             $('#cpp-archivar-clase-modal-btn').hide();
+            $('#cpp-duplicar-clase-modal-btn').hide();
             
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-evaluaciones"]').hide();
             $modal.find('.cpp-tab-link[data-tab="cpp-tab-ponderaciones"]').hide();
@@ -130,6 +132,7 @@
                         
                         $('#cpp-eliminar-clase-modal-btn').show();
                         $('#cpp-archivar-clase-modal-btn').show();
+                        $('#cpp-duplicar-clase-modal-btn').show();
                         
                         this.handleTabClick(null, 'cpp-tab-general', $modal);
                         
@@ -358,6 +361,11 @@
             $modalClase.on('submit', '#cpp-form-clase', (e) => { this.guardar(e); });
             $modalClase.on('click', '#cpp-eliminar-clase-modal-btn', (e) => { this.eliminarDesdeModal(e); });
             $modalClase.on('click', '#cpp-archivar-clase-modal-btn', (e) => { this.archivarDesdeModal(e); });
+            $modalClase.on('click', '#cpp-duplicar-clase-modal-btn', (e) => {
+                if (cpp.config && typeof cpp.config.mostrarModalDuplicar === 'function') {
+                    cpp.config.mostrarModalDuplicar(e);
+                }
+            });
 
             $('body').on('click', '#cpp-btn-crear-clase-ejemplo', (e) => { this.crearClaseEjemplo(e, 'Clase de Ejemplo', '#cd18be'); });
         }

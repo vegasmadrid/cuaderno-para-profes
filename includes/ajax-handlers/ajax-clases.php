@@ -217,4 +217,49 @@ function cpp_ajax_crear_clase_ejemplo() {
     }
 }
 
+add_action('wp_ajax_cpp_duplicar_clase', 'cpp_ajax_duplicar_clase');
+function cpp_ajax_duplicar_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Usuario no autenticado.']);
+        return;
+    }
+
+    $user_id  = get_current_user_id();
+    $clase_id = isset($_POST['clase_id']) ? intval($_POST['clase_id']) : 0;
+    if (empty($clase_id)) {
+        wp_send_json_error(['message' => 'ID de clase no proporcionado.']);
+        return;
+    }
+
+    if (!cpp_es_propietario_clase($clase_id, $user_id)) {
+        wp_send_json_error(['message' => 'No tienes permiso para duplicar esta clase.']);
+        return;
+    }
+
+    $nuevo_nombre = isset($_POST['nuevo_nombre']) ? sanitize_text_field(trim($_POST['nuevo_nombre'])) : '';
+    if (empty($nuevo_nombre)) {
+        wp_send_json_error(['message' => 'El nombre de la nueva clase es obligatorio.']);
+        return;
+    }
+
+    if (mb_strlen($nuevo_nombre) > 16) {
+        wp_send_json_error(['message' => 'El nombre de la clase no puede superar los 16 caracteres.']);
+        return;
+    }
+
+    $tipo_copia = isset($_POST['tipo_copia']) && $_POST['tipo_copia'] === 'parcial' ? 'parcial' : 'total';
+
+    $nueva_clase_id = cpp_duplicar_clase($clase_id, $user_id, $nuevo_nombre, $tipo_copia);
+
+    if ($nueva_clase_id) {
+        $nueva_clase_data = cpp_obtener_clase_completa_por_id($nueva_clase_id, $user_id);
+        wp_send_json_success([
+            'message' => 'Clase duplicada correctamente.',
+            'clase'   => $nueva_clase_data
+        ]);
+    } else {
+        wp_send_json_error(['message' => 'Error al duplicar la clase.']);
+    }
+}
 

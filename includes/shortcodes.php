@@ -196,7 +196,8 @@ function cpp_shortcode_cuaderno_notas_classroom() {
 
                                 <div class="cpp-config-actions" style="display: flex; gap: 10px; align-items: center;">
                                     <button type="submit" class="cpp-btn cpp-btn-primary cpp-config-submit-btn" id="cpp-submit-clase-btn-config"><span class="dashicons dashicons-saved"></span> Guardar Clase</button>
-                                    <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-archivar-clase-config-btn" style="display: none; margin-left: auto;"><span class="dashicons dashicons-archive"></span> Archivar Clase</button>
+                                    <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-duplicar-clase-config-btn" style="display: none; margin-left: auto;"><span class="dashicons dashicons-admin-page"></span> Duplicar Clase</button>
+                                    <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-archivar-clase-config-btn" style="display: none;"><span class="dashicons dashicons-archive"></span> Archivar Clase</button>
                                     <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-config-btn" style="display: none;"><span class="dashicons dashicons-trash"></span> Eliminar Clase</button>
                                 </div>
                             </form>
@@ -770,7 +771,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     </div>
 
                     <div class="cpp-modal-actions" style="display: flex; gap: 10px; align-items: center;">
-                        <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-archivar-clase-modal-btn" style="display: none; margin-right: auto;">
+                        <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-duplicar-clase-modal-btn" style="display: none; margin-right: auto;">
+                            <span class="dashicons dashicons-admin-page"></span> Duplicar Clase
+                        </button>
+                        <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-archivar-clase-modal-btn" style="display: none;">
                             <span class="dashicons dashicons-archive"></span> Archivar Clase
                         </button>
                         <button type="button" class="cpp-btn cpp-btn-danger" id="cpp-eliminar-clase-modal-btn" style="display: none;">
@@ -785,6 +789,65 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         </div>
         <?php
         do_action('cpp_modal_clase_outputted');
+        }
+
+        // Modal para Duplicar Clase
+        if (empty(did_action('cpp_modal_duplicar_clase_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-duplicar-clase" style="display:none;">
+                <div class="cpp-modal-content" style="max-width: 550px;">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2>Duplicar Clase</h2>
+                    <form id="cpp-form-duplicar-clase">
+                        <input type="hidden" id="cpp-duplicar-clase-id" name="clase_id" value="">
+
+                        <div class="cpp-form-group">
+                            <label for="cpp-duplicar-clase-nombre">Nombre de la nueva clase (máx. 16 caracteres):</label>
+                            <input type="text" id="cpp-duplicar-clase-nombre" name="nuevo_nombre" required maxlength="16" style="width: 100%;">
+                        </div>
+
+                        <div class="cpp-form-group" style="margin-top: 15px;">
+                            <label style="font-weight: bold; margin-bottom: 8px; display: block;">Opciones de duplicación:</label>
+
+                            <div style="margin-bottom: 12px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa;">
+                                <label style="font-weight: 600; cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+                                    <input type="radio" name="tipo_copia" value="total" checked style="margin-top: 3px;">
+                                    <div>
+                                        <span>Copia completa (Duplicar todo)</span>
+                                        <p style="font-weight: normal; font-size: 12px; color: #666; margin: 4px 0 0 0;">
+                                            Copia la clase íntegra: alumnos, evaluaciones, ponderaciones, actividades evaluables, calificaciones, programación/sesiones y asistencia.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa;">
+                                <label style="font-weight: 600; cursor: pointer; display: flex; align-items: flex-start; gap: 8px;">
+                                    <input type="radio" name="tipo_copia" value="parcial" style="margin-top: 3px;">
+                                    <div>
+                                        <span>Copia de estructura y alumnos (Nuevo curso)</span>
+                                        <p style="font-weight: normal; font-size: 12px; color: #666; margin: 4px 0 0 0;">
+                                            Copia únicamente los alumnos y la configuración de la clase con sus evaluaciones y ponderaciones. Deja vacías las actividades, notas, programación y asistencia.
+                                        </p>
+                                        <p style="font-weight: normal; font-size: 11px; color: #2962FF; font-style: italic; margin: 4px 0 0 0;">
+                                            💡 Útil para iniciar un nuevo curso con esta clase manteniendo la estructura y los alumnos sin arrastrar notas ni programación del curso anterior.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="cpp-modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                            <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-cancel-btn">Cancelar</button>
+                            <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-submit-duplicar-clase-btn">
+                                <span class="dashicons dashicons-admin-page"></span> Duplicar Clase
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_duplicar_clase_outputted');
         }
 
         if (empty(did_action('cpp_modal_import_students_outputted'))) {
