@@ -55,6 +55,7 @@
                         $settingsPage.find('#cpp-class-settings-page-title').text(`Ajustes: ${clase.nombre}`);
                         $('#cpp-eliminar-clase-config-btn').show();
                         $('#cpp-archivar-clase-config-btn').show();
+                        $('#cpp-duplicar-clase-config-btn').show();
                         this.handleConfigTabClick(null, targetTab);
                         this.loadEvaluacionesData(claseId);
                     } else {
@@ -229,6 +230,88 @@
                     }
                 });
             }
+        },
+
+        mostrarModalDuplicar: function(e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+            const claseId = $('#cpp-form-clase #clase_id_editar').val() || this.currentClaseIdForConfig || cpp.currentClaseIdCuaderno;
+            let claseNombre = $('#cpp-form-clase #nombre_clase_config').val() || $('#cpp-form-clase #nombre_clase_modal').val() || '';
+            if (!claseNombre && claseId) {
+                const $sidebarItem = $(`#cpp-cuaderno-sidebar .cpp-sidebar-clase-item[data-clase-id="${claseId}"]`);
+                if ($sidebarItem.length) {
+                    claseNombre = $sidebarItem.data('clase-nombre') || '';
+                }
+            }
+            claseNombre = claseNombre.trim();
+
+            if (!claseId) {
+                alert('Error: No se pudo identificar la clase a duplicar.');
+                return;
+            }
+
+            // Calcular nombre sugerido por defecto (máx 16 caracteres)
+            let nombreSugerido = '';
+            if (claseNombre.length + 7 <= 16) {
+                nombreSugerido = claseNombre + ' COPIA';
+            } else {
+                nombreSugerido = claseNombre.substring(0, 10) + ' COPIA';
+            }
+
+            const $modal = $('#cpp-modal-duplicar-clase');
+            $modal.find('#cpp-duplicar-clase-id').val(claseId);
+            $modal.find('#cpp-duplicar-clase-nombre').val(nombreSugerido);
+            $modal.find('input[name="tipo_copia"][value="total"]').prop('checked', true);
+
+            $modal.fadeIn().find('#cpp-duplicar-clase-nombre').focus().select();
+        },
+
+        duplicarClaseSubmit: function(e) {
+            e.preventDefault();
+            const $form = $(e.currentTarget);
+            const $btn = $form.find('#cpp-submit-duplicar-clase-btn');
+            const claseId = $form.find('#cpp-duplicar-clase-id').val();
+            const nuevoNombre = $form.find('#cpp-duplicar-clase-nombre').val().trim();
+            const tipoCopia = $form.find('input[name="tipo_copia"]:checked').val() || 'total';
+
+            if (!nuevoNombre) {
+                alert('Por favor, introduce el nombre de la nueva clase.');
+                return;
+            }
+            if (nuevoNombre.length > 16) {
+                alert('El nombre de la clase no puede superar los 16 caracteres.');
+                return;
+            }
+
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Duplicando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_duplicar_clase',
+                    nonce: cppFrontendData.nonce,
+                    clase_id: claseId,
+                    nuevo_nombre: nuevoNombre,
+                    tipo_copia: tipoCopia
+                },
+                success: (response) => {
+                    if (response.success) {
+                        $('#cpp-modal-duplicar-clase').fadeOut();
+                        cpp.utils.showToast(response.data.message || 'Clase duplicada correctamente.');
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudo duplicar la clase.'));
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                    }
+                },
+                error: () => {
+                    alert('Error de conexión al intentar duplicar la clase.');
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
         },
 
         archivarDesdeConfig: function(e) {
@@ -465,6 +548,8 @@
             $classSettingsPage.on('submit', '#cpp-form-clase', this.guardarClaseDesdeConfig.bind(this));
             $classSettingsPage.on('click', '#cpp-eliminar-clase-config-btn', this.eliminarDesdeConfig.bind(this));
             $classSettingsPage.on('click', '#cpp-archivar-clase-config-btn', this.archivarDesdeConfig.bind(this));
+            $classSettingsPage.on('click', '#cpp-duplicar-clase-config-btn', this.mostrarModalDuplicar.bind(this));
+            $body.on('submit', '#cpp-form-duplicar-clase', this.duplicarClaseSubmit.bind(this));
 
             $body.on('click', '#cpp-btn-ver-clases-archivadas-sidebar', () => this.mostrarClasesArchivadasModal());
             $body.on('click', '.cpp-btn-desarchivar-clase', this.desarchivarClase.bind(this));

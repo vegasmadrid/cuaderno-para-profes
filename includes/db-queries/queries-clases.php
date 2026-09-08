@@ -512,3 +512,318 @@ function cpp_es_propietario_clase($clase_id, $user_id) {
     ));
     return $owner_id == $user_id;
 }
+
+/**
+ * Duplica una clase completa o parcial.
+ *
+ * @param int $clase_id_origen ID de la clase a duplicar.
+ * @param int $user_id ID del usuario dueño.
+ * @param string $nuevo_nombre Nombre de la nueva clase (máx 16 caracteres).
+ * @param string $tipo_copia 'total' o 'parcial'.
+ * @return int|false ID de la nueva clase creada o false en caso de error.
+ */
+function cpp_duplicar_clase($clase_id_origen, $user_id, $nuevo_nombre, $tipo_copia = 'total') {
+    global $wpdb;
+
+    $clase_origen = cpp_obtener_clase_completa_por_id($clase_id_origen, $user_id);
+    if (!$clase_origen) {
+        return false;
+    }
+
+    $nuevo_nombre_sanitizado = sanitize_text_field(substr(trim($nuevo_nombre), 0, 16));
+    if (empty($nuevo_nombre_sanitizado)) {
+        return false;
+    }
+
+    // 1. Crear nueva clase
+    $nueva_clase_id = cpp_guardar_clase($user_id, [
+        'nombre' => $nuevo_nombre_sanitizado,
+        'color' => $clase_origen['color'],
+        'base_nota_final' => $clase_origen['base_nota_final'],
+        'nota_aprobado' => $clase_origen['nota_aprobado'],
+        'orden_alumnos_predeterminado' => isset($clase_origen['orden_alumnos_predeterminado']) ? $clase_origen['orden_alumnos_predeterminado'] : 'apellidos'
+    ]);
+
+    if (!$nueva_clase_id) {
+        return false;
+    }
+
+    // Eliminar la evaluación "General" que se crea automáticamente al guardar clase
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $wpdb->delete($tabla_evaluaciones, ['clase_id' => $nueva_clase_id, 'nombre_evaluacion' => 'Evaluación General']);
+
+    // 2. Copiar asignación de alumnos (cpp_alumnos_clases)
+    $alumnos_asoc = $wpdb->get_results($wpdb->prepare(
+        "SELECT alumno_id, visible FROM {$wpdb->prefix}cpp_alumnos_clases WHERE clase_id = %d",
+        $clase_id_origen
+    ), ARRAY_A);
+
+    if (!empty($alumnos_asoc)) {
+        foreach ($alumnos_asoc as $assoc) {
+            $wpdb->insert(
+                $wpdb->prefix . 'cpp_alumnos_clases',
+                [
+                    'alumno_id' => $assoc['alumno_id'],
+                    'clase_id' => $nueva_clase_id,
+                    'visible' => $assoc['visible']
+                ],
+                ['%d', '%d', '%d']
+            );
+        }
+    }
+
+    // 3. Copiar Evaluaciones, Criterios y Categorías
+    $evaluaciones_origen = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}cpp_evaluaciones WHERE clase_id = %d AND user_id = %d ORDER BY orden ASC, fecha_creacion ASC",
+        $clase_id_origen, $user_id
+    ), ARRAY_A);
+
+    $evaluaciones_map = []; // old_eval_id => new_eval_id
+    $categorias_map   = []; // old_cat_id => new_cat_id
+    $actividades_map  = []; // old_act_id => new_act_id
+    $sesiones_map     = []; // old_sesion_id => new_sesion_id
+
+    if (!empty($evaluaciones_origen)) {
+        foreach ($evaluaciones_origen as $eval_origen) {
+            $wpdb->insert(
+                $wpdb->prefix . 'cpp_evaluaciones',
+                [
+                    'clase_id' => $nueva_clase_id,
+                    'user_id' => $user_id,
+                    'nombre_evaluacion' => $eval_origen['nombre_evaluacion'],
+                    'start_date' => $eval_origen['start_date'],
+                    'calculo_nota' => $eval_origen['calculo_nota'],
+                    'orden' => $eval_origen['orden']
+                ],
+                ['%d', '%d', '%s', '%s', '%s', '%d']
+            );
+            $new_eval_id = $wpdb->insert_id;
+            $evaluaciones_map[$eval_origen['id']] = $new_eval_id;
+
+            // Copiar criterios globales asociados a esta evaluación
+            $criterios_eval = $wpdb->get_results($wpdb->prepare(
+                "SELECT criterio_id, porcentaje FROM {$wpdb->prefix}cpp_evaluacion_criterios WHERE evaluacion_id = %d",
+                $eval_origen['id']
+            ), ARRAY_A);
+
+            if (!empty($criterios_eval)) {
+                foreach ($criterios_eval as $crit_eval) {
+                    $wpdb->insert(
+                        $wpdb->prefix . 'cpp_evaluacion_criterios',
+                        [
+                            'evaluacion_id' => $new_eval_id,
+                            'criterio_id' => $crit_eval['criterio_id'],
+                            'porcentaje' => $crit_eval['porcentaje']
+                        ],
+                        ['%d', '%d', '%d']
+                    );
+                }
+            }
+
+            // Copiar categorías locales si existen
+            $categorias_origen = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}cpp_categorias_evaluacion WHERE evaluacion_id = %d",
+                $eval_origen['id']
+            ), ARRAY_A);
+
+            if (!empty($categorias_origen)) {
+                foreach ($categorias_origen as $cat_origen) {
+                    $wpdb->insert(
+                        $wpdb->prefix . 'cpp_categorias_evaluacion',
+                        [
+                            'evaluacion_id' => $new_eval_id,
+                            'nombre_categoria' => $cat_origen['nombre_categoria'],
+                            'porcentaje' => $cat_origen['porcentaje'],
+                            'color' => $cat_origen['color']
+                        ],
+                        ['%d', '%s', '%d', '%s']
+                    );
+                    $categorias_map[$cat_origen['id']] = $wpdb->insert_id;
+                }
+            }
+        }
+    }
+
+    // Copiar configuración de cálculo final de evaluaciones si existe
+    $config_row = $wpdb->get_var($wpdb->prepare(
+        "SELECT evaluacion_ids FROM {$wpdb->prefix}cpp_clase_final_eval_config WHERE clase_id = %d AND user_id = %d",
+        $clase_id_origen, $user_id
+    ));
+    if ($config_row !== null) {
+        $old_ids = array_filter(array_map('intval', explode(',', $config_row)));
+        $new_ids = [];
+        foreach ($old_ids as $old_id) {
+            if (isset($evaluaciones_map[$old_id])) {
+                $new_ids[] = $evaluaciones_map[$old_id];
+            }
+        }
+        if (!empty($new_ids)) {
+            cpp_save_evaluaciones_para_media($nueva_clase_id, $user_id, $new_ids);
+        }
+    }
+
+    // 4. Si es copia TOTAL, copiar sesiones, actividades, calificaciones y asistencia
+    if ($tipo_copia === 'total') {
+        // Copiar sesiones del programador
+        $sesiones_origen = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}cpp_programador_sesiones WHERE clase_id = %d AND user_id = %d ORDER BY orden ASC",
+            $clase_id_origen, $user_id
+        ), ARRAY_A);
+
+        if (!empty($sesiones_origen)) {
+            foreach ($sesiones_origen as $sesion_origen) {
+                $new_eval_id = isset($evaluaciones_map[$sesion_origen['evaluacion_id']]) ? $evaluaciones_map[$sesion_origen['evaluacion_id']] : 0;
+                $wpdb->insert(
+                    $wpdb->prefix . 'cpp_programador_sesiones',
+                    [
+                        'user_id' => $user_id,
+                        'clase_id' => $nueva_clase_id,
+                        'evaluacion_id' => $new_eval_id,
+                        'titulo' => $sesion_origen['titulo'],
+                        'descripcion' => $sesion_origen['descripcion'],
+                        'objetivos' => $sesion_origen['objetivos'],
+                        'recursos' => $sesion_origen['recursos'],
+                        'actividades' => $sesion_origen['actividades'],
+                        'seguimiento' => $sesion_origen['seguimiento'],
+                        'orden' => $sesion_origen['orden']
+                    ],
+                    ['%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d']
+                );
+                $new_sesion_id = $wpdb->insert_id;
+                $sesiones_map[$sesion_origen['id']] = $new_sesion_id;
+
+                // Copiar eventos de la sesión
+                $eventos_origen = $wpdb->get_results($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}cpp_programador_eventos WHERE sesion_id = %d AND user_id = %d",
+                    $sesion_origen['id'], $user_id
+                ), ARRAY_A);
+
+                if (!empty($eventos_origen)) {
+                    foreach ($eventos_origen as $evento_origen) {
+                        $wpdb->insert(
+                            $wpdb->prefix . 'cpp_programador_eventos',
+                            [
+                                'user_id' => $user_id,
+                                'sesion_id' => $new_sesion_id,
+                                'fecha' => $evento_origen['fecha'],
+                                'hora_inicio' => $evento_origen['hora_inicio'],
+                                'hora_fin' => $evento_origen['hora_fin']
+                            ],
+                            ['%d', '%d', '%s', '%s', '%s']
+                        );
+                    }
+                }
+            }
+        }
+
+        // Copiar actividades evaluables
+        $actividades_origen = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}cpp_actividades_evaluables WHERE clase_id = %d AND user_id = %d ORDER BY orden ASC, id ASC",
+            $clase_id_origen, $user_id
+        ), ARRAY_A);
+
+        if (!empty($actividades_origen)) {
+            foreach ($actividades_origen as $act_origen) {
+                $new_eval_id = (isset($act_origen['evaluacion_id']) && isset($evaluaciones_map[$act_origen['evaluacion_id']])) ? $evaluaciones_map[$act_origen['evaluacion_id']] : null;
+                $new_cat_id = isset($categorias_map[$act_origen['categoria_id']]) ? $categorias_map[$act_origen['categoria_id']] : 0;
+                $new_sesion_id = ($act_origen['sesion_id'] && isset($sesiones_map[$act_origen['sesion_id']])) ? $sesiones_map[$act_origen['sesion_id']] : null;
+
+                $wpdb->insert(
+                    $wpdb->prefix . 'cpp_actividades_evaluables',
+                    [
+                        'clase_id' => $nueva_clase_id,
+                        'sesion_id' => $new_sesion_id,
+                        'evaluacion_id' => $new_eval_id,
+                        'categoria_id' => $new_cat_id,
+                        'criterio_id' => $act_origen['criterio_id'],
+                        'nombre_actividad' => $act_origen['nombre_actividad'],
+                        'fecha_actividad' => $act_origen['fecha_actividad'],
+                        'descripcion_actividad' => $act_origen['descripcion_actividad'],
+                        'nota_maxima' => $act_origen['nota_maxima'],
+                        'user_id' => $user_id,
+                        'orden' => $act_origen['orden']
+                    ],
+                    ['%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%d', '%d']
+                );
+                $new_act_id = $wpdb->insert_id;
+                $actividades_map[$act_origen['id']] = $new_act_id;
+
+                // Copiar calificaciones de la actividad
+                $calificaciones_origen = $wpdb->get_results($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}cpp_calificaciones_alumnos WHERE actividad_id = %d",
+                    $act_origen['id']
+                ), ARRAY_A);
+
+                if (!empty($calificaciones_origen)) {
+                    foreach ($calificaciones_origen as $calif_origen) {
+                        $wpdb->insert(
+                            $wpdb->prefix . 'cpp_calificaciones_alumnos',
+                            [
+                                'actividad_id' => $new_act_id,
+                                'alumno_id' => $calif_origen['alumno_id'],
+                                'nota' => $calif_origen['nota'],
+                                'observaciones' => $calif_origen['observaciones']
+                            ],
+                            ['%d', '%d', '%s', '%s']
+                        );
+                    }
+                }
+            }
+        }
+
+        // Copiar actividades de sesiones del programador
+        if (!empty($sesiones_map)) {
+            foreach ($sesiones_map as $old_sesion_id => $new_sesion_id) {
+                $prog_acts_origen = $wpdb->get_results($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}cpp_programador_actividades WHERE sesion_id = %d ORDER BY orden ASC",
+                    $old_sesion_id
+                ), ARRAY_A);
+
+                if (!empty($prog_acts_origen)) {
+                    foreach ($prog_acts_origen as $p_act) {
+                        $new_act_calificable_id = ($p_act['actividad_calificable_id'] && isset($actividades_map[$p_act['actividad_calificable_id']]))
+                            ? $actividades_map[$p_act['actividad_calificable_id']]
+                            : null;
+
+                        $wpdb->insert(
+                            $wpdb->prefix . 'cpp_programador_actividades',
+                            [
+                                'sesion_id' => $new_sesion_id,
+                                'titulo' => $p_act['titulo'],
+                                'es_evaluable' => $p_act['es_evaluable'],
+                                'actividad_calificable_id' => $new_act_calificable_id,
+                                'orden' => $p_act['orden']
+                            ],
+                            ['%d', '%s', '%d', '%d', '%d']
+                        );
+                    }
+                }
+            }
+        }
+
+        // Copiar registros de asistencia
+        $asistencias_origen = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}cpp_asistencia WHERE clase_id = %d AND user_id = %d",
+            $clase_id_origen, $user_id
+        ), ARRAY_A);
+
+        if (!empty($asistencias_origen)) {
+            foreach ($asistencias_origen as $asistencia) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'cpp_asistencia',
+                    [
+                        'clase_id' => $nueva_clase_id,
+                        'alumno_id' => $asistencia['alumno_id'],
+                        'user_id' => $user_id,
+                        'fecha_asistencia' => $asistencia['fecha_asistencia'],
+                        'estado' => $asistencia['estado'],
+                        'observaciones' => $asistencia['observaciones']
+                    ],
+                    ['%d', '%d', '%d', '%s', '%s', '%s']
+                );
+            }
+        }
+    }
+
+    return $nueva_clase_id;
+}

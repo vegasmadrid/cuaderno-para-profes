@@ -39,7 +39,7 @@
         bindEvents: function() {
             console.log("Binding Modals General events...");
             
-            $(document).on('click', '.cpp-modal-close', function(e) {
+            $(document).on('click', '.cpp-modal-close, .cpp-modal-cancel-btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
