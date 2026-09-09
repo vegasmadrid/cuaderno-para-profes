@@ -1083,3 +1083,146 @@ function cpp_get_public_programador_data($token) {
 
     return $all_data;
 }
+
+/**
+ * Obtiene las clases activas y archivadas (con sus evaluaciones) disponibles para importar programación a una clase de destino.
+ */
+function cpp_obtener_clases_y_evaluaciones_para_importar_programacion($clase_destino_id, $user_id) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    if (!cpp_es_propietario_clase($clase_destino_id, $user_id)) {
+        return false;
+    }
+
+    $has_archivada = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE %s", 'archivada'));
+    if (!$has_archivada) {
+        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `archivada` TINYINT(1) NOT NULL DEFAULT 0 AFTER `orden`, ADD KEY `archivada` (`archivada`)");
+        $wpdb->query("UPDATE `$tabla_clases` SET `archivada` = 0 WHERE `archivada` IS NULL");
+    }
+
+    // Obtener clases activas
+    $clases_activas = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, nombre, color, archivada FROM $tabla_clases WHERE user_id = %d AND id != %d AND (archivada = 0 OR archivada IS NULL) ORDER BY orden ASC, fecha_creacion DESC",
+        $user_id, $clase_destino_id
+    ), ARRAY_A);
+
+    // Obtener clases archivadas
+    $clases_archivadas = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, nombre, color, archivada FROM $tabla_clases WHERE user_id = %d AND id != %d AND archivada = 1 ORDER BY orden ASC, fecha_creacion DESC",
+        $user_id, $clase_destino_id
+    ), ARRAY_A);
+
+    if (!empty($clases_activas)) {
+        foreach ($clases_activas as &$clase) {
+            $clase['evaluaciones'] = cpp_obtener_evaluaciones_por_clase($clase['id'], $user_id);
+        }
+    }
+
+    if (!empty($clases_archivadas)) {
+        foreach ($clases_archivadas as &$clase) {
+            $clase['evaluaciones'] = cpp_obtener_evaluaciones_por_clase($clase['id'], $user_id);
+        }
+    }
+
+    $destino_evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_destino_id, $user_id);
+
+    return [
+        'activas' => $clases_activas ?: [],
+        'archivadas' => $clases_archivadas ?: [],
+        'destino_evaluaciones' => $destino_evaluaciones ?: []
+    ];
+}
+
+/**
+ * Importa la programación desde una clase de origen a una de destino.
+ */
+function cpp_importar_programacion_de_clase($clase_origen_id, $clase_destino_id, $tipo_importacion, $modo_importacion, $evaluaciones_mapping, $user_id) {
+    global $wpdb;
+
+    if (!cpp_es_propietario_clase($clase_origen_id, $user_id) || !cpp_es_propietario_clase($clase_destino_id, $user_id)) {
+        return ['success' => false, 'message' => 'No tienes permiso para acceder a estas clases.'];
+    }
+
+    if ($clase_origen_id === $clase_destino_id) {
+        return ['success' => false, 'message' => 'La clase de origen y destino no pueden ser la misma.'];
+    }
+
+    if (empty($evaluaciones_mapping) || !is_array($evaluaciones_mapping)) {
+        return ['success' => false, 'message' => 'No se han especificado las evaluaciones a importar.'];
+    }
+
+    $tabla_sesiones = $wpdb->prefix . 'cpp_programador_sesiones';
+    $total_sesiones_importadas = 0;
+    $evaluaciones_procesadas = [];
+
+    foreach ($evaluaciones_mapping as $item) {
+        $eval_origen_id = isset($item['evaluacion_origen_id']) ? intval($item['evaluacion_origen_id']) : 0;
+        $eval_destino_id = isset($item['evaluacion_destino_id']) ? $item['evaluacion_destino_id'] : 0;
+
+        if (empty($eval_origen_id) || empty($eval_destino_id) || $eval_destino_id === 'ignore') {
+            continue;
+        }
+
+        // Si se indicó crear una nueva evaluación en destino
+        if ($eval_destino_id === 'new' || strpos($eval_destino_id, 'new:') === 0) {
+            $nombre_nueva_eval = '';
+            if (strpos($eval_destino_id, 'new:') === 0) {
+                $nombre_nueva_eval = sanitize_text_field(substr($eval_destino_id, 4));
+            }
+            if (empty($nombre_nueva_eval)) {
+                // Obtener el nombre de la evaluación de origen
+                $eval_origen_obj = $wpdb->get_row($wpdb->prepare(
+                    "SELECT nombre_evaluacion FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d",
+                    $eval_origen_id, $user_id
+                ));
+                $nombre_nueva_eval = $eval_origen_obj ? $eval_origen_obj->nombre_evaluacion : 'Nueva Evaluación';
+            }
+
+            $eval_destino_id = cpp_crear_evaluacion($clase_destino_id, $user_id, $nombre_nueva_eval);
+            if (!$eval_destino_id) {
+                continue;
+            }
+        } else {
+            $eval_destino_id = intval($eval_destino_id);
+        }
+
+        // Si el modo es "machacar" (replace), borrar sesiones existentes en esa evaluación de destino
+        if ($modo_importacion === 'replace') {
+            $sesiones_existentes = $wpdb->get_col($wpdb->prepare(
+                "SELECT id FROM $tabla_sesiones WHERE clase_id = %d AND evaluacion_id = %d AND user_id = %d",
+                $clase_destino_id, $eval_destino_id, $user_id
+            ));
+            if (!empty($sesiones_existentes)) {
+                foreach ($sesiones_existentes as $s_id) {
+                    cpp_programador_delete_sesion(intval($s_id), $user_id, true);
+                }
+            }
+        }
+
+        // Obtener IDs de las sesiones de origen
+        $sesiones_origen = $wpdb->get_col($wpdb->prepare(
+            "SELECT id FROM $tabla_sesiones WHERE clase_id = %d AND evaluacion_id = %d AND user_id = %d ORDER BY orden ASC",
+            $clase_origen_id, $eval_origen_id, $user_id
+        ));
+
+        if (!empty($sesiones_origen)) {
+            $nuevos_ids = cpp_copy_sessions_to_class($sesiones_origen, $clase_destino_id, $eval_destino_id, $user_id);
+            if ($nuevos_ids) {
+                $total_sesiones_importadas += count($nuevos_ids);
+                cpp_programador_recalculate_and_update_activity_dates($eval_destino_id, $user_id);
+            }
+        }
+
+        $evaluaciones_procesadas[] = $eval_destino_id;
+    }
+
+    cpp_clear_programador_cache($user_id);
+
+    return [
+        'success' => true,
+        'count' => $total_sesiones_importadas,
+        'evaluaciones_afectadas' => array_unique($evaluaciones_procesadas),
+        'message' => sprintf('Se han importado %d sesión(es) de programación correctamente.', $total_sesiones_importadas)
+    ];
+}
