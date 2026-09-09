@@ -8,6 +8,7 @@ function cpp_clear_programador_cache($user_id) {
     if (empty($user_id)) {
         return false;
     }
+    cpp_programador_get_all_data($user_id, true);
     return delete_user_meta($user_id, 'cpp_programador_all_data_cache');
 }
 
@@ -18,8 +19,12 @@ function cpp_programador_save_config_value($user_id, $clave, $valor) {
     return $wpdb->replace($tabla_config, $data, ['%d', '%s', '%s']) !== false;
 }
 
-function cpp_programador_get_all_data($user_id) {
+function cpp_programador_get_all_data($user_id, $clear_static_cache = false) {
     static $static_cache = [];
+    if ($clear_static_cache) {
+        unset($static_cache[$user_id]);
+        return null;
+    }
     if (isset($static_cache[$user_id])) {
         return $static_cache[$user_id];
     }
@@ -867,33 +872,15 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
  */
 function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_chequear, $nueva_start_date, $nueva_start_eval_id = null) {
     global $wpdb;
-    $all_data = cpp_programador_get_all_data($user_id);
 
     $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id_a_chequear, $user_id));
     if (!$clase_id) return false;
 
-    $occupied_slots = [];
-
-    $otras_evaluaciones = $wpdb->get_results($wpdb->prepare(
-        "SELECT id, start_date, start_evaluacion_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE clase_id = %d AND id != %d AND user_id = %d",
-        $clase_id, $evaluacion_id_a_chequear, $user_id
-    ));
-
-    foreach ($otras_evaluaciones as $eval) {
-        if (!empty($eval->start_date) || !empty($eval->start_evaluacion_id)) {
-            $fechas_eval = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $eval->id);
-            foreach ($fechas_eval as $f) {
-                $occupied_slots[] = $f['fecha'];
-            }
-        }
-    }
-
-    $occupied_slots = array_unique($occupied_slots);
-
-    // Guardar temporalmente los nuevos valores para el chequeo
+    // Guardar valores antiguos
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $old_eval_row = $wpdb->get_row($wpdb->prepare("SELECT start_date, start_evaluacion_id FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id_a_chequear));
 
+    // Aplicar temporalmente los nuevos valores
     if (!empty($nueva_start_eval_id)) {
         $wpdb->update($tabla_evaluaciones, ['start_date' => null, 'start_evaluacion_id' => intval($nueva_start_eval_id)], ['id' => $evaluacion_id_a_chequear]);
     } else {
@@ -901,10 +888,26 @@ function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_cheq
     }
     cpp_clear_programador_cache($user_id);
 
-    $fechas_propuestas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id_a_chequear);
-    $proposed_slots = [];
-    foreach ($fechas_propuestas as $f) {
-        $proposed_slots[] = $f['fecha'];
+    // Calcular fechas con el nuevo estado temporal
+    $all_data = cpp_programador_get_all_data($user_id);
+    $evaluaciones_clase = $wpdb->get_results($wpdb->prepare(
+        "SELECT id FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d",
+        $clase_id, $user_id
+    ));
+
+    $slots_by_eval = [];
+    $visited_evals = [];
+    $eval_fechas_cache = [];
+
+    foreach ($evaluaciones_clase as $eval) {
+        $fechas_eval = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $eval->id, $visited_evals, $all_data, $eval_fechas_cache);
+        $dates = [];
+        foreach ($fechas_eval as $f) {
+            if (!empty($f['fecha'])) {
+                $dates[] = $f['fecha'];
+            }
+        }
+        $slots_by_eval[$eval->id] = $dates;
     }
 
     // Restaurar valores antiguos
@@ -914,9 +917,23 @@ function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_cheq
     ], ['id' => $evaluacion_id_a_chequear]);
     cpp_clear_programador_cache($user_id);
 
-    $conflict = array_intersect($proposed_slots, $occupied_slots);
+    // Verificar si hay intersección de fechas entre evaluaciones distintas
+    $all_eval_ids = array_keys($slots_by_eval);
+    $has_conflict = false;
 
-    return !empty($conflict);
+    for ($i = 0; $i < count($all_eval_ids); $i++) {
+        for ($j = $i + 1; $j < count($all_eval_ids); $j++) {
+            $eval1 = $all_eval_ids[$i];
+            $eval2 = $all_eval_ids[$j];
+            $intersect = array_intersect($slots_by_eval[$eval1], $slots_by_eval[$eval2]);
+            if (!empty($intersect)) {
+                $has_conflict = true;
+                break 2;
+            }
+        }
+    }
+
+    return $has_conflict;
 }
 
 
