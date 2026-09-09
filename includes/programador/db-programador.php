@@ -364,6 +364,7 @@ function cpp_copy_sessions_to_class($session_ids, $destination_clase_id, $destin
         unset($new_session_data['id']);
         $new_session_data['clase_id'] = $destination_clase_id;
         $new_session_data['evaluacion_id'] = $destination_evaluacion_id;
+        $new_session_data['fecha_fijada'] = null; // Desfijar sesión al copiar
         $new_session_data['orden'] = $current_order++;
 
         $result = $wpdb->insert($tabla_sesiones, $new_session_data);
@@ -1200,14 +1201,35 @@ function cpp_importar_programacion_de_clase($clase_origen_id, $clase_destino_id,
             }
         }
 
-        // Obtener IDs de las sesiones de origen
-        $sesiones_origen = $wpdb->get_col($wpdb->prepare(
-            "SELECT id FROM $tabla_sesiones WHERE clase_id = %d AND evaluacion_id = %d AND user_id = %d ORDER BY orden ASC",
+        // Obtener sesiones de origen y ordenarlas cronológicamente según su fecha/hora en la clase original
+        $sesiones_origen_objs = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $tabla_sesiones WHERE clase_id = %d AND evaluacion_id = %d AND user_id = %d",
             $clase_origen_id, $eval_origen_id, $user_id
         ));
 
-        if (!empty($sesiones_origen)) {
-            $nuevos_ids = cpp_copy_sessions_to_class($sesiones_origen, $clase_destino_id, $eval_destino_id, $user_id);
+        if (!empty($sesiones_origen_objs)) {
+            $fechas_origen = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_origen_id, $eval_origen_id);
+
+            usort($sesiones_origen_objs, function($a, $b) use ($fechas_origen) {
+                $fecha_a = !empty($a->fecha_fijada) ? $a->fecha_fijada : (isset($fechas_origen[$a->id]['fecha']) ? $fechas_origen[$a->id]['fecha'] : '9999-12-31');
+                $fecha_b = !empty($b->fecha_fijada) ? $b->fecha_fijada : (isset($fechas_origen[$b->id]['fecha']) ? $fechas_origen[$b->id]['fecha'] : '9999-12-31');
+
+                if ($fecha_a !== $fecha_b) {
+                    return strcmp($fecha_a, $fecha_b);
+                }
+
+                $hora_a = isset($fechas_origen[$a->id]['hora']) ? $fechas_origen[$a->id]['hora'] : '';
+                $hora_b = isset($fechas_origen[$b->id]['hora']) ? $fechas_origen[$b->id]['hora'] : '';
+                if ($hora_a !== $hora_b) {
+                    return strcmp($hora_a, $hora_b);
+                }
+
+                return $a->orden <=> $b->orden;
+            });
+
+            $sesiones_origen_ids = array_map(function($s) { return intval($s->id); }, $sesiones_origen_objs);
+
+            $nuevos_ids = cpp_copy_sessions_to_class($sesiones_origen_ids, $clase_destino_id, $eval_destino_id, $user_id);
             if ($nuevos_ids) {
                 $total_sesiones_importadas += count($nuevos_ids);
                 cpp_programador_recalculate_and_update_activity_dates($eval_destino_id, $user_id);
