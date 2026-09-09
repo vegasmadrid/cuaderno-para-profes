@@ -283,6 +283,9 @@
             self.navigateToSesion(claseId, evaluacionId, sesionId);
         });
 
+        // --- Importar Programación ---
+        $document.on('click', '#cpp-import-programacion-toolbar-btn, .cpp-import-programacion-btn', () => self.openImportProgramacionModal());
+
         // --- Sharing Modal ---
         $document.on('click', '#cpp-share-week-btn', () => this.openShareModal());
         if (this.shareWeekModal.element) {
@@ -2133,6 +2136,9 @@
                     <button id="cpp-simbolo-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Asignar o cambiar símbolo">
                         <span class="dashicons dashicons-star-filled"></span>
                     </button>
+                    <button id="cpp-import-programacion-toolbar-btn" class="cpp-btn cpp-btn-secondary" title="Importar programación de otra clase">
+                        <span class="dashicons dashicons-download"></span>
+                    </button>
                 </div>
                 <div id="cpp-sesion-bulk-actions" class="hidden"></div>
             </div>`;
@@ -2144,9 +2150,12 @@
                     <div class="cpp-no-alumnos-emoji">📅</div>
                     <h3 class="cpp-no-alumnos-titulo">Planifica tu curso</h3>
                     <p class="cpp-no-alumnos-texto">Aún no has añadido ninguna sesión a esta evaluación. Crea tu primera sesión para empezar a organizar tus clases.</p>
-                    <div class="cpp-no-alumnos-actions">
+                    <div class="cpp-no-alumnos-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                         <button class="cpp-btn cpp-btn-primary cpp-add-sesion-btn" ${!this.currentEvaluacionId ? 'disabled' : ''}>
                             <span class="dashicons dashicons-plus"></span> Añadir primera sesión
+                        </button>
+                        <button class="cpp-btn cpp-btn-secondary cpp-import-programacion-btn">
+                            <span class="dashicons dashicons-download"></span> Importar programación
                         </button>
                     </div>
                 </div>
@@ -3282,6 +3291,380 @@
              .replace(/>/g, "&gt;")
              .replace(/"/g, "&quot;")
              .replace(/'/g, "&#039;");
+    },
+
+    openImportProgramacionModal() {
+        if (!this.currentClase) {
+            alert('Por favor, selecciona una clase primero.');
+            return;
+        }
+
+        // Remove existing modal if any
+        let existingModal = document.getElementById('cpp-import-programacion-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'cpp-import-programacion-modal';
+        modal.className = 'cpp-modal';
+        modal.style.display = 'flex';
+
+        modal.innerHTML = `
+            <div class="cpp-modal-content" style="max-width: 620px; width: 92%; max-height: 90vh; overflow-y: auto;">
+                <span class="cpp-modal-close" id="cpp-close-import-prog-modal">&times;</span>
+                <h2 style="margin-top: 0; color: #2c3e50; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                    <span class="dashicons dashicons-download"></span> Importar Programación de otra clase
+                </h2>
+                <div id="cpp-import-prog-loading" style="text-align: center; padding: 30px 10px; color: #666;">
+                    <span class="dashicons dashicons-update spin" style="font-size: 24px; width: 24px; height: 24px;"></span>
+                    <p style="margin-top: 10px;">Cargando clases y evaluaciones...</p>
+                </div>
+                <div id="cpp-import-prog-body" style="display: none;">
+                    <form id="cpp-import-prog-form">
+                        <!-- Step 1: Clase de origen -->
+                        <div class="cpp-form-group" style="margin-bottom: 16px;">
+                            <label for="cpp-import-prog-source-class" style="font-weight: 600; display: block; margin-bottom: 6px;">1. Selecciona la clase de origen:</label>
+                            <select id="cpp-import-prog-source-class" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;" required>
+                                <option value="">-- Selecciona una clase --</option>
+                            </select>
+                        </div>
+
+                        <!-- Step 2: Alcance -->
+                        <div class="cpp-form-group" style="margin-bottom: 16px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 6px;">2. Alcance de la importación:</label>
+                            <div style="display: flex; gap: 20px;">
+                                <label style="font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                    <input type="radio" name="cpp_import_scope" value="evaluacion_especifica" checked> Evaluación específica
+                                </label>
+                                <label style="font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                    <input type="radio" name="cpp_import_scope" value="toda_la_clase"> Toda la clase
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Mapeo de evaluaciones -->
+                        <div id="cpp-import-prog-mapping-container" class="cpp-form-group" style="margin-bottom: 16px; background: #f8f9fa; padding: 14px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <p style="margin: 0; color: #666; font-size: 13px;">Selecciona una clase de origen para configurar las evaluaciones.</p>
+                        </div>
+
+                        <!-- Step 4: Modo -->
+                        <div class="cpp-form-group" style="margin-bottom: 20px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 6px;">3. Modo de importación:</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <label style="font-weight: normal; cursor: pointer; display: flex; align-items: flex-start; gap: 8px; font-size: 13px;">
+                                    <input type="radio" name="cpp_import_mode" value="add" checked style="margin-top: 3px;">
+                                    <span><strong>Añadir a la programación existente</strong><br><small style="color:#666;">Conserva las sesiones actuales e inserta las importadas a continuación.</small></span>
+                                </label>
+                                <label style="font-weight: normal; cursor: pointer; display: flex; align-items: flex-start; gap: 8px; font-size: 13px;">
+                                    <input type="radio" name="cpp_import_mode" value="replace" style="margin-top: 3px;">
+                                    <span><strong style="color: #d9534f;">Machacar programación existente</strong><br><small style="color:#666;">Elimina la programación de la(s) evaluación(es) de destino antes de importar las nuevas sesiones.</small></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="cpp-modal-actions" style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #eee; padding-top: 15px;">
+                            <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-cancel-import-prog-btn">Cancelar</button>
+                            <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-submit-import-prog-btn">
+                                <span class="dashicons dashicons-download" style="vertical-align: middle; margin-right: 4px;"></span> Importar Programación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const closeBtn = modal.querySelector('#cpp-close-import-prog-modal');
+        const cancelBtn = modal.querySelector('#cpp-cancel-import-prog-btn');
+        const closeModalFn = () => { modal.remove(); };
+
+        closeBtn.addEventListener('click', closeModalFn);
+        cancelBtn.addEventListener('click', closeModalFn);
+
+        const form = modal.querySelector('#cpp-import-prog-form');
+        form.addEventListener('submit', (e) => this.handleImportProgramacionSubmit(e));
+
+        const postData = new URLSearchParams({
+            action: 'cpp_get_clases_y_evaluaciones_para_importar_programacion',
+            nonce: cppFrontendData.nonce,
+            clase_destino_id: this.currentClase.id
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: postData })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    this.renderImportProgramacionModalContent(res.data);
+                } else {
+                    alert(res.data ? res.data.message : 'Error al obtener datos de las clases.');
+                    closeModalFn();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error de conexión al cargar clases.');
+                closeModalFn();
+            });
+    },
+
+    renderImportProgramacionModalContent(data) {
+        this.importProgramacionData = data;
+        const modal = document.getElementById('cpp-import-programacion-modal');
+        if (!modal) return;
+
+        const loading = modal.querySelector('#cpp-import-prog-loading');
+        const body = modal.querySelector('#cpp-import-prog-body');
+        const sourceSelect = modal.querySelector('#cpp-import-prog-source-class');
+
+        let selectHTML = '<option value="">-- Selecciona una clase --</option>';
+
+        if (data.activas && data.activas.length > 0) {
+            selectHTML += '<optgroup label="Clases activas">';
+            data.activas.forEach(c => {
+                selectHTML += `<option value="${c.id}">${this.escapeHtml(c.nombre)}</option>`;
+            });
+            selectHTML += '</optgroup>';
+        }
+
+        if (data.archivadas && data.archivadas.length > 0) {
+            selectHTML += '<optgroup label="Clases archivadas">';
+            data.archivadas.forEach(c => {
+                selectHTML += `<option value="${c.id}">${this.escapeHtml(c.nombre)} (Archivada)</option>`;
+            });
+            selectHTML += '</optgroup>';
+        }
+
+        sourceSelect.innerHTML = selectHTML;
+
+        sourceSelect.addEventListener('change', () => this.updateImportMappingUI());
+        modal.querySelectorAll('input[name="cpp_import_scope"]').forEach(radio => {
+            radio.addEventListener('change', () => this.updateImportMappingUI());
+        });
+
+        loading.style.display = 'none';
+        body.style.display = 'block';
+    },
+
+    updateImportMappingUI() {
+        const modal = document.getElementById('cpp-import-programacion-modal');
+        if (!modal || !this.importProgramacionData) return;
+
+        const container = modal.querySelector('#cpp-import-prog-mapping-container');
+        const sourceClassId = modal.querySelector('#cpp-import-prog-source-class').value;
+        const scope = modal.querySelector('input[name="cpp_import_scope"]:checked').value;
+
+        if (!sourceClassId) {
+            container.innerHTML = '<p style="margin: 0; color: #666; font-size: 13px;">Selecciona una clase de origen para configurar las evaluaciones.</p>';
+            return;
+        }
+
+        const sourceClass = [...(this.importProgramacionData.activas || []), ...(this.importProgramacionData.archivadas || [])]
+            .find(c => c.id == sourceClassId);
+
+        if (!sourceClass || !sourceClass.evaluaciones || sourceClass.evaluaciones.length === 0) {
+            container.innerHTML = '<p style="margin: 0; color: #d9534f; font-size: 13px;">La clase seleccionada no tiene evaluaciones registradas.</p>';
+            return;
+        }
+
+        const targetEvals = this.importProgramacionData.destino_evaluaciones || [];
+
+        if (scope === 'evaluacion_especifica') {
+            let sourceEvalOptions = sourceClass.evaluaciones.map(e =>
+                `<option value="${e.id}">${this.escapeHtml(e.nombre_evaluacion)}</option>`
+            ).join('');
+
+            let targetEvalOptions = targetEvals.map(e => {
+                const selected = e.id == this.currentEvaluacionId ? 'selected' : '';
+                return `<option value="${e.id}" ${selected}>${this.escapeHtml(e.nombre_evaluacion)}</option>`;
+            }).join('');
+            targetEvalOptions += `<option value="new">+ Crear nueva evaluación</option>`;
+
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Evaluación de origen:</label>
+                        <select id="cpp-import-spec-source-eval" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                            ${sourceEvalOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Evaluación de destino (clase actual):</label>
+                        <select id="cpp-import-spec-target-eval" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                            ${targetEvalOptions}
+                        </select>
+                    </div>
+                    <div id="cpp-import-new-eval-name-container" style="display: none;">
+                        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Nombre de la nueva evaluación:</label>
+                        <input type="text" id="cpp-import-new-eval-name" placeholder="Ej. 1ª Evaluación" style="width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                    </div>
+                </div>
+            `;
+
+            const targetSelect = container.querySelector('#cpp-import-spec-target-eval');
+            const newNameContainer = container.querySelector('#cpp-import-new-eval-name-container');
+            const newNameInput = container.querySelector('#cpp-import-new-eval-name');
+
+            const handleTargetSelectChange = () => {
+                if (targetSelect.value === 'new') {
+                    newNameContainer.style.display = 'block';
+                    const selectedSourceEvalId = container.querySelector('#cpp-import-spec-source-eval').value;
+                    const selectedSourceEvalObj = sourceClass.evaluaciones.find(e => e.id == selectedSourceEvalId);
+                    if (selectedSourceEvalObj) {
+                        newNameInput.value = selectedSourceEvalObj.nombre_evaluacion;
+                    }
+                } else {
+                    newNameContainer.style.display = 'none';
+                }
+            };
+
+            targetSelect.addEventListener('change', handleTargetSelectChange);
+            container.querySelector('#cpp-import-spec-source-eval').addEventListener('change', () => {
+                if (targetSelect.value === 'new') {
+                    handleTargetSelectChange();
+                }
+            });
+
+        } else if (scope === 'toda_la_clase') {
+            let html = '<label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px;">Mapeo de evaluaciones:</label>';
+            html += '<div style="display: flex; flex-direction: column; gap: 10px;">';
+
+            sourceClass.evaluaciones.forEach(sourceEval => {
+                let matchTarget = targetEvals.find(te => te.nombre_evaluacion.toLowerCase().trim() === sourceEval.nombre_evaluacion.toLowerCase().trim());
+
+                let optionsHTML = targetEvals.map(te => {
+                    const isSelected = matchTarget && matchTarget.id == te.id;
+                    return `<option value="${te.id}" ${isSelected ? 'selected' : ''}>${this.escapeHtml(te.nombre_evaluacion)}</option>`;
+                }).join('');
+
+                optionsHTML += `<option value="new" ${!matchTarget ? 'selected' : ''}>+ Crear nueva evaluación ("${this.escapeHtml(sourceEval.nombre_evaluacion)}")</option>`;
+                optionsHTML += `<option value="ignore">No importar esta evaluación</option>`;
+
+                html += `
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; padding: 8px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        <span style="font-weight: 600; font-size: 13px; color: #334155;">${this.escapeHtml(sourceEval.nombre_evaluacion)}</span>
+                        <span style="font-size: 12px; color: #94a3b8;">➔</span>
+                        <select class="cpp-import-all-eval-map" data-source-eval-id="${sourceEval.id}" data-source-eval-name="${this.escapeHtml(sourceEval.nombre_evaluacion)}" style="max-width: 250px; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px;">
+                            ${optionsHTML}
+                        </select>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+    },
+
+    handleImportProgramacionSubmit(e) {
+        e.preventDefault();
+        const modal = document.getElementById('cpp-import-programacion-modal');
+        if (!modal) return;
+
+        const sourceClassId = modal.querySelector('#cpp-import-prog-source-class').value;
+        const scope = modal.querySelector('input[name="cpp_import_scope"]:checked').value;
+        const mode = modal.querySelector('input[name="cpp_import_mode"]:checked').value;
+
+        if (!sourceClassId) {
+            alert('Por favor, selecciona una clase de origen.');
+            return;
+        }
+
+        let mapping = [];
+
+        if (scope === 'evaluacion_especifica') {
+            const sourceEvalId = modal.querySelector('#cpp-import-spec-source-eval').value;
+            let targetEvalVal = modal.querySelector('#cpp-import-spec-target-eval').value;
+
+            if (targetEvalVal === 'new') {
+                const customName = modal.querySelector('#cpp-import-new-eval-name').value.trim();
+                targetEvalVal = 'new:' + (customName || 'Nueva Evaluación');
+            }
+
+            if (!sourceEvalId || !targetEvalVal) {
+                alert('Por favor, selecciona las evaluaciones de origen y destino.');
+                return;
+            }
+
+            mapping.push({
+                evaluacion_origen_id: sourceEvalId,
+                evaluacion_destino_id: targetEvalVal
+            });
+
+        } else if (scope === 'toda_la_clase') {
+            modal.querySelectorAll('.cpp-import-all-eval-map').forEach(select => {
+                const sourceEvalId = select.dataset.sourceEvalId;
+                let targetVal = select.value;
+
+                if (targetVal === 'new') {
+                    const sourceName = select.dataset.sourceEvalName;
+                    targetVal = 'new:' + sourceName;
+                }
+
+                if (targetVal !== 'ignore') {
+                    mapping.push({
+                        evaluacion_origen_id: sourceEvalId,
+                        evaluacion_destino_id: targetVal
+                    });
+                }
+            });
+
+            if (mapping.length === 0) {
+                alert('Debes seleccionar al menos una evaluación para importar.');
+                return;
+            }
+        }
+
+        if (mode === 'replace') {
+            if (!confirm('¿Estás seguro de que deseas MACHACAR la programación existente? Se eliminarán las sesiones de destino antes de importar.')) {
+                return;
+            }
+        }
+
+        const submitBtn = modal.querySelector('#cpp-submit-import-prog-btn');
+        submitBtn.disabled = true;
+        const origText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="dashicons dashicons-update spin" style="vertical-align: middle;"></span> Importando...';
+
+        const postData = new URLSearchParams({
+            action: 'cpp_importar_programacion_clase',
+            nonce: cppFrontendData.nonce,
+            clase_origen_id: sourceClassId,
+            clase_destino_id: this.currentClase.id,
+            tipo_importacion: scope,
+            modo_importacion: mode,
+            evaluaciones_mapping: JSON.stringify(mapping)
+        });
+
+        fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: postData })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    modal.remove();
+                    const reminderMsg = ' Recordatorio: Por favor, revisa o actualiza la fecha de inicio de la(s) evaluación(es) en la pestaña Programación para recalcular las fechas de tus sesiones.';
+                    const fullMsg = (res.data.message || 'Programación importada correctamente.') + reminderMsg;
+
+                    if (cpp.utils && typeof cpp.utils.showToast === 'function') {
+                        cpp.utils.showToast(fullMsg);
+                    } else {
+                        alert(fullMsg);
+                    }
+
+                    // Reload programador data
+                    this.fetchData(this.currentClase.id, this.currentEvaluacionId);
+                } else {
+                    alert(res.data ? res.data.message : 'Error al importar programación.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origText;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error de conexión al importar programación.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origText;
+            });
     }
     };
 })(jQuery);

@@ -19,6 +19,8 @@ add_action('wp_ajax_cpp_delete_multiple_sesiones', 'cpp_ajax_delete_multiple_ses
 add_action('wp_ajax_cpp_get_fechas_evaluacion', 'cpp_ajax_get_fechas_evaluacion');
 add_action('wp_ajax_cpp_toggle_sesion_fijada', 'cpp_ajax_toggle_sesion_fijada');
 add_action('wp_ajax_cpp_download_programacion_pdf', 'cpp_ajax_download_programacion_pdf');
+add_action('wp_ajax_cpp_get_clases_y_evaluaciones_para_importar_programacion', 'cpp_ajax_get_clases_y_evaluaciones_para_importar_programacion');
+add_action('wp_ajax_cpp_importar_programacion_clase', 'cpp_ajax_importar_programacion_clase');
 
 
 // Handlers para Actividades
@@ -943,4 +945,62 @@ function cpp_ajax_get_public_programador_data() {
     if (!$data) { wp_send_json_error(['message' => 'Enlace no válido o desactivado.']); return; }
 
     wp_send_json_success($data);
+}
+
+function cpp_ajax_get_clases_y_evaluaciones_para_importar_programacion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $clase_destino_id = isset($_POST['clase_destino_id']) ? intval($_POST['clase_destino_id']) : 0;
+
+    if (empty($clase_destino_id)) {
+        wp_send_json_error(['message' => 'Clase de destino no especificada.']);
+        return;
+    }
+
+    $data = cpp_obtener_clases_y_evaluaciones_para_importar_programacion($clase_destino_id, $user_id);
+
+    if ($data === false) {
+        wp_send_json_error(['message' => 'No tienes permiso para acceder a esta clase.']);
+        return;
+    }
+
+    wp_send_json_success($data);
+}
+
+function cpp_ajax_importar_programacion_clase() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $clase_origen_id = isset($_POST['clase_origen_id']) ? intval($_POST['clase_origen_id']) : 0;
+    $clase_destino_id = isset($_POST['clase_destino_id']) ? intval($_POST['clase_destino_id']) : 0;
+    $tipo_importacion = isset($_POST['tipo_importacion']) ? sanitize_text_field($_POST['tipo_importacion']) : 'toda_la_clase';
+    $modo_importacion = isset($_POST['modo_importacion']) ? sanitize_text_field($_POST['modo_importacion']) : 'add';
+
+    $raw_mapping = isset($_POST['evaluaciones_mapping']) ? $_POST['evaluaciones_mapping'] : '';
+    if (is_string($raw_mapping)) {
+        $raw_mapping = json_decode(stripslashes($raw_mapping), true);
+    }
+
+    if (empty($clase_origen_id) || empty($clase_destino_id)) {
+        wp_send_json_error(['message' => 'Clase de origen o destino no válida.']);
+        return;
+    }
+
+    $resultado = cpp_importar_programacion_de_clase(
+        $clase_origen_id,
+        $clase_destino_id,
+        $tipo_importacion,
+        $modo_importacion,
+        $raw_mapping,
+        $user_id
+    );
+
+    if ($resultado['success']) {
+        wp_send_json_success($resultado);
+    } else {
+        wp_send_json_error($resultado);
+    }
 }
