@@ -19,7 +19,47 @@ function cpp_ajax_obtener_evaluaciones() {
             $evaluaciones[$key]['criterios'] = cpp_obtener_criterios_por_evaluacion($eval['id'], $user_id);
         }
     }
-    wp_send_json_success(['evaluaciones' => $evaluaciones]);
+
+    $clases_importar = cpp_obtener_clases_para_importar_evaluaciones($clase_id, $user_id);
+
+    wp_send_json_success([
+        'evaluaciones' => $evaluaciones,
+        'clases_importar' => $clases_importar
+    ]);
+}
+
+add_action('wp_ajax_cpp_importar_evaluaciones', 'cpp_ajax_importar_evaluaciones');
+function cpp_ajax_importar_evaluaciones() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+
+    $clase_origen_id = isset($_POST['clase_origen_id']) ? intval($_POST['clase_origen_id']) : 0;
+    $clase_destino_id = isset($_POST['clase_destino_id']) ? intval($_POST['clase_destino_id']) : 0;
+    $copiar_sistema_y_criterios = isset($_POST['copiar_sistema_y_criterios']) && ($_POST['copiar_sistema_y_criterios'] === 'true' || $_POST['copiar_sistema_y_criterios'] === '1' || $_POST['copiar_sistema_y_criterios'] === true);
+    $modo_importacion = isset($_POST['modo_importacion']) ? sanitize_text_field($_POST['modo_importacion']) : 'add';
+
+    if (empty($clase_origen_id) || empty($clase_destino_id)) {
+        wp_send_json_error(['message' => 'Debes seleccionar una clase de origen.']);
+        return;
+    }
+
+    if ($clase_origen_id === $clase_destino_id) {
+        wp_send_json_error(['message' => 'La clase de origen y de destino no pueden ser la misma.']);
+        return;
+    }
+
+    $resultado = cpp_importar_evaluaciones_de_clase($clase_origen_id, $clase_destino_id, $copiar_sistema_y_criterios, $modo_importacion, $user_id);
+
+    if (is_array($resultado) && isset($resultado['success'])) {
+        if ($resultado['success']) {
+            wp_send_json_success(['message' => $resultado['message']]);
+        } else {
+            wp_send_json_error(['message' => $resultado['message']]);
+        }
+    } else {
+        wp_send_json_error(['message' => 'Error al importar evaluaciones.']);
+    }
 }
 
 add_action('wp_ajax_cpp_crear_evaluacion', 'cpp_ajax_crear_evaluacion');

@@ -254,3 +254,112 @@ function cpp_asignar_actividades_huerfanas_a_categoria_por_defecto($evaluacion_i
 
     return true;
 }
+
+/**
+ * Obtiene las clases disponibles para importar evaluaciones (activas primero, archivadas al final),
+ * excluyendo la clase destino especificada.
+ */
+function cpp_obtener_clases_para_importar_evaluaciones($clase_destino_id, $user_id) {
+    global $wpdb;
+    $tabla_clases = $wpdb->prefix . 'cpp_clases';
+
+    $has_archivada = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$tabla_clases` LIKE %s", 'archivada'));
+    if (!$has_archivada) {
+        $wpdb->query("ALTER TABLE `$tabla_clases` ADD `archivada` TINYINT(1) NOT NULL DEFAULT 0 AFTER `orden`, ADD KEY `archivada` (`archivada`)");
+        $wpdb->query("UPDATE `$tabla_clases` SET `archivada` = 0 WHERE `archivada` IS NULL");
+    }
+
+    // Obtener clases activas
+    $clases_activas = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, nombre, color, archivada FROM $tabla_clases WHERE user_id = %d AND id != %d AND (archivada = 0 OR archivada IS NULL) ORDER BY orden ASC, fecha_creacion DESC",
+        $user_id, $clase_destino_id
+    ), ARRAY_A);
+
+    // Obtener clases archivadas
+    $clases_archivadas = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, nombre, color, archivada FROM $tabla_clases WHERE user_id = %d AND id != %d AND archivada = 1 ORDER BY orden ASC, fecha_creacion DESC",
+        $user_id, $clase_destino_id
+    ), ARRAY_A);
+
+    return [
+        'activas' => $clases_activas,
+        'archivadas' => $clases_archivadas
+    ];
+}
+
+/**
+ * Importa las evaluaciones de una clase a otra.
+ *
+ * @param int $clase_origen_id ID de la clase desde la que se importarán evaluaciones.
+ * @param int $clase_destino_id ID de la clase destino.
+ * @param bool $copiar_sistema_y_criterios Si es true, copia calculo_nota, criterios y categorías.
+ * @param string $modo_importacion 'add' para añadir o 'replace' para reemplazar.
+ * @param int $user_id ID del usuario actual.
+ * @return bool|array True si tuvo éxito o array con mensaje de error/resultado.
+ */
+function cpp_importar_evaluaciones_de_clase($clase_origen_id, $clase_destino_id, $copiar_sistema_y_criterios, $modo_importacion, $user_id) {
+    global $wpdb;
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+
+    if (!cpp_es_propietario_clase($clase_origen_id, $user_id) || !cpp_es_propietario_clase($clase_destino_id, $user_id)) {
+        return ['success' => false, 'message' => 'No tienes permiso para acceder a estas clases.'];
+    }
+
+    $evaluaciones_origen = cpp_obtener_evaluaciones_por_clase($clase_origen_id, $user_id);
+    if (empty($evaluaciones_origen)) {
+        return ['success' => false, 'message' => 'La clase de origen no tiene evaluaciones para importar.'];
+    }
+
+    // Si el modo es reemplazar, eliminamos las evaluaciones existentes de la clase destino
+    if ($modo_importacion === 'replace') {
+        $evaluaciones_destino = cpp_obtener_evaluaciones_por_clase($clase_destino_id, $user_id);
+        if (!empty($evaluaciones_destino)) {
+            foreach ($evaluaciones_destino as $eval_dest) {
+                cpp_eliminar_evaluacion_y_dependencias($eval_dest['id'], $user_id);
+            }
+        }
+        $orden_base = 0;
+    } else {
+        // Si añadimos, calculamos el orden máximo existente
+        $max_orden = $wpdb->get_var($wpdb->prepare(
+            "SELECT MAX(orden) FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d",
+            $clase_destino_id, $user_id
+        ));
+        $orden_base = ($max_orden !== null) ? intval($max_orden) + 1 : 0;
+    }
+
+    $count_imported = 0;
+
+    foreach ($evaluaciones_origen as $eval_origen) {
+        $metodo_calculo = $copiar_sistema_y_criterios ? $eval_origen['calculo_nota'] : 'total';
+
+        $wpdb->insert(
+            $tabla_evaluaciones,
+            [
+                'clase_id' => $clase_destino_id,
+                'user_id' => $user_id,
+                'nombre_evaluacion' => sanitize_text_field($eval_origen['nombre_evaluacion']),
+                'start_date' => $eval_origen['start_date'],
+                'calculo_nota' => $metodo_calculo,
+                'orden' => $orden_base + $count_imported
+            ],
+            ['%d', '%d', '%s', '%s', '%s', '%d']
+        );
+
+        $nueva_evaluacion_id = $wpdb->insert_id;
+
+        if ($nueva_evaluacion_id) {
+            $count_imported++;
+
+            if ($copiar_sistema_y_criterios) {
+                cpp_copiar_categorias_de_evaluacion($eval_origen['id'], $nueva_evaluacion_id, $user_id);
+            }
+        }
+    }
+
+    return [
+        'success' => true,
+        'imported_count' => $count_imported,
+        'message' => sprintf('Se han importado %d evaluación(es) correctamente.', $count_imported)
+    ];
+}

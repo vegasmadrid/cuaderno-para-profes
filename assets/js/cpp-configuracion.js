@@ -623,6 +623,8 @@
             // --- EVENTOS PARA EVALUACIONES ---
             const evaluacionContainerSelector = '#cpp-config-evaluaciones-container';
 
+            $classSettingsPage.on('click', `${evaluacionContainerSelector} #cpp-btn-importar-evaluaciones-submit`, this.importarEvaluacionesSubmit.bind(this));
+
             $classSettingsPage.on('click', `${evaluacionContainerSelector} #cpp-btn-add-evaluacion-config`, () => {
                 const $input = $('#cpp-nombre-nueva-evaluacion-config');
                 const nombre = $input.val().trim();
@@ -946,7 +948,7 @@
                 data: { action: 'cpp_obtener_evaluaciones', nonce: cppFrontendData.nonce, clase_id: claseId },
                 success: function(response) {
                     if (response.success) {
-                        self.renderEvaluacionesList(response.data.evaluaciones);
+                        self.renderEvaluacionesList(response.data.evaluaciones, response.data.clases_importar);
                     } else {
                         $container.html('<p class="cpp-error-message">Error al cargar las evaluaciones.</p>');
                     }
@@ -957,7 +959,7 @@
             });
         },
 
-        renderEvaluacionesList: function(evaluaciones) {
+        renderEvaluacionesList: function(evaluaciones, clasesImportar) {
             const $container = $('#cpp-config-evaluaciones-container');
             let html = '<h4>Gestionar Evaluaciones</h4>';
             html += '<p><small>Arrastra las evaluaciones para reordenarlas.</small></p>';
@@ -996,6 +998,67 @@
             html += `<button type="button" id="cpp-btn-add-evaluacion-config" class="cpp-btn cpp-btn-primary">Añadir</button>
                      </div>`;
 
+            // --- SECCIÓN PARA IMPORTAR EVALUACIONES DE OTRA CLASE ---
+            const activas = (clasesImportar && clasesImportar.activas) ? clasesImportar.activas : [];
+            const archivadas = (clasesImportar && clasesImportar.archivadas) ? clasesImportar.archivadas : [];
+
+            if (activas.length > 0 || archivadas.length > 0) {
+                html += `<hr style="margin: 25px 0 15px 0; border: 0; border-top: 1px solid #eee;">
+                         <div class="cpp-importar-evaluaciones-section" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                            <h4 style="margin-top:0; margin-bottom: 8px; font-size: 15px; color: #2c3e50;"><span class="dashicons dashicons-download" style="vertical-align: text-bottom; margin-right: 4px;"></span> Importar evaluaciones de otra clase</h4>
+                            <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Copia la estructura de evaluaciones de otra de tus clases (activas o archivadas) a esta clase.</p>
+
+                            <div class="cpp-form-group" style="margin-bottom: 12px;">
+                                <label for="cpp-import-source-class-select" style="display:block; font-weight: 600; font-size: 12px; margin-bottom: 4px;">Clase de origen:</label>
+                                <select id="cpp-import-source-class-select" class="cpp-evaluacion-selector" style="width: 100%; max-width: 400px;">
+                                    <option value="">-- Selecciona una clase --</option>`;
+
+                if (activas.length > 0) {
+                    html += `<optgroup label="Clases activas">`;
+                    activas.forEach(function(c) {
+                        html += `<option value="${c.id}">${$('<div>').text(c.nombre).html()}</option>`;
+                    });
+                    html += `</optgroup>`;
+                }
+
+                if (archivadas.length > 0) {
+                    html += `<optgroup label="Clases archivadas">`;
+                    archivadas.forEach(function(c) {
+                        html += `<option value="${c.id}">${$('<div>').text(c.nombre).html()} (Archivada)</option>`;
+                    });
+                    html += `</optgroup>`;
+                }
+
+                html += `        </select>
+                            </div>
+
+                            <div class="cpp-form-group" style="margin-bottom: 12px;">
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                    <input type="checkbox" id="cpp-import-copy-system-criteria" checked>
+                                    <span>Copiar sistema de evaluación y sus criterios de calificación</span>
+                                </label>
+                            </div>
+
+                            <div class="cpp-form-group" style="margin-bottom: 15px;">
+                                <label style="display:block; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Modo de importación:</label>
+                                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <input type="radio" name="cpp_import_mode" value="add" checked>
+                                        <span>Añadir a las evaluaciones existentes</span>
+                                    </label>
+                                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <input type="radio" name="cpp_import_mode" value="replace">
+                                        <span>Reemplazar todas las evaluaciones existentes de esta clase</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="button" id="cpp-btn-importar-evaluaciones-submit" class="cpp-btn cpp-btn-secondary">
+                                <span class="dashicons dashicons-database-import" style="vertical-align: text-bottom; font-size: 16px;"></span> Importar Evaluaciones
+                            </button>
+                         </div>`;
+            }
+
             $container.html(html);
 
             $container.find('.cpp-evaluaciones-list').sortable({
@@ -1006,6 +1069,66 @@
                         url: cppFrontendData.ajaxUrl, type: 'POST', dataType: 'json',
                         data: { action: 'cpp_guardar_orden_evaluaciones', nonce: cppFrontendData.nonce, orden_evaluaciones: orderedIds }
                     });
+                }
+            });
+        },
+
+        importarEvaluacionesSubmit: function(e) {
+            e.preventDefault();
+            const $btn = $('#cpp-btn-importar-evaluaciones-submit');
+            const claseOrigenId = $('#cpp-import-source-class-select').val();
+            const claseDestinoId = this.currentClaseIdForConfig;
+            const copiarSistemaYCriterios = $('#cpp-import-copy-system-criteria').is(':checked');
+            const modoImportacion = $('input[name="cpp_import_mode"]:checked').val() || 'add';
+
+            if (!claseOrigenId) {
+                alert('Por favor, selecciona una clase de origen.');
+                return;
+            }
+
+            if (!claseDestinoId) {
+                alert('Error: No se pudo identificar la clase destino.');
+                return;
+            }
+
+            const nombreOrigen = $('#cpp-import-source-class-select option:selected').text();
+            let confirmMsg = `¿Estás seguro de que quieres importar las evaluaciones de "${nombreOrigen}"?`;
+            if (modoImportacion === 'replace') {
+                confirmMsg = `ATENCIÓN: Se eliminarán TODAS las evaluaciones actuales de esta clase y sus actividades/calificaciones asociadas para reemplazarlas por las de "${nombreOrigen}".\n\n¿Deseas continuar?`;
+            }
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Importando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_importar_evaluaciones',
+                    nonce: cppFrontendData.nonce,
+                    clase_origen_id: claseOrigenId,
+                    clase_destino_id: claseDestinoId,
+                    copiar_sistema_y_criterios: copiarSistemaYCriterios,
+                    modo_importacion: modoImportacion
+                },
+                success: (response) => {
+                    if (response.success) {
+                        cpp.utils.showToast(response.data.message || 'Evaluaciones importadas correctamente.');
+                        this.loadEvaluacionesData(claseDestinoId);
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron importar las evaluaciones.'));
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                    }
+                },
+                error: () => {
+                    alert('Error de conexión al importar evaluaciones.');
+                    $btn.prop('disabled', false).html(originalBtnHtml);
                 }
             });
         }
