@@ -172,23 +172,31 @@ function cpp_ajax_save_start_date() {
     $user_id = get_current_user_id();
     cpp_clear_programador_cache($user_id);
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
-    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : null; // Aceptar null si está vacío
+    $start_type = isset($_POST['start_type']) ? sanitize_text_field($_POST['start_type']) : 'date';
+    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : null;
+    $start_evaluacion_id = isset($_POST['start_evaluacion_id']) && $_POST['start_evaluacion_id'] !== '' ? intval($_POST['start_evaluacion_id']) : null;
 
     if (empty($evaluacion_id)) {
         wp_send_json_error(['message' => 'Falta ID de evaluación.']);
         return;
     }
 
-    // Si la fecha está vacía, la guardamos como NULL en la BBDD
-    if (!empty($start_date)) {
-        if (cpp_programador_check_schedule_conflict($user_id, $evaluacion_id, $start_date)) {
-            wp_send_json_error(['message' => 'La fecha de inicio seleccionada crea un conflicto de horario con otra evaluación. Por favor, elige una fecha diferente.']);
+    if ($start_type === 'after') {
+        $start_date = null;
+        if (empty($start_evaluacion_id)) {
+            wp_send_json_error(['message' => 'Por favor, selecciona una evaluación de referencia.']);
             return;
         }
+
+        if (cpp_programador_has_circular_dependency($evaluacion_id, $start_evaluacion_id, $user_id)) {
+            wp_send_json_error(['message' => 'No se puede seleccionar esa evaluación porque crearía una dependencia circular.']);
+            return;
+        }
+    } else {
+        $start_evaluacion_id = null;
     }
 
-    if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date)) {
-        // --- AÑADIDO: Obtener las nuevas fechas para actualizar la UI inmediatamente ---
+    if (cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date, $start_evaluacion_id)) {
         global $wpdb;
         $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d", $evaluacion_id));
         $fechas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
@@ -199,7 +207,7 @@ function cpp_ajax_save_start_date() {
             'fechas' => $fechas
         ]);
     } else {
-        wp_send_json_error(['message' => 'Error al guardar la fecha.']);
+        wp_send_json_error(['message' => 'Error al guardar la fecha de inicio.']);
     }
 }
 
@@ -503,16 +511,22 @@ function cpp_ajax_check_schedule_conflict_handler() {
         return;
     }
     $evaluacion_id = isset($_POST['evaluacion_id']) ? intval($_POST['evaluacion_id']) : 0;
-    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : '';
+    $start_type = isset($_POST['start_type']) ? sanitize_text_field($_POST['start_type']) : 'date';
+    $start_evaluacion_id = isset($_POST['start_evaluacion_id']) && $_POST['start_evaluacion_id'] !== '' ? intval($_POST['start_evaluacion_id']) : null;
 
-    if (empty($evaluacion_id) || empty($start_date)) {
+    if (empty($evaluacion_id)) {
         wp_send_json_error(['message' => 'Datos insuficientes.']);
         return;
     }
 
-    $has_conflict = cpp_programador_check_schedule_conflict($user_id, $evaluacion_id, $start_date);
+    if ($start_type === 'after' && !empty($start_evaluacion_id)) {
+        if (cpp_programador_has_circular_dependency($evaluacion_id, $start_evaluacion_id, $user_id)) {
+            wp_send_json_success(['conflict' => true, 'circular' => true]);
+            return;
+        }
+    }
 
-    wp_send_json_success(['conflict' => $has_conflict]);
+    wp_send_json_success(['conflict' => false]);
 }
 
 function cpp_ajax_copy_sessions() {

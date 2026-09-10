@@ -191,7 +191,9 @@
         });
         $document.on('click', 'body .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab('prev'); });
         $document.on('click', 'body .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab('next'); });
-        $document.on('change', 'body #cpp-start-date-selector', function() { self.saveStartDate(this.value); });
+        $document.on('change', 'body #cpp-start-type-selector', function() { self.handleStartTypeChange(this.value); });
+        $document.on('change', 'body #cpp-start-date-selector', function() { self.saveStartDate(); });
+        $document.on('change', 'body #cpp-start-eval-selector', function() { self.saveStartDate(); });
 
         // Edición Inline
         $document.on('focusin', '[contenteditable]', function() { self.originalContent = this.innerHTML; });
@@ -1679,57 +1681,91 @@
                 }
             });
     },
-    async saveStartDate(startDate) {
+    handleStartTypeChange(type) {
+        const dateContainer = document.getElementById('cpp-start-date-input-container');
+        const evalContainer = document.getElementById('cpp-start-eval-input-container');
+        if (type === 'after') {
+            if (dateContainer) dateContainer.style.display = 'none';
+            if (evalContainer) evalContainer.style.display = 'inline-block';
+        } else {
+            if (dateContainer) dateContainer.style.display = 'inline-block';
+            if (evalContainer) evalContainer.style.display = 'none';
+            this.saveStartDate();
+        }
+    },
+
+    async saveStartDate() {
         if (!this.currentEvaluacionId) return;
 
-        // --- Client-side conflict check ---
-        if (startDate) {
-            const checkData = new URLSearchParams({
-                action: 'cpp_check_schedule_conflict',
-                nonce: cppFrontendData.nonce,
-                evaluacion_id: this.currentEvaluacionId,
-                start_date: startDate
-            });
+        const typeSelector = document.getElementById('cpp-start-type-selector');
+        const startType = typeSelector ? typeSelector.value : 'date';
+        let startDate = null;
+        let startEvalId = null;
 
-            try {
-                const response = await fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: checkData });
-                const result = await response.json();
+        if (startType === 'after') {
+            const evalSelector = document.getElementById('cpp-start-eval-selector');
+            startEvalId = evalSelector ? evalSelector.value : null;
+            if (!startEvalId) {
+                alert('Por favor, selecciona una evaluación de referencia.');
+                return;
+            }
+        } else {
+            const dateSelector = document.getElementById('cpp-start-date-selector');
+            startDate = dateSelector ? dateSelector.value : null;
 
-                if (result.success && result.data.conflict) {
-                    alert('La fecha de inicio seleccionada crea un conflicto de horario con otra evaluación. Por favor, elige una fecha diferente.');
+            if (startDate) {
+                const date = new Date(`${startDate}T12:00:00Z`);
+                const dayOfWeek = date.getUTCDay();
+                const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
+                const dayKey = dayMapping[dayOfWeek];
+
+                const isWorkingDay = this.config.calendar_config.working_days.includes(dayKey);
+                const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).some(slot => slot.claseId === String(this.currentClase.id));
+
+                if (!isWorkingDay || !classIdInHorario) {
+                    alert('La fecha de inicio debe ser un día lectivo en el que esta clase tenga horas asignadas en el horario.');
                     const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-                    const dateSelector = document.getElementById('cpp-start-date-selector');
                     if (dateSelector) dateSelector.value = currentEval ? currentEval.start_date || '' : '';
                     return;
                 }
-                if (!result.success) {
-                    // Non-blocking error, backend will validate again
-                    console.warn("No se pudo verificar el conflicto de horario: " + (result.data.message || 'Error desconocido'));
-                }
-            } catch (error) {
-                console.error("Error en la verificación de conflicto de horario:", error);
-                // Non-blocking error, backend will validate again
             }
         }
-        // --- End client-side conflict check ---
 
-        const date = new Date(`${startDate}T12:00:00Z`); // Use Z for UTC context
-        const dayOfWeek = date.getUTCDay();
-        const dayMapping = {0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat'};
-        const dayKey = dayMapping[dayOfWeek];
+        // --- Client-side conflict check ---
+        const checkData = new URLSearchParams({
+            action: 'cpp_check_schedule_conflict',
+            nonce: cppFrontendData.nonce,
+            evaluacion_id: this.currentEvaluacionId,
+            start_type: startType,
+            start_date: startDate || '',
+            start_evaluacion_id: startEvalId || ''
+        });
 
-        const isWorkingDay = this.config.calendar_config.working_days.includes(dayKey);
-        const classIdInHorario = Object.values(this.config.horario[dayKey] || {}).some(slot => slot.claseId === String(this.currentClase.id));
+        try {
+            const response = await fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: checkData });
+            const result = await response.json();
 
-        if (startDate && (!isWorkingDay || !classIdInHorario)) {
-            alert('La fecha de inicio debe ser un día lectivo en el que esta clase tenga horas asignadas en el horario.');
-            const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-            const dateSelector = document.getElementById('cpp-start-date-selector');
-            if (dateSelector) dateSelector.value = currentEval ? currentEval.start_date || '' : '';
-            return;
+            if (result.success && result.data.conflict) {
+                if (result.data.circular) {
+                    alert('No se puede seleccionar esa evaluación porque crearía una dependencia circular.');
+                } else {
+                    alert('La fecha de inicio seleccionada crea un conflicto de horario con otra evaluación. Por favor, elige una opción diferente.');
+                }
+                this.renderProgramacionTab();
+                return;
+            }
+        } catch (error) {
+            console.error("Error en la verificación de conflicto de horario:", error);
         }
 
-        const data = new URLSearchParams({ action: 'cpp_save_start_date', nonce: cppFrontendData.nonce, evaluacion_id: this.currentEvaluacionId, start_date: startDate });
+        const data = new URLSearchParams({
+            action: 'cpp_save_start_date',
+            nonce: cppFrontendData.nonce,
+            evaluacion_id: this.currentEvaluacionId,
+            start_type: startType,
+            start_date: startDate || '',
+            start_evaluacion_id: startEvalId || ''
+        });
 
         if (cpp.utils && typeof cpp.utils.showSpinner === 'function') {
             cpp.utils.showSpinner();
@@ -1738,24 +1774,24 @@
         fetch(cppFrontendData.ajaxUrl, { method: 'POST', body: data }).then(res => res.json()).then(result => {
             if (result.success) {
                 const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-                if (currentEval) currentEval.start_date = startDate;
+                if (currentEval) {
+                    currentEval.start_date = startType === 'date' ? startDate : null;
+                    currentEval.start_evaluacion_id = startType === 'after' ? startEvalId : null;
+                }
 
                 if (cpp.utils && typeof cpp.utils.showToast === 'function') {
                     cpp.utils.showToast('Fecha de inicio actualizada.');
                 }
 
-                // --- OPTIMIZACIÓN: Recalcular y aplicar fechas sin renderizado completo ---
-                // Usamos las fechas devueltas por el servidor para evitar una petición extra
-                this.fetchAndApplyFechas(this.currentEvaluacionId, result.data.fechas || null);
+                // Recargar los datos del servidor para asegurar que todas las evaluaciones de la clase con dependencias estén actualizadas
+                this.fetchData(this.currentClase.id, this.currentEvaluacionId, this.currentSesion ? this.currentSesion.id : null);
 
                 if (result.data.needs_gradebook_reload) {
                     document.dispatchEvent(new CustomEvent('cpp:forceGradebookReload'));
                 }
             } else {
                 alert(result.data.message || 'Error al guardar la fecha.');
-                const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-                const dateSelector = document.getElementById('cpp-start-date-selector');
-                if (dateSelector) dateSelector.value = currentEval ? currentEval.start_date || '' : '';
+                this.renderProgramacionTab();
             }
         }).finally(() => {
             if (cpp.utils && typeof cpp.utils.hideSpinner === 'function') {
@@ -1964,36 +2000,56 @@
                 }
             });
 
-            // Actualizar UI del aviso si la fecha de inicio ha cambiado (se asume que si se llama a esta función es porque algo cambió)
+            // Actualizar UI del aviso si la fecha de inicio ha cambiado
             const currentEval = this.currentClase.evaluaciones.find(e => e.id == evaluacionId);
-                    const hasStartDate = currentEval && !!currentEval.start_date;
-                    const hasSchedule = this.config.horario && Object.values(this.config.horario).some(daySlots =>
-                        Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
-                    );
+            let hasStartConfig = false;
+            let startConfigWarning = '';
 
-                    const alertSticky = document.querySelector('.cpp-programacion-alert-sticky');
-                    if (alertSticky) {
-                        if (hasStartDate && hasSchedule) {
-                            alertSticky.remove();
-                        } else {
-                            let alertMsg = '';
-                            if (!hasStartDate && !hasSchedule) {
-                                alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.';
-                            } else if (!hasStartDate) {
-                                alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.';
-                            } else {
-                                alertMsg = 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.';
-                            }
-                            alertSticky.innerHTML = alertMsg;
-                        }
-                    } else if (!hasStartDate || !hasSchedule) {
-                        // Si no existe el aviso y debería, forzamos un re-render parcial de la estructura o simplemente insertamos el aviso
-                        const controls = document.querySelector('.cpp-programacion-controls');
-                        if (controls) {
-                            let alertMsg = (!hasStartDate && !hasSchedule) ? 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.' : (!hasStartDate ? 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.' : 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.');
-                            controls.insertAdjacentHTML('afterend', `<div class="cpp-programacion-alert-sticky">${alertMsg}</div>`);
-                        }
+            if (currentEval) {
+                if (currentEval.start_evaluacion_id) {
+                    const parentEval = this.currentClase.evaluaciones.find(e => e.id == currentEval.start_evaluacion_id);
+                    const parentName = parentEval ? parentEval.nombre_evaluacion : 'la evaluación seleccionada';
+                    const parentSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == currentEval.start_evaluacion_id && !!s.fecha_calculada);
+                    if (!parentEval) {
+                        startConfigWarning = 'La evaluación de la que depende esta evaluación ya no existe.';
+                    } else if (parentSessions.length === 0) {
+                        startConfigWarning = `Esta evaluación iniciará a continuación de <strong>${this.escapeHtml(parentName)}</strong>, pero esa evaluación aún no tiene sesiones con fecha calculada.`;
+                    } else {
+                        hasStartConfig = true;
                     }
+                } else if (currentEval.start_date) {
+                    hasStartConfig = true;
+                }
+            }
+
+            const hasSchedule = this.config.horario && Object.values(this.config.horario).some(daySlots =>
+                Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
+            );
+
+            const alertSticky = document.querySelector('.cpp-programacion-alert-sticky');
+            if (alertSticky) {
+                if (hasStartConfig && hasSchedule) {
+                    alertSticky.remove();
+                } else {
+                    let alertMsg = '';
+                    if (startConfigWarning) {
+                        alertMsg = startConfigWarning;
+                    } else if (!hasStartConfig && !hasSchedule) {
+                        alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.';
+                    } else if (!hasStartConfig) {
+                        alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.';
+                    } else {
+                        alertMsg = 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.';
+                    }
+                    alertSticky.innerHTML = alertMsg;
+                }
+            } else if (!hasStartConfig || !hasSchedule) {
+                const controls = document.querySelector('.cpp-programacion-controls');
+                if (controls) {
+                    let alertMsg = startConfigWarning || ((!hasStartConfig && !hasSchedule) ? 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.' : (!hasStartConfig ? 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.' : 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.'));
+                    controls.insertAdjacentHTML('afterend', `<div class="cpp-programacion-alert-sticky">${alertMsg}</div>`);
+                }
+            }
 
             if (changedSesiones.length > 0) {
                 const list = document.querySelector('.cpp-sesiones-list-detailed');
@@ -2109,19 +2165,42 @@
             return;
         }
 
-        let evaluacionOptions = '', startDate = '';
+        let startDate = '', startEvalId = null;
         const currentEval = this.currentClase.evaluaciones.find(e => e.id == this.currentEvaluacionId);
-        if (this.currentClase.evaluaciones.length > 0) {
-            if (currentEval) startDate = currentEval.start_date || '';
+        if (currentEval) {
+            startDate = currentEval.start_date || '';
+            startEvalId = currentEval.start_evaluacion_id || null;
         }
+
+        const startType = startEvalId ? 'after' : 'date';
+
+        // Construir opciones de evaluaciones para el modo "A continuación de..."
+        const otherEvals = (this.currentClase.evaluaciones || []).filter(e => e.id != this.currentEvaluacionId && e.nombre_evaluacion !== 'Evaluación Final');
+        let otherEvalOptions = '<option value="">-- Selecciona evaluación --</option>';
+        otherEvals.forEach(e => {
+            const selected = (startEvalId && startEvalId == e.id) ? 'selected' : '';
+            otherEvalOptions += `<option value="${e.id}" ${selected}>${this.escapeHtml(e.nombre_evaluacion)}</option>`;
+        });
 
         const sesionesFiltradas = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == this.currentEvaluacionId);
 
         const isSesionSelected = this.currentSesion !== null;
         let controlsHTML = `
             <div class="cpp-programacion-controls">
-                <div class="cpp-programacion-main-controls">
-                    <label>Fecha de Inicio: <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}></label>
+                <div class="cpp-programacion-main-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <label style="font-weight: 600;">Inicio:</label>
+                    <select id="cpp-start-type-selector" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;" ${!this.currentEvaluacionId ? 'disabled' : ''}>
+                        <option value="date" ${startType === 'date' ? 'selected' : ''}>Fecha concreta</option>
+                        <option value="after" ${startType === 'after' ? 'selected' : ''}>A continuación de...</option>
+                    </select>
+                    <div id="cpp-start-date-input-container" style="display: ${startType === 'date' ? 'inline-block' : 'none'};">
+                        <input type="date" id="cpp-start-date-selector" value="${startDate}" ${!this.currentEvaluacionId ? 'disabled' : ''}>
+                    </div>
+                    <div id="cpp-start-eval-input-container" style="display: ${startType === 'after' ? 'inline-block' : 'none'};">
+                        <select id="cpp-start-eval-selector" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;" ${!this.currentEvaluacionId ? 'disabled' : ''}>
+                            ${otherEvalOptions}
+                        </select>
+                    </div>
                 </div>
                 <div class="cpp-programacion-action-controls">
                     <button id="cpp-add-sesion-toolbar-btn" class="cpp-btn cpp-btn-secondary" ${!isSesionSelected ? 'disabled' : ''} title="Añadir sesión debajo de la seleccionada">
@@ -2166,16 +2245,37 @@
 
         // --- AÑADIDO: Aviso de falta de fecha de inicio o horario ---
         let alertHTML = '';
-        const hasStartDate = !!startDate;
+        let hasStartConfig = false;
+        let startConfigWarning = '';
+
+        if (currentEval) {
+            if (currentEval.start_evaluacion_id) {
+                const parentEval = this.currentClase.evaluaciones.find(e => e.id == currentEval.start_evaluacion_id);
+                const parentName = parentEval ? parentEval.nombre_evaluacion : 'la evaluación seleccionada';
+                const parentSessions = this.sesiones.filter(s => s.clase_id == this.currentClase.id && s.evaluacion_id == currentEval.start_evaluacion_id && !!s.fecha_calculada);
+                if (!parentEval) {
+                    startConfigWarning = 'La evaluación de la que depende esta evaluación ya no existe.';
+                } else if (parentSessions.length === 0) {
+                    startConfigWarning = `Esta evaluación iniciará a continuación de <strong>${this.escapeHtml(parentName)}</strong>, pero esa evaluación aún no tiene sesiones con fecha calculada.`;
+                } else {
+                    hasStartConfig = true;
+                }
+            } else if (currentEval.start_date) {
+                hasStartConfig = true;
+            }
+        }
+
         const hasSchedule = this.config.horario && Object.values(this.config.horario).some(daySlots =>
             Object.values(daySlots).some(slot => slot.claseId == String(this.currentClase.id))
         );
 
-        if (!hasStartDate || !hasSchedule) {
+        if (!hasStartConfig || !hasSchedule) {
             let alertMsg = '';
-            if (!hasStartDate && !hasSchedule) {
+            if (startConfigWarning) {
+                alertMsg = startConfigWarning;
+            } else if (!hasStartConfig && !hasSchedule) {
                 alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> y configurar el <strong>horario</strong> para calcular las fechas de las sesiones.';
-            } else if (!hasStartDate) {
+            } else if (!hasStartConfig) {
                 alertMsg = 'Es necesario establecer una <strong>fecha de inicio</strong> para calcular las fechas de las sesiones.';
             } else {
                 alertMsg = 'Es necesario configurar el <strong>horario</strong> para esta clase para calcular las fechas de las sesiones.';

@@ -19,12 +19,14 @@ function cpp_crear_tablas() {
         user_id bigint(20) UNSIGNED NOT NULL,
         nombre_evaluacion varchar(100) NOT NULL,
         start_date date DEFAULT NULL,
+        start_evaluacion_id mediumint(9) UNSIGNED DEFAULT NULL,
         calculo_nota varchar(20) NOT NULL DEFAULT 'total',
         orden int NOT NULL DEFAULT 0,
         fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
         PRIMARY KEY (id),
         KEY clase_id (clase_id),
         KEY user_id (user_id),
+        KEY start_evaluacion_id (start_evaluacion_id),
         KEY orden (orden)
     ) $charset_collate;";
     dbDelta($sql_evaluaciones);

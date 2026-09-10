@@ -8,6 +8,7 @@ function cpp_clear_programador_cache($user_id) {
     if (empty($user_id)) {
         return false;
     }
+    cpp_programador_get_all_data($user_id, true);
     return delete_user_meta($user_id, 'cpp_programador_all_data_cache');
 }
 
@@ -18,8 +19,12 @@ function cpp_programador_save_config_value($user_id, $clave, $valor) {
     return $wpdb->replace($tabla_config, $data, ['%d', '%s', '%s']) !== false;
 }
 
-function cpp_programador_get_all_data($user_id) {
+function cpp_programador_get_all_data($user_id, $clear_static_cache = false) {
     static $static_cache = [];
+    if ($clear_static_cache) {
+        unset($static_cache[$user_id]);
+        return null;
+    }
     if (isset($static_cache[$user_id])) {
         return $static_cache[$user_id];
     }
@@ -105,26 +110,19 @@ function cpp_programador_get_all_data($user_id) {
 
     // Calcular y adjuntar las fechas de las sesiones
     if (!empty($clases) && !empty($sesiones)) {
-        $horario = isset($config['horario']) ? $config['horario'] : [];
-        $calendar_config = isset($config['calendar_config']) ? $config['calendar_config'] : [];
+        $all_data_ref = ['clases' => $clases, 'config' => $config, 'sesiones' => array_values($sesiones)];
+        $eval_fechas_cache = [];
 
         foreach ($clases as $clase) {
+            $visited_in_all_data = [];
             foreach ($clase['evaluaciones'] as $evaluacion) {
-                if (!empty($evaluacion['start_date'])) {
-                    $sesiones_eval = array_filter($sesiones, function($s) use ($clase, $evaluacion) {
-                        return $s->clase_id == $clase['id'] && $s->evaluacion_id == $evaluacion['id'];
-                    });
+                $fechas_calculadas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase['id'], $evaluacion['id'], $visited_in_all_data, $all_data_ref, $eval_fechas_cache);
 
-                    if (!empty($sesiones_eval)) {
-                        $fechas_calculadas = cpp_programador_calculate_fechas($sesiones_eval, $evaluacion['start_date'], $horario, $calendar_config, $clase['id']);
-
-                        foreach ($fechas_calculadas as $sesion_id => $data) {
-                            if (isset($sesiones[$sesion_id])) {
-                                $sesiones[$sesion_id]->fecha_calculada = $data['fecha'];
-                                $sesiones[$sesion_id]->hora_calculada = isset($data['hora']) ? $data['hora'] : '';
-                                $sesiones[$sesion_id]->notas_horario = $data['notas'];
-                            }
-                        }
+                foreach ($fechas_calculadas as $sesion_id => $data) {
+                    if (isset($sesiones[$sesion_id])) {
+                        $sesiones[$sesion_id]->fecha_calculada = $data['fecha'];
+                        $sesiones[$sesion_id]->hora_calculada = isset($data['hora']) ? $data['hora'] : '';
+                        $sesiones[$sesion_id]->notas_horario = $data['notas'];
                     }
                 }
             }
@@ -471,71 +469,66 @@ function cpp_programador_save_sesiones_order($user_id, $clase_id, $evaluacion_id
 function cpp_programador_recalculate_and_update_activity_dates($evaluacion_id, $user_id) {
     global $wpdb;
 
-    // Obtener todos los datos necesarios en una sola llamada
+    // Limpiar caché primero para forzar el cálculo de fechas actualizadas
+    cpp_clear_programador_cache($user_id);
+
     $all_data = cpp_programador_get_all_data($user_id);
     $tabla_act_evaluables = $wpdb->prefix . 'cpp_actividades_evaluables';
 
-    $evaluacion_target = null;
     $clase_id = null;
 
-    // Encontrar la evaluación y la clase correspondiente
+    // Encontrar la clase correspondiente a esta evaluación
     foreach ($all_data['clases'] as $clase) {
         foreach ($clase['evaluaciones'] as $eval) {
             if ($eval['id'] == $evaluacion_id) {
-                $evaluacion_target = $eval;
                 $clase_id = $clase['id'];
                 break 2;
             }
         }
     }
 
-    if (!$evaluacion_target || !$clase_id) {
-        return false; // No se encontró la evaluación o la clase
+    if (!$clase_id) {
+        return false;
     }
 
-    $start_date = $evaluacion_target['start_date'];
-    if (empty($start_date)) {
-        return true; // No hay fecha de inicio, no hay nada que recalcular
+    // Obtener todas las evaluaciones de la clase para actualizar también las dependientes
+    $evaluaciones_de_la_clase = [];
+    foreach ($all_data['clases'] as $clase) {
+        if ($clase['id'] == $clase_id) {
+            $evaluaciones_de_la_clase = $clase['evaluaciones'];
+            break;
+        }
     }
-
-    // Filtrar las sesiones que pertenecen a esta evaluación
-    $sesiones_en_evaluacion = array_filter($all_data['sesiones'], function($sesion) use ($evaluacion_id) {
-        return $sesion->evaluacion_id == $evaluacion_id;
-    });
-    $sesiones_en_evaluacion = array_values($sesiones_en_evaluacion); // Reset keys
-
-    if (empty($sesiones_en_evaluacion)) {
-        return true; // No hay sesiones, no hay nada que hacer
-    }
-
-    // Calcular el nuevo calendario de fechas para las sesiones
-    $fechas_calculadas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id);
 
     $wpdb->query('START TRANSACTION');
 
-    // Resetear todas las fechas de actividades de esta evaluación que dependen de sesiones
-    // Esto asegura que si una sesión ya no tiene fecha calculada (ej: se salió del rango), la actividad no mantenga una fecha vieja.
-    $wpdb->query($wpdb->prepare(
-        "UPDATE $tabla_act_evaluables SET fecha_actividad = NULL WHERE evaluacion_id = %d AND user_id = %d AND sesion_id IS NOT NULL",
-        $evaluacion_id, $user_id
-    ));
-
     $errors = false;
-    foreach ($fechas_calculadas as $sesion_id => $data) {
-        $fecha_calculada_str = $data['fecha'];
+    foreach ($evaluaciones_de_la_clase as $eval) {
+        $eval_id = $eval['id'];
 
-        // Actualizar todas las actividades evaluables de esta sesión
-        $update_result = $wpdb->update(
-            $tabla_act_evaluables,
-            ['fecha_actividad' => $fecha_calculada_str],
-            ['sesion_id' => $sesion_id, 'user_id' => $user_id],
-            ['%s'],
-            ['%d', '%d']
-        );
+        // Resetear todas las fechas de actividades de esta evaluación que dependen de sesiones
+        $wpdb->query($wpdb->prepare(
+            "UPDATE $tabla_act_evaluables SET fecha_actividad = NULL WHERE evaluacion_id = %d AND user_id = %d AND sesion_id IS NOT NULL",
+            $eval_id, $user_id
+        ));
 
-        if ($update_result === false) {
-            $errors = true;
-            break;
+        $fechas_calculadas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $eval_id);
+
+        foreach ($fechas_calculadas as $sesion_id => $data) {
+            $fecha_calculada_str = $data['fecha'];
+
+            $update_result = $wpdb->update(
+                $tabla_act_evaluables,
+                ['fecha_actividad' => $fecha_calculada_str],
+                ['sesion_id' => $sesion_id, 'user_id' => $user_id],
+                ['%s'],
+                ['%d', '%d']
+            );
+
+            if ($update_result === false) {
+                $errors = true;
+                break 2;
+            }
         }
     }
 
@@ -549,19 +542,61 @@ function cpp_programador_recalculate_and_update_activity_dates($evaluacion_id, $
 }
 
 
-function cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date) {
+function cpp_programador_has_circular_dependency($evaluacion_id, $target_start_eval_id, $user_id) {
+    if (empty($target_start_eval_id)) return false;
+    if (intval($evaluacion_id) === intval($target_start_eval_id)) return true;
+
+    global $wpdb;
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+
+    $current = intval($target_start_eval_id);
+    $visited = [intval($evaluacion_id)];
+
+    while ($current > 0) {
+        if (in_array($current, $visited, true)) {
+            return true;
+        }
+        $visited[] = $current;
+        $next = $wpdb->get_var($wpdb->prepare(
+            "SELECT start_evaluacion_id FROM $tabla_evaluaciones WHERE id = %d AND user_id = %d",
+            $current, $user_id
+        ));
+        $current = $next ? intval($next) : 0;
+    }
+
+    return false;
+}
+
+
+function cpp_programador_save_start_date($user_id, $evaluacion_id, $start_date, $start_evaluacion_id = null) {
     global $wpdb;
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $owner_check = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
     if ($owner_check != $user_id) return false;
 
-    $update_ok = $wpdb->update($tabla_evaluaciones, ['start_date' => $start_date], ['id' => $evaluacion_id], ['%s'], ['%d']) !== false;
+    if (!empty($start_evaluacion_id)) {
+        $start_evaluacion_id = intval($start_evaluacion_id);
+        if (cpp_programador_has_circular_dependency($evaluacion_id, $start_evaluacion_id, $user_id)) {
+            return false;
+        }
+        $update_data = [
+            'start_date' => null,
+            'start_evaluacion_id' => $start_evaluacion_id
+        ];
+        $format = [null, '%d'];
+    } else {
+        $update_data = [
+            'start_date' => !empty($start_date) ? $start_date : null,
+            'start_evaluacion_id' => null
+        ];
+        $format = ['%s', null];
+    }
+
+    $update_ok = $wpdb->update($tabla_evaluaciones, $update_data, ['id' => $evaluacion_id], $format, ['%d']) !== false;
 
     if ($update_ok) {
-        // Después de guardar la nueva fecha de inicio, recalcular y actualizar las fechas de las actividades.
+        cpp_clear_programador_cache($user_id);
         $recalculate_ok = cpp_programador_recalculate_and_update_activity_dates($evaluacion_id, $user_id);
-        // Si el recálculo falla, podríamos querer revertir el guardado de la fecha de inicio,
-        // pero por ahora, simplemente devolvemos el estado del recálculo.
         return $recalculate_ok;
     }
 
@@ -746,30 +781,69 @@ function cpp_programador_calculate_fechas($sesiones_en_evaluacion, $start_date_s
  * @param int $evaluacion_id
  * @return array An associative array [session_id => ['fecha' => 'YYYY-MM-DD', 'notas' => '...']]
  */
-function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id) {
+function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id, &$visited = [], $all_data = null, &$eval_fechas_cache = []) {
     if (empty($user_id) || empty($clase_id) || empty($evaluacion_id)) {
         return [];
     }
 
-    // Reutilizar la lógica robusta de fetching y caché de get_all_data
-    $all_data = cpp_programador_get_all_data($user_id);
+    if (isset($eval_fechas_cache[$evaluacion_id])) {
+        return $eval_fechas_cache[$evaluacion_id];
+    }
+
+    if (in_array($evaluacion_id, $visited, true)) {
+        return []; // Protección contra ciclos
+    }
+    $visited[] = $evaluacion_id;
+
+    if ($all_data === null) {
+        $all_data = cpp_programador_get_all_data($user_id);
+    }
 
     $horario = isset($all_data['config']['horario']) ? $all_data['config']['horario'] : [];
     $calendar_config = isset($all_data['config']['calendar_config']) ? $all_data['config']['calendar_config'] : [];
 
-    $start_date_str = null;
-    foreach ($all_data['clases'] as $clase) {
-        if ($clase['id'] == $clase_id) {
-            foreach ($clase['evaluaciones'] as $eval) {
-                if ($eval['id'] == $evaluacion_id) {
-                    $start_date_str = $eval['start_date'];
-                    break 2;
+    $evaluacion_target = null;
+    if (!empty($all_data['clases'])) {
+        foreach ($all_data['clases'] as $clase) {
+            if ($clase['id'] == $clase_id) {
+                if (!empty($clase['evaluaciones'])) {
+                    foreach ($clase['evaluaciones'] as $eval) {
+                        if ($eval['id'] == $evaluacion_id) {
+                            $evaluacion_target = $eval;
+                            break 2;
+                        }
+                    }
                 }
             }
         }
     }
 
+    if (!$evaluacion_target) {
+        $eval_fechas_cache[$evaluacion_id] = [];
+        return [];
+    }
+
+    $start_date_str = null;
+
+    if (!empty($evaluacion_target['start_evaluacion_id'])) {
+        $parent_eval_id = intval($evaluacion_target['start_evaluacion_id']);
+        $fechas_parent = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $parent_eval_id, $visited, $all_data, $eval_fechas_cache);
+        if (!empty($fechas_parent)) {
+            $dates = array_map(function($f) { return $f['fecha']; }, $fechas_parent);
+            $dates = array_filter($dates);
+            if (!empty($dates)) {
+                $max_date = max($dates);
+                if (!empty($max_date)) {
+                    $start_date_str = date('Y-m-d', strtotime($max_date . ' +1 day'));
+                }
+            }
+        }
+    } else {
+        $start_date_str = isset($evaluacion_target['start_date']) ? $evaluacion_target['start_date'] : null;
+    }
+
     if (empty($start_date_str)) {
+        $eval_fechas_cache[$evaluacion_id] = [];
         return [];
     }
 
@@ -778,70 +852,88 @@ function cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluac
     });
 
     if (empty($sesiones_eval)) {
+        $eval_fechas_cache[$evaluacion_id] = [];
         return [];
     }
 
-    // Calcular usando la función pura
-    return cpp_programador_calculate_fechas($sesiones_eval, $start_date_str, $horario, $calendar_config, $clase_id);
+    $res = cpp_programador_calculate_fechas($sesiones_eval, $start_date_str, $horario, $calendar_config, $clase_id);
+    $eval_fechas_cache[$evaluacion_id] = $res;
+    return $res;
 }
 
 /**
- * Checks if a proposed start date for an evaluation causes a schedule conflict.
+ * Checks if a proposed start date or evaluation dependency for an evaluation causes a schedule conflict.
  *
  * @param int $user_id
  * @param int $evaluacion_id_a_chequear The evaluation being changed.
  * @param string $nueva_start_date The proposed new start date.
+ * @param int|null $nueva_start_eval_id The proposed target start evaluation ID.
  * @return bool True if there is a conflict, false otherwise.
  */
-function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_chequear, $nueva_start_date) {
+function cpp_programador_check_schedule_conflict($user_id, $evaluacion_id_a_chequear, $nueva_start_date, $nueva_start_eval_id = null) {
     global $wpdb;
-    $all_data = cpp_programador_get_all_data($user_id);
 
     $clase_id = $wpdb->get_var($wpdb->prepare("SELECT clase_id FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id_a_chequear, $user_id));
     if (!$clase_id) return false;
 
-    $sesiones_de_la_clase = array_filter($all_data['sesiones'], function($sesion) use ($clase_id) {
-        return $sesion->clase_id == $clase_id;
-    });
+    // Guardar valores antiguos
+    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+    $old_eval_row = $wpdb->get_row($wpdb->prepare("SELECT start_date, start_evaluacion_id FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id_a_chequear));
 
-    $occupied_slots = [];
+    // Aplicar temporalmente los nuevos valores
+    if (!empty($nueva_start_eval_id)) {
+        $wpdb->update($tabla_evaluaciones, ['start_date' => null, 'start_evaluacion_id' => intval($nueva_start_eval_id)], ['id' => $evaluacion_id_a_chequear]);
+    } else {
+        $wpdb->update($tabla_evaluaciones, ['start_date' => $nueva_start_date, 'start_evaluacion_id' => null], ['id' => $evaluacion_id_a_chequear]);
+    }
+    cpp_clear_programador_cache($user_id);
 
-    $otras_evaluaciones = $wpdb->get_results($wpdb->prepare(
-        "SELECT id, start_date FROM {$wpdb->prefix}cpp_evaluaciones WHERE clase_id = %d AND id != %d AND user_id = %d",
-        $clase_id, $evaluacion_id_a_chequear, $user_id
+    // Calcular fechas con el nuevo estado temporal
+    $all_data = cpp_programador_get_all_data($user_id);
+    $evaluaciones_clase = $wpdb->get_results($wpdb->prepare(
+        "SELECT id FROM $tabla_evaluaciones WHERE clase_id = %d AND user_id = %d",
+        $clase_id, $user_id
     ));
 
-    foreach ($otras_evaluaciones as $eval) {
-        if (!empty($eval->start_date)) {
-            $fechas_eval = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $eval->id);
-            foreach ($fechas_eval as $f) {
-                $occupied_slots[] = $f['fecha'];
+    $slots_by_eval = [];
+    $visited_evals = [];
+    $eval_fechas_cache = [];
+
+    foreach ($evaluaciones_clase as $eval) {
+        $fechas_eval = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $eval->id, $visited_evals, $all_data, $eval_fechas_cache);
+        $dates = [];
+        foreach ($fechas_eval as $f) {
+            if (!empty($f['fecha'])) {
+                $dates[] = $f['fecha'];
+            }
+        }
+        $slots_by_eval[$eval->id] = $dates;
+    }
+
+    // Restaurar valores antiguos
+    $wpdb->update($tabla_evaluaciones, [
+        'start_date' => $old_eval_row ? $old_eval_row->start_date : null,
+        'start_evaluacion_id' => $old_eval_row ? $old_eval_row->start_evaluacion_id : null
+    ], ['id' => $evaluacion_id_a_chequear]);
+    cpp_clear_programador_cache($user_id);
+
+    // Verificar si hay intersección de fechas entre evaluaciones distintas
+    $all_eval_ids = array_keys($slots_by_eval);
+    $has_conflict = false;
+
+    for ($i = 0; $i < count($all_eval_ids); $i++) {
+        for ($j = $i + 1; $j < count($all_eval_ids); $j++) {
+            $eval1 = $all_eval_ids[$i];
+            $eval2 = $all_eval_ids[$j];
+            $intersect = array_intersect($slots_by_eval[$eval1], $slots_by_eval[$eval2]);
+            if (!empty($intersect)) {
+                $has_conflict = true;
+                break 2;
             }
         }
     }
 
-    $occupied_slots = array_unique($occupied_slots);
-
-    // Guardar temporalmente la nueva fecha para el chequeo
-    $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
-    $old_start_date = $wpdb->get_var($wpdb->prepare("SELECT start_date FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id_a_chequear));
-
-    $wpdb->update($tabla_evaluaciones, ['start_date' => $nueva_start_date], ['id' => $evaluacion_id_a_chequear]);
-    cpp_clear_programador_cache($user_id); // Limpiar caché para que refleje el cambio
-
-    $fechas_propuestas = cpp_programador_get_fechas_for_evaluacion($user_id, $clase_id, $evaluacion_id_a_chequear);
-    $proposed_slots = [];
-    foreach ($fechas_propuestas as $f) {
-        $proposed_slots[] = $f['fecha'];
-    }
-
-    // Restaurar fecha antigua
-    $wpdb->update($tabla_evaluaciones, ['start_date' => $old_start_date], ['id' => $evaluacion_id_a_chequear]);
-    cpp_clear_programador_cache($user_id);
-
-    $conflict = array_intersect($proposed_slots, $occupied_slots);
-
-    return !empty($conflict);
+    return $has_conflict;
 }
 
 

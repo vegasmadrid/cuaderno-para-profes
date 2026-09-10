@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '2.9.6');
+define('CPP_VERSION', '2.9.7');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -527,6 +527,16 @@ function cpp_run_migrations() {
             $wpdb->query("ALTER TABLE `$table_clases` ADD `archivada` TINYINT(1) NOT NULL DEFAULT 0 AFTER `orden`, ADD KEY `archivada` (`archivada`)");
         }
         $wpdb->query("UPDATE `$table_clases` SET `archivada` = 0 WHERE `archivada` IS NULL");
+    }
+
+    // --- MIGRACIÓN v2.9.7: Añadir columna start_evaluacion_id a cpp_evaluaciones ---
+    if (version_compare($current_version, '2.9.7', '<')) {
+        global $wpdb;
+        $table_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
+        $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_evaluaciones` LIKE %s", 'start_evaluacion_id'));
+        if (!$column_exists) {
+            $wpdb->query("ALTER TABLE `$table_evaluaciones` ADD `start_evaluacion_id` MEDIUMINT(9) UNSIGNED DEFAULT NULL AFTER `start_date`, ADD KEY `start_evaluacion_id` (`start_evaluacion_id`)");
+        }
     }
 
     // --- IMPORTANTE: Limpiar caché si la versión ha cambiado (seguridad extra) ---
