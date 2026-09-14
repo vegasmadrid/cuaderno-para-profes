@@ -127,7 +127,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                 <tr>
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
-                            <div class="cpp-a1-icons-row">
+                            <div class="cpp-a1-row cpp-a1-row-top">
                                 <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
@@ -135,9 +135,13 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM18 7H6v2h12V7zm-4.03 7.47l-1.41-1.41-4.03 4.03-1.48-1.48L6 17.02l2.88 2.88L13.97 14.5l-1.41-1.41-2.59 2.58z"/></svg>
                                 </button>
                                 <?php if ($evaluacion_activa_id !== 'final'): ?>
-                                <button class="cpp-btn-icon" id="cpp-a1-direct-absence-btn" title="Ausencia Directa (Poner X y falta en asistencia)" style="color: #d32f2f;">
+                                <button class="cpp-btn-icon cpp-btn-icon-danger" id="cpp-a1-direct-absence-btn" title="Ausencia Directa (Poner X y falta en asistencia)">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
                                 </button>
+                                <?php endif; ?>
+                            </div>
+                            <div class="cpp-a1-row cpp-a1-row-bottom">
+                                <?php if ($evaluacion_activa_id !== 'final'): ?>
                                 <button class="cpp-btn-icon" id="cpp-a1-symbol-palette-btn" title="Insertar Símbolo">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 4H6v2l6.5 6L6 18v2h12v-3h-7l5-5-5-5h7z"/></svg>
                                 </button>
@@ -149,10 +153,8 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                 <button class="cpp-btn-icon" id="cpp-a1-pending-grades-btn" title="Buscador de Notas Pendientes">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 7h5v2H7V7zm0 3h5v2H7v-2z"/></svg>
                                 </button>
-                                <?php endif; ?>
-                                <?php if ($evaluacion_activa_id !== 'final'): ?>
-                                <button class="cpp-btn-icon" id="cpp-a1-add-activity-btn" title="Añadir Actividad">
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4 11h-3v3h-2v-3H8v-2h3V8h2v3h3v2z"/></svg>
+                                <button class="cpp-btn-icon cpp-btn-icon-primary" id="cpp-a1-add-activity-btn" title="Añadir Actividad">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                                 </button>
                                 <?php endif; ?>
                                 <?php if ($evaluacion_activa_id === 'final'): ?>
@@ -693,13 +695,15 @@ function cpp_ajax_cargar_vista_final() {
                 <tr>
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
-                            <div class="cpp-a1-icons-row">
+                            <div class="cpp-a1-row cpp-a1-row-top">
                                 <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-take-attendance-btn" title="Pasar Lista">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM18 7H6v2h12V7zm-4.03 7.47l-1.41-1.41-4.03 4.03-1.48-1.48L6 17.02l2.88 2.88L13.97 14.5l-1.41-1.41-2.59 2.58z"/></svg>
                                 </button>
+                            </div>
+                            <div class="cpp-a1-row cpp-a1-row-bottom">
                                 <button class="cpp-btn-icon" id="cpp-a1-download-excel-btn" title="Descargar Excel">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                                 </button>

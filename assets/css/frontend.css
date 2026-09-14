@@ -286,27 +286,80 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     border-right: 1px solid #e0e0e0;
 }
 .cpp-cuaderno-th-alumno .cpp-a1-controls-container {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px; width: 100%; height: 100%; min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    padding: 8px;
+    width: 100%;
+    height: 100%;
+    min-height: 80px;
+    gap: 6px;
+    box-sizing: border-box;
 }
-.cpp-a1-icons-row {
-    display: flex; align-items: center; flex-shrink: 0; gap: 8px;
+.cpp-a1-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
 }
-.cpp-cuaderno-th-alumno .cpp-a1-icons-row .cpp-btn-icon {
-    background: none; border: none; padding: 8px; cursor: pointer;
-    color: #5f6368; border-radius: 50%; display: inline-flex;
-    align-items: center; justify-content: center;
-    transition: background-color 0.15s ease, color 0.2s ease; line-height: 1;
+.cpp-cuaderno-th-alumno .cpp-btn-icon {
+    background-color: #f8f9fa;
+    border: 1px solid #dadce0;
+    padding: 6px;
+    cursor: pointer;
+    color: #5f6368;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 34px;
+    box-sizing: border-box;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1;
 }
-.cpp-cuaderno-th-alumno .cpp-a1-icons-row .cpp-btn-icon:hover {
-    background-color: #e8f0fe !important; color: #1a73e8 !important;
+.cpp-cuaderno-th-alumno .cpp-btn-icon:hover {
+    background-color: #e8f0fe !important;
+    border-color: #d2e3fc !important;
+    color: #1a73e8 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(26, 115, 232, 0.15);
 }
-.cpp-a1-icons-row .cpp-btn-icon .dashicons {
-    font-size: 20px;
-    line-height: 1; vertical-align: middle;
+.cpp-cuaderno-th-alumno .cpp-btn-icon.cpp-btn-icon-danger {
+    color: #d32f2f;
+    background-color: #fef2f2;
+    border-color: #fee2e2;
 }
-.cpp-cuaderno-th-alumno .cpp-a1-icons-row #cpp-a1-add-activity-btn { margin-left: auto; }
-.cpp-a1-icons-row #cpp-a1-add-activity-btn .dashicons { font-size: 22px; }
+.cpp-cuaderno-th-alumno .cpp-btn-icon.cpp-btn-icon-danger:hover {
+    background-color: #ffe3e3 !important;
+    border-color: #fca5a5 !important;
+    color: #b91c1c !important;
+    box-shadow: 0 2px 4px rgba(211, 47, 47, 0.15);
+}
+.cpp-cuaderno-th-alumno .cpp-btn-icon.cpp-btn-icon-primary {
+    background: #1a73e8;
+    border-color: #1a73e8;
+    color: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+}
+.cpp-cuaderno-th-alumno .cpp-btn-icon.cpp-btn-icon-primary:hover {
+    background: #1557b0 !important;
+    border-color: #1557b0 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(26, 115, 232, 0.4);
+}
+.cpp-cuaderno-th-alumno .cpp-btn-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+.cpp-cuaderno-th-alumno .cpp-btn-icon.cpp-btn-icon-primary svg {
+    width: 22px;
+    height: 22px;
+}
 
 /* Cabecera de Nota Final */
 .cpp-cuaderno-th-final {
@@ -1828,35 +1881,6 @@ body.cpp-no-text-select {
 }
 /* --- FIN: Estilos para la Pestaña de Configuración --- */
 
-/* --- INICIO: Rediseño Celda A1 --- */
-
-.cpp-cuaderno-th-alumno .cpp-a1-controls-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: stretch; /* Estirar items */
-    height: 100%;
-    padding: 8px;
-}
-
-.cpp-a1-icons-row {
-    display: flex;
-    justify-content: space-around; /* Distribuir los iconos */
-    align-items: center;
-    width: 100%;
-    gap: 4px; /* Espacio reducido entre iconos */
-}
-
-.cpp-a1-icons-row .cpp-btn-icon {
-    flex-grow: 1; /* Para que ocupen el espacio disponible */
-}
-
-.cpp-a1-icons-row .cpp-btn-icon svg {
-    width: 22px;
-    height: 22px;
-}
-
-/* --- FIN: Rediseño Celda A1 --- */
 
 /* --- START: Final Grade Button Styles --- */
 
