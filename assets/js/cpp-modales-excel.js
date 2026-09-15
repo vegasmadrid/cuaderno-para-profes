@@ -231,6 +231,15 @@
                         if (cpp.alumnos && typeof cpp.alumnos.handleSearch === 'function') {
                             cpp.alumnos.handleSearch();
                         }
+                        // Refrescar el cuaderno de notas si hay una clase cargada
+                        if (cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function' && cpp.currentClaseIdCuaderno) {
+                            let currentClassName = $('#cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name').text().trim() || null;
+                            cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, currentClassName, cpp.currentEvaluacionId, null, false, false);
+                        }
+                        // Refrescar el programador si está activo
+                        if (typeof CppProgramadorApp !== 'undefined' && CppProgramadorApp.currentClase && typeof CppProgramadorApp.fetchData === 'function') {
+                            CppProgramadorApp.fetchData(CppProgramadorApp.currentClase.id);
+                        }
                     } else {
                         $('#cpp-import-results-message').html(`<strong style="color:red;">Error: ${response.data.message || 'No se pudo importar.'}</strong>`);
                         if (response.data.errors && response.data.errors.length > 0) {
