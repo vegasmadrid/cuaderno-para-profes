@@ -2311,66 +2311,115 @@ body.cpp-no-text-select {
 }
 
 .cpp-top-bar-right {
-    background-color: #fff;
+    background-color: #ffffff;
     height: 100%;
     display: flex;
     align-items: center;
-    padding: 0 15px;
-    box-shadow: -5px 0 10px -5px rgba(0,0,0,0.1);
+    padding: 0 16px;
+    box-shadow: none;
+    gap: 12px;
 }
 
 .cpp-tabs-general {
     display: inline-flex;
     align-items: center;
-    background-color: #f1f5f9;
-    padding: 3px;
-    border-radius: 10px;
-    gap: 2px;
-    margin-right: 16px;
-    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    padding: 2px;
+    gap: 4px;
+    margin-right: 8px;
 }
 
 .cpp-tabs-general .cpp-main-tab-link {
     background-color: transparent;
     color: #64748b;
     padding: 6px 14px;
-    border-radius: 8px;
+    border-radius: 20px;
     font-weight: 500;
     font-size: 13px;
     cursor: pointer;
-    border: none;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
     white-space: nowrap;
-    line-height: 1.3;
+    line-height: 1.2;
 }
 
 .cpp-tabs-general .cpp-main-tab-link:hover {
-    color: #0f172a;
-    background-color: rgba(255, 255, 255, 0.6);
+    color: #1e293b;
+    background-color: #f8fafc;
 }
 
 .cpp-tabs-general .cpp-main-tab-link.active {
-    background-color: #ffffff;
+    background-color: #f1f5f9;
     color: #1a73e8;
     font-weight: 600;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    border-color: #e2e8f0;
 }
 
-/* Rediseño de botones de acción superior derecha */
+/* Alineación limpia y estandarizada de iconos de la barra derecha */
+.cpp-top-bar-right .cpp-btn-icon,
 .cpp-top-bar-right .cpp-btn-general-settings,
 .cpp-top-bar-right #cpp-toggle-fullscreen-btn {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border-radius: 50%;
-    color: #64748b;
-    background: transparent;
-    transition: all 0.2s ease;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    color: #64748b !important;
+    background: transparent !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    box-shadow: none !important;
+    line-height: 1 !important;
 }
+
+.cpp-top-bar-right .cpp-btn-general-settings .dashicons,
+.cpp-top-bar-right #cpp-toggle-fullscreen-btn .dashicons {
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.cpp-top-bar-right #cpp-toggle-fullscreen-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+    display: block !important;
+}
+
 .cpp-top-bar-right .cpp-btn-general-settings:hover,
 .cpp-top-bar-right #cpp-toggle-fullscreen-btn:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+.cpp-user-menu-container {
+    margin-left: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.cpp-user-menu-avatar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e2e8f0;
+    box-sizing: border-box;
 }
 
 /* Contenedor principal de los contenidos de las pestañas */
