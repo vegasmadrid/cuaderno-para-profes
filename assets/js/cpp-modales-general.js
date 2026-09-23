@@ -38,6 +38,38 @@
 
         bindEvents: function() {
             console.log("Binding Modals General events...");
+
+            // ESC Key listener to close top visible modal
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape' || e.keyCode === 27) {
+                    const $visibleModal = $('.cpp-modal:visible').last();
+                    if ($visibleModal.length) {
+                        e.preventDefault();
+                        $visibleModal.find('.cpp-modal-close, .cpp-modal-cancel-btn').first().trigger('click');
+                    }
+                }
+            });
+
+            // Auto-focus on first visible input/select when modal becomes visible
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'style') {
+                        const target = mutation.target;
+                        if ($(target).hasClass('cpp-modal') && $(target).is(':visible')) {
+                            setTimeout(function() {
+                                const $firstInput = $(target).find('input:visible, select:visible, textarea:visible').first();
+                                if ($firstInput.length && !$firstInput.prop('readonly')) {
+                                    $firstInput.focus();
+                                }
+                            }, 100);
+                        }
+                    }
+                });
+            });
+
+            $('.cpp-modal').each(function() {
+                observer.observe(this, { attributes: true });
+            });
             
             $(document).on('click', '.cpp-modal-close, .cpp-modal-cancel-btn', function(e) {
                 e.preventDefault();

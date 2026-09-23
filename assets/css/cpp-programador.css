@@ -100,12 +100,43 @@
 .cpp-sesiones-list-detailed { list-style: none; padding: 0; margin: 0; flex-grow: 1; border: 1px solid #e0e0e0; border-radius: 4px; }
 
 .cpp-add-sesion-btn { margin-top: 15px; }
-.cpp-sesion-list-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; position: relative; }
-.cpp-sesion-list-item:hover { background-color: #f7f7f7; }
-.cpp-sesion-list-item.active { background-color: #e8f0fe; font-weight: 500; color: #1a73e8; }
+.cpp-sesion-list-item {
+    padding: 12px;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    background-color: #ffffff;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cpp-sesion-list-item:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+.cpp-sesion-list-item.active {
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
+    font-weight: 500;
+    color: #1a73e8;
+    box-shadow: inset 3px 0 0 #1a73e8;
+}
 
 .cpp-sesion-fijada-item {
-    background-color: #fafafa;
+    background-color: #fffdf5;
+    border-color: #fef3c7;
+}
+.cpp-sesion-fijada-badge {
+    background-color: #fef3c7;
+    color: #b45309;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
 }
 .cpp-sesion-fijada-item .cpp-sesion-handle {
     cursor: not-allowed;
@@ -154,13 +185,20 @@
 .cpp-delete-sesion-btn {
     color: #a00;
 }
+@keyframes cppPulsePlaceholder {
+    0% { background-color: #e8f0fe; border-color: #1a73e8; }
+    50% { background-color: #d2e3fc; border-color: #1557b0; }
+    100% { background-color: #e8f0fe; border-color: #1a73e8; }
+}
+
 .cpp-sesion-placeholder {
-    height: 45px;
+    height: 48px;
     background-color: #e8f0fe;
     border: 2px dashed #1a73e8;
-    border-radius: 4px;
-    margin: 5px 0;
+    border-radius: 6px;
+    margin: 6px 4px;
     visibility: visible !important;
+    animation: cppPulsePlaceholder 1.5s infinite ease-in-out;
 }
 
 .cpp-sesion-detail-header {

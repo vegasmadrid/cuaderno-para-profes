@@ -431,6 +431,42 @@
             this.bindEvents();
         },
 
+        updateTableScrollShadows: function($wrapper) {
+            if (!$wrapper || !$wrapper.length) {
+                $wrapper = $('.cpp-cuaderno-tabla-wrapper');
+            }
+            if (!$wrapper.length) return;
+
+            const el = $wrapper[0];
+            const scrollLeft = el.scrollLeft;
+            const maxScrollLeft = el.scrollWidth - el.clientWidth;
+
+            $wrapper.toggleClass('is-scrolled-left', scrollLeft > 5);
+            $wrapper.toggleClass('is-scrolled-right', scrollLeft < maxScrollLeft - 5);
+        },
+
+        clearCrosshairHighlight: function() {
+            $('.cpp-cuaderno-tabla .cpp-row-crosshair').removeClass('cpp-row-crosshair');
+            $('.cpp-cuaderno-tabla .cpp-col-crosshair').removeClass('cpp-col-crosshair');
+        },
+
+        highlightCrosshair: function(cellElement) {
+            this.clearCrosshairHighlight();
+            const $td = $(cellElement).closest('td');
+            if (!$td.length || !$td.hasClass('cpp-cuaderno-td-nota')) return;
+
+            const $tr = $td.closest('tr');
+            $tr.find('td').addClass('cpp-row-crosshair');
+
+            const colIndex = $tr.find('td').index($td);
+            if (colIndex !== -1) {
+                const $table = $tr.closest('table');
+                $table.find('tr').each(function() {
+                    $(this).find('td, th').eq(colIndex).addClass('cpp-col-crosshair');
+                });
+            }
+        },
+
         formatearNotaDisplay: function(nota_raw, decimales = 2) {
             if (nota_raw === null || typeof nota_raw === 'undefined' || nota_raw === '') {
                 return '';
@@ -993,6 +1029,23 @@
             $document.on('copy', function(e) { const activeElement = document.activeElement; if ((activeElement && $(activeElement).closest('.cpp-cuaderno-tabla').length) || (self.currentSelectedInputs && self.currentSelectedInputs.length > 0)) { self.handleCopyCells(e); } });
             $document.on('paste', '.cpp-cuaderno-tabla .cpp-input-nota', function(e) { self.handlePasteCells.call(this, e); });
 
+            // --- Scroll Shadows & Crosshair Highlights ---
+            $document.on('scroll', '.cpp-cuaderno-tabla-wrapper', function() {
+                self.updateTableScrollShadows($(this));
+            });
+
+            $document.on('mouseenter focusin', '.cpp-cuaderno-tabla .cpp-input-nota', function() {
+                self.highlightCrosshair(this);
+            });
+
+            $document.on('mouseleave focusout', '.cpp-cuaderno-tabla .cpp-cuaderno-td-nota', function(e) {
+                // If focus moves to another input, focusin on new input will re-trigger
+                if (e.type === 'mouseleave' && $(document.activeElement).hasClass('cpp-input-nota')) {
+                    return;
+                }
+                self.clearCrosshairHighlight();
+            });
+
             // --- Listeners para la Paleta de Símbolos ---
             $document.on('click', '#cpp-a1-symbol-palette-btn', function(e) {
                 e.preventDefault();
@@ -1260,6 +1313,7 @@
                             }
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
+                            self.updateTableScrollShadows($('.cpp-cuaderno-tabla-wrapper'));
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno.';
                             if (response && response.data && response.data.message) {
