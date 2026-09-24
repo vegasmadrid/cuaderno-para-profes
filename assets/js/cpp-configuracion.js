@@ -91,10 +91,20 @@
             this.loadEvalConfig();
         },
 
+        evalConfigChanged: false,
+
         hideGeneralSettings: function() {
             $('#cpp-general-settings-page-container').hide();
             $('#cpp-cuaderno-main-content').show();
             $('body').removeClass('cpp-fullscreen-active');
+            if (this.evalConfigChanged || (cpp.cuaderno && cpp.cuaderno.isDirty)) {
+                this.evalConfigChanged = false;
+                if (cpp.cuaderno) cpp.cuaderno.isDirty = false;
+                if (cpp.currentClaseIdCuaderno && cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
+                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
+                    cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
+                }
+            }
         },
 
         loadAlumnosData: function(claseId) {
@@ -830,6 +840,7 @@
                 },
                 success: (response) => {
                     if (response.success) {
+                        this.evalConfigChanged = true;
                         cpp.utils.showToast(response.data.message || 'Configuración guardada.');
                         $(document).trigger('cpp:forceGradebookReload');
                     } else {

@@ -230,9 +230,17 @@ function cpp_populate_sheet_with_class_data(&$sheet, $clase_info_array, $user_id
             $resultado_nota_final = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
             $nota_final_0_100 = $resultado_nota_final['nota'];
             $nota_final_reescalada = ($nota_final_0_100 / 100) * $base_nota_final_clase;
+
+            $eval_cfg_excel = cpp_get_eval_config($user_id);
+            $excel_fmt = '0.00';
+            if (in_array($eval_cfg_excel['rounding_mode'], ['nearest', 'ceil', 'floor', 'threshold'])) {
+                $excel_fmt = '0';
+            } else if ($eval_cfg_excel['rounding_mode'] === 'one_decimal') {
+                $excel_fmt = '0.0';
+            }
             
             $sheet->setCellValue($col_final_nota_char . $current_row_excel, $nota_final_reescalada);
-            $sheet->getStyle($col_final_nota_char . $current_row_excel)->getNumberFormat()->setFormatCode('0.00'); 
+            $sheet->getStyle($col_final_nota_char . $current_row_excel)->getNumberFormat()->setFormatCode($excel_fmt);
             $sheet->getStyle($col_final_nota_char . $current_row_excel)->getFont()->setBold(true);
             $sheet->getStyle($col_final_nota_char . $current_row_excel)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             

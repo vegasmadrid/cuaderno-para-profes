@@ -56,7 +56,7 @@ if (!function_exists('cpp_lighten_hex_color')) {
 }
 
 if (!function_exists('cpp_formatear_nota_display')) {
-    function cpp_formatear_nota_display($nota, $decimales = null) {
+    function cpp_formatear_nota_display($nota, $decimales = null, $user_id = null, $scope_check = 'actividad') {
         if ($nota === null || $nota === '') {
             return '';
         }
@@ -68,16 +68,31 @@ if (!function_exists('cpp_formatear_nota_display')) {
             return $nota;
         }
 
-        // Si es numérico, proceder con el formateo.
+        if (empty($user_id)) {
+            $user_id = get_current_user_id();
+        }
+
         $nota_float = floatval($nota_limpia);
-        if ($decimales !== null) {
-            return number_format($nota_float, intval($decimales), '.', '');
+
+        if ($decimales === null) {
+            // Aplicar redondeo según la configuración del usuario y el scope de la nota
+            $nota_float = cpp_aplicar_redondeo_nota($nota_float, $user_id, $scope_check);
+
+            $config = cpp_get_eval_config($user_id);
+            $mode = isset($config['rounding_mode']) ? $config['rounding_mode'] : 'none';
+
+            if ($scope_check === 'actividad' || $scope_check === 'none') {
+                $decimales = (floor($nota_float) == $nota_float) ? 0 : 2;
+            } else if (in_array($mode, ['nearest', 'ceil', 'floor', 'threshold'])) {
+                $decimales = 0;
+            } else if ($mode === 'one_decimal') {
+                $decimales = (floor($nota_float) == $nota_float) ? 0 : 1;
+            } else {
+                $decimales = (floor($nota_float) == $nota_float) ? 0 : 2;
+            }
         }
-        if (floor($nota_float) == $nota_float) {
-            return number_format($nota_float, 0, '.', '');
-        } else {
-            return number_format($nota_float, 2, '.', '');
-        }
+
+        return number_format($nota_float, intval($decimales), '.', '');
     }
 }
 
@@ -119,7 +134,7 @@ if (!function_exists('cpp_get_eval_config')) {
 }
 
 if (!function_exists('cpp_aplicar_redondeo_nota')) {
-    function cpp_aplicar_redondeo_nota($nota, $user_id = null, $scope_check = 'both') {
+    function cpp_aplicar_redondeo_nota($nota, $user_id = null, $scope_check = 'evaluacion') {
         if ($nota === null || $nota === '') {
             return $nota;
         }
@@ -129,11 +144,19 @@ if (!function_exists('cpp_aplicar_redondeo_nota')) {
             $user_id = get_current_user_id();
         }
 
+        // Las notas de actividades individuales NUNCA se redondean por configuración de evaluación
+        if ($scope_check === 'actividad' || $scope_check === 'none') {
+            return round($nota_num, 2);
+        }
+
         $config = cpp_get_eval_config($user_id);
 
         $scope = isset($config['rounding_scope']) ? $config['rounding_scope'] : 'both';
-        // Verificar si el redondeo debe aplicarse según el alcance
-        if ($scope !== 'both' && $scope_check !== 'both' && $scope !== $scope_check) {
+        // Verificar si el alcance configurado aplica a este tipo de nota
+        if ($scope === 'evaluacion' && $scope_check !== 'evaluacion') {
+            return round($nota_num, 2);
+        }
+        if ($scope === 'media' && $scope_check !== 'media') {
             return round($nota_num, 2);
         }
 

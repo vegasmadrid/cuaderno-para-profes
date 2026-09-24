@@ -32,6 +32,9 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
     $eval_config = cpp_get_eval_config($user_id);
     $empty_grades_policy = isset($eval_config['empty_grades']) ? $eval_config['empty_grades'] : 'ignore';
 
+    $base_nota_clase = floatval($wpdb->get_var($wpdb->prepare("SELECT base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id)));
+    if ($base_nota_clase <= 0) { $base_nota_clase = 100.00; }
+
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
     if (empty($metodo_calculo)) { $metodo_calculo = 'total'; }
@@ -131,10 +134,12 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
             $is_incomplete = true;
         }
 
-        $nota_final_redondeada = cpp_aplicar_redondeo_nota($nota_final_alumno_0_100, $user_id, 'evaluacion');
+        $nota_reescalada = ($nota_final_alumno_0_100 / 100) * $base_nota_clase;
+        $nota_redondeada_reescalada = cpp_aplicar_redondeo_nota($nota_reescalada, $user_id, 'evaluacion');
+        $nota_final_0_100_redondeada = ($base_nota_clase > 0) ? ($nota_redondeada_reescalada / $base_nota_clase) * 100 : $nota_final_alumno_0_100;
 
         return [
-            'nota' => $nota_final_redondeada,
+            'nota' => $nota_final_0_100_redondeada,
             'is_incomplete' => $is_incomplete,
             'used_categories' => $used_categories_names,
             'missing_categories' => $missing_categories_names
@@ -162,12 +167,19 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
             $media_simple = $suma_notas_normalizadas / $numero_de_actividades_con_nota;
             $nota_final = $media_simple * 100;
         }
-        $nota_final_redondeada = cpp_aplicar_redondeo_nota($nota_final, $user_id, 'evaluacion');
-        return ['nota' => $nota_final_redondeada, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
+        $nota_reescalada = ($nota_final / 100) * $base_nota_clase;
+        $nota_redondeada_reescalada = cpp_aplicar_redondeo_nota($nota_reescalada, $user_id, 'evaluacion');
+        $nota_final_0_100_redondeada = ($base_nota_clase > 0) ? ($nota_redondeada_reescalada / $base_nota_clase) * 100 : $nota_final;
+
+        return ['nota' => $nota_final_0_100_redondeada, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
     }
 }
 
 function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
+    global $wpdb;
+    $base_nota_clase = floatval($wpdb->get_var($wpdb->prepare("SELECT base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id)));
+    if ($base_nota_clase <= 0) { $base_nota_clase = 100.00; }
+
     // 1. Obtener las evaluaciones seleccionadas para la media
     $evaluaciones_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
 
@@ -186,9 +198,11 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
 
     // 3. Calcular la media de las evaluaciones seleccionadas
     if ($numero_evaluaciones > 0) {
-        $media_final = $suma_notas_evaluaciones / $numero_evaluaciones;
-        $media_redondeada = cpp_aplicar_redondeo_nota($media_final, $user_id, 'media');
-        return ['nota' => $media_redondeada];
+        $media_0_100 = $suma_notas_evaluaciones / $numero_evaluaciones;
+        $media_reescalada = ($media_0_100 / 100) * $base_nota_clase;
+        $media_redondeada_reescalada = cpp_aplicar_redondeo_nota($media_reescalada, $user_id, 'media');
+        $media_0_100_redondeada = ($base_nota_clase > 0) ? ($media_redondeada_reescalada / $base_nota_clase) * 100 : $media_0_100;
+        return ['nota' => $media_0_100_redondeada];
     }
 
     return ['nota' => 0.00];
