@@ -245,6 +245,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                             <span class="dashicons dashicons-chart-pie"></span>
                             <span>Criterios Globales</span>
                         </a>
+                        <a href="#" class="cpp-config-tab-link" data-config-tab="evaluacion-notas">
+                            <span class="dashicons dashicons-welcome-write-blog"></span>
+                            <span>Evaluación y notas</span>
+                        </a>
                     </div>
                     <div class="cpp-config-content-area">
                         <div id="cpp-config-tab-calendario" class="cpp-config-tab-content active">
@@ -337,6 +341,94 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                     <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-cancelar-criterio-global" style="display:none;">Cancelar</button>
                                 </div>
                             </div>
+                        </div>
+                        <div id="cpp-config-tab-evaluacion-notas" class="cpp-config-tab-content">
+                            <h2>Configuración de Evaluación y Notas</h2>
+                            <p>Configura las opciones globales para el redondeo de calificaciones y la gestión de la evaluación.</p>
+                            <form id="cpp-eval-config-form">
+                                <div class="cpp-form-section">
+                                    <h3>Redondeo de Notas Finales</h3>
+                                    <div class="cpp-form-group">
+                                        <label for="cpp-eval-rounding-mode" style="font-weight: 600; display: block; margin-bottom: 6px;">Modo de redondeo:</label>
+                                        <select id="cpp-eval-rounding-mode" name="rounding_mode" class="cpp-evaluacion-selector" style="width: 100%; max-width: 450px;">
+                                            <option value="none">Sin redondeo (mostrar decimales según la base)</option>
+                                            <option value="nearest">Redondeo estándar al entero más cercano (ej. 6.5 → 7)</option>
+                                            <option value="one_decimal">Redondeo a 1 decimal (ej. 6.84 → 6.8)</option>
+                                            <option value="ceil">Redondeo al alza / Techo (ej. 6.1 → 7)</option>
+                                            <option value="floor">Redondeo a la baja / Suelo (ej. 6.9 → 6)</option>
+                                            <option value="threshold">Redondeo condicional según umbral personalizado</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="cpp-form-group" id="cpp-eval-threshold-container" style="display: none; margin-top: 10px;">
+                                        <label for="cpp-eval-rounding-threshold" style="font-weight: 600; display: block; margin-bottom: 4px;">Umbral para redondear al entero superior (de 0.10 a 0.90):</label>
+                                        <input type="number" id="cpp-eval-rounding-threshold" name="rounding_threshold" step="0.05" min="0.1" max="0.9" value="0.5" style="width: 120px;">
+                                        <small style="display: block; color: #666; margin-top: 4px;">Si la parte decimal de la nota es igual o superior al umbral (ej. 0.5), la nota se redondea al entero superior; si es inferior, al entero inferior.</small>
+                                    </div>
+
+                                    <div class="cpp-form-group" style="margin-top: 15px;">
+                                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">Aplicar redondeo a:</label>
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="rounding_scope" value="both" checked>
+                                                <span>A ambas (Nota Final de Evaluación y Nota Media Final)</span>
+                                            </label>
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="rounding_scope" value="evaluacion">
+                                                <span>Solo a la Nota Final de cada Evaluación</span>
+                                            </label>
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="rounding_scope" value="media">
+                                                <span>Solo a la Nota Media Final de la clase</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cpp-form-section">
+                                    <h3>Cálculo y Gestión de Calificaciones</h3>
+                                    <div class="cpp-form-group" style="margin-bottom: 15px;">
+                                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tratamiento de actividades sin nota (casillas vacías):</label>
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="empty_grades" value="ignore" checked>
+                                                <span>Ignorar actividades sin nota en el promedio (recomendado)</span>
+                                            </label>
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="empty_grades" value="zero">
+                                                <span>Tratar casillas vacías como 0 en el cálculo</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="cpp-form-group" style="margin-bottom: 15px;">
+                                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">Método de cálculo por defecto para nuevas evaluaciones:</label>
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="default_calc_method" value="ponderada" checked>
+                                                <span>Media Ponderada por Criterios</span>
+                                            </label>
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="default_calc_method" value="total">
+                                                <span>Media Aritmética Simple</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="cpp-form-group">
+                                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" id="cpp-eval-highlight-grades" name="highlight_grades" value="1" checked>
+                                            <span>Destacar visualmente aprobados y suspensos en el cuaderno según la nota mínima de la clase</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="cpp-config-actions" style="margin-top: 20px;">
+                                    <button type="submit" class="cpp-btn cpp-btn-primary" id="cpp-btn-guardar-eval-config">
+                                        <span class="dashicons dashicons-saved"></span> Guardar Configuración de Evaluación
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

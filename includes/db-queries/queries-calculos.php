@@ -29,6 +29,9 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         return $default_return;
     }
 
+    $eval_config = cpp_get_eval_config($user_id);
+    $empty_grades_policy = isset($eval_config['empty_grades']) ? $eval_config['empty_grades'] : 'ignore';
+
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
     if (empty($metodo_calculo)) { $metodo_calculo = 'total'; }
@@ -74,19 +77,23 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
 
             if (!$criterio_id_actividad || !isset($map_criterios[$criterio_id_actividad])) { continue; }
             
-            if (isset($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
-                if ($nota_obtenida !== null) {
-                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                    $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+            $has_grade = isset($calificaciones_alumno[$actividad['id']]);
+            $nota_obtenida = $has_grade ? cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]) : null;
 
-                    if (!isset($notas_por_criterio_alumno[$criterio_id_actividad])) {
-                        $notas_por_criterio_alumno[$criterio_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
-                    }
-                    $notas_por_criterio_alumno[$criterio_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
-                    $notas_por_criterio_alumno[$criterio_id_actividad]['contador']++;
-                    $criterios_con_nota[$criterio_id_actividad] = true;
+            if ($nota_obtenida === null && $empty_grades_policy === 'zero') {
+                $nota_obtenida = 0.0;
+            }
+
+            if ($nota_obtenida !== null) {
+                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+
+                if (!isset($notas_por_criterio_alumno[$criterio_id_actividad])) {
+                    $notas_por_criterio_alumno[$criterio_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
                 }
+                $notas_por_criterio_alumno[$criterio_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
+                $notas_por_criterio_alumno[$criterio_id_actividad]['contador']++;
+                $criterios_con_nota[$criterio_id_actividad] = true;
             }
         }
 
@@ -124,8 +131,10 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
             $is_incomplete = true;
         }
 
+        $nota_final_redondeada = cpp_aplicar_redondeo_nota($nota_final_alumno_0_100, $user_id, 'evaluacion');
+
         return [
-            'nota' => round($nota_final_alumno_0_100, 2),
+            'nota' => $nota_final_redondeada,
             'is_incomplete' => $is_incomplete,
             'used_categories' => $used_categories_names,
             'missing_categories' => $missing_categories_names
@@ -135,21 +144,26 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         $suma_notas_normalizadas = 0.0;
         $numero_de_actividades_con_nota = 0;
         foreach ($actividades_raw as $actividad) {
-            if (isset($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
-                if ($nota_obtenida !== null) {
-                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                    $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
-                    $numero_de_actividades_con_nota++;
-                }
+            $has_grade = isset($calificaciones_alumno[$actividad['id']]);
+            $nota_obtenida = $has_grade ? cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]) : null;
+
+            if ($nota_obtenida === null && $empty_grades_policy === 'zero') {
+                $nota_obtenida = 0.0;
+            }
+
+            if ($nota_obtenida !== null) {
+                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
+                $numero_de_actividades_con_nota++;
             }
         }
         $nota_final = 0.00;
         if ($numero_de_actividades_con_nota > 0) {
             $media_simple = $suma_notas_normalizadas / $numero_de_actividades_con_nota;
-            $nota_final = round($media_simple * 100, 2);
+            $nota_final = $media_simple * 100;
         }
-        return ['nota' => $nota_final, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
+        $nota_final_redondeada = cpp_aplicar_redondeo_nota($nota_final, $user_id, 'evaluacion');
+        return ['nota' => $nota_final_redondeada, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
     }
 }
 
@@ -173,7 +187,8 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
     // 3. Calcular la media de las evaluaciones seleccionadas
     if ($numero_evaluaciones > 0) {
         $media_final = $suma_notas_evaluaciones / $numero_evaluaciones;
-        return ['nota' => round($media_final, 2)]; // Devuelve un objeto con la nota
+        $media_redondeada = cpp_aplicar_redondeo_nota($media_final, $user_id, 'media');
+        return ['nota' => $media_redondeada];
     }
 
     return ['nota' => 0.00];

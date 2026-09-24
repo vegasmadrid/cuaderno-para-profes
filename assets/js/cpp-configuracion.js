@@ -88,6 +88,7 @@
                 window.CppProgramadorApp.populateConfigModal();
             }
             this.loadCriteriosGlobales();
+            this.loadEvalConfig();
         },
 
         hideGeneralSettings: function() {
@@ -613,6 +614,16 @@
                 $('#cpp-criterio-global-color-hidden').val($(this).data('color'));
             });
 
+            // --- EVENTOS DE CONFIGURACIÓN DE EVALUACIÓN Y NOTAS ---
+            $generalSettingsPage.on('change', '#cpp-eval-rounding-mode', function() {
+                if ($(this).val() === 'threshold') {
+                    $('#cpp-eval-threshold-container').slideDown();
+                } else {
+                    $('#cpp-eval-threshold-container').slideUp();
+                }
+            });
+            $generalSettingsPage.on('submit', '#cpp-eval-config-form', this.saveEvalConfig.bind(this));
+
             // --- NUEVOS EVENTOS PARA LA PESTAÑA ALUMNOS EN CONFIG ---
             $classSettingsPage.on('click', '.cpp-btn-quitar-de-clase', this.handleQuitarAlumnoDeClase.bind(this));
             $classSettingsPage.on('click', '.cpp-btn-editar-desde-clase', this.handleEditarAlumnoDesdeClase.bind(this));
@@ -757,6 +768,81 @@
             else if (tabId === 'criterios-globales') {
                 this.loadCriteriosGlobales();
             }
+            else if (tabId === 'evaluacion-notas') {
+                this.loadEvalConfig();
+            }
+        },
+
+        loadEvalConfig: function() {
+            const $form = $('#cpp-eval-config-form');
+            if (!$form.length) return;
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_obtener_config_evaluacion',
+                    nonce: cppFrontendData.nonce
+                },
+                success: (response) => {
+                    if (response.success && response.data.config) {
+                        const cfg = response.data.config;
+                        $form.find('#cpp-eval-rounding-mode').val(cfg.rounding_mode || 'none').trigger('change');
+                        $form.find('#cpp-eval-rounding-threshold').val(cfg.rounding_threshold !== undefined ? cfg.rounding_threshold : 0.5);
+                        $form.find(`input[name="rounding_scope"][value="${cfg.rounding_scope || 'both'}"]`).prop('checked', true);
+                        $form.find(`input[name="empty_grades"][value="${cfg.empty_grades || 'ignore'}"]`).prop('checked', true);
+                        $form.find(`input[name="default_calc_method"][value="${cfg.default_calc_method || 'ponderada'}"]`).prop('checked', true);
+                        $form.find('#cpp-eval-highlight-grades').prop('checked', parseInt(cfg.highlight_grades) === 1);
+                    }
+                }
+            });
+        },
+
+        saveEvalConfig: function(e) {
+            e.preventDefault();
+            const $form = $('#cpp-eval-config-form');
+            const $btn = $form.find('#cpp-btn-guardar-eval-config');
+
+            const roundingMode = $form.find('#cpp-eval-rounding-mode').val();
+            const roundingThreshold = parseFloat($form.find('#cpp-eval-rounding-threshold').val()) || 0.5;
+            const roundingScope = $form.find('input[name="rounding_scope"]:checked').val() || 'both';
+            const emptyGrades = $form.find('input[name="empty_grades"]:checked').val() || 'ignore';
+            const defaultCalcMethod = $form.find('input[name="default_calc_method"]:checked').val() || 'ponderada';
+            const highlightGrades = $form.find('#cpp-eval-highlight-grades').is(':checked') ? 1 : 0;
+
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_guardar_config_evaluacion',
+                    nonce: cppFrontendData.nonce,
+                    rounding_mode: roundingMode,
+                    rounding_threshold: roundingThreshold,
+                    rounding_scope: roundingScope,
+                    empty_grades: emptyGrades,
+                    default_calc_method: defaultCalcMethod,
+                    highlight_grades: highlightGrades
+                },
+                success: (response) => {
+                    if (response.success) {
+                        cpp.utils.showToast(response.data.message || 'Configuración guardada.');
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        alert(response.data.message || 'Error al guardar la configuración.');
+                    }
+                },
+                error: () => {
+                    alert('Error de conexión al guardar la configuración de evaluación.');
+                },
+                complete: () => {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
         },
 
         loadCriteriosGlobales: function() {

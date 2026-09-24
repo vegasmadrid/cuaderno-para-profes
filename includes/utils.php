@@ -81,6 +81,89 @@ if (!function_exists('cpp_formatear_nota_display')) {
     }
 }
 
+if (!function_exists('cpp_get_eval_config')) {
+    function cpp_get_eval_config($user_id = null) {
+        if (empty($user_id)) {
+            $user_id = get_current_user_id();
+        }
+
+        $defaults = [
+            'rounding_mode' => 'none', // 'none', 'nearest', 'one_decimal', 'ceil', 'floor', 'threshold'
+            'rounding_threshold' => 0.5,
+            'rounding_scope' => 'both', // 'both', 'evaluacion', 'media'
+            'empty_grades' => 'ignore', // 'ignore', 'zero'
+            'default_calc_method' => 'ponderada', // 'ponderada', 'total'
+            'highlight_grades' => 1 // 1 or 0
+        ];
+
+        if (empty($user_id)) {
+            return $defaults;
+        }
+
+        $saved = get_user_meta($user_id, 'cpp_eval_config', true);
+        if (!is_array($saved) || empty($saved)) {
+            global $wpdb;
+            $tabla_config = $wpdb->prefix . 'cpp_programador_config';
+            $val = $wpdb->get_var($wpdb->prepare("SELECT valor FROM $tabla_config WHERE user_id = %d AND clave = 'eval_config'", $user_id));
+            if ($val) {
+                $saved = json_decode($val, true);
+            }
+        }
+
+        if (is_array($saved)) {
+            return array_merge($defaults, $saved);
+        }
+
+        return $defaults;
+    }
+}
+
+if (!function_exists('cpp_aplicar_redondeo_nota')) {
+    function cpp_aplicar_redondeo_nota($nota, $user_id = null, $scope_check = 'both') {
+        if ($nota === null || $nota === '') {
+            return $nota;
+        }
+
+        $nota_num = floatval(str_replace(',', '.', $nota));
+        if (empty($user_id)) {
+            $user_id = get_current_user_id();
+        }
+
+        $config = cpp_get_eval_config($user_id);
+
+        $scope = isset($config['rounding_scope']) ? $config['rounding_scope'] : 'both';
+        // Verificar si el redondeo debe aplicarse según el alcance
+        if ($scope !== 'both' && $scope_check !== 'both' && $scope !== $scope_check) {
+            return round($nota_num, 2);
+        }
+
+        $mode = isset($config['rounding_mode']) ? $config['rounding_mode'] : 'none';
+        $threshold = isset($config['rounding_threshold']) ? floatval($config['rounding_threshold']) : 0.5;
+
+        switch ($mode) {
+            case 'nearest':
+                return floatval(round($nota_num));
+            case 'one_decimal':
+                return floatval(round($nota_num, 1));
+            case 'ceil':
+                return floatval(ceil($nota_num));
+            case 'floor':
+                return floatval(floor($nota_num));
+            case 'threshold':
+                $entero = floor($nota_num);
+                $decimal = round($nota_num - $entero, 4);
+                if ($decimal >= $threshold) {
+                    return floatval(ceil($nota_num));
+                } else {
+                    return floatval(floor($nota_num));
+                }
+            case 'none':
+            default:
+                return floatval(round($nota_num, 2));
+        }
+    }
+}
+
 if (!function_exists('cpp_get_symbol_legends')) {
     function cpp_get_symbol_legends($user_id) {
         $default_legends = [

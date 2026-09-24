@@ -37,15 +37,17 @@ function cpp_crear_evaluacion($clase_id, $user_id, $nombre_evaluacion) {
     if ($clase_pertenece == 0) {
         return false;
     }
-    // El método de cálculo por defecto ('total') se establece en la BBDD. No es necesario añadirlo aquí.
+    $eval_config = cpp_get_eval_config($user_id);
+    $default_calc = isset($eval_config['default_calc_method']) ? $eval_config['default_calc_method'] : 'ponderada';
     $resultado = $wpdb->insert(
         $tabla_evaluaciones,
         [
             'clase_id' => $clase_id,
             'user_id' => $user_id,
-            'nombre_evaluacion' => sanitize_text_field($nombre_evaluacion)
+            'nombre_evaluacion' => sanitize_text_field($nombre_evaluacion),
+            'calculo_nota' => $default_calc
         ],
-        ['%d', '%d', '%s']
+        ['%d', '%d', '%s', '%s']
     );
     return $resultado ? $wpdb->insert_id : false;
 }
