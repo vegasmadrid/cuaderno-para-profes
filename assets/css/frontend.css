@@ -2315,96 +2315,70 @@ body.cpp-no-text-select {
     height: 100%;
     display: flex;
     align-items: center;
-    padding: 0 16px;
+    padding: 0 12px;
     box-shadow: none;
-    gap: 12px;
+    gap: 0;
 }
 
 .cpp-tabs-general {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    background-color: #ffffff;
-    padding: 2px;
-    gap: 4px;
+    height: 100%;
+    gap: 2px;
     margin-right: 8px;
 }
 
 .cpp-tabs-general .cpp-main-tab-link {
     background-color: transparent;
     color: #64748b;
-    padding: 6px 14px;
-    border-radius: 20px;
+    padding: 4px 12px;
+    border-radius: 8px;
     font-weight: 500;
-    font-size: 13px;
+    font-size: 11px;
     cursor: pointer;
-    border: 1px solid transparent;
+    border: none;
     transition: all 0.2s ease;
     white-space: nowrap;
-    line-height: 1.2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 44px;
+    min-width: 58px;
+    box-sizing: border-box;
+}
+
+.cpp-tabs-general .cpp-main-tab-link .dashicons,
+.cpp-tabs-general .cpp-main-tab-link svg {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    color: currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cpp-tabs-general .cpp-main-tab-link .tab-label {
+    line-height: 1;
+    font-size: 11px;
 }
 
 .cpp-tabs-general .cpp-main-tab-link:hover {
-    color: #1e293b;
-    background-color: #f8fafc;
+    color: #0f172a;
+    background-color: #f1f5f9;
 }
 
 .cpp-tabs-general .cpp-main-tab-link.active {
-    background-color: #f1f5f9;
+    background-color: #e8f0fe;
     color: #1a73e8;
     font-weight: 600;
-    border-color: #e2e8f0;
-}
-
-/* Alineación limpia y estandarizada de iconos de la barra derecha */
-.cpp-top-bar-right .cpp-btn-icon,
-.cpp-top-bar-right .cpp-btn-general-settings,
-.cpp-top-bar-right #cpp-toggle-fullscreen-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border-radius: 50% !important;
-    color: #64748b !important;
-    background: transparent !important;
-    border: none !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    transition: all 0.15s ease !important;
-    box-shadow: none !important;
-    line-height: 1 !important;
-}
-
-.cpp-top-bar-right .cpp-btn-general-settings .dashicons,
-.cpp-top-bar-right #cpp-toggle-fullscreen-btn .dashicons {
-    font-size: 20px !important;
-    width: 20px !important;
-    height: 20px !important;
-    line-height: 20px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.cpp-top-bar-right #cpp-toggle-fullscreen-btn svg {
-    width: 20px !important;
-    height: 20px !important;
-    display: block !important;
-}
-
-.cpp-top-bar-right .cpp-btn-general-settings:hover,
-.cpp-top-bar-right #cpp-toggle-fullscreen-btn:hover {
-    background-color: #f1f5f9 !important;
-    color: #0f172a !important;
 }
 
 .cpp-user-menu-container {
-    margin-left: 4px;
+    margin-left: 8px;
     display: flex;
     align-items: center;
 }
