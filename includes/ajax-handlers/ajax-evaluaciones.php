@@ -249,3 +249,72 @@ function cpp_ajax_save_final_grade_evals_config() {
         wp_send_json_error(['message' => 'Error al guardar la configuración.']);
     }
 }
+
+add_action('wp_ajax_cpp_obtener_config_evaluacion', 'cpp_ajax_obtener_config_evaluacion');
+function cpp_ajax_obtener_config_evaluacion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+    $config = cpp_get_eval_config($user_id);
+    wp_send_json_success(['config' => $config]);
+}
+
+add_action('wp_ajax_cpp_guardar_config_evaluacion', 'cpp_ajax_guardar_config_evaluacion');
+function cpp_ajax_guardar_config_evaluacion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+    $user_id = get_current_user_id();
+
+    $rounding_mode = isset($_POST['rounding_mode']) ? sanitize_text_field($_POST['rounding_mode']) : 'none';
+    $rounding_threshold = isset($_POST['rounding_threshold']) ? floatval($_POST['rounding_threshold']) : 0.5;
+    $rounding_scope = isset($_POST['rounding_scope']) ? sanitize_text_field($_POST['rounding_scope']) : 'both';
+    $empty_grades = isset($_POST['empty_grades']) ? sanitize_text_field($_POST['empty_grades']) : 'ignore';
+    $default_calc_method = isset($_POST['default_calc_method']) ? sanitize_text_field($_POST['default_calc_method']) : 'ponderada';
+    $highlight_grades = isset($_POST['highlight_grades']) && ($_POST['highlight_grades'] === '1' || $_POST['highlight_grades'] === 'true' || $_POST['highlight_grades'] === true) ? 1 : 0;
+    $calculation_base = isset($_POST['calculation_base']) ? sanitize_text_field($_POST['calculation_base']) : 'exact';
+    $grace_pass_enabled = isset($_POST['grace_pass_enabled']) && ($_POST['grace_pass_enabled'] === '1' || $_POST['grace_pass_enabled'] === 'true' || $_POST['grace_pass_enabled'] === true) ? 1 : 0;
+    $grace_pass_threshold = isset($_POST['grace_pass_threshold']) ? floatval($_POST['grace_pass_threshold']) : 4.50;
+    $show_exact_grade = isset($_POST['show_exact_grade']) && ($_POST['show_exact_grade'] === '1' || $_POST['show_exact_grade'] === 'true' || $_POST['show_exact_grade'] === true) ? 1 : 0;
+
+    $valid_modes = ['none', 'nearest', 'one_decimal', 'ceil', 'floor', 'threshold'];
+    if (!in_array($rounding_mode, $valid_modes)) { $rounding_mode = 'none'; }
+
+    $valid_scopes = ['both', 'evaluacion', 'media'];
+    if (!in_array($rounding_scope, $valid_scopes)) { $rounding_scope = 'both'; }
+
+    $valid_empty = ['ignore', 'zero'];
+    if (!in_array($empty_grades, $valid_empty)) { $empty_grades = 'ignore'; }
+
+    $valid_calc = ['ponderada', 'total'];
+    if (!in_array($default_calc_method, $valid_calc)) { $default_calc_method = 'ponderada'; }
+
+    $valid_bases = ['exact', 'rounded'];
+    if (!in_array($calculation_base, $valid_bases)) { $calculation_base = 'exact'; }
+
+    if ($rounding_threshold < 0.1) $rounding_threshold = 0.1;
+    if ($rounding_threshold > 0.9) $rounding_threshold = 0.9;
+    if ($grace_pass_threshold < 0) $grace_pass_threshold = 0;
+
+    $config = [
+        'rounding_mode' => $rounding_mode,
+        'rounding_threshold' => $rounding_threshold,
+        'rounding_scope' => $rounding_scope,
+        'empty_grades' => $empty_grades,
+        'default_calc_method' => $default_calc_method,
+        'highlight_grades' => $highlight_grades,
+        'calculation_base' => $calculation_base,
+        'grace_pass_enabled' => $grace_pass_enabled,
+        'grace_pass_threshold' => $grace_pass_threshold,
+        'show_exact_grade' => $show_exact_grade
+    ];
+
+    update_user_meta($user_id, 'cpp_eval_config', $config);
+    if (function_exists('cpp_programador_save_config_value')) {
+        cpp_programador_save_config_value($user_id, 'eval_config', $config);
+    }
+    if (function_exists('cpp_clear_programador_cache')) {
+        cpp_clear_programador_cache($user_id);
+    }
+
+    wp_send_json_success(['message' => 'Configuración de evaluación guardada correctamente.', 'config' => $config]);
+}

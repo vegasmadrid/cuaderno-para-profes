@@ -88,10 +88,13 @@ function cpp_ajax_cargar_cuaderno_clase() {
         foreach ($alumnos as $index => $alumno) {
             $calculo_result = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_activa_id);
             $nota_0_100 = $calculo_result['nota'];
+            $raw_0_100 = isset($calculo_result['raw_nota_0_100']) ? $calculo_result['raw_nota_0_100'] : $nota_0_100;
             $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
+            $raw_reescalada = ($raw_0_100 / 100) * $base_nota_final_clase;
 
             $notas_finales_alumnos[$alumno['id']] = [
                 'nota' => $nota_reescalada,
+                'raw_nota' => $raw_reescalada,
                 'is_incomplete' => $calculo_result['is_incomplete'],
                 'used_categories' => $calculo_result['used_categories'],
                 'missing_categories' => $calculo_result['missing_categories']
@@ -229,11 +232,10 @@ function cpp_ajax_cargar_cuaderno_clase() {
 
                         $nota_final_data = $notas_finales_alumnos[$alumno['id']];
                         $nota_final_valor = $nota_final_data['nota'];
+                        $raw_nota_valor = isset($nota_final_data['raw_nota']) ? $nota_final_data['raw_nota'] : $nota_final_valor;
                         $is_incomplete = $nota_final_data['is_incomplete'];
 
-                        $decimales_nota_final = 2;
-                        if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_valor == floor($nota_final_valor)) { $decimales_nota_final = 0; }
-                        $nota_final_display = cpp_formatear_nota_display($nota_final_valor, $decimales_nota_final);
+                        $nota_final_display = cpp_formatear_nota_display_html($nota_final_valor, $user_id, 'evaluacion', $raw_nota_valor);
 
                         $data_attributes = '';
                         if ($is_incomplete) {
@@ -251,7 +253,7 @@ function cpp_ajax_cargar_cuaderno_clase() {
                                     $nota_alumno_actividad_display = cpp_formatear_nota_display($nota_alumno_actividad_raw);
                                     ?><td class="cpp-cuaderno-td-nota" data-actividad-id="<?php echo esc_attr($actividad['id']); ?>"><input type="text" class="cpp-input-nota" value="<?php echo esc_attr($nota_alumno_actividad_display); ?>" data-alumno-id="<?php echo esc_attr($alumno['id']); ?>" data-actividad-id="<?php echo esc_attr($actividad['id']); ?>" data-nota-maxima="<?php echo esc_attr($actividad['nota_maxima']); ?>" placeholder="-"><span class="cpp-nota-validation-message cpp-error-message" style="display:none;"></span></td><?php endforeach; ?>
                             <?php endif; ?><td class="cpp-cuaderno-td-final" id="cpp-nota-final-alumno-<?php echo esc_attr($alumno['id']); ?>" <?php echo $data_attributes; ?>>
-                                <?php echo esc_html($nota_final_display); ?>
+                                <?php echo $nota_final_display; ?>
                                 <?php if ($is_incomplete): ?>
                                     <span class="cpp-warning-icon" title="Nota incompleta">⚠️</span>
                                 <?php endif; ?>
@@ -436,15 +438,11 @@ function cpp_ajax_guardar_actividad_evaluable() {
             foreach ($alumnos as $alumno) {
                 $calculo_result = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion_id);
                 $nota_reescalada = ($calculo_result['nota'] / 100) * $base_nota_final_clase;
-
-                $decimales_nota_final = 2;
-                 if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_reescalada == floor($nota_reescalada)) {
-                    $decimales_nota_final = 0;
-                }
+                $raw_reescalada = isset($calculo_result['raw_nota_0_100']) ? ($calculo_result['raw_nota_0_100'] / 100) * $base_nota_final_clase : $nota_reescalada;
 
                 $notas_finales_actualizadas[] = [
                     'alumno_id' => $alumno['id'],
-                    'nota_final_display' => cpp_formatear_nota_display($nota_reescalada, $decimales_nota_final),
+                    'nota_final_display' => cpp_formatear_nota_display_html($nota_reescalada, $user_id, 'evaluacion', $raw_reescalada),
                     'is_incomplete' => $calculo_result['is_incomplete'],
                     'used_categories' => $calculo_result['used_categories'],
                     'missing_categories' => $calculo_result['missing_categories']
@@ -487,15 +485,12 @@ function cpp_ajax_guardar_calificacion_alumno() {
 
     // Preparar el objeto de respuesta completo
     $nota_final_reescalada = ($calculo_result['nota'] / 100) * $base_nota_final_clase;
-    $decimales_nota_final = 2;
-    if ($base_nota_final_clase == floor($base_nota_final_clase) && $nota_final_reescalada == floor($nota_final_reescalada)) {
-        $decimales_nota_final = 0;
-    }
+    $raw_nota_reescalada = isset($calculo_result['raw_nota_0_100']) ? ($calculo_result['raw_nota_0_100'] / 100) * $base_nota_final_clase : $nota_final_reescalada;
 
     $response_data = [
         'message' => 'Calificación guardada.',
         'alumno_id' => $alumno_id,
-        'nota_final_alumno_display' => cpp_formatear_nota_display($nota_final_reescalada, $decimales_nota_final),
+        'nota_final_alumno_display' => cpp_formatear_nota_display_html($nota_final_reescalada, $user_id, 'evaluacion', $raw_nota_reescalada),
         'is_incomplete' => $calculo_result['is_incomplete'],
         'used_categories' => $calculo_result['used_categories'],
         'missing_categories' => $calculo_result['missing_categories']
@@ -660,17 +655,23 @@ function cpp_ajax_cargar_vista_final() {
 
     $alumnos = cpp_obtener_alumnos_clase($clase_id, $user_id, '', in_array($sort_order, ['nombre', 'apellidos']) ? $sort_order : 'apellidos', true);
     $notas_por_evaluacion = [];
+    $notas_por_evaluacion_raw = [];
     $notas_finales_promediadas = [];
+    $notas_finales_promediadas_raw = [];
 
     foreach ($alumnos as $index => $alumno) {
         $resultado_nota_final = cpp_calcular_nota_media_final_alumno($alumno['id'], $clase_id, $user_id);
         $nota_final_promediada = $resultado_nota_final['nota'];
+        $raw_media_0_100 = isset($resultado_nota_final['raw_nota_0_100']) ? $resultado_nota_final['raw_nota_0_100'] : $nota_final_promediada;
         $notas_finales_promediadas[$alumno['id']] = $nota_final_promediada;
+        $notas_finales_promediadas_raw[$alumno['id']] = $raw_media_0_100;
         $alumnos[$index]['nota_final_calculada'] = $nota_final_promediada; // Used for sorting
+
         // Recalcular las notas solo para las evaluaciones que se van a mostrar.
         foreach ($evaluaciones_a_mostrar as $evaluacion) {
             $calculo_evaluacion = cpp_calcular_nota_final_alumno($alumno['id'], $clase_id, $user_id, $evaluacion['id']);
             $notas_por_evaluacion[$alumno['id']][$evaluacion['id']] = $calculo_evaluacion['nota'];
+            $notas_por_evaluacion_raw[$alumno['id']][$evaluacion['id']] = isset($calculo_evaluacion['raw_nota_0_100']) ? $calculo_evaluacion['raw_nota_0_100'] : $calculo_evaluacion['nota'];
         }
     }
 
@@ -751,15 +752,19 @@ function cpp_ajax_cargar_vista_final() {
                         </td>
                         <?php foreach ($evaluaciones_a_mostrar as $evaluacion):
                             $nota_0_100 = $notas_por_evaluacion[$alumno['id']][$evaluacion['id']];
+                            $raw_0_100 = isset($notas_por_evaluacion_raw[$alumno['id']][$evaluacion['id']]) ? $notas_por_evaluacion_raw[$alumno['id']][$evaluacion['id']] : $nota_0_100;
                             $nota_reescalada = ($nota_0_100 / 100) * $base_nota_final_clase;
+                            $raw_reescalada = ($raw_0_100 / 100) * $base_nota_final_clase;
                         ?>
-                            <td class="cpp-cuaderno-td-nota"><?php echo cpp_formatear_nota_display($nota_reescalada, 2); ?></td>
+                            <td class="cpp-cuaderno-td-nota"><?php echo cpp_formatear_nota_display_html($nota_reescalada, $user_id, 'evaluacion', $raw_reescalada); ?></td>
                         <?php endforeach; ?>
                         <td class="cpp-cuaderno-td-final">
                             <?php
                                 $nota_promediada_0_100 = $notas_finales_promediadas[$alumno['id']];
+                                $raw_media_0_100 = isset($notas_finales_promediadas_raw[$alumno['id']]) ? $notas_finales_promediadas_raw[$alumno['id']] : $nota_promediada_0_100;
                                 $nota_promediada_reescalada = ($nota_promediada_0_100 / 100) * $base_nota_final_clase;
-                                echo cpp_formatear_nota_display($nota_promediada_reescalada, 2);
+                                $raw_media_reescalada = ($raw_media_0_100 / 100) * $base_nota_final_clase;
+                                echo cpp_formatear_nota_display_html($nota_promediada_reescalada, $user_id, 'media', $raw_media_reescalada);
                             ?>
                         </td>
                     </tr>

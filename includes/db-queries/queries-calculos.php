@@ -29,6 +29,12 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         return $default_return;
     }
 
+    $eval_config = cpp_get_eval_config($user_id);
+    $empty_grades_policy = isset($eval_config['empty_grades']) ? $eval_config['empty_grades'] : 'ignore';
+
+    $base_nota_clase = floatval($wpdb->get_var($wpdb->prepare("SELECT base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id)));
+    if ($base_nota_clase <= 0) { $base_nota_clase = 100.00; }
+
     $tabla_evaluaciones = $wpdb->prefix . 'cpp_evaluaciones';
     $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM $tabla_evaluaciones WHERE id = %d", $evaluacion_id));
     if (empty($metodo_calculo)) { $metodo_calculo = 'total'; }
@@ -74,19 +80,23 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
 
             if (!$criterio_id_actividad || !isset($map_criterios[$criterio_id_actividad])) { continue; }
             
-            if (isset($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
-                if ($nota_obtenida !== null) {
-                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                    $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+            $has_grade = isset($calificaciones_alumno[$actividad['id']]);
+            $nota_obtenida = $has_grade ? cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]) : null;
 
-                    if (!isset($notas_por_criterio_alumno[$criterio_id_actividad])) {
-                        $notas_por_criterio_alumno[$criterio_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
-                    }
-                    $notas_por_criterio_alumno[$criterio_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
-                    $notas_por_criterio_alumno[$criterio_id_actividad]['contador']++;
-                    $criterios_con_nota[$criterio_id_actividad] = true;
+            if ($nota_obtenida === null && $empty_grades_policy === 'zero') {
+                $nota_obtenida = 0.0;
+            }
+
+            if ($nota_obtenida !== null) {
+                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                $nota_normalizada_0_1 = $nota_obtenida / $nota_maxima_actividad;
+
+                if (!isset($notas_por_criterio_alumno[$criterio_id_actividad])) {
+                    $notas_por_criterio_alumno[$criterio_id_actividad] = ['suma_normalizada' => 0.0, 'contador' => 0];
                 }
+                $notas_por_criterio_alumno[$criterio_id_actividad]['suma_normalizada'] += $nota_normalizada_0_1;
+                $notas_por_criterio_alumno[$criterio_id_actividad]['contador']++;
+                $criterios_con_nota[$criterio_id_actividad] = true;
             }
         }
 
@@ -124,8 +134,13 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
             $is_incomplete = true;
         }
 
+        $nota_reescalada = ($nota_final_alumno_0_100 / 100) * $base_nota_clase;
+        $nota_redondeada_reescalada = cpp_aplicar_redondeo_nota($nota_reescalada, $user_id, 'evaluacion');
+        $nota_final_0_100_redondeada = ($base_nota_clase > 0) ? ($nota_redondeada_reescalada / $base_nota_clase) * 100 : $nota_final_alumno_0_100;
+
         return [
-            'nota' => round($nota_final_alumno_0_100, 2),
+            'nota' => $nota_final_0_100_redondeada,
+            'raw_nota_0_100' => $nota_final_alumno_0_100,
             'is_incomplete' => $is_incomplete,
             'used_categories' => $used_categories_names,
             'missing_categories' => $missing_categories_names
@@ -135,25 +150,48 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         $suma_notas_normalizadas = 0.0;
         $numero_de_actividades_con_nota = 0;
         foreach ($actividades_raw as $actividad) {
-            if (isset($calificaciones_alumno[$actividad['id']])) {
-                $nota_obtenida = cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]);
-                if ($nota_obtenida !== null) {
-                    $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
-                    $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
-                    $numero_de_actividades_con_nota++;
-                }
+            $has_grade = isset($calificaciones_alumno[$actividad['id']]);
+            $nota_obtenida = $has_grade ? cpp_extraer_numero_de_calificacion($calificaciones_alumno[$actividad['id']]) : null;
+
+            if ($nota_obtenida === null && $empty_grades_policy === 'zero') {
+                $nota_obtenida = 0.0;
+            }
+
+            if ($nota_obtenida !== null) {
+                $nota_maxima_actividad = floatval($actividad['nota_maxima']) > 0 ? floatval($actividad['nota_maxima']) : 10.0;
+                $suma_notas_normalizadas += $nota_obtenida / $nota_maxima_actividad;
+                $numero_de_actividades_con_nota++;
             }
         }
         $nota_final = 0.00;
         if ($numero_de_actividades_con_nota > 0) {
             $media_simple = $suma_notas_normalizadas / $numero_de_actividades_con_nota;
-            $nota_final = round($media_simple * 100, 2);
+            $nota_final = $media_simple * 100;
         }
-        return ['nota' => $nota_final, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
+        $nota_reescalada = ($nota_final / 100) * $base_nota_clase;
+        $nota_redondeada_reescalada = cpp_aplicar_redondeo_nota($nota_reescalada, $user_id, 'evaluacion');
+        $nota_final_0_100_redondeada = ($base_nota_clase > 0) ? ($nota_redondeada_reescalada / $base_nota_clase) * 100 : $nota_final;
+
+        return [
+            'nota' => $nota_final_0_100_redondeada,
+            'raw_nota_0_100' => $nota_final,
+            'is_incomplete' => false,
+            'used_categories' => [],
+            'missing_categories' => []
+        ];
     }
 }
 
 function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
+    global $wpdb;
+    $eval_config = cpp_get_eval_config($user_id);
+    $calc_base = isset($eval_config['calculation_base']) ? $eval_config['calculation_base'] : 'exact';
+
+    $clase_info_db = $wpdb->get_row($wpdb->prepare("SELECT base_nota_final, nota_aprobado FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id));
+    $base_nota_clase = floatval($clase_info_db ? $clase_info_db->base_nota_final : 100.00);
+    if ($base_nota_clase <= 0) { $base_nota_clase = 100.00; }
+    $nota_aprobado_clase = floatval($clase_info_db ? $clase_info_db->nota_aprobado : 50.00);
+
     // 1. Obtener las evaluaciones seleccionadas para la media
     $evaluaciones_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
 
@@ -167,16 +205,38 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
     // 2. Iterar sobre cada ID de evaluación y calcular la nota final del alumno
     foreach ($evaluaciones_ids as $evaluacion_id) {
         $resultado_nota = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
-        $suma_notas_evaluaciones += $resultado_nota['nota'];
+        if ($calc_base === 'rounded') {
+            // Promediar usando las notas redondeadas de cada evaluación
+            $suma_notas_evaluaciones += $resultado_nota['nota'];
+        } else {
+            // Promediar usando las notas exactas con decimales
+            $suma_notas_evaluaciones += isset($resultado_nota['raw_nota_0_100']) ? $resultado_nota['raw_nota_0_100'] : $resultado_nota['nota'];
+        }
     }
 
     // 3. Calcular la media de las evaluaciones seleccionadas
     if ($numero_evaluaciones > 0) {
-        $media_final = $suma_notas_evaluaciones / $numero_evaluaciones;
-        return ['nota' => round($media_final, 2)]; // Devuelve un objeto con la nota
+        $media_0_100 = $suma_notas_evaluaciones / $numero_evaluaciones;
+        $media_reescalada = ($media_0_100 / 100) * $base_nota_clase;
+
+        // Lógica de gracia en el aprobado
+        $grace_enabled = isset($eval_config['grace_pass_enabled']) && intval($eval_config['grace_pass_enabled']) === 1;
+        $grace_threshold_user = isset($eval_config['grace_pass_threshold']) ? floatval($eval_config['grace_pass_threshold']) : 4.50;
+        $grace_threshold_scaled = ($base_nota_clase == 100 && $grace_threshold_user <= 10) ? ($grace_threshold_user / 10) * 100 : $grace_threshold_user;
+
+        if ($grace_enabled && $media_reescalada >= $grace_threshold_scaled && $media_reescalada < $nota_aprobado_clase) {
+            $media_reescalada = $nota_aprobado_clase;
+        }
+
+        $media_redondeada_reescalada = cpp_aplicar_redondeo_nota($media_reescalada, $user_id, 'media');
+        $media_0_100_redondeada = ($base_nota_clase > 0) ? ($media_redondeada_reescalada / $base_nota_clase) * 100 : $media_0_100;
+        return [
+            'nota' => $media_0_100_redondeada,
+            'raw_nota_0_100' => $media_0_100
+        ];
     }
 
-    return ['nota' => 0.00];
+    return ['nota' => 0.00, 'raw_nota_0_100' => 0.00];
 }
 
 function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_id, $evaluacion_id, $base_nota_clase) {

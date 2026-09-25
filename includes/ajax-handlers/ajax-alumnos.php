@@ -97,12 +97,17 @@ function cpp_ajax_get_alumno_ficha() {
         $clase_info = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
         if (!$clase_info) continue;
 
+        $clase_db = cpp_obtener_clase_completa_por_id($clase_id, $user_id);
+        $base_nota_final_clase = isset($clase_db['base_nota_final']) ? floatval($clase_db['base_nota_final']) : 100.00;
+
         $evaluaciones = cpp_obtener_evaluaciones_por_clase($clase_id, $user_id);
         $calificaciones_por_evaluacion = [];
 
         foreach ($evaluaciones as $evaluacion) {
             $actividades = cpp_obtener_actividades_con_calificaciones_alumno($evaluacion['id'], $alumno_id, $user_id);
             $nota_final_evaluacion = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion['id']);
+            $nota_eval_reescalada = ($nota_final_evaluacion['nota'] / 100) * $base_nota_final_clase;
+            $nota_final_evaluacion['nota_display'] = cpp_formatear_nota_display($nota_eval_reescalada, null, $user_id, 'evaluacion');
 
             $calificaciones_por_evaluacion[] = [
                 'evaluacion_id' => $evaluacion['id'],

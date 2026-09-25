@@ -10,6 +10,8 @@
 
     cpp.config = {
         currentClaseIdForConfig: null,
+        tabBeforeSettings: 'cuaderno',
+        evalConfigChanged: false,
 
         init: function() {
             this.bindEvents();
@@ -24,6 +26,11 @@
                 return;
             }
             this.currentClaseIdForConfig = claseId;
+
+            const $activeTab = $('.cpp-main-tab-link.active').not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($activeTab.length && $activeTab.data('tab')) {
+                this.tabBeforeSettings = $activeTab.data('tab');
+            }
 
             $('#cpp-cuaderno-main-content').hide();
             const $settingsPage = $('#cpp-class-settings-page-container').show();
@@ -74,9 +81,20 @@
             $('#cpp-class-settings-page-container').hide();
             $('#cpp-cuaderno-main-content').show();
             $('body').removeClass('cpp-fullscreen-active');
+
+            const targetTab = this.tabBeforeSettings || (cpp.cuaderno && cpp.cuaderno.lastActiveTab) || 'cuaderno';
+            const $targetTabBtn = $(`.cpp-main-tab-link[data-tab="${targetTab}"]`).not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($targetTabBtn.length) {
+                $targetTabBtn.trigger('click');
+            }
         },
 
         showGeneralSettings: function() {
+            const $activeTab = $('.cpp-main-tab-link.active').not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($activeTab.length && $activeTab.data('tab')) {
+                this.tabBeforeSettings = $activeTab.data('tab');
+            }
+
             $('#cpp-cuaderno-main-content').hide();
             $('#cpp-general-settings-page-container').show();
             $('body').addClass('cpp-fullscreen-active');
@@ -88,12 +106,28 @@
                 window.CppProgramadorApp.populateConfigModal();
             }
             this.loadCriteriosGlobales();
+            this.loadEvalConfig();
         },
 
         hideGeneralSettings: function() {
             $('#cpp-general-settings-page-container').hide();
             $('#cpp-cuaderno-main-content').show();
             $('body').removeClass('cpp-fullscreen-active');
+
+            // Restaurar la pestaña activa previamente abierta
+            const targetTab = this.tabBeforeSettings || (cpp.cuaderno && cpp.cuaderno.lastActiveTab) || 'cuaderno';
+            const $targetTabBtn = $(`.cpp-main-tab-link[data-tab="${targetTab}"]`).not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($targetTabBtn.length) {
+                $targetTabBtn.trigger('click');
+            } else {
+                $('.cpp-main-tab-link[data-tab="cuaderno"]').trigger('click');
+            }
+
+            if (this.evalConfigChanged || (cpp.cuaderno && cpp.cuaderno.isDirty)) {
+                this.evalConfigChanged = false;
+                if (cpp.cuaderno) cpp.cuaderno.isDirty = false;
+                $(document).trigger('cpp:forceGradebookReload');
+            }
         },
 
         loadAlumnosData: function(claseId) {
@@ -540,9 +574,15 @@
             const $classSettingsPage = $('#cpp-class-settings-page-container');
 
             $body.on('click', '.cpp-sidebar-clase-settings-btn', (e) => this.showParaEditar(e));
-            $body.on('click', '#cpp-close-class-settings-btn', () => this.hide());
+            $body.on('click', '#cpp-close-class-settings-btn, #cpp-class-settings-page-container .cpp-close-fullscreen-btn', (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                this.hide();
+            });
             $body.on('click', '#cpp-general-settings-btn', () => this.showGeneralSettings());
-            $body.on('click', '#cpp-close-general-settings-btn', () => this.hideGeneralSettings());
+            $body.on('click', '#cpp-close-general-settings-btn, #cpp-general-settings-page-container .cpp-close-fullscreen-btn', (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                this.hideGeneralSettings();
+            });
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
             $classSettingsPage.on('submit', '#cpp-form-clase', this.guardarClaseDesdeConfig.bind(this));
@@ -612,6 +652,32 @@
                 $(this).addClass('selected').siblings().removeClass('selected');
                 $('#cpp-criterio-global-color-hidden').val($(this).data('color'));
             });
+
+            // --- EVENTOS DE CONFIGURACIÓN DE EVALUACIÓN Y NOTAS ---
+            $generalSettingsPage.on('change', '#cpp-eval-rounding-mode', function() {
+                const mode = $(this).val();
+                if (mode === 'none') {
+                    $('#cpp-eval-scope-container').slideUp();
+                    $('#cpp-eval-threshold-container').slideUp();
+                } else {
+                    $('#cpp-eval-scope-container').slideDown();
+                    if (mode === 'threshold') {
+                        $('#cpp-eval-threshold-container').slideDown();
+                    } else {
+                        $('#cpp-eval-threshold-container').slideUp();
+                    }
+                }
+            });
+
+            $generalSettingsPage.on('change', '#cpp-eval-grace-pass-enabled', function() {
+                if ($(this).is(':checked')) {
+                    $('#cpp-eval-grace-container').slideDown();
+                } else {
+                    $('#cpp-eval-grace-container').slideUp();
+                }
+            });
+
+            $generalSettingsPage.on('submit', '#cpp-eval-config-form', this.saveEvalConfig.bind(this));
 
             // --- NUEVOS EVENTOS PARA LA PESTAÑA ALUMNOS EN CONFIG ---
             $classSettingsPage.on('click', '.cpp-btn-quitar-de-clase', this.handleQuitarAlumnoDeClase.bind(this));
@@ -757,6 +823,94 @@
             else if (tabId === 'criterios-globales') {
                 this.loadCriteriosGlobales();
             }
+            else if (tabId === 'evaluacion-notas') {
+                this.loadEvalConfig();
+            }
+        },
+
+        loadEvalConfig: function() {
+            const $form = $('#cpp-eval-config-form');
+            if (!$form.length) return;
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_obtener_config_evaluacion',
+                    nonce: cppFrontendData.nonce
+                },
+                success: (response) => {
+                    if (response.success && response.data.config) {
+                        const cfg = response.data.config;
+                        $form.find('#cpp-eval-rounding-mode').val(cfg.rounding_mode || 'none').trigger('change');
+                        $form.find('#cpp-eval-rounding-threshold').val(cfg.rounding_threshold !== undefined ? cfg.rounding_threshold : 0.5);
+                        $form.find(`input[name="rounding_scope"][value="${cfg.rounding_scope || 'both'}"]`).prop('checked', true);
+                        $form.find(`input[name="empty_grades"][value="${cfg.empty_grades || 'ignore'}"]`).prop('checked', true);
+                        $form.find(`input[name="default_calc_method"][value="${cfg.default_calc_method || 'ponderada'}"]`).prop('checked', true);
+                        $form.find('#cpp-eval-highlight-grades').prop('checked', parseInt(cfg.highlight_grades) === 1);
+                        $form.find(`input[name="calculation_base"][value="${cfg.calculation_base || 'exact'}"]`).prop('checked', true);
+                        $form.find('#cpp-eval-grace-pass-enabled').prop('checked', parseInt(cfg.grace_pass_enabled) === 1).trigger('change');
+                        $form.find('#cpp-eval-grace-threshold').val(cfg.grace_pass_threshold !== undefined ? cfg.grace_pass_threshold : 4.50);
+                        $form.find('#cpp-eval-show-exact-grade').prop('checked', parseInt(cfg.show_exact_grade) === 1);
+                    }
+                }
+            });
+        },
+
+        saveEvalConfig: function(e) {
+            e.preventDefault();
+            const $form = $('#cpp-eval-config-form');
+            const $btn = $form.find('#cpp-btn-guardar-eval-config');
+
+            const roundingMode = $form.find('#cpp-eval-rounding-mode').val();
+            const roundingThreshold = parseFloat($form.find('#cpp-eval-rounding-threshold').val()) || 0.5;
+            const roundingScope = $form.find('input[name="rounding_scope"]:checked').val() || 'both';
+            const emptyGrades = $form.find('input[name="empty_grades"]:checked').val() || 'ignore';
+            const defaultCalcMethod = $form.find('input[name="default_calc_method"]:checked').val() || 'ponderada';
+            const highlightGrades = $form.find('#cpp-eval-highlight-grades').is(':checked') ? 1 : 0;
+            const calculationBase = $form.find('input[name="calculation_base"]:checked').val() || 'exact';
+            const gracePassEnabled = $form.find('#cpp-eval-grace-pass-enabled').is(':checked') ? 1 : 0;
+            const gracePassThreshold = parseFloat($form.find('#cpp-eval-grace-threshold').val()) || 4.50;
+            const showExactGrade = $form.find('#cpp-eval-show-exact-grade').is(':checked') ? 1 : 0;
+
+            const originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_guardar_config_evaluacion',
+                    nonce: cppFrontendData.nonce,
+                    rounding_mode: roundingMode,
+                    rounding_threshold: roundingThreshold,
+                    rounding_scope: roundingScope,
+                    empty_grades: emptyGrades,
+                    default_calc_method: defaultCalcMethod,
+                    highlight_grades: highlightGrades,
+                    calculation_base: calculationBase,
+                    grace_pass_enabled: gracePassEnabled,
+                    grace_pass_threshold: gracePassThreshold,
+                    show_exact_grade: showExactGrade
+                },
+                success: (response) => {
+                    if (response.success) {
+                        this.evalConfigChanged = true;
+                        cpp.utils.showToast(response.data.message || 'Configuración guardada.');
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        alert(response.data.message || 'Error al guardar la configuración.');
+                    }
+                },
+                error: () => {
+                    alert('Error de conexión al guardar la configuración de evaluación.');
+                },
+                complete: () => {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                }
+            });
         },
 
         loadCriteriosGlobales: function() {

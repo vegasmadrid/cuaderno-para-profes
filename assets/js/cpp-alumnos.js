@@ -421,10 +421,10 @@
                         <div class="cpp-accordion-content">`;
 
                     clase.evaluaciones.forEach(evaluacion => {
-                        const notaFinalEval = evaluacion.nota_final.nota !== null ? parseFloat(evaluacion.nota_final.nota).toFixed(2) : "0.00";
+                        const notaFinalEval = evaluacion.nota_final.nota_display ? evaluacion.nota_final.nota_display : (evaluacion.nota_final.nota !== null ? parseFloat(evaluacion.nota_final.nota).toFixed(2) : "0");
                         const notaFinal = evaluacion.nota_final.is_incomplete ?
-                            `${notaFinalEval}% <span title="La nota no está sobre el 100% de las actividades">⚠️</span>` :
-                            `${notaFinalEval}%`;
+                            `${notaFinalEval} <span title="La nota no está sobre el 100% de las actividades">⚠️</span>` :
+                            `${notaFinalEval}`;
 
                         calificacionesHtml += `<div class="cpp-accordion-item">
                             <button class="cpp-accordion-header sub-header">${evaluacion.evaluacion_nombre} <span class="nota-final-pill">${notaFinal}</span></button>
