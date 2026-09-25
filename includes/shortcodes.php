@@ -383,6 +383,13 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                             </label>
                                         </div>
                                     </div>
+
+                                    <div class="cpp-form-group" style="margin-top: 15px;">
+                                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" id="cpp-eval-show-exact-grade" name="show_exact_grade" value="1">
+                                            <span>Mostrar la nota exacta con decimales entre paréntesis junto a la nota redondeada (ej. <strong>7</strong> <small style="font-size: 11px; opacity: 0.8; font-weight: normal;">(6.54)</small>)</span>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <div class="cpp-form-section">

@@ -56,7 +56,7 @@ if (!function_exists('cpp_lighten_hex_color')) {
 }
 
 if (!function_exists('cpp_formatear_nota_display')) {
-    function cpp_formatear_nota_display($nota, $decimales = null, $user_id = null, $scope_check = 'actividad') {
+    function cpp_formatear_nota_display($nota, $decimales = null, $user_id = null, $scope_check = 'actividad', $nota_exacta_raw = null) {
         if ($nota === null || $nota === '') {
             return '';
         }
@@ -76,20 +76,49 @@ if (!function_exists('cpp_formatear_nota_display')) {
 
         if ($decimales === null) {
             // Aplicar redondeo según la configuración del usuario y el scope de la nota
-            $nota_float = cpp_aplicar_redondeo_nota($nota_float, $user_id, $scope_check);
+            $nota_redondeada = cpp_aplicar_redondeo_nota($nota_float, $user_id, $scope_check);
 
             $config = cpp_get_eval_config($user_id);
             $mode = isset($config['rounding_mode']) ? $config['rounding_mode'] : 'none';
+            $scope = isset($config['rounding_scope']) ? $config['rounding_scope'] : 'both';
 
+            // Comprobar si para este $scope_check el redondeo estuvo activo
+            $redondeo_activo = true;
             if ($scope_check === 'actividad' || $scope_check === 'none') {
-                $decimales = (floor($nota_float) == $nota_float) ? 0 : 2;
-            } else if (in_array($mode, ['nearest', 'ceil', 'floor', 'threshold'])) {
-                $decimales = 0;
-            } else if ($mode === 'one_decimal') {
-                $decimales = (floor($nota_float) == $nota_float) ? 0 : 1;
-            } else {
-                $decimales = (floor($nota_float) == $nota_float) ? 0 : 2;
+                $redondeo_activo = false;
+            } else if ($scope === 'evaluacion' && $scope_check !== 'evaluacion') {
+                $redondeo_activo = false;
+            } else if ($scope === 'media' && $scope_check !== 'media') {
+                $redondeo_activo = false;
             }
+
+            if ($redondeo_activo) {
+                if (in_array($mode, ['nearest', 'ceil', 'floor', 'threshold'])) {
+                    $decimales = 0;
+                } else if ($mode === 'one_decimal') {
+                    $decimales = (floor($nota_redondeada) == $nota_redondeada) ? 0 : 1;
+                } else {
+                    $decimales = (floor($nota_redondeada) == $nota_redondeada) ? 0 : 2;
+                }
+            } else {
+                $decimales = (floor($nota_redondeada) == $nota_redondeada) ? 0 : 2;
+            }
+
+            $nota_formatted = number_format($nota_redondeada, intval($decimales), '.', '');
+
+            // Mostrar nota exacta entre paréntesis si la opción está activa
+            $show_exact = isset($config['show_exact_grade']) && intval($config['show_exact_grade']) === 1;
+            if ($show_exact && $mode !== 'none' && $redondeo_activo && in_array($scope_check, ['evaluacion', 'media'])) {
+                $exact_val = ($nota_exacta_raw !== null) ? floatval(str_replace(',', '.', $nota_exacta_raw)) : $nota_float;
+                $exact_dec = (floor($exact_val) == $exact_val) ? 0 : 2;
+                $exact_formatted = number_format($exact_val, $exact_dec, '.', '');
+
+                if ($exact_formatted !== $nota_formatted && $exact_formatted !== '') {
+                    return '<strong>' . $nota_formatted . '</strong> <small style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-left: 2px;">(' . $exact_formatted . ')</small>';
+                }
+            }
+
+            return $nota_formatted;
         }
 
         return number_format($nota_float, intval($decimales), '.', '');
@@ -111,7 +140,8 @@ if (!function_exists('cpp_get_eval_config')) {
             'highlight_grades' => 1, // 1 or 0
             'calculation_base' => 'exact', // 'exact', 'rounded'
             'grace_pass_enabled' => 0, // 0 or 1
-            'grace_pass_threshold' => 4.50
+            'grace_pass_threshold' => 4.50,
+            'show_exact_grade' => 0 // 0 or 1
         ];
 
         if (empty($user_id)) {

@@ -230,10 +230,13 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
 
         $media_redondeada_reescalada = cpp_aplicar_redondeo_nota($media_reescalada, $user_id, 'media');
         $media_0_100_redondeada = ($base_nota_clase > 0) ? ($media_redondeada_reescalada / $base_nota_clase) * 100 : $media_0_100;
-        return ['nota' => $media_0_100_redondeada];
+        return [
+            'nota' => $media_0_100_redondeada,
+            'raw_nota_0_100' => $media_0_100
+        ];
     }
 
-    return ['nota' => 0.00];
+    return ['nota' => 0.00, 'raw_nota_0_100' => 0.00];
 }
 
 function cpp_get_desglose_academico_por_evaluacion($alumno_id, $clase_id, $user_id, $evaluacion_id, $base_nota_clase) {

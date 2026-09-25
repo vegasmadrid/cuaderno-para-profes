@@ -852,6 +852,7 @@
                         $form.find(`input[name="calculation_base"][value="${cfg.calculation_base || 'exact'}"]`).prop('checked', true);
                         $form.find('#cpp-eval-grace-pass-enabled').prop('checked', parseInt(cfg.grace_pass_enabled) === 1).trigger('change');
                         $form.find('#cpp-eval-grace-threshold').val(cfg.grace_pass_threshold !== undefined ? cfg.grace_pass_threshold : 4.50);
+                        $form.find('#cpp-eval-show-exact-grade').prop('checked', parseInt(cfg.show_exact_grade) === 1);
                     }
                 }
             });
@@ -871,6 +872,7 @@
             const calculationBase = $form.find('input[name="calculation_base"]:checked').val() || 'exact';
             const gracePassEnabled = $form.find('#cpp-eval-grace-pass-enabled').is(':checked') ? 1 : 0;
             const gracePassThreshold = parseFloat($form.find('#cpp-eval-grace-threshold').val()) || 4.50;
+            const showExactGrade = $form.find('#cpp-eval-show-exact-grade').is(':checked') ? 1 : 0;
 
             const originalBtnHtml = $btn.html();
             $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
@@ -890,7 +892,8 @@
                     highlight_grades: highlightGrades,
                     calculation_base: calculationBase,
                     grace_pass_enabled: gracePassEnabled,
-                    grace_pass_threshold: gracePassThreshold
+                    grace_pass_threshold: gracePassThreshold,
+                    show_exact_grade: showExactGrade
                 },
                 success: (response) => {
                     if (response.success) {

@@ -274,6 +274,7 @@ function cpp_ajax_guardar_config_evaluacion() {
     $calculation_base = isset($_POST['calculation_base']) ? sanitize_text_field($_POST['calculation_base']) : 'exact';
     $grace_pass_enabled = isset($_POST['grace_pass_enabled']) && ($_POST['grace_pass_enabled'] === '1' || $_POST['grace_pass_enabled'] === 'true' || $_POST['grace_pass_enabled'] === true) ? 1 : 0;
     $grace_pass_threshold = isset($_POST['grace_pass_threshold']) ? floatval($_POST['grace_pass_threshold']) : 4.50;
+    $show_exact_grade = isset($_POST['show_exact_grade']) && ($_POST['show_exact_grade'] === '1' || $_POST['show_exact_grade'] === 'true' || $_POST['show_exact_grade'] === true) ? 1 : 0;
 
     $valid_modes = ['none', 'nearest', 'one_decimal', 'ceil', 'floor', 'threshold'];
     if (!in_array($rounding_mode, $valid_modes)) { $rounding_mode = 'none'; }
@@ -303,7 +304,8 @@ function cpp_ajax_guardar_config_evaluacion() {
         'highlight_grades' => $highlight_grades,
         'calculation_base' => $calculation_base,
         'grace_pass_enabled' => $grace_pass_enabled,
-        'grace_pass_threshold' => $grace_pass_threshold
+        'grace_pass_threshold' => $grace_pass_threshold,
+        'show_exact_grade' => $show_exact_grade
     ];
 
     update_user_meta($user_id, 'cpp_eval_config', $config);
