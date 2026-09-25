@@ -271,6 +271,9 @@ function cpp_ajax_guardar_config_evaluacion() {
     $empty_grades = isset($_POST['empty_grades']) ? sanitize_text_field($_POST['empty_grades']) : 'ignore';
     $default_calc_method = isset($_POST['default_calc_method']) ? sanitize_text_field($_POST['default_calc_method']) : 'ponderada';
     $highlight_grades = isset($_POST['highlight_grades']) && ($_POST['highlight_grades'] === '1' || $_POST['highlight_grades'] === 'true' || $_POST['highlight_grades'] === true) ? 1 : 0;
+    $calculation_base = isset($_POST['calculation_base']) ? sanitize_text_field($_POST['calculation_base']) : 'exact';
+    $grace_pass_enabled = isset($_POST['grace_pass_enabled']) && ($_POST['grace_pass_enabled'] === '1' || $_POST['grace_pass_enabled'] === 'true' || $_POST['grace_pass_enabled'] === true) ? 1 : 0;
+    $grace_pass_threshold = isset($_POST['grace_pass_threshold']) ? floatval($_POST['grace_pass_threshold']) : 4.50;
 
     $valid_modes = ['none', 'nearest', 'one_decimal', 'ceil', 'floor', 'threshold'];
     if (!in_array($rounding_mode, $valid_modes)) { $rounding_mode = 'none'; }
@@ -284,8 +287,12 @@ function cpp_ajax_guardar_config_evaluacion() {
     $valid_calc = ['ponderada', 'total'];
     if (!in_array($default_calc_method, $valid_calc)) { $default_calc_method = 'ponderada'; }
 
+    $valid_bases = ['exact', 'rounded'];
+    if (!in_array($calculation_base, $valid_bases)) { $calculation_base = 'exact'; }
+
     if ($rounding_threshold < 0.1) $rounding_threshold = 0.1;
     if ($rounding_threshold > 0.9) $rounding_threshold = 0.9;
+    if ($grace_pass_threshold < 0) $grace_pass_threshold = 0;
 
     $config = [
         'rounding_mode' => $rounding_mode,
@@ -293,7 +300,10 @@ function cpp_ajax_guardar_config_evaluacion() {
         'rounding_scope' => $rounding_scope,
         'empty_grades' => $empty_grades,
         'default_calc_method' => $default_calc_method,
-        'highlight_grades' => $highlight_grades
+        'highlight_grades' => $highlight_grades,
+        'calculation_base' => $calculation_base,
+        'grace_pass_enabled' => $grace_pass_enabled,
+        'grace_pass_threshold' => $grace_pass_threshold
     ];
 
     update_user_meta($user_id, 'cpp_eval_config', $config);

@@ -140,6 +140,7 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
 
         return [
             'nota' => $nota_final_0_100_redondeada,
+            'raw_nota_0_100' => $nota_final_alumno_0_100,
             'is_incomplete' => $is_incomplete,
             'used_categories' => $used_categories_names,
             'missing_categories' => $missing_categories_names
@@ -171,14 +172,25 @@ function cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evalua
         $nota_redondeada_reescalada = cpp_aplicar_redondeo_nota($nota_reescalada, $user_id, 'evaluacion');
         $nota_final_0_100_redondeada = ($base_nota_clase > 0) ? ($nota_redondeada_reescalada / $base_nota_clase) * 100 : $nota_final;
 
-        return ['nota' => $nota_final_0_100_redondeada, 'is_incomplete' => false, 'used_categories' => [], 'missing_categories' => []];
+        return [
+            'nota' => $nota_final_0_100_redondeada,
+            'raw_nota_0_100' => $nota_final,
+            'is_incomplete' => false,
+            'used_categories' => [],
+            'missing_categories' => []
+        ];
     }
 }
 
 function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
     global $wpdb;
-    $base_nota_clase = floatval($wpdb->get_var($wpdb->prepare("SELECT base_nota_final FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id)));
+    $eval_config = cpp_get_eval_config($user_id);
+    $calc_base = isset($eval_config['calculation_base']) ? $eval_config['calculation_base'] : 'exact';
+
+    $clase_info_db = $wpdb->get_row($wpdb->prepare("SELECT base_nota_final, nota_aprobado FROM {$wpdb->prefix}cpp_clases WHERE id = %d", $clase_id));
+    $base_nota_clase = floatval($clase_info_db ? $clase_info_db->base_nota_final : 100.00);
     if ($base_nota_clase <= 0) { $base_nota_clase = 100.00; }
+    $nota_aprobado_clase = floatval($clase_info_db ? $clase_info_db->nota_aprobado : 50.00);
 
     // 1. Obtener las evaluaciones seleccionadas para la media
     $evaluaciones_ids = cpp_get_evaluaciones_para_media($clase_id, $user_id);
@@ -193,13 +205,29 @@ function cpp_calcular_nota_media_final_alumno($alumno_id, $clase_id, $user_id) {
     // 2. Iterar sobre cada ID de evaluación y calcular la nota final del alumno
     foreach ($evaluaciones_ids as $evaluacion_id) {
         $resultado_nota = cpp_calcular_nota_final_alumno($alumno_id, $clase_id, $user_id, $evaluacion_id);
-        $suma_notas_evaluaciones += $resultado_nota['nota'];
+        if ($calc_base === 'rounded') {
+            // Promediar usando las notas redondeadas de cada evaluación
+            $suma_notas_evaluaciones += $resultado_nota['nota'];
+        } else {
+            // Promediar usando las notas exactas con decimales
+            $suma_notas_evaluaciones += isset($resultado_nota['raw_nota_0_100']) ? $resultado_nota['raw_nota_0_100'] : $resultado_nota['nota'];
+        }
     }
 
     // 3. Calcular la media de las evaluaciones seleccionadas
     if ($numero_evaluaciones > 0) {
         $media_0_100 = $suma_notas_evaluaciones / $numero_evaluaciones;
         $media_reescalada = ($media_0_100 / 100) * $base_nota_clase;
+
+        // Lógica de gracia en el aprobado
+        $grace_enabled = isset($eval_config['grace_pass_enabled']) && intval($eval_config['grace_pass_enabled']) === 1;
+        $grace_threshold_user = isset($eval_config['grace_pass_threshold']) ? floatval($eval_config['grace_pass_threshold']) : 4.50;
+        $grace_threshold_scaled = ($base_nota_clase == 100 && $grace_threshold_user <= 10) ? ($grace_threshold_user / 10) * 100 : $grace_threshold_user;
+
+        if ($grace_enabled && $media_reescalada >= $grace_threshold_scaled && $media_reescalada < $nota_aprobado_clase) {
+            $media_reescalada = $nota_aprobado_clase;
+        }
+
         $media_redondeada_reescalada = cpp_aplicar_redondeo_nota($media_reescalada, $user_id, 'media');
         $media_0_100_redondeada = ($base_nota_clase > 0) ? ($media_redondeada_reescalada / $base_nota_clase) * 100 : $media_0_100;
         return ['nota' => $media_0_100_redondeada];

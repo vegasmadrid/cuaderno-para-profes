@@ -108,7 +108,10 @@ if (!function_exists('cpp_get_eval_config')) {
             'rounding_scope' => 'both', // 'both', 'evaluacion', 'media'
             'empty_grades' => 'ignore', // 'ignore', 'zero'
             'default_calc_method' => 'ponderada', // 'ponderada', 'total'
-            'highlight_grades' => 1 // 1 or 0
+            'highlight_grades' => 1, // 1 or 0
+            'calculation_base' => 'exact', // 'exact', 'rounded'
+            'grace_pass_enabled' => 0, // 0 or 1
+            'grace_pass_threshold' => 4.50
         ];
 
         if (empty($user_id)) {

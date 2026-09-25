@@ -366,7 +366,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                         <small style="display: block; color: #666; margin-top: 4px;">Si la parte decimal de la nota es igual o superior al umbral (ej. 0.5), la nota se redondea al entero superior; si es inferior, al entero inferior.</small>
                                     </div>
 
-                                    <div class="cpp-form-group" style="margin-top: 15px;">
+                                    <div class="cpp-form-group" id="cpp-eval-scope-container" style="display: none; margin-top: 15px;">
                                         <label style="font-weight: 600; display: block; margin-bottom: 6px;">Aplicar redondeo a:</label>
                                         <div style="display: flex; flex-direction: column; gap: 8px;">
                                             <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
@@ -381,6 +381,35 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                                                 <input type="radio" name="rounding_scope" value="media">
                                                 <span>Solo a la Nota Media Final de la clase</span>
                                             </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cpp-form-section">
+                                    <h3>Base de Cálculo de la Nota Media Final</h3>
+                                    <div class="cpp-form-group" style="margin-bottom: 15px;">
+                                        <label style="font-weight: 600; display: block; margin-bottom: 6px;">Valores para promediar las evaluaciones:</label>
+                                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="calculation_base" value="exact" checked>
+                                                <span>Usar notas exactas con decimales (recomendado por precisión)</span>
+                                            </label>
+                                            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                <input type="radio" name="calculation_base" value="rounded">
+                                                <span>Usar notas ya redondeadas (coincidencia exacta con boletines)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="cpp-form-group">
+                                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                                            <input type="checkbox" id="cpp-eval-grace-pass-enabled" name="grace_pass_enabled" value="1">
+                                            <span>Activar umbral de gracia en el aprobado (aprobar si la nota rozaba el mínimo)</span>
+                                        </label>
+                                        <div id="cpp-eval-grace-container" style="display: none; margin-top: 8px; margin-left: 24px;">
+                                            <label for="cpp-eval-grace-threshold" style="display: block; font-size: 13px; margin-bottom: 4px;">Nota mínima para considerar aprobado (ej. 4.50 en escala sobre 10 o 45 en base 100):</label>
+                                            <input type="number" id="cpp-eval-grace-threshold" name="grace_pass_threshold" step="0.05" min="0" max="100" value="4.50" style="width: 120px;">
+                                            <small style="display: block; color: #666; margin-top: 4px;">Las notas iguales o superiores a esta pero inferiores al aprobado de la clase subirán al aprobado automáticamente.</small>
                                         </div>
                                     </div>
                                 </div>

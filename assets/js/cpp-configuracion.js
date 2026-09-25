@@ -97,13 +97,21 @@
             $('#cpp-general-settings-page-container').hide();
             $('#cpp-cuaderno-main-content').show();
             $('body').removeClass('cpp-fullscreen-active');
+
+            // Restaurar la pestaña activa
+            const $activeTabBtn = $('.cpp-top-bar-center .cpp-main-tab-link.active, .cpp-tabs-general .cpp-main-tab-link.active');
+            if ($activeTabBtn.length) {
+                $activeTabBtn.trigger('click');
+            } else if (cpp.cuaderno && cpp.cuaderno.lastActiveTab) {
+                $(`.cpp-main-tab-link[data-tab="${cpp.cuaderno.lastActiveTab}"]`).trigger('click');
+            } else {
+                $('.cpp-main-tab-link[data-tab="cuaderno"]').trigger('click');
+            }
+
             if (this.evalConfigChanged || (cpp.cuaderno && cpp.cuaderno.isDirty)) {
                 this.evalConfigChanged = false;
                 if (cpp.cuaderno) cpp.cuaderno.isDirty = false;
-                if (cpp.currentClaseIdCuaderno && cpp.cuaderno && typeof cpp.cuaderno.cargarContenidoCuaderno === 'function') {
-                    const claseNombre = $('#cpp-cuaderno-nombre-clase-activa-a1').text();
-                    cpp.cuaderno.cargarContenidoCuaderno(cpp.currentClaseIdCuaderno, claseNombre, cpp.currentEvaluacionId, null, false, false);
-                }
+                $(document).trigger('cpp:forceGradebookReload');
             }
         },
 
@@ -626,12 +634,28 @@
 
             // --- EVENTOS DE CONFIGURACIÓN DE EVALUACIÓN Y NOTAS ---
             $generalSettingsPage.on('change', '#cpp-eval-rounding-mode', function() {
-                if ($(this).val() === 'threshold') {
-                    $('#cpp-eval-threshold-container').slideDown();
-                } else {
+                const mode = $(this).val();
+                if (mode === 'none') {
+                    $('#cpp-eval-scope-container').slideUp();
                     $('#cpp-eval-threshold-container').slideUp();
+                } else {
+                    $('#cpp-eval-scope-container').slideDown();
+                    if (mode === 'threshold') {
+                        $('#cpp-eval-threshold-container').slideDown();
+                    } else {
+                        $('#cpp-eval-threshold-container').slideUp();
+                    }
                 }
             });
+
+            $generalSettingsPage.on('change', '#cpp-eval-grace-pass-enabled', function() {
+                if ($(this).is(':checked')) {
+                    $('#cpp-eval-grace-container').slideDown();
+                } else {
+                    $('#cpp-eval-grace-container').slideUp();
+                }
+            });
+
             $generalSettingsPage.on('submit', '#cpp-eval-config-form', this.saveEvalConfig.bind(this));
 
             // --- NUEVOS EVENTOS PARA LA PESTAÑA ALUMNOS EN CONFIG ---
@@ -804,6 +828,9 @@
                         $form.find(`input[name="empty_grades"][value="${cfg.empty_grades || 'ignore'}"]`).prop('checked', true);
                         $form.find(`input[name="default_calc_method"][value="${cfg.default_calc_method || 'ponderada'}"]`).prop('checked', true);
                         $form.find('#cpp-eval-highlight-grades').prop('checked', parseInt(cfg.highlight_grades) === 1);
+                        $form.find(`input[name="calculation_base"][value="${cfg.calculation_base || 'exact'}"]`).prop('checked', true);
+                        $form.find('#cpp-eval-grace-pass-enabled').prop('checked', parseInt(cfg.grace_pass_enabled) === 1).trigger('change');
+                        $form.find('#cpp-eval-grace-threshold').val(cfg.grace_pass_threshold !== undefined ? cfg.grace_pass_threshold : 4.50);
                     }
                 }
             });
@@ -820,6 +847,9 @@
             const emptyGrades = $form.find('input[name="empty_grades"]:checked').val() || 'ignore';
             const defaultCalcMethod = $form.find('input[name="default_calc_method"]:checked').val() || 'ponderada';
             const highlightGrades = $form.find('#cpp-eval-highlight-grades').is(':checked') ? 1 : 0;
+            const calculationBase = $form.find('input[name="calculation_base"]:checked').val() || 'exact';
+            const gracePassEnabled = $form.find('#cpp-eval-grace-pass-enabled').is(':checked') ? 1 : 0;
+            const gracePassThreshold = parseFloat($form.find('#cpp-eval-grace-threshold').val()) || 4.50;
 
             const originalBtnHtml = $btn.html();
             $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Guardando...');
@@ -836,7 +866,10 @@
                     rounding_scope: roundingScope,
                     empty_grades: emptyGrades,
                     default_calc_method: defaultCalcMethod,
-                    highlight_grades: highlightGrades
+                    highlight_grades: highlightGrades,
+                    calculation_base: calculationBase,
+                    grace_pass_enabled: gracePassEnabled,
+                    grace_pass_threshold: gracePassThreshold
                 },
                 success: (response) => {
                     if (response.success) {
