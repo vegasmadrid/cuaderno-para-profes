@@ -10,6 +10,8 @@
 
     cpp.config = {
         currentClaseIdForConfig: null,
+        tabBeforeSettings: 'cuaderno',
+        evalConfigChanged: false,
 
         init: function() {
             this.bindEvents();
@@ -24,6 +26,11 @@
                 return;
             }
             this.currentClaseIdForConfig = claseId;
+
+            const $activeTab = $('.cpp-main-tab-link.active').not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($activeTab.length && $activeTab.data('tab')) {
+                this.tabBeforeSettings = $activeTab.data('tab');
+            }
 
             $('#cpp-cuaderno-main-content').hide();
             const $settingsPage = $('#cpp-class-settings-page-container').show();
@@ -74,9 +81,20 @@
             $('#cpp-class-settings-page-container').hide();
             $('#cpp-cuaderno-main-content').show();
             $('body').removeClass('cpp-fullscreen-active');
+
+            const targetTab = this.tabBeforeSettings || (cpp.cuaderno && cpp.cuaderno.lastActiveTab) || 'cuaderno';
+            const $targetTabBtn = $(`.cpp-main-tab-link[data-tab="${targetTab}"]`).not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($targetTabBtn.length) {
+                $targetTabBtn.trigger('click');
+            }
         },
 
         showGeneralSettings: function() {
+            const $activeTab = $('.cpp-main-tab-link.active').not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($activeTab.length && $activeTab.data('tab')) {
+                this.tabBeforeSettings = $activeTab.data('tab');
+            }
+
             $('#cpp-cuaderno-main-content').hide();
             $('#cpp-general-settings-page-container').show();
             $('body').addClass('cpp-fullscreen-active');
@@ -91,19 +109,16 @@
             this.loadEvalConfig();
         },
 
-        evalConfigChanged: false,
-
         hideGeneralSettings: function() {
             $('#cpp-general-settings-page-container').hide();
             $('#cpp-cuaderno-main-content').show();
             $('body').removeClass('cpp-fullscreen-active');
 
-            // Restaurar la pestaña activa
-            const $activeTabBtn = $('.cpp-top-bar-center .cpp-main-tab-link.active, .cpp-tabs-general .cpp-main-tab-link.active');
-            if ($activeTabBtn.length) {
-                $activeTabBtn.trigger('click');
-            } else if (cpp.cuaderno && cpp.cuaderno.lastActiveTab) {
-                $(`.cpp-main-tab-link[data-tab="${cpp.cuaderno.lastActiveTab}"]`).trigger('click');
+            // Restaurar la pestaña activa previamente abierta
+            const targetTab = this.tabBeforeSettings || (cpp.cuaderno && cpp.cuaderno.lastActiveTab) || 'cuaderno';
+            const $targetTabBtn = $(`.cpp-main-tab-link[data-tab="${targetTab}"]`).not('.cpp-btn-general-settings, #cpp-general-settings-btn, #cpp-toggle-fullscreen-btn');
+            if ($targetTabBtn.length) {
+                $targetTabBtn.trigger('click');
             } else {
                 $('.cpp-main-tab-link[data-tab="cuaderno"]').trigger('click');
             }
@@ -559,9 +574,15 @@
             const $classSettingsPage = $('#cpp-class-settings-page-container');
 
             $body.on('click', '.cpp-sidebar-clase-settings-btn', (e) => this.showParaEditar(e));
-            $body.on('click', '#cpp-close-class-settings-btn', () => this.hide());
+            $body.on('click', '#cpp-close-class-settings-btn, #cpp-class-settings-page-container .cpp-close-fullscreen-btn', (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                this.hide();
+            });
             $body.on('click', '#cpp-general-settings-btn', () => this.showGeneralSettings());
-            $body.on('click', '#cpp-close-general-settings-btn', () => this.hideGeneralSettings());
+            $body.on('click', '#cpp-close-general-settings-btn, #cpp-general-settings-page-container .cpp-close-fullscreen-btn', (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                this.hideGeneralSettings();
+            });
 
             $classSettingsPage.on('click', '.cpp-config-tab-link', this.handleConfigTabClick.bind(this));
             $classSettingsPage.on('submit', '#cpp-form-clase', this.guardarClaseDesdeConfig.bind(this));

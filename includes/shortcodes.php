@@ -229,7 +229,7 @@ function cpp_shortcode_cuaderno_notas_classroom() {
         <!-- Contenedor para la página de ajustes generales (inicialmente oculto) -->
         <div id="cpp-general-settings-page-container" class="cpp-fullscreen-settings-page" style="display: none;">
             <div class="cpp-fullscreen-settings-header">
-                <button id="cpp-close-general-settings-btn" class="cpp-btn-icon cpp-close-fullscreen-btn" title="Volver al cuaderno">
+                <button type="button" id="cpp-close-general-settings-btn" class="cpp-btn-icon cpp-close-fullscreen-btn" title="Volver al cuaderno">
                     <span class="dashicons dashicons-arrow-left-alt"></span>
                 </button>
                 <h2>Ajustes Generales</h2>
