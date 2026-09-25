@@ -76,6 +76,7 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
     wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
     wp_enqueue_script('cpp-actividades-js', CPP_PLUGIN_URL . 'assets/js/cpp-actividades.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
+    wp_enqueue_script('cpp-sugerencias-js', CPP_PLUGIN_URL . 'assets/js/cpp-sugerencias.js', ['cpp-core-js'], $plugin_version, true);
 
     // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [

@@ -129,6 +129,94 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             </div>
         </div>
 
+        <!-- Contenedor para la página de Sugerencias y Comunidad (inicialmente oculto) -->
+        <div id="cpp-sugerencias-page-container" class="cpp-fullscreen-settings-page" style="display: none;">
+            <div class="cpp-fullscreen-settings-header">
+                <button type="button" id="cpp-close-sugerencias-btn" class="cpp-btn-icon cpp-close-fullscreen-btn" title="Volver al cuaderno">
+                    <span class="dashicons dashicons-arrow-left-alt"></span>
+                </button>
+                <h2>Comunidad y Sugerencias 💡</h2>
+                <div style="margin-left: auto; display: flex; gap: 10px;">
+                    <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-btn-nueva-sugerencia">
+                        <span class="dashicons dashicons-plus"></span> Publicar Entrada
+                    </button>
+                </div>
+            </div>
+            <div class="cpp-fullscreen-settings-content" style="padding: 0;">
+                <div class="cpp-config-container">
+                    <div class="cpp-config-sidebar">
+                        <a href="#" class="cpp-sugerencia-tab-link active" data-sugerencia-tab="propuestas">
+                            <span class="dashicons dashicons-lightbulb"></span>
+                            <span>Solicitudes de Mejoras</span>
+                        </a>
+                        <a href="#" class="cpp-sugerencia-tab-link" data-sugerencia-tab="dudas">
+                            <span class="dashicons dashicons-testimonial"></span>
+                            <span>Dudas y Preguntas</span>
+                        </a>
+                    </div>
+                    <div class="cpp-config-content-area" style="background-color: #f8f9fa;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <div>
+                                <h2 id="cpp-sugerencia-section-title" style="margin: 0; border: none; padding: 0;">Solicitudes de Mejoras y Funcionalidades</h2>
+                                <p id="cpp-sugerencia-section-desc" style="color: #666; margin-top: 5px; font-size: 14px;">Propón nuevas ideas para el cuaderno y vota las que más te gusten para implementarlas entre todos.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label for="cpp-sugerencia-orden-filter" style="font-size: 13px; font-weight: 500; color: #555;">Ordenar por:</label>
+                                <select id="cpp-sugerencia-orden-filter" class="cpp-select-sm">
+                                    <option value="votos">Más votadas</option>
+                                    <option value="recientes">Más recientes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="cpp-sugerencias-lista-container">
+                            <p class="cpp-cuaderno-cargando">Cargando sugerencias...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Crear Nueva Sugerencia / Pregunta -->
+        <div id="cpp-modal-crear-sugerencia" class="cpp-modal" style="display: none;">
+            <div class="cpp-modal-content" style="max-width: 550px;">
+                <span class="cpp-modal-close">&times;</span>
+                <h2 id="cpp-modal-crear-sugerencia-title">Publicar Entrada</h2>
+                <form id="cpp-form-crear-sugerencia">
+                    <div class="cpp-form-group">
+                        <label for="cpp-sugerencia-tipo-input">Tipo de publicación:</label>
+                        <select id="cpp-sugerencia-tipo-input" name="tipo" style="width: 100%;">
+                            <option value="propuesta">💡 Solicitud de Nueva Funcionalidad / Mejora</option>
+                            <option value="duda">💬 Pregunta / Comentario sobre la App</option>
+                        </select>
+                    </div>
+                    <div class="cpp-form-group">
+                        <label for="cpp-sugerencia-titulo-input">Título claro y conciso:</label>
+                        <input type="text" id="cpp-sugerencia-titulo-input" name="titulo" required placeholder="Ej: Añadir exportación en PDF para notas finales" maxlength="200">
+                    </div>
+                    <div class="cpp-form-group">
+                        <label for="cpp-sugerencia-descripcion-input">Descripción detallada:</label>
+                        <textarea id="cpp-sugerencia-descripcion-input" name="descripcion" rows="5" required placeholder="Explica tu idea o duda con el mayor detalle posible..."></textarea>
+                    </div>
+                    <div class="cpp-modal-actions">
+                        <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-close">Cancelar</button>
+                        <button type="submit" class="cpp-btn cpp-btn-primary"><span class="dashicons dashicons-send"></span> Publicar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para Ver Detalle y Comentarios de una Sugerencia -->
+        <div id="cpp-modal-detalle-sugerencia" class="cpp-modal" style="display: none;">
+            <div class="cpp-modal-content" style="max-width: 650px;">
+                <span class="cpp-modal-close">&times;</span>
+                <div id="cpp-sugerencia-detalle-body">
+                    <!-- Contenido cargado dinámicamente -->
+                    <p class="cpp-cuaderno-cargando">Cargando detalles y comentarios...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Contenedor para la página de ajustes de clase (inicialmente oculto) -->
         <div id="cpp-class-settings-page-container" class="cpp-fullscreen-settings-page" style="display: none;">
             <div class="cpp-fullscreen-settings-header">
@@ -556,6 +644,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                         <button class="cpp-main-tab-link" data-tab="resumen">
                             <span class="dashicons dashicons-chart-bar"></span>
                             <span class="tab-label">Resumen</span>
+                        </button>
+                        <button class="cpp-main-tab-link" id="cpp-btn-sugerencias-topbar" title="Sugerencias y Comunidad">
+                            <span class="dashicons dashicons-format-chat"></span>
+                            <span class="tab-label">Sugerencias</span>
                         </button>
                         <button class="cpp-main-tab-link cpp-btn-general-settings" id="cpp-general-settings-btn" title="Ajustes Generales">
                             <span class="dashicons dashicons-admin-generic"></span>

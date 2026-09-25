@@ -33,6 +33,15 @@ function cpp_register_admin_settings_page() {
         'cpp_render_admin_statistics_page'
     );
 
+    $sugerencias_page = add_submenu_page(
+        'cpp-settings',
+        'Sugerencias',
+        'Sugerencias',
+        'manage_options',
+        'cpp-sugerencias-admin',
+        'cpp_render_admin_sugerencias_page'
+    );
+
     add_action('admin_print_scripts-' . $main_page, 'cpp_enqueue_admin_media_scripts');
     add_action('admin_print_scripts-' . $settings_page, 'cpp_enqueue_admin_media_scripts');
 }
@@ -304,6 +313,103 @@ function cpp_render_admin_statistics_page() {
                             <td style="text-align: center;"><?php echo esc_html($num_califs); ?></td>
                             <td style="text-align: center;"><?php echo esc_html($num_sesiones); ?></td>
                             <td style="text-align: center;"><?php echo esc_html($num_asist); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
+function cpp_render_admin_sugerencias_page() {
+    if (!current_user_can('manage_options')) return;
+
+    global $wpdb;
+
+    // Procesar acciones de cambio de estado o borrado
+    if (isset($_POST['cpp_action_sugerencia'])) {
+        check_admin_referer('cpp_admin_sugerencia_nonce');
+        $sugerencia_id = intval($_POST['sugerencia_id']);
+        $action = sanitize_text_field($_POST['cpp_action_sugerencia']);
+
+        if ($action === 'update_status' && isset($_POST['nuevo_estado'])) {
+            $nuevo_estado = sanitize_text_field($_POST['nuevo_estado']);
+            cpp_actualizar_estado_sugerencia($sugerencia_id, $nuevo_estado);
+            echo '<div class="updated"><p>Estado actualizado correctamente.</p></div>';
+        } elseif ($action === 'delete') {
+            $wpdb->delete($wpdb->prefix . 'cpp_sugerencias', ['id' => $sugerencia_id], ['%d']);
+            $wpdb->delete($wpdb->prefix . 'cpp_sugerencia_votos', ['sugerencia_id' => $sugerencia_id], ['%d']);
+            $wpdb->delete($wpdb->prefix . 'cpp_sugerencia_comentarios', ['sugerencia_id' => $sugerencia_id], ['%d']);
+            echo '<div class="updated"><p>Sugerencia eliminada.</p></div>';
+        }
+    }
+
+    $filtro_tipo = isset($_GET['tipo']) ? sanitize_text_field($_GET['tipo']) : 'propuesta';
+
+    $sugerencias = cpp_obtener_sugerencias($filtro_tipo, 'votos', get_current_user_id());
+    ?>
+    <div class="wrap">
+        <h1>Gestión de Sugerencias y Preguntas</h1>
+        <p class="description">Revisa las propuestas de los profesores, cambia su estado o elimina entradas obsoletas.</p>
+
+        <ul class="subsubsub">
+            <li><a href="?page=cpp-sugerencias-admin&tipo=propuesta" class="<?php echo $filtro_tipo === 'propuesta' ? 'current' : ''; ?>">Propuestas de Mejoras</a> |</li>
+            <li><a href="?page=cpp-sugerencias-admin&tipo=duda" class="<?php echo $filtro_tipo === 'duda' ? 'current' : ''; ?>">Dudas y Preguntas (Q&A)</a></li>
+        </ul>
+        <br class="clear">
+
+        <table class="wp-list-table widefat fixed striped table-view-list" style="margin-top: 15px;">
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 50px;">ID</th>
+                    <th scope="col" style="width: 220px;">Título</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col" style="width: 140px;">Autor</th>
+                    <th scope="col" style="width: 80px; text-align: center;">Votos</th>
+                    <th scope="col" style="width: 80px; text-align: center;">Comentarios</th>
+                    <th scope="col" style="width: 160px;">Estado</th>
+                    <th scope="col" style="width: 100px;">Fecha</th>
+                    <th scope="col" style="width: 100px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($sugerencias)): ?>
+                    <tr>
+                        <td colspan="9">No hay entradas en esta categoría.</td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($sugerencias as $sug): ?>
+                        <tr>
+                            <td>#<?php echo esc_html($sug->id); ?></td>
+                            <td><strong><?php echo esc_html($sug->titulo); ?></strong></td>
+                            <td><?php echo nl2br(esc_html($sug->descripcion)); ?></td>
+                            <td><?php echo esc_html($sug->autor_nombre ? $sug->autor_nombre : 'Anónimo'); ?></td>
+                            <td style="text-align: center;"><strong>👍 <?php echo esc_html($sug->num_votos); ?></strong></td>
+                            <td style="text-align: center;">💬 <?php echo esc_html($sug->num_comentarios); ?></td>
+                            <td>
+                                <form method="post" style="display: flex; gap: 5px; align-items: center;">
+                                    <?php wp_nonce_field('cpp_admin_sugerencia_nonce'); ?>
+                                    <input type="hidden" name="sugerencia_id" value="<?php echo esc_attr($sug->id); ?>">
+                                    <input type="hidden" name="cpp_action_sugerencia" value="update_status">
+                                    <select name="nuevo_estado" style="font-size: 12px; padding: 2px 4px;">
+                                        <option value="estudio" <?php selected($sug->estado, 'estudio'); ?>>En estudio</option>
+                                        <option value="planeada" <?php selected($sug->estado, 'planeada'); ?>>Planeada</option>
+                                        <option value="desarrollo" <?php selected($sug->estado, 'desarrollo'); ?>>En desarrollo</option>
+                                        <option value="implementada" <?php selected($sug->estado, 'implementada'); ?>>Implementada</option>
+                                    </select>
+                                    <input type="submit" class="button button-small" value="OK">
+                                </form>
+                            </td>
+                            <td><?php echo esc_html(date_i18n('d/m/Y', strtotime($sug->fecha_creacion))); ?></td>
+                            <td>
+                                <form method="post" onsubmit="return confirm('¿Seguro que deseas eliminar esta entrada?');">
+                                    <?php wp_nonce_field('cpp_admin_sugerencia_nonce'); ?>
+                                    <input type="hidden" name="sugerencia_id" value="<?php echo esc_attr($sug->id); ?>">
+                                    <input type="hidden" name="cpp_action_sugerencia" value="delete">
+                                    <input type="submit" class="button button-small button-link-delete" value="Eliminar">
+                                </form>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

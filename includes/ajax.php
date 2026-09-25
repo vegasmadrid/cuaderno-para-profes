@@ -29,3 +29,6 @@ require_once CPP_PLUGIN_DIR . 'includes/programador/ajax-programador.php';
 
 // Cargar manejadores de AJAX para el resumen
 require_once $ajax_handlers_dir . 'ajax-resumen.php';
+
+// Cargar manejadores de AJAX para sugerencias
+require_once $ajax_handlers_dir . 'ajax-sugerencias.php';
