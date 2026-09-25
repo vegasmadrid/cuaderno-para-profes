@@ -255,6 +255,49 @@ function cpp_crear_tablas() {
     ) $charset_collate;";
     dbDelta($sql_shared_weeks);
 
+    // --- TABLAS PARA SUGERENCIAS Y FEEDBACK ---
+    $tabla_sugerencias = $wpdb->prefix . 'cpp_sugerencias';
+    $sql_sugerencias = "CREATE TABLE $tabla_sugerencias (
+        id mediumint(9) UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        tipo varchar(20) NOT NULL DEFAULT 'propuesta',
+        titulo varchar(200) NOT NULL,
+        descripcion text NOT NULL,
+        estado varchar(30) NOT NULL DEFAULT 'estudio',
+        fecha_creacion datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY (id),
+        KEY user_id (user_id),
+        KEY tipo (tipo),
+        KEY estado (estado)
+    ) $charset_collate;";
+    dbDelta($sql_sugerencias);
+
+    $tabla_sugerencia_votos = $wpdb->prefix . 'cpp_sugerencia_votos';
+    $sql_sugerencia_votos = "CREATE TABLE $tabla_sugerencia_votos (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        sugerencia_id mediumint(9) UNSIGNED NOT NULL,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        fecha_voto datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY sugerencia_user (sugerencia_id, user_id),
+        KEY sugerencia_id (sugerencia_id),
+        KEY user_id (user_id)
+    ) $charset_collate;";
+    dbDelta($sql_sugerencia_votos);
+
+    $tabla_sugerencia_comentarios = $wpdb->prefix . 'cpp_sugerencia_comentarios';
+    $sql_sugerencia_comentarios = "CREATE TABLE $tabla_sugerencia_comentarios (
+        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        sugerencia_id mediumint(9) UNSIGNED NOT NULL,
+        user_id bigint(20) UNSIGNED NOT NULL,
+        comentario text NOT NULL,
+        fecha_comentario datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        PRIMARY KEY (id),
+        KEY sugerencia_id (sugerencia_id),
+        KEY user_id (user_id)
+    ) $charset_collate;";
+    dbDelta($sql_sugerencia_comentarios);
+
     // Asegurar columna `archivada` en la tabla cpp_clases si no existe aún
     if (!$wpdb->get_var("SHOW COLUMNS FROM $tabla_clases_nombre LIKE 'archivada'")) {
         $wpdb->query("ALTER TABLE $tabla_clases_nombre ADD archivada TINYINT(1) NOT NULL DEFAULT 0 AFTER orden, ADD KEY archivada (archivada)");
@@ -354,3 +397,4 @@ require_once $db_queries_dir . 'queries-clases.php';
 require_once $db_queries_dir . 'queries-alumnos.php';
 require_once $db_queries_dir . 'queries-actividades-calificaciones.php';
 require_once $db_queries_dir . 'queries-calculos.php';
+require_once $db_queries_dir . 'queries-sugerencias.php';
