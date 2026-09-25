@@ -56,7 +56,7 @@ if (!function_exists('cpp_lighten_hex_color')) {
 }
 
 if (!function_exists('cpp_formatear_nota_display')) {
-    function cpp_formatear_nota_display($nota, $decimales = null, $user_id = null, $scope_check = 'actividad', $nota_exacta_raw = null) {
+    function cpp_formatear_nota_display($nota, $decimales = null, $user_id = null, $scope_check = 'actividad') {
         if ($nota === null || $nota === '') {
             return '';
         }
@@ -104,24 +104,50 @@ if (!function_exists('cpp_formatear_nota_display')) {
                 $decimales = (floor($nota_redondeada) == $nota_redondeada) ? 0 : 2;
             }
 
-            $nota_formatted = number_format($nota_redondeada, intval($decimales), '.', '');
-
-            // Mostrar nota exacta entre paréntesis si la opción está activa
-            $show_exact = isset($config['show_exact_grade']) && intval($config['show_exact_grade']) === 1;
-            if ($show_exact && $mode !== 'none' && $redondeo_activo && in_array($scope_check, ['evaluacion', 'media'])) {
-                $exact_val = ($nota_exacta_raw !== null) ? floatval(str_replace(',', '.', $nota_exacta_raw)) : $nota_float;
-                $exact_dec = (floor($exact_val) == $exact_val) ? 0 : 2;
-                $exact_formatted = number_format($exact_val, $exact_dec, '.', '');
-
-                if ($exact_formatted !== $nota_formatted && $exact_formatted !== '') {
-                    return '<strong>' . $nota_formatted . '</strong> <small style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-left: 2px;">(' . $exact_formatted . ')</small>';
-                }
-            }
-
-            return $nota_formatted;
+            return number_format($nota_redondeada, intval($decimales), '.', '');
         }
 
         return number_format($nota_float, intval($decimales), '.', '');
+    }
+}
+
+if (!function_exists('cpp_formatear_nota_display_html')) {
+    function cpp_formatear_nota_display_html($nota, $user_id = null, $scope_check = 'evaluacion', $nota_exacta_raw = null) {
+        $formatted_rounded = cpp_formatear_nota_display($nota, null, $user_id, $scope_check);
+
+        if ($nota === null || $nota === '' || !is_numeric(str_replace(',', '.', $nota))) {
+            return esc_html($formatted_rounded);
+        }
+
+        if (empty($user_id)) {
+            $user_id = get_current_user_id();
+        }
+
+        $config = cpp_get_eval_config($user_id);
+        $show_exact = isset($config['show_exact_grade']) && intval($config['show_exact_grade']) === 1;
+        $mode = isset($config['rounding_mode']) ? $config['rounding_mode'] : 'none';
+        $scope = isset($config['rounding_scope']) ? $config['rounding_scope'] : 'both';
+
+        $redondeo_activo = true;
+        if ($scope_check === 'actividad' || $scope_check === 'none') {
+            $redondeo_activo = false;
+        } else if ($scope === 'evaluacion' && $scope_check !== 'evaluacion') {
+            $redondeo_activo = false;
+        } else if ($scope === 'media' && $scope_check !== 'media') {
+            $redondeo_activo = false;
+        }
+
+        if ($show_exact && $mode !== 'none' && $redondeo_activo && in_array($scope_check, ['evaluacion', 'media'])) {
+            $exact_val = ($nota_exacta_raw !== null) ? floatval(str_replace(',', '.', $nota_exacta_raw)) : floatval(str_replace(',', '.', $nota));
+            $exact_dec = (floor($exact_val) == $exact_val) ? 0 : 2;
+            $exact_formatted = number_format($exact_val, $exact_dec, '.', '');
+
+            if ($exact_formatted !== $formatted_rounded && $exact_formatted !== '') {
+                return '<strong>' . esc_html($formatted_rounded) . '</strong> <small style="font-size: 11px; opacity: 0.8; font-weight: normal; margin-left: 2px;">(' . esc_html($exact_formatted) . ')</small>';
+            }
+        }
+
+        return esc_html($formatted_rounded);
     }
 }
 

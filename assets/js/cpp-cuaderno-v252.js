@@ -258,7 +258,7 @@
 
                         // Update final grade in modal
                         if (responseData && responseData.nota_final_alumno_display) {
-                            $('#cpp-pending-current-final-grade').text(responseData.nota_final_alumno_display);
+                            $('#cpp-pending-current-final-grade').html(responseData.nota_final_alumno_display);
                         }
 
                         // Immediate removal
@@ -289,7 +289,7 @@
                         if (isValid && wasSaved) {
                             // Update final grade in modal
                             if (responseData && responseData.nota_final_alumno_display) {
-                                $('#cpp-pending-current-final-grade').text(responseData.nota_final_alumno_display);
+                                $('#cpp-pending-current-final-grade').html(responseData.nota_final_alumno_display);
                             }
 
                             // Immediately remove the row
@@ -595,7 +595,7 @@
             notasFinales.forEach(notaInfo => {
                 const $cell = $(`#cpp-nota-final-alumno-${notaInfo.alumno_id}`);
                 if ($cell.length) {
-                    $cell.text(notaInfo.nota_final_display);
+                    $cell.html(notaInfo.nota_final_display);
 
                     if (notaInfo.is_incomplete) {
                         $cell.attr('data-is-incomplete', 'true');
@@ -1464,7 +1464,7 @@
                         $input.addClass('cpp-nota-guardada');
                         if (response.data) {
                             const $notaFinalCell = $(`#cpp-nota-final-alumno-${alumnoId}`);
-                            $notaFinalCell.text(response.data.nota_final_alumno_display);
+                            $notaFinalCell.html(response.data.nota_final_alumno_display);
                             if (response.data.is_incomplete) {
                                 $notaFinalCell.attr('data-is-incomplete', 'true');
                                 $notaFinalCell.attr('data-used-categories', JSON.stringify(response.data.used_categories));
