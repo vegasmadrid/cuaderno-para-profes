@@ -142,10 +142,10 @@
             var $container = $('#cpp-sugerencias-lista-container');
             if (!items || items.length === 0) {
                 $container.html(
-                    '<div class="cpp-empty-panel" style="padding: 40px; text-align: center;">' +
-                    '<span class="dashicons dashicons-format-chat" style="font-size: 48px; width: 48px; height: 48px; color: #ccc;"></span>' +
-                    '<h3>Aún no hay publicaciones aquí</h3>' +
-                    '<p style="color: #666; margin-top: 5px;">¡Sé el primero en compartir una ' + (this.activeTab === 'dudas' ? 'duda o comentario' : 'propuesta o sugerencia') + '!</p>' +
+                    '<div class="cpp-empty-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center;">' +
+                    '<span class="dashicons dashicons-format-chat" style="font-size: 48px; width: 48px; height: 48px; color: #ccc; margin-bottom: 12px;"></span>' +
+                    '<h3 style="font-size: 20px; font-weight: 500; color: #3c4043; margin: 0 0 8px 0;">Aún no hay publicaciones aquí</h3>' +
+                    '<p style="color: #666; font-size: 14px; margin: 0;">¡Sé el primero en compartir una ' + (this.activeTab === 'dudas' ? 'duda o comentario' : 'propuesta o sugerencia') + '!</p>' +
                     '</div>'
                 );
                 return;
