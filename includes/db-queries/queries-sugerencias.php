@@ -4,10 +4,25 @@
 defined('ABSPATH') or die('Acceso no permitido');
 
 /**
+ * Asegurar que las tablas de sugerencias existen en la BBDD.
+ */
+function cpp_asegurar_tablas_sugerencias() {
+    global $wpdb;
+    $tabla_sug = $wpdb->prefix . 'cpp_sugerencias';
+    if ($wpdb->get_var("SHOW TABLES LIKE '$tabla_sug'") !== $tabla_sug) {
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
+        }
+    }
+}
+
+/**
  * Obtener lista de sugerencias/preguntas con sus conteos de votos, comentarios y si el usuario actual ha votado.
  */
 function cpp_obtener_sugerencias($tipo = 'propuesta', $orden = 'votos', $user_id = 0) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_sug = $wpdb->prefix . 'cpp_sugerencias';
     $tabla_votos = $wpdb->prefix . 'cpp_sugerencia_votos';
     $tabla_com = $wpdb->prefix . 'cpp_sugerencia_comentarios';
@@ -21,7 +36,7 @@ function cpp_obtener_sugerencias($tipo = 'propuesta', $orden = 'votos', $user_id
 
     $sql = $wpdb->prepare("
         SELECT s.*,
-               u.display_name as autor_nombre,
+               MAX(u.display_name) as autor_nombre,
                COUNT(DISTINCT v.id) as num_votos,
                COUNT(DISTINCT c.id) as num_comentarios,
                MAX(CASE WHEN v.user_id = %d THEN 1 ELSE 0 END) as votado_por_usuario
@@ -34,7 +49,8 @@ function cpp_obtener_sugerencias($tipo = 'propuesta', $orden = 'votos', $user_id
         ORDER BY {$order_clause}
     ", $user_id, $tipo_clean);
 
-    return $wpdb->get_results($sql);
+    $results = $wpdb->get_results($sql);
+    return is_array($results) ? $results : [];
 }
 
 /**
@@ -42,13 +58,15 @@ function cpp_obtener_sugerencias($tipo = 'propuesta', $orden = 'votos', $user_id
  */
 function cpp_obtener_sugerencia_por_id($sugerencia_id, $user_id = 0) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_sug = $wpdb->prefix . 'cpp_sugerencias';
     $tabla_votos = $wpdb->prefix . 'cpp_sugerencia_votos';
     $tabla_com = $wpdb->prefix . 'cpp_sugerencia_comentarios';
 
     $sql = $wpdb->prepare("
         SELECT s.*,
-               u.display_name as autor_nombre,
+               MAX(u.display_name) as autor_nombre,
                COUNT(DISTINCT v.id) as num_votos,
                COUNT(DISTINCT c.id) as num_comentarios,
                MAX(CASE WHEN v.user_id = %d THEN 1 ELSE 0 END) as votado_por_usuario
@@ -68,6 +86,8 @@ function cpp_obtener_sugerencia_por_id($sugerencia_id, $user_id = 0) {
  */
 function cpp_crear_sugerencia($user_id, $tipo, $titulo, $descripcion) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_sug = $wpdb->prefix . 'cpp_sugerencias';
 
     $tipo_clean = ($tipo === 'duda') ? 'duda' : 'propuesta';
@@ -87,31 +107,35 @@ function cpp_crear_sugerencia($user_id, $tipo, $titulo, $descripcion) {
     if ($inserted) {
         $sugerencia_id = $wpdb->insert_id;
 
-        // Notificación por correo inmediatamente al email de administración
-        $admin_email = get_option('admin_email');
-        if ($admin_email) {
-            $user_info = get_userdata($user_id);
-            $nombre_usuario = $user_info ? $user_info->display_name : 'Usuario #' . $user_id;
-            $email_usuario = $user_info ? $user_info->user_email : '';
+        // Notificación por correo inmediatamente al email de administración (de forma segura)
+        try {
+            $admin_email = get_option('admin_email');
+            if ($admin_email) {
+                $user_info = get_userdata($user_id);
+                $nombre_usuario = $user_info ? $user_info->display_name : 'Usuario #' . $user_id;
+                $email_usuario = $user_info ? $user_info->user_email : '';
 
-            $tipo_label = ($tipo_clean === 'duda') ? 'Pregunta / Comentario' : 'Solicitud de Funcionalidad';
-            $subject = sprintf('[Cuaderno Profe] Nueva %s: %s', $tipo_label, $titulo);
+                $tipo_label = ($tipo_clean === 'duda') ? 'Pregunta / Comentario' : 'Solicitud de Funcionalidad';
+                $subject = sprintf('[Cuaderno Profe] Nueva %s: %s', $tipo_label, $titulo);
 
-            $message = sprintf(
-                "Se ha publicado una nueva entrada en la sección de Sugerencias:\n\n" .
-                "Tipo: %s\n" .
-                "Autor: %s (%s)\n" .
-                "Título: %s\n\n" .
-                "Descripción:\n%s\n\n" .
-                "--\nCuaderno de Profe",
-                $tipo_label,
-                $nombre_usuario,
-                $email_usuario,
-                $titulo,
-                $descripcion
-            );
+                $message = sprintf(
+                    "Se ha publicado una nueva entrada en la sección de Sugerencias:\n\n" .
+                    "Tipo: %s\n" .
+                    "Autor: %s (%s)\n" .
+                    "Título: %s\n\n" .
+                    "Descripción:\n%s\n\n" .
+                    "--\nCuaderno de Profe",
+                    $tipo_label,
+                    $nombre_usuario,
+                    $email_usuario,
+                    $titulo,
+                    $descripcion
+                );
 
-            wp_mail($admin_email, $subject, $message);
+                @wp_mail($admin_email, $subject, $message);
+            }
+        } catch (\Throwable $e) {
+            // Ignorar errores de envío de correo para no bloquear la creación
         }
 
         return $sugerencia_id;
@@ -125,6 +149,8 @@ function cpp_crear_sugerencia($user_id, $tipo, $titulo, $descripcion) {
  */
 function cpp_toggle_voto_sugerencia($sugerencia_id, $user_id) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_votos = $wpdb->prefix . 'cpp_sugerencia_votos';
 
     $existe = $wpdb->get_var($wpdb->prepare(
@@ -156,6 +182,8 @@ function cpp_toggle_voto_sugerencia($sugerencia_id, $user_id) {
  */
 function cpp_obtener_comentarios_sugerencia($sugerencia_id) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_com = $wpdb->prefix . 'cpp_sugerencia_comentarios';
 
     $sql = $wpdb->prepare("
@@ -167,6 +195,9 @@ function cpp_obtener_comentarios_sugerencia($sugerencia_id) {
     ", $sugerencia_id);
 
     $comentarios = $wpdb->get_results($sql);
+    if (!is_array($comentarios)) {
+        $comentarios = [];
+    }
 
     foreach ($comentarios as $com) {
         $com->es_admin = user_can($com->user_id, 'manage_options');
@@ -180,6 +211,8 @@ function cpp_obtener_comentarios_sugerencia($sugerencia_id) {
  */
 function cpp_agregar_comentario_sugerencia($sugerencia_id, $user_id, $comentario) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_com = $wpdb->prefix . 'cpp_sugerencia_comentarios';
 
     $inserted = $wpdb->insert(
@@ -193,26 +226,30 @@ function cpp_agregar_comentario_sugerencia($sugerencia_id, $user_id, $comentario
     );
 
     if ($inserted) {
-        // Notificación inmediata al admin
-        $admin_email = get_option('admin_email');
-        if ($admin_email) {
-            $sugerencia = cpp_obtener_sugerencia_por_id($sugerencia_id, $user_id);
-            $user_info = get_userdata($user_id);
-            $nombre_usuario = $user_info ? $user_info->display_name : 'Usuario #' . $user_id;
+        // Notificación inmediata al admin (de forma segura)
+        try {
+            $admin_email = get_option('admin_email');
+            if ($admin_email) {
+                $sugerencia = cpp_obtener_sugerencia_por_id($sugerencia_id, $user_id);
+                $user_info = get_userdata($user_id);
+                $nombre_usuario = $user_info ? $user_info->display_name : 'Usuario #' . $user_id;
 
-            $subject = sprintf('[Cuaderno Profe] Nuevo comentario en: %s', $sugerencia ? $sugerencia->titulo : 'Propuesta');
-            $message = sprintf(
-                "Se ha agregado un nuevo comentario:\n\n" .
-                "En la propuesta/pregunta: %s\n" .
-                "Autor del comentario: %s\n\n" .
-                "Comentario:\n%s\n\n" .
-                "--\nCuaderno de Profe",
-                $sugerencia ? $sugerencia->titulo : 'Propuesta #' . $sugerencia_id,
-                $nombre_usuario,
-                $comentario
-            );
+                $subject = sprintf('[Cuaderno Profe] Nuevo comentario en: %s', $sugerencia ? $sugerencia->titulo : 'Propuesta');
+                $message = sprintf(
+                    "Se ha agregado un nuevo comentario:\n\n" .
+                    "En la propuesta/pregunta: %s\n" .
+                    "Autor del comentario: %s\n\n" .
+                    "Comentario:\n%s\n\n" .
+                    "--\nCuaderno de Profe",
+                    $sugerencia ? $sugerencia->titulo : 'Propuesta #' . $sugerencia_id,
+                    $nombre_usuario,
+                    $comentario
+                );
 
-            wp_mail($admin_email, $subject, $message);
+                @wp_mail($admin_email, $subject, $message);
+            }
+        } catch (\Throwable $e) {
+            // Ignorar errores de envío de correo
         }
 
         return $wpdb->insert_id;
@@ -226,6 +263,8 @@ function cpp_agregar_comentario_sugerencia($sugerencia_id, $user_id, $comentario
  */
 function cpp_actualizar_estado_sugerencia($sugerencia_id, $estado) {
     global $wpdb;
+    cpp_asegurar_tablas_sugerencias();
+
     $tabla_sug = $wpdb->prefix . 'cpp_sugerencias';
 
     $estados_validos = ['estudio', 'planeada', 'desarrollo', 'implementada'];
