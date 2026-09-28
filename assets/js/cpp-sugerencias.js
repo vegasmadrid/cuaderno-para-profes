@@ -215,6 +215,10 @@
                 return;
             }
 
+            var $btn = $('#cpp-form-crear-sugerencia button[type="submit"]');
+            var originalBtnHtml = $btn.html();
+            $btn.prop('disabled', true).text('Publicando...');
+
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
                 type: 'POST',
@@ -226,15 +230,26 @@
                     descripcion: descripcion
                 },
                 success: function(response) {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
                     if (response.success) {
                         $('#cpp-modal-crear-sugerencia').fadeOut(150);
+                        $('#cpp-form-crear-sugerencia')[0].reset();
                         if (typeof cpp !== 'undefined' && cpp.showToast) {
                             cpp.showToast('Entrada publicada correctamente.', 'success');
                         }
-                        self.cargarSugerencias();
+                        var targetTab = (tipo === 'duda') ? 'dudas' : 'propuestas';
+                        if (self.activeTab !== targetTab) {
+                            $('.cpp-sugerencia-tab-link[data-sugerencia-tab="' + targetTab + '"]').trigger('click');
+                        } else {
+                            self.cargarSugerencias();
+                        }
                     } else {
-                        alert(response.data.message);
+                        alert(response.data && response.data.message ? response.data.message : 'Error al guardar la entrada.');
                     }
+                },
+                error: function() {
+                    $btn.prop('disabled', false).html(originalBtnHtml);
+                    alert('Error de conexión al guardar la entrada.');
                 }
             });
         },

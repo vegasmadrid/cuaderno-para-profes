@@ -359,18 +359,18 @@ function cpp_render_admin_sugerencias_page() {
         </ul>
         <br class="clear">
 
-        <table class="wp-list-table widefat fixed striped table-view-list" style="margin-top: 15px;">
+        <table class="wp-list-table widefat striped table-view-list" style="margin-top: 15px; table-layout: auto;">
             <thead>
                 <tr>
-                    <th scope="col" style="width: 50px;">ID</th>
-                    <th scope="col" style="width: 220px;">Título</th>
-                    <th scope="col">Descripción</th>
-                    <th scope="col" style="width: 140px;">Autor</th>
-                    <th scope="col" style="width: 80px; text-align: center;">Votos</th>
+                    <th scope="col" style="width: 45px;">ID</th>
+                    <th scope="col" style="min-width: 160px; max-width: 220px;">Título</th>
+                    <th scope="col" style="min-width: 250px;">Descripción</th>
+                    <th scope="col" style="min-width: 120px;">Autor</th>
+                    <th scope="col" style="width: 70px; text-align: center;">Votos</th>
                     <th scope="col" style="width: 80px; text-align: center;">Comentarios</th>
-                    <th scope="col" style="width: 160px;">Estado</th>
-                    <th scope="col" style="width: 100px;">Fecha</th>
-                    <th scope="col" style="width: 100px;">Acciones</th>
+                    <th scope="col" style="min-width: 150px;">Estado</th>
+                    <th scope="col" style="width: 90px;">Fecha</th>
+                    <th scope="col" style="width: 90px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
