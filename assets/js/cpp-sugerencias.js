@@ -139,6 +139,7 @@
         },
 
         renderLista: function(items) {
+            var self = this;
             var $container = $('#cpp-sugerencias-lista-container');
             if (!items || items.length === 0) {
                 $container.html(
