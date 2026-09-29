@@ -183,6 +183,10 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 <span class="cpp-modal-close">&times;</span>
                 <h2 id="cpp-modal-crear-sugerencia-title">Publicar Entrada</h2>
                 <form id="cpp-form-crear-sugerencia">
+                    <!-- Campo Honeypot anti-spam (oculto para usuarios reales) -->
+                    <div style="display:none !important;" aria-hidden="true">
+                        <input type="text" name="website_hp" id="cpp-sugerencia-website-hp" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="cpp-form-group">
                         <label for="cpp-sugerencia-tipo-input">Tipo de publicación:</label>
                         <select id="cpp-sugerencia-tipo-input" name="tipo" style="width: 100%;">

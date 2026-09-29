@@ -139,6 +139,7 @@
         },
 
         renderLista: function(items) {
+            var self = this;
             var $container = $('#cpp-sugerencias-lista-container');
             if (!items || items.length === 0) {
                 $container.html(
@@ -209,9 +210,20 @@
             var tipo = $('#cpp-sugerencia-tipo-input').val();
             var titulo = $.trim($('#cpp-sugerencia-titulo-input').val());
             var descripcion = $.trim($('#cpp-sugerencia-descripcion-input').val());
+            var websiteHp = $('#cpp-sugerencia-website-hp').val();
 
             if (!titulo || !descripcion) {
                 alert('Por favor rellena el título y la descripción.');
+                return;
+            }
+
+            if (titulo.length < 5) {
+                alert('El título debe tener al menos 5 caracteres.');
+                return;
+            }
+
+            if (descripcion.length < 15) {
+                alert('La descripción debe tener al menos 15 caracteres.');
                 return;
             }
 
@@ -227,7 +239,8 @@
                     nonce: cppFrontendData.nonce,
                     tipo: tipo,
                     titulo: titulo,
-                    descripcion: descripcion
+                    descripcion: descripcion,
+                    website_hp: websiteHp
                 },
                 success: function(response) {
                     $btn.prop('disabled', false).html(originalBtnHtml);
@@ -310,6 +323,9 @@
             html += '</div>';
 
             html += '<form id="cpp-form-nuevo-comentario" style="margin-top: 20px;">';
+            html += '  <div style="display:none !important;" aria-hidden="true">';
+            html += '    <input type="text" name="website_hp" id="cpp-comentario-website-hp" tabindex="-1" autocomplete="off">';
+            html += '  </div>';
             html += '  <div class="cpp-form-group">';
             html += '    <label for="cpp-comentario-input">Escribe tu respuesta o comentario:</label>';
             html += '    <textarea id="cpp-comentario-input" name="comentario" rows="3" required placeholder="Añade tu opinión o respuesta..."></textarea>';
@@ -325,8 +341,14 @@
         agregarComentario: function() {
             var self = this;
             var comentario = $.trim($('#cpp-comentario-input').val());
+            var websiteHp = $('#cpp-comentario-website-hp').val();
 
             if (!comentario) return;
+
+            if (comentario.length < 5) {
+                alert('El comentario debe tener al menos 5 caracteres.');
+                return;
+            }
 
             $.ajax({
                 url: cppFrontendData.ajaxUrl,
@@ -335,7 +357,8 @@
                     action: 'cpp_agregar_comentario_sugerencia',
                     nonce: cppFrontendData.nonce,
                     sugerencia_id: self.currentSugerenciaId,
-                    comentario: comentario
+                    comentario: comentario,
+                    website_hp: websiteHp
                 },
                 success: function(response) {
                     if (response.success) {
