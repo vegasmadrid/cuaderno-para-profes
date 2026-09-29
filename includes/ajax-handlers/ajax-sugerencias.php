@@ -31,7 +31,26 @@ function cpp_ajax_crear_sugerencia() {
         wp_send_json_error(['message' => 'Debes iniciar sesión.']);
     }
 
+    // 1. Honeypot check
+    if (!empty($_POST['website_hp'])) {
+        wp_send_json_error(['message' => 'Petición no válida (spam detectado).']);
+    }
+
     $user_id = get_current_user_id();
+
+    // 2. Cooldown check (30 seconds between suggestions)
+    $cooldown_key = 'cpp_sug_cooldown_' . $user_id;
+    if (get_transient($cooldown_key)) {
+        wp_send_json_error(['message' => 'Por favor, espera unos segundos antes de publicar otra entrada.']);
+    }
+
+    // 3. Daily limit check (max 5 suggestions per day)
+    $daily_key = 'cpp_sug_daily_' . $user_id . '_' . date('Ymd');
+    $daily_count = (int) get_transient($daily_key);
+    if ($daily_count >= 5) {
+        wp_send_json_error(['message' => 'Has alcanzado el límite diario de publicaciones (máximo 5 al día).']);
+    }
+
     $tipo = isset($_POST['tipo']) ? sanitize_text_field($_POST['tipo']) : 'propuesta';
     $titulo = isset($_POST['titulo']) ? sanitize_text_field($_POST['titulo']) : '';
     $descripcion = isset($_POST['descripcion']) ? sanitize_textarea_field($_POST['descripcion']) : '';
@@ -40,9 +59,21 @@ function cpp_ajax_crear_sugerencia() {
         wp_send_json_error(['message' => 'Por favor completa el título y la descripción.']);
     }
 
+    // 4. Minimum length check
+    if (mb_strlen(trim($titulo)) < 5) {
+        wp_send_json_error(['message' => 'El título debe tener al menos 5 caracteres.']);
+    }
+    if (mb_strlen(trim($descripcion)) < 15) {
+        wp_send_json_error(['message' => 'La descripción debe tener al menos 15 caracteres.']);
+    }
+
     $sugerencia_id = cpp_crear_sugerencia($user_id, $tipo, $titulo, $descripcion);
 
     if ($sugerencia_id) {
+        // Record cooldown & increment daily count
+        set_transient($cooldown_key, true, 30);
+        set_transient($daily_key, $daily_count + 1, DAY_IN_SECONDS);
+
         wp_send_json_success([
             'message' => 'Entrada creada correctamente.',
             'sugerencia_id' => $sugerencia_id
@@ -104,7 +135,26 @@ function cpp_ajax_agregar_comentario_sugerencia() {
         wp_send_json_error(['message' => 'Debes iniciar sesión para comentar.']);
     }
 
+    // 1. Honeypot check
+    if (!empty($_POST['website_hp'])) {
+        wp_send_json_error(['message' => 'Petición no válida (spam detectado).']);
+    }
+
     $user_id = get_current_user_id();
+
+    // 2. Cooldown check (15 seconds between comments)
+    $cooldown_key = 'cpp_com_cooldown_' . $user_id;
+    if (get_transient($cooldown_key)) {
+        wp_send_json_error(['message' => 'Por favor, espera unos segundos antes de publicar otro comentario.']);
+    }
+
+    // 3. Daily limit check (max 15 comments per day)
+    $daily_key = 'cpp_com_daily_' . $user_id . '_' . date('Ymd');
+    $daily_count = (int) get_transient($daily_key);
+    if ($daily_count >= 15) {
+        wp_send_json_error(['message' => 'Has alcanzado el límite diario de comentarios (máximo 15 al día).']);
+    }
+
     $sugerencia_id = isset($_POST['sugerencia_id']) ? intval($_POST['sugerencia_id']) : 0;
     $comentario = isset($_POST['comentario']) ? sanitize_textarea_field($_POST['comentario']) : '';
 
@@ -112,9 +162,18 @@ function cpp_ajax_agregar_comentario_sugerencia() {
         wp_send_json_error(['message' => 'Por favor escribe un comentario.']);
     }
 
+    // 4. Minimum length check
+    if (mb_strlen(trim($comentario)) < 5) {
+        wp_send_json_error(['message' => 'El comentario debe tener al menos 5 caracteres.']);
+    }
+
     $comentario_id = cpp_agregar_comentario_sugerencia($sugerencia_id, $user_id, $comentario);
 
     if ($comentario_id) {
+        // Record cooldown & increment daily count
+        set_transient($cooldown_key, true, 15);
+        set_transient($daily_key, $daily_count + 1, DAY_IN_SECONDS);
+
         wp_send_json_success(['message' => 'Comentario añadido correctamente.']);
     } else {
         wp_send_json_error(['message' => 'Error al guardar el comentario.']);
