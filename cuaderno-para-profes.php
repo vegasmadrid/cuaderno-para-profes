@@ -10,7 +10,7 @@ Author: Javier Vegas Serrano
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '3.0.0');
+define('CPP_VERSION', '3.1.0');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));
@@ -76,6 +76,7 @@ function cpp_cargar_assets() {
     wp_enqueue_script('cpp-modales-evaluacion-js', CPP_PLUGIN_URL . 'assets/js/cpp-modales-evaluacion.js', ['cpp-core-js', 'cpp-modales-general-js'], $plugin_version, true);
     wp_enqueue_script('cpp-alumnos-js', CPP_PLUGIN_URL . 'assets/js/cpp-alumnos.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
     wp_enqueue_script('cpp-actividades-js', CPP_PLUGIN_URL . 'assets/js/cpp-actividades.js', ['cpp-core-js', 'cpp-cuaderno-app'], $plugin_version, true);
+    wp_enqueue_script('cpp-sugerencias-js', CPP_PLUGIN_URL . 'assets/js/cpp-sugerencias.js', ['cpp-core-js'], $plugin_version, true);
 
     // Datos para JavaScript
     wp_localize_script('cpp-core-js', 'cppFrontendData', [
@@ -536,6 +537,13 @@ function cpp_run_migrations() {
         $column_exists = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM `$table_evaluaciones` LIKE %s", 'start_evaluacion_id'));
         if (!$column_exists) {
             $wpdb->query("ALTER TABLE `$table_evaluaciones` ADD `start_evaluacion_id` MEDIUMINT(9) UNSIGNED DEFAULT NULL AFTER `start_date`, ADD KEY `start_evaluacion_id` (`start_evaluacion_id`)");
+        }
+    }
+
+    // --- MIGRACIÓN v3.1.0: Crear tablas para Sugerencias y Comunidad ---
+    if (version_compare($current_version, '3.1.0', '<')) {
+        if (function_exists('cpp_crear_tablas')) {
+            cpp_crear_tablas();
         }
     }
 

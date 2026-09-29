@@ -739,6 +739,171 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     border-left: 1px solid #ddd;
 }
 
+/* --- Estilos para Sugerencias y Comunidad --- */
+.cpp-sugerencia-tab-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    text-decoration: none;
+    color: #3c4043;
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+.cpp-sugerencia-tab-link:hover {
+    background-color: #f1f3f4;
+}
+.cpp-sugerencia-tab-link.active {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border-left-color: #1a73e8;
+}
+.cpp-sugerencia-tab-link .dashicons {
+    margin-right: 12px;
+    font-size: 20px;
+}
+
+.cpp-sugerencia-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.cpp-sugerencia-card:hover {
+    border-color: #1a73e8;
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.1);
+}
+
+.cpp-sugerencia-voto-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 54px;
+    padding: 8px 6px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+.cpp-sugerencia-voto-box:hover {
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
+    color: #1a73e8;
+}
+.cpp-sugerencia-voto-box.votado {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+    color: #ffffff;
+}
+.cpp-sugerencia-voto-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+.cpp-sugerencia-voto-count {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.cpp-sugerencia-content-main {
+    flex-grow: 1;
+}
+.cpp-sugerencia-header-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.cpp-sugerencia-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #202124;
+    margin: 0;
+}
+.cpp-sugerencia-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.cpp-badge-estudio { background-color: #e8f0fe; color: #1a73e8; }
+.cpp-badge-planeada { background-color: #fef7e0; color: #b06000; }
+.cpp-badge-desarrollo { background-color: #fce8e6; color: #c5221f; }
+.cpp-badge-implementada { background-color: #e6f4ea; color: #137333; }
+
+.cpp-sugerencia-desc {
+    font-size: 14px;
+    color: #5f6368;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+}
+.cpp-sugerencia-meta {
+    font-size: 12px;
+    color: #80868b;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.cpp-btn-comentarios-trigger {
+    background: none;
+    border: none;
+    color: #1a73e8;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+}
+.cpp-btn-comentarios-trigger:hover {
+    text-decoration: underline;
+}
+
+.cpp-comentarios-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.cpp-comentario-item {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1px solid #e0e0e0;
+}
+.cpp-comentario-item.admin-comment {
+    background-color: #f0f7ff;
+    border-color: #c2e0ff;
+}
+.cpp-comentario-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+.cpp-comentario-texto {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
 /* --- FIN: Rediseño Simplificado Pestañas v4 --- */
 
 /* --- Mejora de Espaciado en Modal de Importación --- */
