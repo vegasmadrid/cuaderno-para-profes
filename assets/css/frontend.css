@@ -359,6 +359,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1;
 }
+.cpp-cuaderno-th-alumno .cpp-btn-icon.active,
 .cpp-cuaderno-th-alumno .cpp-btn-icon:hover {
     background-color: #e8f0fe !important;
     border-color: #d2e3fc !important;
