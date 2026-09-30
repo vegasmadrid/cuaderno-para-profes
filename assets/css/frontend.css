@@ -453,13 +453,16 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 /* Unpinned modifier classes for columns */
-.cpp-cuaderno-tabla.is-unpinned-final .cpp-cuaderno-th-final,
-.cpp-cuaderno-tabla.is-unpinned-final tbody td.cpp-cuaderno-td-final {
+.cpp-cuaderno-tabla.is-unpinned-final .cpp-cuaderno-th-final {
     position: static !important;
     box-shadow: none !important;
 }
 
-.cpp-cuaderno-tabla.is-unpinned-alumno .cpp-cuaderno-th-alumno,
+.cpp-cuaderno-tabla.is-unpinned-final tbody td.cpp-cuaderno-td-final {
+    position: relative !important;
+    box-shadow: none !important;
+}
+
 .cpp-cuaderno-tabla.is-unpinned-alumno tbody td.cpp-cuaderno-td-alumno {
     position: static !important;
     box-shadow: none !important;
