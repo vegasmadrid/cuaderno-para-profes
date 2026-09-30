@@ -857,6 +857,8 @@
 
             $cuadernoContenido.on('click', '#cpp-final-grade-sort-btn', function(e) { self.handleFinalGradeSort.call(self, e); });
             $cuadernoContenido.on('click', '#cpp-final-grade-highlight-btn', function(e) { self.toggleHighlightFailed.call(self, e); });
+            $cuadernoContenido.on('click', '#cpp-final-grade-pin-btn', function(e) { e.preventDefault(); e.stopPropagation(); self.togglePinColumn('final'); });
+            $cuadernoContenido.on('click', '#cpp-a1-pin-alumno-btn', function(e) { e.preventDefault(); e.stopPropagation(); self.togglePinColumn('alumno'); });
 
             $document.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); });
             $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); });
@@ -1313,6 +1315,7 @@
                             }
                             self.clearCellSelection();
                             self.selectionStartCellInput = null;
+                            self.applyPinnedColumnsState();
                             self.updateTableScrollShadows($('.cpp-cuaderno-tabla-wrapper'));
                         } else {
                             let errorMsg = 'Error al cargar el contenido del cuaderno.';
@@ -1478,6 +1481,9 @@
                                 $notaFinalCell.removeAttr('data-missing-categories');
                                 $notaFinalCell.find('.cpp-warning-icon').remove();
                             }
+                            $notaFinalCell.removeClass('cpp-flash-recalc');
+                            void $notaFinalCell[0].offsetWidth; // trigger reflow
+                            $notaFinalCell.addClass('cpp-flash-recalc');
                         }
                         let displayNota = notaStr;
                         const numMatch = notaStr.match(/^[0-9,.]*$/);
@@ -1590,6 +1596,44 @@
             } else {
                 $rows.removeClass('cpp-fila-suspenso');
             }
+        },
+
+        togglePinColumn: function(colType) {
+            const storageKey = colType === 'final' ? 'cpp_pin_nota_final' : 'cpp_pin_alumno';
+            let isPinned = true;
+            if (typeof localStorage !== 'undefined') {
+                const storedVal = localStorage.getItem(storageKey);
+                if (storedVal !== null) {
+                    isPinned = storedVal === 'true';
+                }
+            }
+            const newPinned = !isPinned;
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(storageKey, newPinned ? 'true' : 'false');
+            }
+            this.applyPinnedColumnsState();
+        },
+
+        applyPinnedColumnsState: function() {
+            const $tabla = $('.cpp-cuaderno-tabla');
+            if (!$tabla.length) return;
+
+            let isFinalPinned = true;
+            let isAlumnoPinned = true;
+
+            if (typeof localStorage !== 'undefined') {
+                const storedFinal = localStorage.getItem('cpp_pin_nota_final');
+                if (storedFinal !== null) isFinalPinned = storedFinal === 'true';
+
+                const storedAlumno = localStorage.getItem('cpp_pin_alumno');
+                if (storedAlumno !== null) isAlumnoPinned = storedAlumno === 'true';
+            }
+
+            $tabla.toggleClass('is-unpinned-final', !isFinalPinned);
+            $('#cpp-final-grade-pin-btn').toggleClass('active', isFinalPinned);
+
+            $tabla.toggleClass('is-unpinned-alumno', !isAlumnoPinned);
+            $('#cpp-a1-pin-alumno-btn').toggleClass('active', isAlumnoPinned);
         },
 
         handleMainTabSwitch: function($tab) {

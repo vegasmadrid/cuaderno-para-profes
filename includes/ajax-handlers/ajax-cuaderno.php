@@ -131,6 +131,9 @@ function cpp_ajax_cargar_cuaderno_clase() {
                     <th class="cpp-cuaderno-th-alumno">
                         <div class="cpp-a1-controls-container">
                             <div class="cpp-a1-row cpp-a1-row-top">
+                                <button class="cpp-btn-icon active" id="cpp-a1-pin-alumno-btn" title="Fijar/Desfijar columna Alumnos">
+                                    <svg class="cpp-icon-pin" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
+                                </button>
                                 <button class="cpp-btn-icon" id="cpp-a1-sort-students-btn" title="Ordenar Alumnos" data-sort="<?php echo esc_attr($sort_order); ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
                                 </button>
@@ -221,6 +224,9 @@ function cpp_ajax_cargar_cuaderno_clase() {
                             </button>
                              <button class="cpp-btn-icon" id="cpp-final-grade-highlight-btn" title="Destacar Alumnos Suspensos">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                            </button>
+                            <button class="cpp-btn-icon active" id="cpp-final-grade-pin-btn" title="Fijar/Desfijar columna Nota Final">
+                                <svg class="cpp-icon-pin" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>
                             </button>
                         </div>
                     </th>
