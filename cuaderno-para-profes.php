@@ -3,14 +3,14 @@
 /*
 Plugin Name: Cuaderno de profe
 Description: Gestión de clases y alumnos completamente desde el frontend.
-Version: 3.1.5
+Version: 3.1.6
 Author: Javier Vegas Serrano
 */
 
 defined('ABSPATH') or die('Acceso no permitido');
 
 // --- VERSIÓN ACTUALIZADA PARA LA NUEVA MIGRACIÓN ---
-define('CPP_VERSION', '3.1.5');
+define('CPP_VERSION', '3.1.6');
 
 // Constantes
 define('CPP_PLUGIN_DIR', plugin_dir_path(__FILE__));

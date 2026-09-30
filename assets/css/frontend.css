@@ -463,6 +463,7 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
     box-shadow: none !important;
 }
 
+.cpp-cuaderno-tabla.is-unpinned-alumno .cpp-cuaderno-th-alumno,
 .cpp-cuaderno-tabla.is-unpinned-alumno tbody td.cpp-cuaderno-td-alumno {
     position: static !important;
     box-shadow: none !important;
