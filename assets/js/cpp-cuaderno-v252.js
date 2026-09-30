@@ -855,10 +855,10 @@
                 }
             });
 
-            $cuadernoContenido.on('click', '#cpp-final-grade-sort-btn', function(e) { self.handleFinalGradeSort.call(self, e); });
-            $cuadernoContenido.on('click', '#cpp-final-grade-highlight-btn', function(e) { self.toggleHighlightFailed.call(self, e); });
-            $cuadernoContenido.on('click', '#cpp-final-grade-pin-btn', function(e) { e.preventDefault(); e.stopPropagation(); self.togglePinColumn('final'); });
-            $cuadernoContenido.on('click', '#cpp-a1-pin-alumno-btn', function(e) { e.preventDefault(); e.stopPropagation(); self.togglePinColumn('alumno'); });
+            $document.on('click', '#cpp-final-grade-sort-btn', function(e) { self.handleFinalGradeSort.call(self, e); });
+            $document.on('click', '#cpp-final-grade-highlight-btn', function(e) { self.toggleHighlightFailed.call(self, e); });
+            $document.on('click', '#cpp-final-grade-pin-btn', function(e) { e.preventDefault(); e.stopPropagation(); self.togglePinColumn('final'); });
+            $document.on('click', '#cpp-a1-pin-alumno-btn', function(e) { e.preventDefault(); e.stopPropagation(); self.togglePinColumn('alumno'); });
 
             $document.on('keydown', '.cpp-input-nota', function(e) { self.manejarNavegacionTablaNotas.call(this, e); });
             $cuadernoContenido.on('blur', '.cpp-input-nota', function(e) { self.guardarNotaDesdeInput.call(this, e, null); });

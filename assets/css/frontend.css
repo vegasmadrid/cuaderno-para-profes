@@ -196,21 +196,21 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
 /* Área y Contenido del Cuaderno */
 #cpp-cuaderno-tabla-area {
     flex-grow: 1; display: flex; flex-direction: column;
-    min-height: 0; background-color: #fff;
+    min-height: 0; min-width: 0; width: 100%; max-width: 100%;
+    overflow: hidden; background-color: #fff;
 }
 #cpp-cuaderno-contenido {
     display: flex; flex-direction: column; flex-grow: 1;
-    min-height: 0;
+    min-height: 0; min-width: 0; width: 100%; max-width: 100%;
+    overflow: hidden;
 }
 
-/* Anulación específica para la pestaña Cuaderno para permitir 'position: sticky' */
-#cpp-main-tab-cuaderno.active #cpp-cuaderno-contenido {
-    overflow: visible;
-}
 .cpp-cuaderno-tabla-wrapper {
-    flex-grow: 1; min-height: 0; 
+    flex-grow: 1; min-height: 0; min-width: 0; width: 100%; max-width: 100%;
     position: relative; background-color: #fff; border: none;
     cursor: default;
+    overflow-x: auto;
+    overflow-y: auto;
 }
 .cpp-cuaderno-mensaje-vacio, .cpp-cuaderno-cargando, .cpp-welcome-screen {
     display: flex;
@@ -359,6 +359,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1;
 }
+.cpp-cuaderno-th-alumno .cpp-btn-icon.active,
 .cpp-cuaderno-th-alumno .cpp-btn-icon:hover {
     background-color: #e8f0fe !important;
     border-color: #d2e3fc !important;
@@ -452,9 +453,13 @@ tr.alumno-suspenso > td { background-color: #fce8e6 !important; }
 }
 
 /* Unpinned modifier classes for columns */
-.cpp-cuaderno-tabla.is-unpinned-final .cpp-cuaderno-th-final,
-.cpp-cuaderno-tabla.is-unpinned-final tbody td.cpp-cuaderno-td-final {
+.cpp-cuaderno-tabla.is-unpinned-final .cpp-cuaderno-th-final {
     position: static !important;
+    box-shadow: none !important;
+}
+
+.cpp-cuaderno-tabla.is-unpinned-final tbody td.cpp-cuaderno-td-final {
+    position: relative !important;
     box-shadow: none !important;
 }
 
@@ -2587,6 +2592,11 @@ body.cpp-no-text-select {
 /* Contenedor principal de los contenidos de las pestañas */
 .cpp-main-tabs-content {
     flex-grow: 1;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     background-color: #fff;
@@ -2597,28 +2607,39 @@ body.cpp-no-text-select {
 .cpp-main-tab-content {
     display: none;
     height: 100%;
+    min-width: 0;
+    width: 100%;
 }
 
 .cpp-main-tab-content.active {
     display: flex; /* Usar flex para que el contenido se expanda */
     flex-direction: column;
     flex-grow: 1; /* Para que ocupe el espacio disponible */
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 /* Ajustes para que el programador y el cuaderno encajen bien */
 #cpp-main-tab-programador, #cpp-main-tab-cuaderno, #cpp-main-tab-alumnos {
-    /* padding: 20px; */ /* Eliminado para que el contenido se ajuste al borde */
     padding: 0;
 }
 
 #cpp-main-tab-programador, #cpp-main-tab-cuaderno {
-    padding: 0; /* Anula el padding para estos dos que lo gestionan internamente */
+    padding: 0;
 }
 
 #cpp-programador-app, #cpp-cuaderno-tabla-area {
-    height: 92%;
+    flex-grow: 1;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 /* --- Estilos para el Modal de Configuración de Nota Final (Toggle Switches) --- */
