@@ -247,7 +247,7 @@ li.cpp-sidebar-clase-item.cpp-sidebar-item-active .cpp-sidebar-clase-settings-bt
 
 /* Tabla Principal del Cuaderno */
 .cpp-cuaderno-tabla {
-    min-width: min-content; border-collapse: collapse;
+    min-width: min-content; border-collapse: separate;
     font-size: 14px; table-layout: fixed; border-spacing: 0;
 }
 .cpp-cuaderno-tabla th,
