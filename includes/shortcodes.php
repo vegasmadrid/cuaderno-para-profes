@@ -629,23 +629,23 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                 </div>
                 <div class="cpp-top-bar-right">
                     <div class="cpp-tabs-general">
-                        <button class="cpp-main-tab-link" data-tab="actividades">
+                        <button class="cpp-main-tab-link" data-tab="actividades" title="Actividades">
                             <span class="dashicons dashicons-clipboard"></span>
                             <span class="tab-label">Actividades</span>
                         </button>
-                        <button class="cpp-main-tab-link" data-tab="semana">
+                        <button class="cpp-main-tab-link" data-tab="semana" title="Semana">
                             <span class="dashicons dashicons-calendar-alt"></span>
                             <span class="tab-label">Semana</span>
                         </button>
-                        <button class="cpp-main-tab-link" data-tab="horario">
+                        <button class="cpp-main-tab-link" data-tab="horario" title="Horario">
                             <span class="dashicons dashicons-clock"></span>
                             <span class="tab-label">Horario</span>
                         </button>
-                        <button class="cpp-main-tab-link" data-tab="alumnos">
+                        <button class="cpp-main-tab-link" data-tab="alumnos" title="Alumnos">
                             <span class="dashicons dashicons-groups"></span>
                             <span class="tab-label">Alumnos</span>
                         </button>
-                        <button class="cpp-main-tab-link" data-tab="resumen">
+                        <button class="cpp-main-tab-link" data-tab="resumen" title="Resumen">
                             <span class="dashicons dashicons-chart-bar"></span>
                             <span class="tab-label">Resumen</span>
                         </button>

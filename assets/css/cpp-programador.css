@@ -598,6 +598,45 @@ td.cpp-semana-td-hora {
     color: #3c4043;
 }
 
+/* ==========================================================================
+   RESPONSIVE DESIGN & TABLET OPTIMIZATIONS (PROGRAMADOR & SEMANA)
+   ========================================================================== */
+
+@media screen and (max-width: 900px) {
+    .cpp-programacion-left-col {
+        width: 320px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .cpp-programacion-layout {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+    }
+
+    .cpp-programacion-left-col {
+        width: 100% !important;
+        max-height: 350px;
+    }
+
+    .cpp-programacion-right-col {
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 1px solid #e0e0e0 !important;
+        padding-left: 0 !important;
+        padding-top: 20px !important;
+    }
+
+    .cpp-semana-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cpp-semana-table {
+        min-width: 650px !important;
+    }
+}
+
 .cpp-semana-today {
     background-color: #e8f0fe;
 }
