@@ -3407,8 +3407,8 @@ body.admin-bar #cpp-main-loader {
    RESPONSIVE DESIGN & TABLET OPTIMIZATIONS (TOP BAR & MODULES)
    ========================================================================== */
 
-/* 1. Medium screens and tablets (Max width: 1024px) */
-@media screen and (max-width: 1024px) {
+/* 1. Large tablets and laptops (Max width: 1250px) */
+@media screen and (max-width: 1250px) {
     /* Hide text labels in general top bar tabs, keeping only icons with tooltips */
     .cpp-tabs-general .cpp-main-tab-link .tab-label {
         display: none !important;
@@ -3442,8 +3442,8 @@ body.admin-bar #cpp-main-loader {
     }
 }
 
-/* 2. Tablet portrait & small screens (Max width: 900px) */
-@media screen and (max-width: 900px) {
+/* 2. Tablets and smaller screens (Max width: 1150px) */
+@media screen and (max-width: 1150px) {
     /* Transform top bar into 2 compact rows when horizontal space is limited */
     .cpp-fixed-top-bar {
         height: auto !important;
