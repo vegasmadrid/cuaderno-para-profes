@@ -3402,3 +3402,210 @@ body.admin-bar #cpp-main-loader {
     background: #fce8e6;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN & TABLET OPTIMIZATIONS (TOP BAR & MODULES)
+   ========================================================================== */
+
+/* 1. Large tablets and laptops (Max width: 1250px) */
+@media screen and (max-width: 1250px) {
+    /* Hide text labels in general top bar tabs, keeping only icons with tooltips */
+    .cpp-tabs-general .cpp-main-tab-link .tab-label {
+        display: none !important;
+    }
+
+    .cpp-tabs-general .cpp-main-tab-link {
+        min-width: 38px !important;
+        padding: 4px 6px !important;
+        gap: 0 !important;
+    }
+
+    .cpp-tabs-general {
+        gap: 2px !important;
+        margin-right: 4px !important;
+    }
+
+    .cpp-top-bar-selector-container {
+        margin-left: 10px !important;
+    }
+
+    #cpp-evaluacion-selector {
+        max-width: 130px !important;
+        text-overflow: ellipsis;
+    }
+
+    .cpp-top-bar-class-name {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* 2. Tablets and smaller screens (Max width: 1150px) */
+@media screen and (max-width: 1150px) {
+    /* Transform top bar into 2 compact rows when horizontal space is limited */
+    .cpp-fixed-top-bar {
+        height: auto !important;
+        min-height: 48px;
+        flex-wrap: wrap !important;
+        padding: 0 !important;
+    }
+
+    .cpp-top-bar-left {
+        flex: 1 1 auto !important;
+        height: 44px !important;
+        padding-left: 10px;
+        padding-right: 5px;
+    }
+
+    .cpp-top-bar-center.cpp-tabs-clase-specific {
+        flex: 0 0 auto !important;
+        height: 44px !important;
+        padding-right: 10px;
+    }
+
+    .cpp-top-bar-right {
+        flex: 1 0 100% !important;
+        height: 42px !important;
+        border-left: none !important;
+        border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+        background-color: #f8f9fa !important;
+        justify-content: space-between !important;
+        padding: 0 10px !important;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    }
+
+    .cpp-tabs-general {
+        flex-grow: 1;
+        justify-content: space-around;
+        margin-right: 0 !important;
+    }
+
+    .cpp-tabs-general .cpp-main-tab-link {
+        height: 36px !important;
+        min-width: 36px !important;
+        padding: 4px !important;
+        border-radius: 6px !important;
+    }
+
+    .cpp-user-menu-container {
+        margin-left: 6px !important;
+    }
+
+    .cpp-user-menu-avatar-btn {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    /* Fullscreen settings headers responsive adaptivity */
+    .cpp-fullscreen-settings-header {
+        flex-wrap: wrap;
+        gap: 10px;
+        height: auto !important;
+        min-height: 50px;
+        padding: 10px 15px !important;
+    }
+
+    #cpp-actividades-top-bar-actions {
+        flex-wrap: wrap;
+        gap: 8px !important;
+        margin-left: 0 !important;
+        width: 100%;
+        justify-content: flex-start;
+        padding-top: 5px;
+    }
+
+    #cpp-actividades-top-bar-actions .cpp-filter-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    #cpp-semana-header-nav {
+        position: static !important;
+        transform: none !important;
+        margin: 0 auto;
+    }
+
+    #cpp-semana-top-bar-actions {
+        margin-left: auto !important;
+    }
+}
+
+/* 3. Small Tablets and Mobile (Max width: 768px) */
+@media screen and (max-width: 768px) {
+    /* Responsive config settings container */
+    .cpp-config-container {
+        flex-direction: column !important;
+        height: auto !important;
+    }
+
+    .cpp-config-sidebar {
+        width: 100% !important;
+        border-right: none !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+        padding: 10px 0 !important;
+        display: flex !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+    }
+
+    .cpp-config-tab-link {
+        padding: 8px 16px !important;
+        border-left: none !important;
+        border-bottom: 3px solid transparent !important;
+        flex-shrink: 0;
+    }
+
+    .cpp-config-tab-link.active {
+        border-left-color: transparent !important;
+        border-bottom-color: #1a73e8 !important;
+    }
+
+    .cpp-config-tab-link .dashicons {
+        margin-right: 8px !important;
+    }
+
+    .cpp-config-content-area {
+        padding: 15px !important;
+    }
+
+    /* Modal dialogs responsiveness */
+    .cpp-modal-content {
+        width: 92% !important;
+        max-width: 100% !important;
+        padding: 18px !important;
+        margin: 5% auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Form actions responsive wrap */
+    .cpp-modal-actions, .cpp-config-actions {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .cpp-modal-actions button, .cpp-config-actions button {
+        flex: 1 1 auto;
+        min-height: 40px;
+    }
+}
+
+/* 4. Small screens (Max width: 600px) */
+@media screen and (max-width: 600px) {
+    #cpp-cuaderno-nombre-clase-activa-a1.cpp-top-bar-class-name {
+        font-size: 15px !important;
+        max-width: 110px !important;
+    }
+
+    .cpp-tabs-clase-specific .cpp-main-tab-link {
+        padding: 4px 10px !important;
+        font-size: 13px !important;
+    }
+
+    #cpp-evaluacion-selector {
+        font-size: 12px !important;
+        padding: 4px 6px !important;
+    }
+}

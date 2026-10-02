@@ -778,3 +778,27 @@
 .cpp-toolbar-select:hover {
     border-color: #adb5bd;
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN & TABLET OPTIMIZATIONS (ALUMNOS TAB)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    .cpp-alumnos-view-container {
+        flex-direction: column !important;
+        height: auto !important;
+    }
+
+    .cpp-alumnos-view-sidebar {
+        width: 100% !important;
+        max-height: 280px;
+        border-right: none !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+        overflow-y: auto;
+    }
+
+    .cpp-alumnos-view-content {
+        width: 100% !important;
+        padding: 15px !important;
+    }
+}
