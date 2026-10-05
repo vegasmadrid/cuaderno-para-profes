@@ -686,12 +686,14 @@ td.cpp-semana-td-hora {
     transform: scale(1.1);
 }
 
-/* --- Resaltado Cabecera del Día Actual (Propuesta A) --- */
+/* --- Resaltado Cabecera del Día Actual & Estructura Organizada --- */
 .cpp-semana-th-dia {
-    padding: 10px 6px !important;
+    padding: 12px 8px !important;
     vertical-align: top;
     text-align: center;
     border-bottom: 2px solid #e8eaed;
+    border-radius: 8px 8px 0 0;
+    background-color: #fcfdfe;
     transition: all 0.2s ease;
 }
 
@@ -699,14 +701,16 @@ td.cpp-semana-td-hora {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
+    min-height: 82px;
     gap: 4px;
 }
 
 .cpp-semana-day-title {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     color: #5f6368;
 }
 
@@ -714,16 +718,18 @@ td.cpp-semana-td-hora {
     font-size: 13px;
     font-weight: 500;
     color: #3c4043;
-    padding: 2px 8px;
+    padding: 2px 10px;
     border-radius: 12px;
+    background-color: #f1f3f4;
     display: inline-block;
 }
 
 .cpp-semana-th-dia.cpp-semana-today {
-    background-color: rgba(26, 115, 232, 0.06) !important;
+    background-color: rgba(26, 115, 232, 0.08) !important;
     border-top: 4px solid #1a73e8 !important;
-    border-radius: 0 !important;
+    border-radius: 8px 8px 0 0 !important;
     border-bottom-color: #1a73e8 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
 .cpp-semana-th-dia.cpp-semana-today .cpp-semana-day-title {
@@ -735,8 +741,8 @@ td.cpp-semana-td-hora {
     background-color: #1a73e8 !important;
     color: #ffffff !important;
     font-weight: 700 !important;
-    box-shadow: 0 2px 5px rgba(26,115,232,0.35);
-    padding: 3px 10px !important;
+    box-shadow: 0 2px 6px rgba(26,115,232,0.35);
+    padding: 3px 12px !important;
 }
 
 .cpp-semana-today-label {
@@ -745,10 +751,9 @@ td.cpp-semana-td-hora {
     color: #1a73e8;
     background-color: #e8f0fe;
     border: 1px solid #d2e3fc;
-    padding: 1px 6px;
-    border-radius: 4px;
+    padding: 1px 8px;
+    border-radius: 10px;
     letter-spacing: 0.5px;
-    margin-top: 2px;
 }
 
 .cpp-semana-class-summary {
@@ -756,9 +761,8 @@ td.cpp-semana-td-hora {
     color: #5f6368;
     background-color: #f1f3f4;
     border-radius: 10px;
-    padding: 1px 8px;
+    padding: 2px 10px;
     font-weight: 500;
-    margin-top: 2px;
     display: inline-block;
 }
 
@@ -766,10 +770,11 @@ td.cpp-semana-td-hora {
     background-color: #e8f0fe;
     color: #1967d2;
     font-weight: 600;
+    border: 1px solid #d2e3fc;
 }
 
 td.cpp-semana-today {
-    background-color: rgba(26, 115, 232, 0.025) !important;
+    background-color: rgba(26, 115, 232, 0.02) !important;
     border-left: 1px solid rgba(26, 115, 232, 0.12) !important;
     border-right: 1px solid rgba(26, 115, 232, 0.12) !important;
 }
