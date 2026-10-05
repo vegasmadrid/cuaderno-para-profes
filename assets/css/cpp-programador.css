@@ -722,7 +722,7 @@ td.cpp-semana-td-hora {
 .cpp-semana-th-dia.cpp-semana-today {
     background-color: rgba(26, 115, 232, 0.06) !important;
     border-top: 4px solid #1a73e8 !important;
-    border-radius: 8px 8px 0 0;
+    border-radius: 0 !important;
     border-bottom-color: #1a73e8 !important;
 }
 
