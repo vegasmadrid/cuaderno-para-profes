@@ -50,14 +50,23 @@ function cpp_shortcode_cuaderno_notas_classroom() {
                     <span class="dashicons dashicons-arrow-left-alt"></span>
                 </button>
                 <h2 id="cpp-fullscreen-tab-title"></h2>
-                <div id="cpp-semana-header-nav" style="display: none; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%);">
-                    <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
-                        <span class="dashicons dashicons-arrow-left-alt2"></span>
+                <div id="cpp-semana-header-nav" style="display: none; align-items: center; gap: 12px; position: absolute; left: 50%; transform: translateX(-50%);">
+                    <button class="cpp-btn cpp-semana-today-btn" title="Ir al día de hoy">
+                        <span class="dashicons dashicons-calendar-alt"></span> Hoy
                     </button>
-                    <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
-                    <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
-                        <span class="dashicons dashicons-arrow-right-alt2"></span>
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
+                            <span class="dashicons dashicons-arrow-left-alt2"></span>
+                        </button>
+                        <div class="cpp-semana-date-trigger-wrapper" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="Haga clic para elegir fecha">
+                            <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
+                            <span class="dashicons dashicons-calendar-alt cpp-semana-datepicker-icon" style="color: #1a73e8; font-size: 18px; width: 18px; height: 18px; opacity: 0.8;"></span>
+                            <input type="date" id="cpp-semana-datepicker" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;">
+                        </div>
+                        <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
+                            <span class="dashicons dashicons-arrow-right-alt2"></span>
+                        </button>
+                    </div>
                 </div>
                 <div id="cpp-semana-top-bar-actions" style="display: none; margin-left: auto; display: flex; gap: 10px;">
                     <button id="cpp-share-week-btn" class="cpp-btn cpp-btn-pdf">
@@ -1320,14 +1329,23 @@ function cpp_shortcode_semana_compartida() {
                         <?php endif; ?>
                     </a>
                 </div>
-                <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
-                    <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
-                        <span class="dashicons dashicons-arrow-left-alt2"></span>
+                <div id="cpp-semana-header-nav" style="display: flex; align-items: center; gap: 12px; position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
+                    <button class="cpp-btn cpp-semana-today-btn" title="Ir al día de hoy">
+                        <span class="dashicons dashicons-calendar-alt"></span> Hoy
                     </button>
-                    <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
-                    <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
-                        <span class="dashicons dashicons-arrow-right-alt2"></span>
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button class="cpp-btn-icon cpp-semana-prev-btn" title="Semana Anterior">
+                            <span class="dashicons dashicons-arrow-left-alt2"></span>
+                        </button>
+                        <div class="cpp-semana-date-trigger-wrapper" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="Haga clic para elegir fecha">
+                            <h2 id="cpp-semana-header-date" style="margin: 0; font-size: 20px; font-weight: 500; color: #3c4043;"></h2>
+                            <span class="dashicons dashicons-calendar-alt cpp-semana-datepicker-icon" style="color: #1a73e8; font-size: 18px; width: 18px; height: 18px; opacity: 0.8;"></span>
+                            <input type="date" id="cpp-semana-datepicker-shared" style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;">
+                        </div>
+                        <button class="cpp-btn-icon cpp-semana-next-btn" title="Siguiente Semana">
+                            <span class="dashicons dashicons-arrow-right-alt2"></span>
+                        </button>
+                    </div>
                 </div>
                 <div id="cpp-semana-top-bar-actions" style="display: block; margin-left: auto;">
                     <button id="cpp-download-pdf-btn" class="cpp-btn cpp-btn-pdf">
