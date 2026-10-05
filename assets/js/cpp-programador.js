@@ -191,6 +191,39 @@
         });
         $document.on('click', 'body .cpp-semana-prev-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() - 7); self.renderSemanaTab('prev'); });
         $document.on('click', 'body .cpp-semana-next-btn', () => { self.semanaDate.setDate(self.semanaDate.getDate() + 7); self.renderSemanaTab('next'); });
+        $document.on('click', 'body .cpp-semana-today-btn', () => {
+            const today = new Date();
+            const currentWeekDates = self.getWeekDates(today);
+            const viewedWeekDates = self.getWeekDates(self.semanaDate);
+            if (viewedWeekDates[0].toISOString().slice(0, 10) !== currentWeekDates[0].toISOString().slice(0, 10)) {
+                const direction = today < self.semanaDate ? 'prev' : 'next';
+                self.semanaDate = new Date();
+                self.renderSemanaTab(direction);
+            }
+        });
+        $document.on('click', 'body .cpp-semana-date-trigger-wrapper', function(e) {
+            if (e.target.tagName === 'INPUT') return;
+            const $datepicker = $(this).find('input[type="date"]')[0];
+            if ($datepicker) {
+                if (typeof $datepicker.showPicker === 'function') {
+                    $datepicker.showPicker();
+                } else {
+                    $datepicker.focus();
+                    $datepicker.click();
+                }
+            }
+        });
+        $document.on('change', 'body #cpp-semana-datepicker, body #cpp-semana-datepicker-shared', function() {
+            const val = this.value;
+            if (val) {
+                const targetDate = new Date(val + 'T12:00:00');
+                if (!isNaN(targetDate.getTime())) {
+                    const direction = targetDate > self.semanaDate ? 'next' : 'prev';
+                    self.semanaDate = targetDate;
+                    self.renderSemanaTab(direction);
+                }
+            }
+        });
         $document.on('change', 'body #cpp-start-type-selector', function() { self.handleStartTypeChange(this.value); });
         $document.on('change', 'body #cpp-start-date-selector', function() { self.saveStartDate(); });
         $document.on('change', 'body #cpp-start-eval-selector', function() { self.saveStartDate(); });
@@ -2848,13 +2881,33 @@
 
         const today = new Date();
         const todayYMD = today.toISOString().slice(0, 10);
+        const currentTimeVal = today.getHours() * 60 + today.getMinutes();
+
+        // Actualizar estado del botón "Hoy"
+        const currentWeekDates = this.getWeekDates(today);
+        const isCurrentWeek = weekDates[0].toISOString().slice(0, 10) === currentWeekDates[0].toISOString().slice(0, 10);
+        const $todayBtns = document.querySelectorAll('.cpp-semana-today-btn');
+        $todayBtns.forEach(btn => {
+            if (isCurrentWeek) {
+                btn.setAttribute('disabled', 'disabled');
+                btn.classList.add('is-disabled');
+            } else {
+                btn.removeAttribute('disabled');
+                btn.classList.remove('is-disabled');
+            }
+        });
+
+        // Sincronizar el valor de los pickers de fecha con el inicio de semana
+        const $datepickers = document.querySelectorAll('#cpp-semana-datepicker, #cpp-semana-datepicker-shared');
+        $datepickers.forEach(dp => {
+            dp.value = weekDates[0].toISOString().slice(0, 10);
+        });
 
         // Actualizar el título de la semana en la barra superior
         const $headerDate = document.getElementById('cpp-semana-header-date');
         if ($headerDate) {
             const weekTitle = `Semana del ${weekDates[0].toLocaleDateString('es-ES', {day:'numeric', month:'long'})}`;
 
-            // Si estamos en vista pública y tenemos información del profesor
             if (window.isCppSharedView && this.share_info && this.share_info.user_name) {
                 $headerDate.innerHTML = `${weekTitle}<br><small style="font-size: 14px; font-weight: normal; color: #5f6368;">Programación de ${this.share_info.user_name}</small>`;
             } else {
@@ -2869,9 +2922,26 @@
         Object.keys(daysToRender).forEach((dayKey) => {
             const date = weekDates.find(d => this.getDayKey(d) === dayKey);
             if(date) {
-                const isToday = date.toISOString().slice(0, 10) === todayYMD;
+                const ymd = date.toISOString().slice(0, 10);
+                const isToday = ymd === todayYMD;
                 const todayClass = isToday ? 'cpp-semana-today' : '';
-                tableHTML += `<th class="cpp-semana-th-dia ${todayClass}">${daysToRender[dayKey]}<br><small>${date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'})}</small></th>`;
+
+                const dayEvents = schedule.filter(e => e.fecha.toISOString().slice(0, 10) === ymd);
+                const classCount = dayEvents.length;
+                const classCountText = classCount === 0 ? 'Sin clases' : (classCount === 1 ? '1 clase' : `${classCount} clases`);
+
+                const formattedDate = date.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit'});
+                const dateBadgeHTML = isToday
+                    ? `<span class="cpp-semana-date-badge cpp-today-pill">${formattedDate}</span><span class="cpp-semana-today-label">HOY</span>`
+                    : `<span class="cpp-semana-date-badge">${formattedDate}</span>`;
+
+                tableHTML += `<th class="cpp-semana-th-dia ${todayClass}">
+                    <div class="cpp-semana-day-header-content">
+                        <span class="cpp-semana-day-title">${daysToRender[dayKey]}</span>
+                        ${dateBadgeHTML}
+                        <span class="cpp-semana-class-summary">${classCountText}</span>
+                    </div>
+                </th>`;
                 renderedHeaders.push({dayKey: dayKey, isToday: isToday});
             }
         });
@@ -2885,6 +2955,23 @@
                 const date = weekDates.find(d => this.getDayKey(d) === dayKey);
                 const ymd = date.toISOString().slice(0, 10);
 
+                let isCurrentSlot = false;
+                if (header.isToday) {
+                    const slotStartMin = this.parseSlotMinutes(slot);
+                    if (slotStartMin !== null) {
+                        let slotEndMin = null;
+                        if (slotIndex < this.config.time_slots.length - 1) {
+                            slotEndMin = this.parseSlotMinutes(this.config.time_slots[slotIndex + 1]);
+                        }
+                        if (!slotEndMin || slotEndMin <= slotStartMin) {
+                            slotEndMin = slotStartMin + 55;
+                        }
+                        if (currentTimeVal >= slotStartMin && currentTimeVal < slotEndMin) {
+                            isCurrentSlot = true;
+                        }
+                    }
+                }
+
                 const holiday = calendarConfig.holidays.find(h => (typeof h === 'string' ? h === ymd : h.date === ymd));
                 const vacation = calendarConfig.vacations.find(v => ymd >= v.start && ymd <= v.end);
 
@@ -2897,7 +2984,6 @@
                         else if (nameLen > 25) fontSize = '1.3rem';
                         else if (nameLen > 15) fontSize = '1.7rem';
 
-                        // Split name into spans for vertical distribution via flexbox
                         const splitNameHTML = name.split('').map(char => `<span>${this.escapeHtml(char === ' ' ? '\u00A0' : char)}</span>`).join('');
 
                         tableHTML += `<td class="${todayClass} cpp-semana-holiday-cell" rowspan="${this.config.time_slots.length}">
@@ -2931,11 +3017,15 @@
                                 </ul>`;
                             }
                             const clickableClass = window.isCppSharedView ? 'cpp-semana-slot-non-clickable' : 'cpp-semana-slot';
-                            cellContent += `<div class="${clickableClass}"
+                            const slotNowClass = isCurrentSlot ? 'cpp-semana-slot-now' : '';
+                            const nowBadgeHTML = isCurrentSlot ? `<div class="cpp-semana-now-badge">⏱️ En curso</div>` : '';
+
+                            cellContent += `<div class="${clickableClass} ${slotNowClass}"
                                                  data-sesion-id="${evento.sesion.id}"
                                                  data-clase-id="${evento.sesion.clase_id}"
                                                  data-evaluacion-id="${evento.sesion.evaluacion_id}"
                                                  style="border-left-color: ${clase.color} !important;">
+                                ${nowBadgeHTML}
                                 <strong>${clase.nombre}</strong>
                                 <p>${simboloHTML} ${fijadaIconHTML} ${evento.sesion.titulo}</p>
                                 ${evento.notas ? `<p class="cpp-semana-notas-horario">${evento.notas.replace(/\n/g, '<br>')}</p>` : ''}
@@ -2968,6 +3058,14 @@
         }
 
         content.innerHTML = tableHTML;
+    },
+    parseSlotMinutes(slotStr) {
+        if (!slotStr) return null;
+        const parts = slotStr.split('-')[0].trim().split(':');
+        if (parts.length >= 2) {
+            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        }
+        return null;
     },
     getWeekDates(d) {
         const date = new Date(d.getTime());
