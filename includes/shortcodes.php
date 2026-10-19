@@ -957,6 +957,31 @@ function cpp_shortcode_cuaderno_notas_classroom() {
             do_action('cpp_modal_clases_archivadas_outputted');
         }
 
+        // Modal para Clonar Ponderaciones y Reasignar Criterios de Actividades
+        if (empty(did_action('cpp_modal_clonar_ponderaciones_remap_outputted'))) {
+            ?>
+            <div class="cpp-modal" id="cpp-modal-clonar-ponderaciones-remap" style="display:none;">
+                <div class="cpp-modal-content" style="max-width: 600px;">
+                    <span class="cpp-modal-close">&times;</span>
+                    <h2>Reasignación de Criterios para Actividades</h2>
+                    <p style="margin-bottom: 15px; color: #555; font-size: 14px;">
+                        Esta evaluación contiene actividades con criterios asignados. Selecciona a qué nuevo criterio deseas reasignar las actividades de cada criterio actual:
+                    </p>
+                    <div id="cpp-clonar-remap-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                        <!-- Se poblará dinámicamente mediante JavaScript -->
+                    </div>
+                    <div class="cpp-modal-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="cpp-btn cpp-btn-secondary cpp-modal-close" id="cpp-btn-cancel-clonar-remap">Cancelar</button>
+                        <button type="button" class="cpp-btn cpp-btn-primary" id="cpp-btn-confirm-clonar-remap">
+                            <span class="dashicons dashicons-saved"></span> Confirmar y Clonar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <?php
+            do_action('cpp_modal_clonar_ponderaciones_remap_outputted');
+        }
+
         // --- Modal para Crear/Editar Clase (Consolidado) ---
         if (empty(did_action('cpp_modal_clase_outputted'))) {
         ?>

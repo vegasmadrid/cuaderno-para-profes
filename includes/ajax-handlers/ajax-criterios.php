@@ -93,7 +93,15 @@ function cpp_ajax_obtener_criterios_evaluacion() {
     });
 
     global $wpdb;
-    $metodo_calculo = $wpdb->get_var($wpdb->prepare("SELECT calculo_nota FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id, $user_id));
+    $eval_row = $wpdb->get_row($wpdb->prepare("SELECT clase_id, calculo_nota FROM {$wpdb->prefix}cpp_evaluaciones WHERE id = %d AND user_id = %d", $evaluacion_id, $user_id));
+    $metodo_calculo = $eval_row ? $eval_row->calculo_nota : 'total';
+    $clase_actual_id = $eval_row ? intval($eval_row->clase_id) : 0;
+
+    $clases_importar = cpp_obtener_clases_para_importar_evaluaciones(0, $user_id);
+    $clases_activas = isset($clases_importar['activas']) ? $clases_importar['activas'] : [];
+    $clases_archivadas = isset($clases_importar['archivadas']) ? $clases_importar['archivadas'] : [];
+
+    $evaluaciones_clase_actual = cpp_obtener_evaluaciones_por_clase($clase_actual_id, $user_id);
 
     ob_start();
     ?>
@@ -167,6 +175,59 @@ function cpp_ajax_obtener_criterios_evaluacion() {
                 <button type="button" class="cpp-btn cpp-btn-secondary" id="cpp-btn-asignar-criterio-eval">Asignar</button>
             </div>
             <p class="description">Si no encuentras el criterio, créalo primero en la pestaña <strong>Configuración > Criterios Globales</strong>.</p>
+        </div>
+    </div>
+
+    <!-- SECCIÓN PARA CLONAR PONDERACIONES DE OTRA EVALUACIÓN -->
+    <hr style="margin: 25px 0 15px 0; border: 0; border-top: 1px solid #eee;">
+    <div class="cpp-clonar-ponderaciones-section" style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-top:0; margin-bottom: 8px; font-size: 15px; color: #2c3e50;">
+            <span class="dashicons dashicons-admin-page" style="vertical-align: text-bottom; margin-right: 4px;"></span>
+            Clonar ponderaciones de otra evaluación
+        </h4>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Copia los criterios y porcentajes de otra evaluación a la evaluación actual.</p>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="cpp-form-group" style="margin-bottom:0; flex: 1; min-width: 180px;">
+                <label style="display:block; font-weight:600; font-size:12px; margin-bottom:4px;">Clase de origen:</label>
+                <select id="cpp-clone-source-class-select" class="cpp-evaluacion-selector" style="width: 100%;" data-target-clase-id="<?php echo esc_attr($clase_actual_id); ?>" data-target-eval-id="<?php echo esc_attr($evaluacion_id); ?>">
+                    <option value="<?php echo esc_attr($clase_actual_id); ?>">Esta clase (actual)</option>
+                    <?php if (!empty($clases_activas)): ?>
+                        <optgroup label="Otras clases activas">
+                            <?php foreach ($clases_activas as $c): ?>
+                                <?php if (intval($c['id']) !== $clase_actual_id): ?>
+                                    <option value="<?php echo esc_attr($c['id']); ?>"><?php echo esc_html($c['nombre']); ?></option>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </optgroup>
+                    <?php endif; ?>
+                    <?php if (!empty($clases_archivadas)): ?>
+                        <optgroup label="Clases archivadas">
+                            <?php foreach ($clases_archivadas as $c): ?>
+                                <?php if (intval($c['id']) !== $clase_actual_id): ?>
+                                    <option value="<?php echo esc_attr($c['id']); ?>"><?php echo esc_html($c['nombre']); ?> (Archivada)</option>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </optgroup>
+                    <?php endif; ?>
+                </select>
+            </div>
+
+            <div class="cpp-form-group" style="margin-bottom:0; flex: 1; min-width: 180px;">
+                <label style="display:block; font-weight:600; font-size:12px; margin-bottom:4px;">Evaluación de origen:</label>
+                <select id="cpp-clone-source-eval-select" class="cpp-evaluacion-selector" style="width: 100%;">
+                    <option value="">-- Selecciona una evaluación --</option>
+                    <?php foreach ($evaluaciones_clase_actual as $ev_origen): ?>
+                        <?php if (intval($ev_origen['id']) !== $evaluacion_id): ?>
+                            <option value="<?php echo esc_attr($ev_origen['id']); ?>"><?php echo esc_html($ev_origen['nombre_evaluacion']); ?></option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <button type="button" id="cpp-btn-clonar-ponderaciones-submit" class="cpp-btn cpp-btn-secondary" style="height: 38px;">
+                <span class="dashicons dashicons-database-import" style="vertical-align: text-bottom; font-size: 16px;"></span> Clonar Ponderaciones
+            </button>
         </div>
     </div>
     <?php
@@ -259,4 +320,61 @@ function cpp_ajax_obtener_criterios_evaluacion_json() {
     if (empty($evaluacion_id)) { wp_send_json_error(['message' => 'ID de evaluación no proporcionado.']); return; }
     $criterios = cpp_obtener_criterios_por_evaluacion($evaluacion_id, $user_id);
     wp_send_json_success(['criterios' => $criterios]);
+}
+
+add_action('wp_ajax_cpp_check_target_eval_activities_criteria', 'cpp_ajax_check_target_eval_activities_criteria');
+function cpp_ajax_check_target_eval_activities_criteria() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $target_eval_id = isset($_POST['target_eval_id']) ? intval($_POST['target_eval_id']) : 0;
+    $source_eval_id = isset($_POST['source_eval_id']) ? intval($_POST['source_eval_id']) : 0;
+
+    if (!$target_eval_id || !$source_eval_id) {
+        wp_send_json_error(['message' => 'Parámetros incompletos.']);
+        return;
+    }
+
+    if ($target_eval_id === $source_eval_id) {
+        wp_send_json_error(['message' => 'La evaluación de origen y de destino no pueden ser la misma.']);
+        return;
+    }
+
+    $result = cpp_check_target_eval_activities_criteria($target_eval_id, $source_eval_id, $user_id);
+
+    if ($result['success']) {
+        wp_send_json_success($result);
+    } else {
+        wp_send_json_error(['message' => $result['message']]);
+    }
+}
+
+add_action('wp_ajax_cpp_clonar_ponderaciones_evaluacion', 'cpp_ajax_clonar_ponderaciones_evaluacion');
+function cpp_ajax_clonar_ponderaciones_evaluacion() {
+    check_ajax_referer('cpp_frontend_nonce', 'nonce');
+    if (!is_user_logged_in()) { wp_send_json_error(['message' => 'Usuario no autenticado.']); return; }
+
+    $user_id = get_current_user_id();
+    $target_eval_id = isset($_POST['target_eval_id']) ? intval($_POST['target_eval_id']) : 0;
+    $source_eval_id = isset($_POST['source_eval_id']) ? intval($_POST['source_eval_id']) : 0;
+    $remapping = isset($_POST['remapping']) && is_array($_POST['remapping']) ? $_POST['remapping'] : [];
+
+    if (!$target_eval_id || !$source_eval_id) {
+        wp_send_json_error(['message' => 'Parámetros incompletos.']);
+        return;
+    }
+
+    if ($target_eval_id === $source_eval_id) {
+        wp_send_json_error(['message' => 'La evaluación de origen y de destino no pueden ser la misma.']);
+        return;
+    }
+
+    $result = cpp_clonar_criterios_evaluacion($target_eval_id, $source_eval_id, $remapping, $user_id);
+
+    if ($result['success']) {
+        wp_send_json_success(['message' => $result['message']]);
+    } else {
+        wp_send_json_error(['message' => $result['message']]);
+    }
 }
