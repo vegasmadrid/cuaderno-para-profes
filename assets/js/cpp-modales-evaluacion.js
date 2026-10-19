@@ -523,6 +523,200 @@
                     }
                 });
             });
+
+            // Cambiar clase de origen al clonar ponderaciones
+            $document.on('change', '#cpp-clone-source-class-select', function() {
+                const claseId = $(this).val();
+                const targetEvalId = $(this).attr('data-target-eval-id');
+                const $evalSelect = $('#cpp-clone-source-eval-select');
+
+                if (!claseId) {
+                    $evalSelect.html('<option value="">-- Selecciona una evaluación --</option>').prop('disabled', true);
+                    return;
+                }
+
+                $evalSelect.html('<option value="">Cargando evaluaciones...</option>').prop('disabled', true);
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_obtener_evaluaciones',
+                        nonce: cppFrontendData.nonce,
+                        clase_id: claseId
+                    },
+                    success: function(response) {
+                        if (response.success && response.data.evaluaciones && response.data.evaluaciones.length > 0) {
+                            let optionsHtml = '<option value="">-- Selecciona una evaluación --</option>';
+                            let count = 0;
+                            response.data.evaluaciones.forEach(function(ev) {
+                                if (parseInt(ev.id) !== parseInt(targetEvalId)) {
+                                    optionsHtml += `<option value="${ev.id}">${$('<div>').text(ev.nombre_evaluacion).html()}</option>`;
+                                    count++;
+                                }
+                            });
+                            if (count > 0) {
+                                $evalSelect.html(optionsHtml).prop('disabled', false);
+                            } else {
+                                $evalSelect.html('<option value="">No hay otras evaluaciones en esta clase</option>').prop('disabled', true);
+                            }
+                        } else {
+                            $evalSelect.html('<option value="">No hay evaluaciones en esta clase</option>').prop('disabled', true);
+                        }
+                    },
+                    error: function() {
+                        $evalSelect.html('<option value="">Error al cargar evaluaciones</option>').prop('disabled', true);
+                    }
+                });
+            });
+
+            // Hacer clic en Clonar Ponderaciones
+            $document.on('click', '#cpp-btn-clonar-ponderaciones-submit', function(e) {
+                e.preventDefault();
+                const $btn = $(this);
+                const $classSelect = $('#cpp-clone-source-class-select');
+                const targetEvalId = $classSelect.attr('data-target-eval-id');
+                const sourceEvalId = $('#cpp-clone-source-eval-select').val();
+
+                if (!sourceEvalId) {
+                    alert('Por favor, selecciona una evaluación de origen para clonar.');
+                    return;
+                }
+
+                if (parseInt(sourceEvalId) === parseInt(targetEvalId)) {
+                    alert('La evaluación de origen y de destino no pueden ser la misma.');
+                    return;
+                }
+
+                const originalBtnHtml = $btn.html();
+                $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Comprobando...');
+
+                $.ajax({
+                    url: cppFrontendData.ajaxUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cpp_check_target_eval_activities_criteria',
+                        nonce: cppFrontendData.nonce,
+                        target_eval_id: targetEvalId,
+                        source_eval_id: sourceEvalId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            if (response.data.has_activities) {
+                                $btn.prop('disabled', false).html(originalBtnHtml);
+                                self.renderClonarRemapList(response.data.affected_criteria, response.data.source_criteria);
+                                const $modal = $('#cpp-modal-clonar-ponderaciones-remap');
+                                $modal.data('target-eval-id', targetEvalId);
+                                $modal.data('source-eval-id', sourceEvalId);
+                                $modal.fadeIn();
+                            } else {
+                                // Clonar directamente sin remapeo
+                                self.executeClonarPonderaciones(targetEvalId, sourceEvalId, {}, null, $btn, originalBtnHtml);
+                            }
+                        } else {
+                            alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron comprobar los criterios.'));
+                            $btn.prop('disabled', false).html(originalBtnHtml);
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión al comprobar ponderaciones.');
+                        $btn.prop('disabled', false).html(originalBtnHtml);
+                    }
+                });
+            });
+
+            // Confirmar remapeo y clonación en el modal
+            $document.on('click', '#cpp-btn-confirm-clonar-remap', function(e) {
+                e.preventDefault();
+                const $btn = $(this);
+                const $modal = $('#cpp-modal-clonar-ponderaciones-remap');
+                const targetEvalId = $modal.data('target-eval-id');
+                const sourceEvalId = $modal.data('source-eval-id');
+
+                const remapping = {};
+                $modal.find('.cpp-remap-select').each(function() {
+                    const oldId = $(this).data('old-criterio-id');
+                    const newId = $(this).val();
+                    remapping[oldId] = newId;
+                });
+
+                const originalBtnHtml = $btn.html();
+                $btn.prop('disabled', true).html('<span class="dashicons dashicons-update dashicons-spin"></span> Clonando...');
+
+                self.executeClonarPonderaciones(targetEvalId, sourceEvalId, remapping, $modal, $btn, originalBtnHtml);
+            });
+        },
+
+        renderClonarRemapList: function(affectedCriteria, sourceCriteria) {
+            const $container = $('#cpp-clonar-remap-list-container');
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+
+            affectedCriteria.forEach(function(item) {
+                html += `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; gap: 10px;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="background-color: ${item.color}; width: 14px; height: 14px; border-radius: 3px; display: inline-block;"></span>
+                                <strong style="font-size: 14px; color: #333;">${$('<div>').text(item.nombre).html()}</strong>
+                            </div>
+                            <small style="color: #666; font-size: 12px;">${item.activity_count} actividad${item.activity_count === 1 ? '' : 'es'} asignada${item.activity_count === 1 ? '' : 's'}</small>
+                        </div>
+                        <div style="flex: 1; text-align: right;">
+                            <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 2px;">Reasignar a:</label>
+                            <select class="cpp-remap-select" data-old-criterio-id="${item.criterio_id}" style="width: 100%; max-width: 220px; font-size: 13px;">`;
+
+                sourceCriteria.forEach(function(sc) {
+                    const isSelected = (parseInt(sc.criterio_id) === parseInt(item.default_mapped_id));
+                    html += `<option value="${sc.criterio_id}" ${isSelected ? 'selected' : ''}>${$('<div>').text(sc.nombre).html()} (${sc.porcentaje}%)</option>`;
+                });
+
+                html += `   </select>
+                        </div>
+                    </div>`;
+            });
+
+            html += '</div>';
+            $container.html(html);
+        },
+
+        executeClonarPonderaciones: function(targetEvalId, sourceEvalId, remapping, $modal, $btnToRestore, originalBtnHtml) {
+            const self = this;
+
+            $.ajax({
+                url: cppFrontendData.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'cpp_clonar_ponderaciones_evaluacion',
+                    nonce: cppFrontendData.nonce,
+                    target_eval_id: targetEvalId,
+                    source_eval_id: sourceEvalId,
+                    remapping: remapping
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if ($modal) {
+                            $modal.fadeOut();
+                        }
+                        cpp.utils.showToast(response.data.message || 'Ponderaciones clonadas correctamente.');
+                        const targetContainer = $('#cpp-ponderaciones-settings-content').length ? '#cpp-ponderaciones-settings-content' : '#cpp-ponderaciones-settings-content-config';
+                        self.refreshCategoriasList(targetEvalId, targetContainer);
+                        $(document).trigger('cpp:forceGradebookReload');
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'No se pudieron clonar las ponderaciones.'));
+                    }
+                },
+                error: function() {
+                    alert('Error de conexión al clonar ponderaciones.');
+                },
+                complete: function() {
+                    if ($btnToRestore && originalBtnHtml) {
+                        $btnToRestore.prop('disabled', false).html(originalBtnHtml);
+                    }
+                }
+            });
         }
     };
 
